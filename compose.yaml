@@ -1,3 +1,8 @@
+# CHỦ FILE: Dũng (Đặng Tô Ngọc Dũng)
+# TASK: SCRUM-124 · HẠN: 30/10/2026
+# CẦN LÀM: Cấu hình docker-compose cho MySQL local/dev.
+# Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
+
 services:
   mysql:
     image: mysql:8.4

@@ -1,0 +1,6 @@
+# CHỦ FILE: Dũng (Đặng Tô Ngọc Dũng)
+# TASK: SCRUM-201 · HẠN: 11/11/2026
+# CẦN LÀM: compose chạy production + Cloudflare Tunnel + HTTPS (NFR-S09, mục 11.2). Chỉ ghi comment, chưa có service.
+# Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
+
+# TODO(Dũng): Cấu hình các service production, Cloudflare Tunnel và HTTPS
