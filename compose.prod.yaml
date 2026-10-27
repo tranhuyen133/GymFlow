@@ -1,6 +1,28 @@
-# CHỦ FILE: Dũng (Đặng Tô Ngọc Dũng)
-# TASK: SCRUM-201 · HẠN: 11/11/2026
-# CẦN LÀM: compose chạy production + Cloudflare Tunnel + HTTPS (NFR-S09, mục 11.2). Chỉ ghi comment, chưa có service.
-# Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
+# Ghép với compose.yaml khi chạy trên VPS:
+#   docker compose -f compose.yaml -f compose.prod.yaml up -d --build
+# Chỉ mở cổng web; MySQL và backend chỉ nói chuyện trong mạng nội bộ của Docker.
+# !reset = xoá danh sách cổng; !override = thay bằng danh sách mới (cần Docker Compose ≥ 2.24).
+# Cổng web mặc định 3000 để giữ nguyên địa chỉ http://160.187.229.73:3000 (cổng 80 VPS đang dùng cho trang khác).
+#
+# Tên miền riêng + HTTPS, không lộ IP (Cloudflare Tunnel):
+#   1. Thêm TUNNEL_TOKEN=... vào .env (lấy ở Cloudflare Zero Trust → Networks → Tunnels)
+#   2. Trong tunnel, Public Hostname trỏ tới http://frontend:80
+#   3. docker compose -f compose.yaml -f compose.prod.yaml --profile tunnel up -d
+services:
+  mysql:
+    ports: !reset []
+  backend:
+    ports: !reset []
+  frontend:
+    ports: !override ["${PROD_FRONTEND_PORT:-3000}:80"]
 
-# TODO(Dũng): Cấu hình các service production, Cloudflare Tunnel và HTTPS
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: gymflow-tunnel
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      - frontend
