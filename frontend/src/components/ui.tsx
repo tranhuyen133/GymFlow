@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TableHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { locale, t, tx } from '../i18n';
 import { hueOf, initials, type Tone } from '../lib/format';
 import { Icon, type IconName } from './Icon';
@@ -101,24 +101,73 @@ export function PageHead({ eyebrow, title, desc, actions }: { eyebrow?: string; 
   );
 }
 
-// ---------- Form controls ----------
-export function Field({ label, error, hint, required, children, className = '' }: { label?: string; error?: string; hint?: string; required?: boolean; children: ReactNode; className?: string }) {
+// ---------- Table ----------
+export function Table({ caption, children, className = '', 'aria-label': ariaLabel, ...rest }:
+  TableHTMLAttributes<HTMLTableElement> & { caption?: string }) {
   return (
-    <div className={`field ${className}`}>
-      {label && <label>{t(label)}{required && <span className="req">*</span>}</label>}
-      {children}
-      {error ? <div className="err">{t(error)}</div> : hint ? <div className="hint">{t(hint)}</div> : null}
+    <div className="table-wrap" role="region" aria-label={t(caption ?? ariaLabel ?? 'Bảng dữ liệu')} tabIndex={0}>
+      <table className={`table ${className}`} {...rest}>
+        {caption && <caption className="sr-only">{t(caption)}</caption>}
+        {children}
+      </table>
     </div>
   );
 }
-export function Input({ invalid, className = '', placeholder, ...rest }: InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
-  return <input className={`input ${invalid ? 'has-err' : ''} ${className}`} placeholder={placeholder ? t(placeholder) : undefined} {...rest} />;
+
+// ---------- Form controls ----------
+export function Field({ label, error, hint, required, children, className = '', htmlFor }: { label?: string; error?: string; hint?: string; required?: boolean; children: ReactNode; className?: string; htmlFor?: string }) {
+  return (
+    <div className={`field ${className}`}>
+      {label && <label htmlFor={htmlFor}>{t(label)}{required && <span className="req">*</span>}</label>}
+      {children}
+      {error ? (
+        <div className="err" id={htmlFor ? `${htmlFor}-error` : undefined} role={htmlFor ? 'alert' : undefined}>{t(error)}</div>
+      ) : hint ? (
+        <div className="hint" id={htmlFor ? `${htmlFor}-hint` : undefined}>{t(hint)}</div>
+      ) : null}
+    </div>
+  );
 }
-export function Select({ invalid, className = '', children, 'aria-label': ariaLabel, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }) {
-  return <select className={`select ${invalid ? 'has-err' : ''} ${className}`} aria-label={ariaLabel ? t(ariaLabel) : undefined} {...rest}>{children}</select>;
+export function Input({ invalid, className = '', placeholder, id, 'aria-describedby': ariaDescribedBy, ...rest }: InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
+  const describedBy = ariaDescribedBy ?? (id ? `${id}-error` : undefined);
+  return (
+    <input
+      id={id}
+      className={`input ${invalid ? 'has-err' : ''} ${className}`}
+      placeholder={placeholder ? t(placeholder) : undefined}
+      aria-invalid={invalid ? 'true' : rest['aria-invalid']}
+      aria-describedby={describedBy}
+      {...rest}
+    />
+  );
 }
-export function Textarea({ invalid, className = '', placeholder, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }) {
-  return <textarea className={`textarea ${invalid ? 'has-err' : ''} ${className}`} placeholder={placeholder ? t(placeholder) : undefined} {...rest} />;
+export function Select({ invalid, className = '', children, id, 'aria-label': ariaLabel, 'aria-describedby': ariaDescribedBy, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }) {
+  const describedBy = ariaDescribedBy ?? (id ? `${id}-error` : undefined);
+  return (
+    <select
+      id={id}
+      className={`select ${invalid ? 'has-err' : ''} ${className}`}
+      aria-label={ariaLabel ? t(ariaLabel) : undefined}
+      aria-invalid={invalid ? 'true' : rest['aria-invalid']}
+      aria-describedby={describedBy}
+      {...rest}
+    >
+      {children}
+    </select>
+  );
+}
+export function Textarea({ invalid, className = '', placeholder, id, 'aria-describedby': ariaDescribedBy, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }) {
+  const describedBy = ariaDescribedBy ?? (id ? `${id}-error` : undefined);
+  return (
+    <textarea
+      id={id}
+      className={`textarea ${invalid ? 'has-err' : ''} ${className}`}
+      placeholder={placeholder ? t(placeholder) : undefined}
+      aria-invalid={invalid ? 'true' : rest['aria-invalid']}
+      aria-describedby={describedBy}
+      {...rest}
+    />
+  );
 }
 export function SearchInput({ value, onChange, placeholder = 'Tìm kiếm…' }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
@@ -128,12 +177,23 @@ export function SearchInput({ value, onChange, placeholder = 'Tìm kiếm…' }:
     </div>
   );
 }
-export function PasswordInput({ invalid, ...rest }: InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
+export function PasswordInput({ invalid, className = '', id, 'aria-describedby': ariaDescribedBy, placeholder, ...rest }: InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
   const [show, setShow] = useState(false);
+  const describedBy = ariaDescribedBy ?? (id ? `${id}-error` : undefined);
+  const cls = ['input', invalid && 'has-err', className].filter(Boolean).join(' ');
   return (
     <div className="input-icon">
       <Icon name="lock" />
-      <input className={`input ${invalid ? 'has-err' : ''}`} type={show ? 'text' : 'password'} style={{ paddingRight: 44 }} {...rest} />
+      <input
+        id={id}
+        className={cls}
+        type={show ? 'text' : 'password'}
+        style={{ paddingRight: 44 }}
+        placeholder={placeholder ? t(placeholder) : undefined}
+        aria-invalid={invalid ? 'true' : rest['aria-invalid']}
+        aria-describedby={describedBy}
+        {...rest}
+      />
       <button type="button" className="btn btn-ghost btn-sm btn-icon eye" onClick={() => setShow((s) => !s)} aria-label={t(show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu')}>
         <Icon name={show ? 'eyeOff' : 'eye'} />
       </button>
@@ -152,23 +212,69 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
 }
 
 // ---------- Modal ----------
+const FOCUSABLE_SELECTOR = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
 export function Modal({ title, onClose, children, footer, size }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; size?: 'wide' | 'narrow' }) {
   const ref = useRef<HTMLDivElement>(null);
+  const titleId = useId();
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeRef.current(); };
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeRef.current();
+        return;
+      }
+      if (e.key === 'Tab') {
+        if (!ref.current) return;
+        const focusables = Array.from(ref.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+        if (focusables.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first || !ref.current.contains(document.activeElement)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last || !ref.current.contains(document.activeElement)) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    ref.current?.querySelector<HTMLElement>('input, select, textarea')?.focus();
-    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+
+    const input = ref.current?.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled]), textarea:not([disabled])');
+    if (input) {
+      input.focus();
+    } else {
+      const closeBtn = ref.current?.querySelector<HTMLElement>('.modal-head button');
+      closeBtn?.focus();
+    }
+
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+      previouslyFocused?.focus?.();
+    };
   }, []);
+
   return (
     <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={`modal ${size ?? ''}`} role="dialog" aria-modal="true" ref={ref}>
+      <div className={`modal ${size ?? ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId} ref={ref}>
         <div className="modal-head">
-          <h2>{tx(title)}</h2>
+          <h2 id={titleId}>{tx(title)}</h2>
           <Button variant="ghost" size="sm" icon="x" aria-label="Đóng" onClick={onClose} />
         </div>
         <div className="modal-body">{children}</div>
