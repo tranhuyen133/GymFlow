@@ -1,68 +1,14 @@
-/* CHỦ FILE: Phương · SCRUM-143. Figma Gym / Design System. */
+/*
+ * CHỦ FILE: Phương (Bùi Văn Phương)
+ * TASK: SCRUM-143 · HẠN: 28/10/2026
+ * TASK: SCRUM-218 · HẠN: 13/11/2026
+ * CẦN LÀM: Design token theo DESIGN.md mục 2. Làm NGAY, cả nhóm đang chờ.
+ * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
+ */
+
+/* TODO(Phương): Định nghĩa design tokens theo DESIGN.md mục 2 (màu sắc, typography, spacing, border-radius, shadows) */
+/* TODO(Phương): SCRUM-218 · 13/11 rà responsive và tương phản */
+
 :root {
-  color-scheme: dark;
-  --primary: #00b24b; --primary-bright: #00d95b; --secondary: #0075ff;
-  --info: #3d97ff; --violet: #8b7cff; --on-primary: #fff;
-  --canvas: #141415; --rail: #1b1c1f; --surface-2: #202125;
-  --surface: #2e3035; --hairline: #2d2f33; --ink: #f0f2f5;
-  --muted: #9aa1b1; --faint: #5f636c; --warning: #ffb020; --error: #ff3b30;
-  --overlay: rgb(0 0 0 / 65%); --shadow: 0 12px 32px rgb(0 0 0 / 45%);
-  --font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --text-caption: 0.75rem; --text-ui: 0.8125rem; --text-body: 0.875rem;
-  --text-title: 1rem; --text-heading: 1.25rem; --text-display: 2rem;
-  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
-  --space-5: 20px; --space-6: 24px; --space-7: 28px; --space-8: 32px;
-  --space-10: 40px; --space-12: 48px; --space-16: 64px;
-  --radius-input: 8px; --radius-button: 10px; --radius-card: 16px; --radius-large: 20px; --radius-pill: 999px;
+  /* Design tokens placeholder */
 }
-:root[data-theme="light"] {
-  color-scheme: light;
-  --primary: #00a344; --primary-bright: #008a3a; --secondary: #0066e0;
-  --info: #0a6ee0; --violet: #6a58f0; --canvas: #f5f6f8; --rail: #fff;
-  --surface-2: #fff; --surface: #eceef2; --hairline: #dfe2e8;
-  --ink: #16181d; --muted: #5a6170; --faint: #8a909c; --warning: #b97300; --error: #e0261c;
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--canvas); color: var(--ink); font: 600 var(--text-body)/1.5 var(--font-family); }
-button, input, select, textarea { font: inherit; }
-a { color: var(--info); text-underline-offset: 4px; }
-h1, h2, h3, p { margin: 0; }
-h1 { font-size: var(--text-display); line-height: 1.2; font-weight: 800; }
-h2 { font-size: var(--text-heading); font-weight: 800; }
-h3 { font-size: var(--text-title); }
-button, a, input { -webkit-tap-highlight-color: transparent; }
-:focus-visible { outline: 2px solid var(--info); outline-offset: 4px; }
-.gf-button { display: inline-flex; gap: var(--space-2); align-items: center; justify-content: center; min-height: 44px; padding: 10px 18px; border: 1px solid transparent; border-radius: var(--radius-button); cursor: pointer; font-size: var(--text-ui); text-decoration: none; font-weight: 600; }
-.gf-button--primary { background: var(--primary); color: var(--on-primary); }
-.gf-button--secondary { background: var(--secondary); color: var(--on-primary); }
-.gf-button--danger { background: var(--error); color: var(--on-primary); }
-.gf-button--outline { background: var(--surface); color: var(--ink); border-color: var(--hairline); }
-.gf-button--ghost { background: transparent; color: var(--info); }
-.gf-button:hover:not(:disabled) { filter: brightness(1.12); }
-.gf-button:disabled { opacity: .5; cursor: not-allowed; }
-.gf-spinner { width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: var(--radius-pill); animation: gf-spin .7s linear infinite; }
-@keyframes gf-spin { to { transform: rotate(360deg); } }
-.gf-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.gf-field label, .gf-helper, .gf-field-error { font-size: var(--text-caption); }
-.gf-field label, .gf-helper { color: var(--muted); }
-.gf-input { width: 100%; min-height: 46px; padding: 11px 14px; background: var(--surface); border: 1px solid var(--hairline); color: var(--ink); border-radius: var(--radius-input); }
-.gf-input::placeholder { color: var(--muted); font-weight: 400; }
-.gf-input[aria-invalid="true"] { border-color: var(--error); }
-.gf-input:disabled { opacity: .55; cursor: not-allowed; }
-.gf-input:focus { outline: 2px solid var(--info); outline-offset: 1px; }
-.gf-field-error { color: var(--error); }
-.gf-card { background: var(--surface-2); border: 1px solid var(--hairline); padding: var(--space-6); border-radius: var(--radius-card); }
-.gf-card > h3 { margin-bottom: var(--space-3); }
-.gf-table-scroll { overflow-x: auto; border: 1px solid var(--hairline); border-radius: var(--radius-input); }
-.gf-table { border-collapse: collapse; width: 100%; text-align: left; }
-.gf-table th, .gf-table td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--hairline); }
-.gf-table th { color: var(--muted); background: var(--surface-2); font-size: var(--text-caption); }
-.gf-table tbody tr:hover { background: var(--surface-2); }
-.gf-table caption { padding: var(--space-4); text-align: left; }
-.gf-modal { width: min(440px, calc(100% - 32px)); max-height: calc(100dvh - 48px); padding: var(--space-7); color: var(--ink); background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--radius-card); box-shadow: var(--shadow); }
-.gf-modal::backdrop { background: var(--overlay); }
-.gf-modal-header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4); }
-.gf-notice, .toast { padding: var(--space-3) var(--space-4); border: 1px solid var(--info); border-radius: var(--radius-input); color: var(--ink); background: var(--surface-2); }
-.gf-notice--error, .toast-error { border-color: var(--error); }
-.gf-notice--success, .toast-success { border-color: var(--primary); }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
