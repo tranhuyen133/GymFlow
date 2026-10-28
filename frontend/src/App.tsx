@@ -1,11 +1,13 @@
 /**
  * CHỦ FILE: Tùng (Lê Thanh Tùng)
  * TASK: SCRUM-139 · HẠN: 28/10/2026
- * CẦN LÀM: Khai báo đủ route như quy tắc 8. TODO(Tùng): bọc RequireRole theo vai trò (mục 10.1).
+ * CẦN LÀM: Khai báo đủ route như quy tắc 8. Bọc RequireRole theo vai trò (mục 10.1).
  * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
  */
 
-import { Routes, Route } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import RequireRole from './auth/RequireRole';
+import { useAuth } from './auth/AuthContext';
 
 // Public pages
 import Landing from './pages/public/Landing';
@@ -50,6 +52,18 @@ import WorkoutToday from './pages/member/WorkoutToday';
 import Progress from './pages/member/Progress';
 import MySubscription from './pages/member/MySubscription';
 
+function RoleHome() {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  const home =
+    user.role === 'ADMIN'
+      ? '/app/admin'
+      : user.role === 'TRAINER'
+        ? '/app/trainer'
+        : '/app/member';
+  return <Navigate to={home} replace />;
+}
+
 export default function App() {
   return (
     <Routes>
@@ -64,38 +78,66 @@ export default function App() {
       <Route path="/policy" element={<Policy />} />
       <Route path="/403" element={<Forbidden />} />
 
-      {/* App routes wrapped in AppLayout */}
-      {/* TODO(Tùng): bọc RequireRole theo vai trò (mục 10.1) */}
-      <Route path="/app" element={<AppLayout />}>
+      {/* App routes: bắt buộc đăng nhập, mỗi nhóm chặn theo vai trò */}
+      <Route
+        path="/app"
+        element={
+          <RequireRole>
+            <AppLayout />
+          </RequireRole>
+        }
+      >
+        <Route index element={<RoleHome />} />
         <Route path="profile" element={<Profile />} />
 
-        {/* Admin routes */}
-        {/* TODO(Tùng): bọc RequireRole role="ADMIN" */}
-        <Route path="admin" element={<AdminDashboard />} />
-        <Route path="admin/trainers" element={<Trainers />} />
-        <Route path="admin/plans" element={<Plans />} />
-        <Route path="admin/subscriptions" element={<Subscriptions />} />
-        <Route path="admin/reports" element={<Reports />} />
-        <Route path="admin/accounts" element={<Accounts />} />
-        <Route path="admin/audit-logs" element={<AuditLog />} />
+        <Route
+          path="admin"
+          element={
+            <RequireRole role="ADMIN">
+              <Outlet />
+            </RequireRole>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="trainers" element={<Trainers />} />
+          <Route path="plans" element={<Plans />} />
+          <Route path="subscriptions" element={<Subscriptions />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="accounts" element={<Accounts />} />
+          <Route path="audit-logs" element={<AuditLog />} />
+        </Route>
 
-        {/* Trainer routes */}
-        {/* TODO(Tùng): bọc RequireRole role="TRAINER" */}
-        <Route path="trainer" element={<TrainerDashboard />} />
-        <Route path="trainer/schedule" element={<ScheduleGrid />} />
-        <Route path="trainer/members" element={<Members />} />
-        <Route path="trainer/members/:id" element={<MemberDetail />} />
-        <Route path="trainer/plans/:id" element={<WorkoutPlanEditor />} />
-        <Route path="trainer/exercises" element={<ExerciseLibrary />} />
-        <Route path="trainer/articles" element={<ArticleEditor />} />
+        <Route
+          path="trainer"
+          element={
+            <RequireRole role="TRAINER">
+              <Outlet />
+            </RequireRole>
+          }
+        >
+          <Route index element={<TrainerDashboard />} />
+          <Route path="schedule" element={<ScheduleGrid />} />
+          <Route path="members" element={<Members />} />
+          <Route path="members/:id" element={<MemberDetail />} />
+          <Route path="plans/:id" element={<WorkoutPlanEditor />} />
+          <Route path="exercises" element={<ExerciseLibrary />} />
+          <Route path="articles" element={<ArticleEditor />} />
+        </Route>
 
-        {/* Member routes */}
-        {/* TODO(Tùng): bọc RequireRole role="MEMBER" */}
-        <Route path="member" element={<MemberDashboard />} />
-        <Route path="member/schedule" element={<MySchedule />} />
-        <Route path="member/today" element={<WorkoutToday />} />
-        <Route path="member/progress" element={<Progress />} />
-        <Route path="member/subscription" element={<MySubscription />} />
+        <Route
+          path="member"
+          element={
+            <RequireRole role="MEMBER">
+              <Outlet />
+            </RequireRole>
+          }
+        >
+          <Route index element={<MemberDashboard />} />
+          <Route path="schedule" element={<MySchedule />} />
+          <Route path="today" element={<WorkoutToday />} />
+          <Route path="progress" element={<Progress />} />
+          <Route path="subscription" element={<MySubscription />} />
+        </Route>
       </Route>
 
       {/* Catch-all route */}
