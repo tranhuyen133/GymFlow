@@ -6,6 +6,7 @@
  */
 
 import { ApiError } from './errors';
+import { mockRequest } from './mock';
 import type { AuthUser, Role } from './types/auth';
 
 const TOKEN_KEY = 'gymflow.token';
@@ -13,8 +14,8 @@ const USER_KEY = 'gymflow.user';
 const TIMEOUT_MS = 20_000;
 const ROLES: Role[] = ['ADMIN', 'TRAINER', 'MEMBER'];
 
-/** Bật mock bằng VITE_USE_MOCK=true. SCRUM-140 sẽ nối dữ liệu giả vào cờ này. */
-export const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? 'false') === 'true';
+/** Bật/tắt mock bằng VITE_USE_MOCK. Mặc định bật để FE chạy trước khi BE xong. */
+export const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? 'true') === 'true';
 
 function readStorage(key: string): string | null {
   try {
@@ -103,10 +104,7 @@ interface ErrorBody {
 }
 
 export async function httpClient<T>(url: string, options: RequestInit = {}): Promise<T> {
-  if (USE_MOCK) {
-    // SCRUM-140 sẽ thay nhánh này bằng mockRequest. Hiện báo lỗi rõ thay vì gọi nhầm backend.
-    throw new ApiError(501, 'Mock API chưa được cài đặt. Đặt VITE_USE_MOCK=false để gọi backend.');
-  }
+  if (USE_MOCK) return mockRequest<T>(url, options);
 
   const token = tokenStore.get();
   const headers = new Headers(options.headers);
