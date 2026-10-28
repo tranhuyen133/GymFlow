@@ -1,17 +1,9 @@
-import React from 'react';
-
-/**
- * CHỦ FILE: Phương (Bùi Văn Phương)
- * TASK: SCRUM-143 · HẠN: 28/10/2026
- * CẦN LÀM: UI kit Table. Sau khi đẩy lên không đổi tên prop.
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
-
-export interface TableProps extends React.TableHTMLAttributes<HTMLTableElement> {}
-
-export function Table(props: TableProps) {
-  // TODO(Phương): Hoàn thiện UI kit Table
-  return <table {...props} />;
+import type { TableHTMLAttributes } from 'react';
+/** CHỦ FILE: Phương · SCRUM-143. */
+export interface TableProps extends TableHTMLAttributes<HTMLTableElement> {}
+export function Table({ className = '', ...props }: TableProps) {
+  return <div className="gf-table-scroll" role="region" aria-label={props['aria-label'] || 'Bảng dữ liệu'} tabIndex={0}>
+    <table {...props} className={`gf-table ${className}`} />
+  </div>;
 }
-
 export default Table;
