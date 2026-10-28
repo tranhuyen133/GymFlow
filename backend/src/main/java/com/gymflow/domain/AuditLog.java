@@ -1,11 +1,49 @@
 package com.gymflow.domain;
 
-/**
- * CHỦ FILE: Dũng (Đặng Tô Ngọc Dũng)
- * TASK: SCRUM-127 · HẠN: 29/10/2026
- * CẦN LÀM: Bảng audit_logs (SRS 8.3).
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "audit_logs")
+@Getter
+@Setter
+@NoArgsConstructor
 public class AuditLog {
-    // TODO(Dũng): thêm @Entity và các cột theo SRS mục 8 (bảng audit_logs)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "actor_id")
+    private Long actorId;
+
+    @Column(name = "actor_email")
+    private String actorEmail;
+
+    @Column(nullable = false, length = 60)
+    private String action;
+
+    @Column(name = "target_type")
+    private String targetType;
+
+    @Column(name = "target_id")
+    private String targetId;
+
+    private String detail;
+
+    @Column(nullable = false)
+    private boolean success = true;
+
+    private String ip;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }
