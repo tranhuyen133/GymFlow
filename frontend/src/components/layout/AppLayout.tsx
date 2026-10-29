@@ -1,11 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '../../auth/AuthContext';
-import MobileTabBar from './MobileTabBar';
+import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
-import { roleFromPath, toLayoutUser } from './menu';
-import './layout.css';
+import MobileTabBar from './MobileTabBar';
 
 /**
  * CHỦ FILE: Tùng (Lê Thanh Tùng)
@@ -15,38 +11,17 @@ import './layout.css';
  */
 
 export default function AppLayout() {
-  const { pathname } = useLocation();
-  const auth = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const role = toLayoutUser(auth?.user)?.role ?? roleFromPath(pathname);
-
-  useEffect(() => {
-    setSidebarOpen(false);
-    window.scrollTo({ top: 0 });
-  }, [pathname]);
-
+  // TODO(Tùng): Bọc layout chung với Topbar, Sidebar (desktop), MobileTabBar (mobile) và Outlet cho trang con
   return (
     <div className="app-layout">
-      <Sidebar role={role} open={sidebarOpen} onNavigate={() => setSidebarOpen(false)} />
-
-      {sidebarOpen && (
-        <button
-          type="button"
-          className="app-scrim"
-          aria-label="Đóng menu"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      <div className="app-main">
-        <Topbar role={role} onOpenMenu={() => setSidebarOpen(true)} />
-        <main className="app-content" id="main">
+      <Topbar />
+      <div className="app-body">
+        <Sidebar />
+        <main className="app-content">
           <Outlet />
         </main>
       </div>
-
-      <MobileTabBar role={role} onOpenMenu={() => setSidebarOpen(true)} />
+      <MobileTabBar />
     </div>
   );
 }
