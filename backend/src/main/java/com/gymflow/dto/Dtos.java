@@ -87,10 +87,14 @@ public final class Dtos {
             @Past(message = "Ngày sinh phải ở quá khứ") LocalDate dateOfBirth,
             Gender gender,
             @DecimalMin(value = "80", message = "Chiều cao từ 80 cm") @DecimalMax(value = "250", message = "Chiều cao tối đa 250 cm") Double heightCm,
-            @Size(max = 255) String goal,
-            @Size(max = 255) String address,
+            @Size(max = 255, message = "Mục tiêu tối đa 255 ký tự") String goal,
+            @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự") String address,
             Long trainerId,
-            @Size(max = 255) String note) {
+            @Size(max = 255, message = "Ghi chú tối đa 255 ký tự") String note) {
+        @AssertTrue(message = "Ngày sinh phải sau ngày 01/01/1900")
+        public boolean isDateOfBirthValid() {
+            return dateOfBirth == null || dateOfBirth.isAfter(LocalDate.of(1900, 1, 1));
+        }
     }
 
     public record MemberUpdateRequest(
@@ -99,10 +103,14 @@ public final class Dtos {
             @Past(message = "Ngày sinh phải ở quá khứ") LocalDate dateOfBirth,
             Gender gender,
             @DecimalMin(value = "80", message = "Chiều cao từ 80 cm") @DecimalMax(value = "250", message = "Chiều cao tối đa 250 cm") Double heightCm,
-            @Size(max = 255) String goal,
-            @Size(max = 255) String address,
+            @Size(max = 255, message = "Mục tiêu tối đa 255 ký tự") String goal,
+            @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự") String address,
             Long trainerId,
-            @Size(max = 255) String note) {
+            @Size(max = 255, message = "Ghi chú tối đa 255 ký tự") String note) {
+        @AssertTrue(message = "Ngày sinh phải sau ngày 01/01/1900")
+        public boolean isDateOfBirthValid() {
+            return dateOfBirth == null || dateOfBirth.isAfter(LocalDate.of(1900, 1, 1));
+        }
     }
 
     /** Hội viên tự sửa: không được đổi HLV hay ghi chú nội bộ. */
@@ -111,8 +119,12 @@ public final class Dtos {
             @Past(message = "Ngày sinh phải ở quá khứ") LocalDate dateOfBirth,
             Gender gender,
             @DecimalMin(value = "80", message = "Chiều cao từ 80 cm") @DecimalMax(value = "250", message = "Chiều cao tối đa 250 cm") Double heightCm,
-            @Size(max = 255) String goal,
-            @Size(max = 255) String address) {
+            @Size(max = 255, message = "Mục tiêu tối đa 255 ký tự") String goal,
+            @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự") String address) {
+        @AssertTrue(message = "Ngày sinh phải sau ngày 01/01/1900")
+        public boolean isDateOfBirthValid() {
+            return dateOfBirth == null || dateOfBirth.isAfter(LocalDate.of(1900, 1, 1));
+        }
     }
 
     public record MemberStatusRequest(@NotNull(message = "Vui lòng chọn trạng thái") MemberStatus status) {

@@ -11,11 +11,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class MemberService {
+
+    private static final LocalDate MIN_DOB = LocalDate.of(1900, 1, 1);
 
     private final MemberRepository memberRepository;
     private final TrainerRepository trainerRepository;
@@ -61,6 +65,8 @@ public class MemberService {
 
     @Transactional
     public MemberCreatedResponse create(MemberCreateRequest req) {
+        validateDateOfBirth(req.dateOfBirth());
+        validateHeight(req.heightCm());
         UserService.Created c = userService.createAccount(req.email(), req.fullName(), req.phone(), req.password(), Role.MEMBER);
         Member m = new Member();
         m.setUser(c.user());
@@ -98,6 +104,8 @@ public class MemberService {
 
     @Transactional
     public MemberResponse update(Long id, MemberUpdateRequest req) {
+        validateDateOfBirth(req.dateOfBirth());
+        validateHeight(req.heightCm());
         Member m = access.loadMember(id);
         m.getUser().setFullName(req.fullName().trim());
         m.getUser().setPhone(Mappers.blankToNull(req.phone()));
@@ -107,13 +115,18 @@ public class MemberService {
         m.setGoal(Mappers.blankToNull(req.goal()));
         m.setAddress(Mappers.blankToNull(req.address()));
         m.setNote(Mappers.blankToNull(req.note()));
-        m.setTrainer(resolveTrainer(req.trainerId()));
+        Long currentTrainerId = m.getTrainer() != null ? m.getTrainer().getId() : null;
+        if (!Objects.equals(currentTrainerId, req.trainerId())) {
+            m.setTrainer(resolveTrainer(req.trainerId()));
+        }
         auditService.log("MEMBER_UPDATE", "MEMBER", m.getId(), m.getCode());
         return mappers.member(m);
     }
 
     @Transactional
     public MemberResponse updateSelf(AuthUser user, MemberSelfUpdateRequest req) {
+        validateDateOfBirth(req.dateOfBirth());
+        validateHeight(req.heightCm());
         Member m = access.requireMemberOf(user);
         m.getUser().setPhone(Mappers.blankToNull(req.phone()));
         m.setDateOfBirth(req.dateOfBirth());
@@ -140,6 +153,18 @@ public class MemberService {
         auditService.log("MEMBER_ASSIGN_TRAINER", "MEMBER", m.getId(),
                 m.getCode() + " → " + (m.getTrainer() == null ? "không có HLV" : m.getTrainer().getUser().getFullName()));
         return mappers.member(m);
+    }
+
+    private void validateDateOfBirth(LocalDate dob) {
+        if (dob != null && !dob.isAfter(MIN_DOB)) {
+            throw ApiException.badRequest("Ngày sinh phải sau ngày 01/01/1900");
+        }
+    }
+
+    private void validateHeight(Double heightCm) {
+        if (heightCm != null && (heightCm < 80.0 || heightCm > 250.0)) {
+            throw ApiException.badRequest("Chiều cao từ 80 đến 250 cm");
+        }
     }
 
     private Trainer resolveTrainer(Long trainerId) {
