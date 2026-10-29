@@ -1,3 +1,10 @@
+/**
+ * CHỦ FILE: Linh (Hồ Khánh Linh)
+ * TASK: SCRUM-151 · HẠN: 29/10/2026
+ * CẦN LÀM: Màn hình quản lý huấn luyện viên và ca làm việc (ADMIN-06).
+ * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
+ */
+
 import { useState } from 'react';
 import { api } from '../../api/client';
 import type { Trainer, TrainerCreated } from '../../api/types';
