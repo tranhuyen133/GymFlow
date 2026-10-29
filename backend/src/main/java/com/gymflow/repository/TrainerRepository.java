@@ -1,11 +1,15 @@
 package com.gymflow.repository;
 
-/**
- * CHỦ FILE: Huyền (Trần Thị Khánh Huyền)
- * TASK: SCRUM-137 · HẠN: 02/11/2026
- * CẦN LÀM: Repository cho bảng trainers.
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
-public interface TrainerRepository {
-    // TODO(Huyền): extends JpaRepository<Trainer, Long>
+import com.gymflow.domain.Trainer;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface TrainerRepository extends JpaRepository<Trainer, Long> {
+    Optional<Trainer> findByUserId(Long userId);
+
+    List<Trainer> findAllByOrderByIdAsc();
+
+    long countByActiveTrue();
 }

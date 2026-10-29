@@ -1,11 +1,18 @@
 package com.gymflow.repository;
 
-/**
- * CHỦ FILE: Huyền (Trần Thị Khánh Huyền)
- * TASK: SCRUM-163 · HẠN: 03/11/2026
- * CẦN LÀM: Repository cho bảng workout_plans.
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
-public interface WorkoutPlanRepository {
-    // TODO(Huyền): extends JpaRepository<WorkoutPlan, Long>
+import com.gymflow.domain.PlanStatus;
+import com.gymflow.domain.WorkoutPlan;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface WorkoutPlanRepository extends JpaRepository<WorkoutPlan, Long> {
+    List<WorkoutPlan> findByMemberIdOrderByStartDateDesc(Long memberId);
+
+    List<WorkoutPlan> findByMemberTrainerIdOrderByCreatedAtDesc(Long trainerId);
+
+    List<WorkoutPlan> findAllByOrderByCreatedAtDesc();
+
+    Optional<WorkoutPlan> findFirstByMemberIdAndStatusOrderByStartDateDesc(Long memberId, PlanStatus status);
 }

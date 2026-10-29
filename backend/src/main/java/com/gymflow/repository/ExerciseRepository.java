@@ -1,11 +1,20 @@
 package com.gymflow.repository;
 
-/**
- * CHỦ FILE: Huyền (Trần Thị Khánh Huyền)
- * TASK: SCRUM-162 · HẠN: 04/11/2026
- * CẦN LÀM: Repository cho bảng exercises.
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
-public interface ExerciseRepository {
-    // TODO(Huyền): extends JpaRepository<Exercise, Long>
+import com.gymflow.domain.Exercise;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
+    /** Nạp sẵn nguồn và người tạo/duyệt để danh sách không phát sinh N+1 truy vấn. */
+    @EntityGraph(attributePaths = {"sources", "createdBy", "reviewedBy"})
+    List<Exercise> findAllByOrderByNameAsc();
+
+    Optional<Exercise> findFirstByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 }

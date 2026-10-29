@@ -1,11 +1,41 @@
 package com.gymflow.domain;
 
-/**
- * CHỦ FILE: Huyền (Trần Thị Khánh Huyền)
- * TASK: SCRUM-135 · HẠN: 29/10/2026
- * CẦN LÀM: Bảng password_reset_tokens (8.3).
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "password_reset_tokens")
+@Getter
+@Setter
+@NoArgsConstructor
 public class PasswordResetToken {
-    // TODO(Huyền): thêm @Entity và các cột theo SRS mục 8 (bảng password_reset_tokens)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    /** Chỉ lưu SHA-256 của mã, không lưu mã gốc. */
+    @Column(name = "token_hash", nullable = false, length = 100)
+    private String tokenHash;
+
+    @Column(name = "expires_at", nullable = false)
+    private LocalDateTime expiresAt;
+
+    @Column(name = "used_at")
+    private LocalDateTime usedAt;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }

@@ -5,7 +5,8 @@
  * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
  */
 
+import { NotFound as NotFoundView } from '../Errors';
+
 export default function NotFound() {
-  // TODO(Linh): Màn 404 Not Found - Trang không tồn tại. Phương kèm.
-  return <div>NotFound (đang làm)</div>;
+  return <NotFoundView />;
 }

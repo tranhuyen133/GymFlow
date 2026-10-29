@@ -1,11 +1,49 @@
 package com.gymflow.domain;
 
-/**
- * CHỦ FILE: Kiên (Nguyễn Thế Kiên)
- * TASK: SCRUM-204 · HẠN: 11/11/2026
- * CẦN LÀM: Bảng content_sources (8.6, 8.7).
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDate;
+
+/** Nguồn tham khảo kèm giấy phép. Bản ghi do migration tạo; ứng dụng chỉ đọc. */
+@Entity
+@Table(name = "content_sources")
+@Getter
+@Setter
+@NoArgsConstructor
 public class ContentSource {
-    // TODO(Kiên): thêm @Entity và các cột theo SRS mục 8 (bảng content_sources)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 40)
+    private String code;
+
+    @Column(nullable = false)
+    private String publisher;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(nullable = false)
+    private String url;
+
+    private String license;
+
+    @Column(name = "license_url")
+    private String licenseUrl;
+
+    /** FALSE: nhóm chưa đối chiếu được điều khoản giấy phép trên trang gốc. */
+    @Column(name = "license_verified", nullable = false)
+    private boolean licenseVerified;
+
+    private String attribution;
+
+    @Column(name = "publisher_reviewed")
+    private LocalDate publisherReviewed;
+
+    @Column(name = "accessed_at", nullable = false)
+    private LocalDate accessedAt;
 }

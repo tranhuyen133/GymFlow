@@ -1,8 +1,12 @@
 .env
-node_modules/
-dist/
-build/
-.gradle/
+**/node_modules/
+**/dist/
+**/target/
 .idea/
+.vscode/
 *.iml
 .DS_Store
+*.log
+**/build/
+**/.gradle/
+*_tmp

@@ -5,7 +5,8 @@
  * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
  */
 
+import { Forbidden as ForbiddenView } from '../Errors';
+
 export default function Forbidden() {
-  // TODO(Linh): Màn 403 Forbidden - Không có quyền truy cập. Phương kèm.
-  return <div>Forbidden (đang làm)</div>;
+  return <ForbiddenView />;
 }

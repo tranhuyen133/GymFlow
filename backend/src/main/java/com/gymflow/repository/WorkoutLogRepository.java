@@ -1,11 +1,16 @@
 package com.gymflow.repository;
 
-/**
- * CHỦ FILE: Huyền (Trần Thị Khánh Huyền)
- * TASK: SCRUM-186 · HẠN: 09/11/2026
- * CẦN LÀM: Repository cho bảng workout_logs.
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
-public interface WorkoutLogRepository {
-    // TODO(Huyền): extends JpaRepository<WorkoutLog, Long>
+import com.gymflow.domain.WorkoutLog;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+public interface WorkoutLogRepository extends JpaRepository<WorkoutLog, Long> {
+    Optional<WorkoutLog> findByScheduleId(Long scheduleId);
+
+    List<WorkoutLog> findByMemberIdOrderByCompletedAtDesc(Long memberId);
+
+    List<WorkoutLog> findByMemberIdAndCompletedAtBetween(Long memberId, LocalDateTime from, LocalDateTime to);
 }

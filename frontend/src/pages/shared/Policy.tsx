@@ -5,7 +5,10 @@
  * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
  */
 
+import Policies, { TermsContent, PrivacyContent } from '../Policies';
+
 export default function Policy() {
-  // TODO(Linh): Màn 1.5 Chính sách phòng tập (UI-04). Phương kèm.
-  return <div>Policy (đang làm)</div>;
+  return <Policies />;
 }
+
+export { TermsContent, PrivacyContent };
