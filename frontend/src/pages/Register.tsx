@@ -9,6 +9,7 @@ import { AuthArt } from './Login';
 import { PrivacyContent, TermsContent } from './Policies';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
+import { focusFormError } from './publicForm';
 
 // Trùng quy tắc với backend (Dtos.PASSWORD_RULE / PHONE_RULE) để báo lỗi ngay, server vẫn kiểm tra lại.
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -54,6 +55,7 @@ export default function Register() {
   const [busy, setBusy] = useState(false);
   const [doc, setDoc] = useState<'terms' | 'privacy' | null>(null);
   const inFlight = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const set = <K extends keyof RegisterRequest>(k: K, val: RegisterRequest[K]) => {
     setF((p) => ({ ...p, [k]: val }));
@@ -66,7 +68,7 @@ export default function Register() {
     const v = validate(f);
     setErrors(v); setError(null);
     if (Object.keys(v).length) {
-      document.querySelector<HTMLElement>(`[name="${Object.keys(v)[0]}"]`)?.focus();
+      requestAnimationFrame(() => focusFormError(formRef.current, v));
       return;
     }
     inFlight.current = true;
@@ -77,12 +79,13 @@ export default function Register() {
       });
       navigate('/login', { replace: true, state: { registered: res.email } });
     } catch (err) {
+      const fields = err instanceof ApiError && err.status === 409 ? { email: err.message } : fieldErrs(err);
+      setErrors(fields);
+      requestAnimationFrame(() => focusFormError(formRef.current, fields));
       if (err instanceof ApiError && err.status === 409) {
-        setErrors({ email: err.message });
         setError(null);
       } else {
         setError(errMsg(err));
-        setErrors(fieldErrs(err));
       }
     } finally {
       inFlight.current = false;
@@ -101,7 +104,7 @@ export default function Register() {
       ]} />
       <div className="auth-form">
         <ThemeToggle className="auth-theme" />
-        <form className="box stack page" onSubmit={submit} noValidate>
+        <form ref={formRef} className="box stack page" onSubmit={submit} noValidate>
           <Link to="/" className="link small row" style={{ gap: 6, width: 'fit-content' }}><Icon name="arrowLeft" size={15} />{t('Trang chủ')}</Link>
           <div>
             <div className="kicker">{t('Hội viên mới')}</div>
@@ -114,42 +117,42 @@ export default function Register() {
           ) : (
             <>
               {error && <Alert kind="error">{error}</Alert>}
-              <Field label="Họ và tên" error={errors.fullName} required>
-                <Input name="fullName" autoComplete="name" value={f.fullName} invalid={!!errors.fullName} maxLength={100}
+              <Field htmlFor="register-name" label="Họ và tên" error={errors.fullName} required>
+                <Input id="register-name" name="fullName" required aria-describedby={errors.fullName ? 'register-name-error' : ''} autoComplete="name" value={f.fullName} invalid={!!errors.fullName} maxLength={100}
                   onChange={(e) => set('fullName', e.target.value)} placeholder="Nguyễn Văn An" />
               </Field>
-              <Field label="Email" error={errors.email} required hint="Dùng để đăng nhập và khôi phục mật khẩu">
+              <Field htmlFor="register-email" label="Email" error={errors.email} required hint="Dùng để đăng nhập và khôi phục mật khẩu">
                 <div className="input-icon">
                   <Icon name="mail" />
-                  <input name="email" className={`input ${errors.email ? 'has-err' : ''}`} type="email" autoComplete="email" maxLength={120}
+                  <input id="register-email" name="email" required aria-describedby={errors.email ? 'register-email-error' : 'register-email-hint'} className={`input ${errors.email ? 'has-err' : ''}`} type="email" autoComplete="email" maxLength={120}
                     value={f.email} onChange={(e) => set('email', e.target.value)} placeholder="ban@email.com" aria-invalid={!!errors.email} />
                 </div>
               </Field>
               {errors.email === t('Email đã được sử dụng') && (
                 <p className="tiny muted" style={{ marginTop: -6 }}>{t('Email này đã có tài khoản.')} <Link className="link" to="/login" state={{ registered: f.email.trim() }}>{t('Đăng nhập')}</Link> {t('hoặc')} <Link className="link" to="/forgot-password">{t('khôi phục mật khẩu')}</Link>.</p>
               )}
-              <Field label="Số điện thoại" error={errors.phone} hint="Không bắt buộc – để huấn luyện viên liên hệ khi đổi lịch">
+              <Field htmlFor="register-phone" label="Số điện thoại" error={errors.phone} hint="Không bắt buộc – để huấn luyện viên liên hệ khi đổi lịch">
                 <div className="input-icon">
                   <Icon name="phone" />
-                  <input name="phone" className={`input ${errors.phone ? 'has-err' : ''}`} type="tel" inputMode="tel" autoComplete="tel"
+                  <input id="register-phone" name="phone" aria-describedby={errors.phone ? 'register-phone-error' : 'register-phone-hint'} className={`input ${errors.phone ? 'has-err' : ''}`} type="tel" inputMode="tel" autoComplete="tel"
                     value={f.phone} onChange={(e) => set('phone', e.target.value)} placeholder="0912 345 678" aria-invalid={!!errors.phone} />
                 </div>
               </Field>
-              <Field label="Mật khẩu" error={errors.password} required hint="Tối thiểu 8 ký tự, gồm cả chữ và số">
-                <PasswordInput name="password" autoComplete="new-password" value={f.password} invalid={!!errors.password}
+              <Field htmlFor="register-password" label="Mật khẩu" error={errors.password} required hint="Tối thiểu 8 ký tự, gồm cả chữ và số">
+                <PasswordInput id="register-password" name="password" required aria-describedby={errors.password ? 'register-password-error' : 'register-password-hint'} autoComplete="new-password" value={f.password} invalid={!!errors.password}
                   onChange={(e) => set('password', e.target.value)} />
               </Field>
               <Strength pw={f.password} />
-              <Field label="Nhập lại mật khẩu" error={errors.confirmPassword} required>
-                <PasswordInput name="confirmPassword" autoComplete="new-password" value={f.confirmPassword} invalid={!!errors.confirmPassword}
+              <Field htmlFor="register-confirm" label="Nhập lại mật khẩu" error={errors.confirmPassword} required>
+                <PasswordInput id="register-confirm" name="confirmPassword" required aria-describedby={errors.confirmPassword ? 'register-confirm-error' : ''} autoComplete="new-password" value={f.confirmPassword} invalid={!!errors.confirmPassword}
                   onChange={(e) => set('confirmPassword', e.target.value)} />
               </Field>
               <div className="field">
                 <label className="check" style={{ alignItems: 'flex-start', color: 'var(--ink)' }}>
-                  <input name="acceptTerms" type="checkbox" checked={f.acceptTerms} onChange={(e) => set('acceptTerms', e.target.checked)} style={{ marginTop: 2 }} />
+                  <input name="acceptTerms" type="checkbox" required aria-invalid={!!errors.acceptTerms} aria-describedby={errors.acceptTerms ? 'register-terms-error' : undefined} checked={f.acceptTerms} onChange={(e) => set('acceptTerms', e.target.checked)} style={{ marginTop: 2 }} />
                   <span className="small">{t('Tôi đồng ý với')} <button type="button" className="link-btn" onClick={() => setDoc('terms')}>{t('Điều khoản sử dụng')}</button> {t('và')} <button type="button" className="link-btn" onClick={() => setDoc('privacy')}>{t('Chính sách bảo mật')}</button></span>
                 </label>
-                {errors.acceptTerms && <div className="err">{errors.acceptTerms}</div>}
+                {errors.acceptTerms && <div className="err" id="register-terms-error" role="alert">{t(errors.acceptTerms)}</div>}
               </div>
               <Button type="submit" variant="primary" size="lg" block loading={busy}>Tạo tài khoản</Button>
               <p className="tiny faint center">{t('Tài khoản tự đăng ký luôn là hội viên. Tài khoản huấn luyện viên và quản lý do phòng tập cấp.')}</p>

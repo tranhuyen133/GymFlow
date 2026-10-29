@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import type { ForgotPasswordResponse, MessageResponse } from '../api/types';
@@ -9,8 +9,7 @@ import { errMsg, fieldErrs } from '../lib/hooks';
 import { AuthArt } from './Login';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
-
-const PW_RULE = /^(?=.*[A-Za-z])(?=.*\d).{8,72}$/;
+import { focusFormError, validateReset } from './publicForm';
 
 export default function ForgotPassword() {
   const toast = useToast();
@@ -25,35 +24,47 @@ export default function ForgotPassword() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const inFlight = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const showErrors = (fields: Record<string, string>) => {
+    setErrors(fields);
+    requestAnimationFrame(() => focusFormError(formRef.current, fields));
+  };
 
   const request = async (e: FormEvent) => {
     e.preventDefault();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) { setErrors({ email: 'Email không hợp lệ' }); return; }
+    if (inFlight.current) return;
+    setError(null);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) { showErrors({ email: 'Email không hợp lệ' }); return; }
+    inFlight.current = true;
     setBusy(true); setError(null); setErrors({});
     try {
       const res = await api.post<ForgotPasswordResponse>('/auth/forgot-password', { email: email.trim() });
       setDemoToken(res.resetToken);
       setMinutes(res.validMinutes);
-      if (res.resetToken) setToken(res.resetToken);
+      setToken(res.resetToken ?? '');
+      setPw(''); setPw2('');
       setStep(2);
       toast.info(res.message);
-    } catch (err) { setError(errMsg(err)); } finally { setBusy(false); }
+      requestAnimationFrame(() => formRef.current?.querySelector<HTMLInputElement>('[name="token"]')?.focus());
+    } catch (err) { setError(errMsg(err)); showErrors(fieldErrs(err)); } finally { inFlight.current = false; setBusy(false); }
   };
 
   const reset = async (e: FormEvent) => {
     e.preventDefault();
-    const v: Record<string, string> = {};
-    if (!token.trim()) v.token = 'Nhập mã khôi phục';
-    if (!PW_RULE.test(pw)) v.newPassword = 'Tối thiểu 8 ký tự, gồm cả chữ và số';
-    if (pw !== pw2) v.confirm = 'Mật khẩu nhập lại không khớp';
-    setErrors(v);
+    if (inFlight.current) return;
+    setError(null);
+    const v = validateReset(token, pw, pw2);
+    showErrors(v);
     if (Object.keys(v).length) return;
+    inFlight.current = true;
     setBusy(true); setError(null);
     try {
       const res = await api.post<MessageResponse>('/auth/reset-password', { token: token.trim(), newPassword: pw });
       toast.success(res.message);
       navigate('/login');
-    } catch (err) { setError(errMsg(err)); setErrors(fieldErrs(err)); } finally { setBusy(false); }
+    } catch (err) { setError(errMsg(err)); showErrors(fieldErrs(err)); } finally { inFlight.current = false; setBusy(false); }
   };
 
   return (
@@ -69,26 +80,30 @@ export default function ForgotPassword() {
           </div>
           {error && <Alert kind="error">{error}</Alert>}
           {step === 1 ? (
-            <form className="stack" onSubmit={request} noValidate>
-              <Field label="Email" error={errors.email} required>
-                <Input type="email" value={email} invalid={!!errors.email} onChange={(e) => setEmail(e.target.value)} placeholder="ban@gymflow.vn" />
+            <form ref={formRef} className="stack" onSubmit={request} noValidate>
+              <Field htmlFor="recovery-email" label="Email" error={errors.email} required>
+                <Input id="recovery-email" name="email" required autoComplete="email" aria-describedby={errors.email ? 'recovery-email-error' : ''} type="email" value={email} invalid={!!errors.email} onChange={(e) => setEmail(e.target.value)} placeholder="ban@gymflow.vn" />
               </Field>
               <Button type="submit" variant="primary" size="lg" block loading={busy}>Gửi mã khôi phục</Button>
             </form>
           ) : (
-            <form className="stack" onSubmit={reset} noValidate>
+            <form ref={formRef} className="stack" onSubmit={reset} noValidate>
               {demoToken && <Alert kind="info">{t('Chế độ demo (chưa gửi email thật): mã của bạn là')} <b className="num" style={{ letterSpacing: 2 }}>{demoToken}</b></Alert>}
-              <Field label="Mã khôi phục" error={errors.token} required>
-                <Input value={token} invalid={!!errors.token} onChange={(e) => setToken(e.target.value.toUpperCase())} placeholder="VD: K7M2QX9A" style={{ letterSpacing: 2 }} />
+              <Field htmlFor="recovery-token" label="Mã khôi phục" error={errors.token} required>
+                <Input id="recovery-token" name="token" required autoComplete="one-time-code" aria-describedby={errors.token ? 'recovery-token-error' : ''} value={token} invalid={!!errors.token} onChange={(e) => setToken(e.target.value.toUpperCase())} placeholder="VD: K7M2QX9A" style={{ letterSpacing: 2 }} />
               </Field>
-              <Field label="Mật khẩu mới" error={errors.newPassword} hint="Tối thiểu 8 ký tự, gồm chữ và số" required>
-                <PasswordInput value={pw} invalid={!!errors.newPassword} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />
+              <Field htmlFor="recovery-password" label="Mật khẩu mới" error={errors.newPassword} hint="Tối thiểu 8 ký tự, gồm chữ và số" required>
+                <PasswordInput id="recovery-password" name="newPassword" required aria-describedby={errors.newPassword ? 'recovery-password-error' : 'recovery-password-hint'} value={pw} invalid={!!errors.newPassword} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />
               </Field>
-              <Field label="Nhập lại mật khẩu" error={errors.confirm} required>
-                <PasswordInput value={pw2} invalid={!!errors.confirm} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
+              <Field htmlFor="recovery-confirm" label="Nhập lại mật khẩu" error={errors.confirm} required>
+                <PasswordInput id="recovery-confirm" name="confirm" required aria-describedby={errors.confirm ? 'recovery-confirm-error' : ''} value={pw2} invalid={!!errors.confirm} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
               </Field>
               <Button type="submit" variant="primary" size="lg" block loading={busy}>Đặt lại mật khẩu</Button>
-              <Button variant="ghost" onClick={() => setStep(1)}>Gửi lại mã</Button>
+              <Button variant="ghost" disabled={busy} onClick={() => {
+                setToken(''); setDemoToken(null); setPw(''); setPw2('');
+                setErrors({}); setError(null); setStep(1);
+                requestAnimationFrame(() => formRef.current?.querySelector<HTMLInputElement>('[name="email"]')?.focus());
+              }}>Gửi lại mã</Button>
             </form>
           )}
         </div>

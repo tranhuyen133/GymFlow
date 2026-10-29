@@ -11,6 +11,7 @@ import { useAsync } from '../lib/hooks';
 import { SITE } from '../site';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
+import { publicPlanAction } from './publicForm';
 
 const DISCIPLINES = ['Thể hình', 'Giảm mỡ', 'Sức mạnh', 'Powerlifting', 'Yoga', 'Phục hồi', 'Cardio', 'PT 1 kèm 1'];
 
@@ -39,7 +40,7 @@ const STEPS = [
 export default function Landing() {
   const { user } = useAuth();
   const plans = useAsync(() => api.get<MembershipPlan[]>('/plans/public'), []);
-  const best = plans.data && plans.data.length > 2 ? plans.data[1].id : null;
+  const planAction = publicPlanAction(user?.role);
   const [menu, setMenu] = useState(false);
 
   useEffect(() => {
@@ -165,13 +166,15 @@ export default function Landing() {
         <div className="kicker">{t('Bảng giá')}</div>
         <h2 className="display-sm">{t('Gói tập minh bạch.')}</h2>
         <p className="muted mt-8">{t('Giá đã gồm VAT. Gói được kích hoạt sau khi thanh toán tại quầy lễ tân.')}</p>
-        <div className="grid grid-3 mt-24">
-          {plans.loading && [0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 260 }} />)}
-          {plans.error && <p className="muted">{t('Chưa tải được bảng giá. Vui lòng tải lại trang sau ít phút.')}</p>}
-          {plans.data?.length === 0 && <p className="muted">{t('Bảng giá đang được cập nhật.')}</p>}
-          {plans.data?.map((p) => (
-            <article key={p.id} className={`card price-card hoverable ${p.id === best ? 'best' : ''}`}>
-              {p.id === best && <span className="ribbon">{t('PHỔ BIẾN')}</span>}
+        <div className="grid grid-3 mt-24" aria-busy={plans.loading}>
+          {plans.loading && [0, 1, 2].map((i) => <div key={i} className="skeleton" aria-hidden style={{ height: 260 }} />)}
+          {plans.error && <div className="stack" role="alert">
+            <p className="muted">{t('Chưa tải được bảng giá. Vui lòng tải lại trang sau ít phút.')}</p>
+            <Button icon="refresh" loading={plans.loading} onClick={() => void plans.reload()}>Thử lại</Button>
+          </div>}
+          {!plans.loading && !plans.error && plans.data?.length === 0 && <p className="muted" role="status">{t('Bảng giá đang được cập nhật.')}</p>}
+          {!plans.loading && !plans.error && plans.data?.map((p) => (
+            <article key={p.id} className="card price-card hoverable">
               <div className="kicker" style={{ marginBottom: 0 }}>{durationLabel(p.durationDays)}</div>
               <h3 style={{ fontSize: 20 }}>{t(p.name)}</h3>
               <div className="price">{fmtMoney(p.price)}</div>
@@ -184,8 +187,8 @@ export default function Landing() {
                 </div>
               )}
               <div style={{ flex: 1 }} />
-              <Link className={`btn ${p.id === best ? 'btn-primary' : 'btn-secondary'} btn-block`} to={user ? '/me/packages' : '/register'}>
-                <span>{t(user ? 'Xem gói của tôi' : 'Đăng ký để chọn gói')}</span>
+              <Link className="btn btn-secondary btn-block" to={planAction.to}>
+                <span>{t(planAction.label)}</span>
               </Link>
             </article>
           ))}

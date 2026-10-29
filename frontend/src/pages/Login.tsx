@@ -10,6 +10,7 @@ import { errMsg, fieldErrs, useAsync } from '../lib/hooks';
 import { SITE } from '../site';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
+import { focusFormError } from './publicForm';
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const ROLE_ICON: Record<Role, IconName> = { ADMIN: 'shield', TRAINER: 'badge', MEMBER: 'user' };
@@ -51,6 +52,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const options = useAsync(() => api.get<AuthOptions>('/auth/options'), []);
 
   const submit = async (e?: FormEvent, creds?: { email: string; password: string }) => {
@@ -63,7 +65,10 @@ export default function Login() {
     else if (!EMAIL_RE.test(em)) v.email = 'Email không hợp lệ';
     if (!pw) v.password = 'Vui lòng nhập mật khẩu';
     setErrors(v); setError(null);
-    if (Object.keys(v).length) return;
+    if (Object.keys(v).length) {
+      requestAnimationFrame(() => focusFormError(formRef.current, v));
+      return;
+    }
     inFlight.current = true;
     setBusy(true);
     try {
@@ -71,7 +76,9 @@ export default function Login() {
       navigate(from, { replace: true });
     } catch (err) {
       setError(errMsg(err));
-      setErrors(fieldErrs(err));
+      const fields = fieldErrs(err);
+      setErrors(fields);
+      requestAnimationFrame(() => focusFormError(formRef.current, fields));
     } finally {
       inFlight.current = false;
       setBusy(false);
@@ -86,7 +93,7 @@ export default function Login() {
       <AuthArt />
       <div className="auth-form">
         <ThemeToggle className="auth-theme" />
-        <form className="box stack page" onSubmit={submit} noValidate>
+        <form ref={formRef} className="box stack page" onSubmit={submit} noValidate>
           <Link to="/" className="link small row" style={{ gap: 6, width: 'fit-content' }}><Icon name="arrowLeft" size={15} />{t('Trang chủ')}</Link>
           <div>
             <div className="kicker">{t('Hội viên & nhân viên')}</div>
@@ -95,15 +102,15 @@ export default function Login() {
           </div>
           {state?.registered && !error && <Alert kind="success">Tạo tài khoản thành công. Nhập mật khẩu vừa đặt để đăng nhập.</Alert>}
           {error && <Alert kind="error">{error}</Alert>}
-          <Field label="Email" error={errors.email} required>
+          <Field htmlFor="login-email" label="Email" error={errors.email} required>
             <div className="input-icon">
               <Icon name="mail" />
-              <input className={`input ${errors.email ? 'has-err' : ''}`} type="email" autoComplete="username" value={email}
+              <input id="login-email" name="email" required aria-describedby={errors.email ? 'login-email-error' : undefined} className={`input ${errors.email ? 'has-err' : ''}`} type="email" autoComplete="username" value={email}
                 onChange={(e) => setEmail(e.target.value)} placeholder="ban@email.com" aria-invalid={!!errors.email} />
             </div>
           </Field>
-          <Field label="Mật khẩu" error={errors.password} required>
-            <PasswordInput invalid={!!errors.password} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoFocus={!!state?.registered} />
+          <Field htmlFor="login-password" label="Mật khẩu" error={errors.password} required>
+            <PasswordInput id="login-password" name="password" required aria-describedby={errors.password ? 'login-password-error' : ''} invalid={!!errors.password} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoFocus={!!state?.registered} />
           </Field>
           <div className="row between">
             <span />
