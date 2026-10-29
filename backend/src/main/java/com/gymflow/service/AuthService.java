@@ -147,11 +147,13 @@ public class AuthService {
             return new ForgotPasswordResponse(generic, null, resetValidMinutes);
         }
         User u = found.get();
+        LocalDateTime now = LocalDateTime.now(clock);
+        resetTokenRepository.invalidateActiveTokens(u, now);
         String token = Secrets.resetToken();
         PasswordResetToken t = new PasswordResetToken();
         t.setUser(u);
         t.setTokenHash(Secrets.sha256(token));
-        t.setExpiresAt(LocalDateTime.now(clock).plusMinutes(resetValidMinutes));
+        t.setExpiresAt(now.plusMinutes(resetValidMinutes));
         resetTokenRepository.save(t);
         auditService.logAs(u.getId(), u.getEmail(), "PASSWORD_RESET_REQUEST", "USER", u.getId(), null, true);
         if (exposeResetToken) {
@@ -169,8 +171,12 @@ public class AuthService {
         if (t.getUsedAt() != null) throw ApiException.badRequest("Mã khôi phục đã được sử dụng");
         if (t.getExpiresAt().isBefore(now)) throw ApiException.badRequest("Mã khôi phục đã hết hạn");
         User u = t.getUser();
+        if (u.getStatus() == UserStatus.LOCKED) {
+            auditService.logAs(u.getId(), u.getEmail(), "PASSWORD_RESET_FAILED", "USER", u.getId(), "Tài khoản đang bị khoá", false);
+            throw new ApiException(HttpStatus.FORBIDDEN, "Tài khoản đã bị khoá, vui lòng liên hệ quản lý");
+        }
         u.setPasswordHash(passwordEncoder.encode(req.newPassword()));
-        t.setUsedAt(now);
+        resetTokenRepository.invalidateActiveTokens(u, now);
         auditService.logAs(u.getId(), u.getEmail(), "PASSWORD_RESET", "USER", u.getId(), null, true);
     }
 }

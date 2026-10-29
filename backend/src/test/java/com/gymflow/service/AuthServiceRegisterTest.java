@@ -1,14 +1,19 @@
 package com.gymflow.service;
 
 import com.gymflow.common.ApiException;
+import com.gymflow.common.Secrets;
 import com.gymflow.config.DemoAccounts;
 import com.gymflow.domain.Member;
+import com.gymflow.domain.PasswordResetToken;
 import com.gymflow.domain.Role;
 import com.gymflow.domain.User;
 import com.gymflow.domain.UserStatus;
 import com.gymflow.dto.Dtos.AuthOptions;
+import com.gymflow.dto.Dtos.ForgotPasswordRequest;
+import com.gymflow.dto.Dtos.ForgotPasswordResponse;
 import com.gymflow.dto.Dtos.RegisterRequest;
 import com.gymflow.dto.Dtos.RegisterResponse;
+import com.gymflow.dto.Dtos.ResetPasswordRequest;
 import com.gymflow.repository.MemberRepository;
 import com.gymflow.repository.PasswordResetTokenRepository;
 import com.gymflow.repository.TrainerRepository;
@@ -24,12 +29,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -128,6 +136,113 @@ class AuthServiceRegisterTest {
         ReflectionTestUtils.setField(service, "demoQuickLogin", false);
         assertThat(service.options().demoAccounts()).isEmpty();
         verifyNoInteractions(userRepository);
+    }
+
+    // ---------- Forgot password & Reset password (SCRUM-135) ----------
+
+    @Test
+    void forgotPasswordCalledTwiceInvalidatesFirstToken() {
+        User u = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
+        u.setId(10L);
+        when(userRepository.findByEmailIgnoreCase("member@example.com")).thenReturn(Optional.of(u));
+
+        // Lần 1: gọi forgotPassword
+        service.forgotPassword(new ForgotPasswordRequest("member@example.com"));
+        verify(resetTokenRepository, times(1)).invalidateActiveTokens(eq(u), any(LocalDateTime.class));
+        verify(resetTokenRepository, times(1)).save(any(PasswordResetToken.class));
+
+        // Lần 2: gọi lại forgotPassword -> huỷ token cũ
+        service.forgotPassword(new ForgotPasswordRequest("member@example.com"));
+        verify(resetTokenRepository, times(2)).invalidateActiveTokens(eq(u), any(LocalDateTime.class));
+        verify(resetTokenRepository, times(2)).save(any(PasswordResetToken.class));
+
+        // Thử dùng mã lần 1 đã bị đánh dấu used_at -> bị báo lỗi "đã được sử dụng"
+        PasswordResetToken token1 = new PasswordResetToken();
+        token1.setUser(u);
+        token1.setUsedAt(LocalDateTime.now());
+        token1.setExpiresAt(LocalDateTime.now().plusMinutes(30));
+        when(resetTokenRepository.findByTokenHash(Secrets.sha256("TOKEN111"))).thenReturn(Optional.of(token1));
+
+        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest("TOKEN111", "NewPass123")))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("đã được sử dụng");
+    }
+
+    @Test
+    void resetPasswordSuccessAndReuseFails() {
+        User u = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
+        u.setId(10L);
+        PasswordResetToken t = new PasswordResetToken();
+        t.setUser(u);
+        t.setExpiresAt(LocalDateTime.now().plusMinutes(30));
+
+        when(resetTokenRepository.findByTokenHash(Secrets.sha256("VALIDTOK"))).thenReturn(Optional.of(t));
+        when(passwordEncoder.encode("NewPass123")).thenReturn("hashedNewPass");
+
+        // Khi invalidateActiveTokens được gọi, mô phỏng đánh dấu used_at cho token trong CSDL
+        doAnswer(inv -> {
+            t.setUsedAt(inv.getArgument(1));
+            return 1;
+        }).when(resetTokenRepository).invalidateActiveTokens(eq(u), any(LocalDateTime.class));
+
+        // Đặt lại mật khẩu lần đầu: thành công
+        service.resetPassword(new ResetPasswordRequest("VALIDTOK", "NewPass123"));
+        assertThat(u.getPasswordHash()).isEqualTo("hashedNewPass");
+        verify(resetTokenRepository).invalidateActiveTokens(eq(u), any(LocalDateTime.class));
+        verify(auditService).logAs(eq(u.getId()), eq(u.getEmail()), eq("PASSWORD_RESET"), eq("USER"), eq(u.getId()), isNull(), eq(true));
+
+        // Dùng lại đúng mã đó: báo lỗi "đã được sử dụng"
+        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest("VALIDTOK", "NewPass123")))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("đã được sử dụng");
+    }
+
+    @Test
+    void resetPasswordWithExpiredTokenThrowsException() {
+        User u = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
+        PasswordResetToken t = new PasswordResetToken();
+        t.setUser(u);
+        t.setExpiresAt(LocalDateTime.now().minusMinutes(1)); // hết hạn
+
+        when(resetTokenRepository.findByTokenHash(Secrets.sha256("EXPIRED1"))).thenReturn(Optional.of(t));
+
+        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest("EXPIRED1", "NewPass123")))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("hết hạn");
+        verify(passwordEncoder, never()).encode(any());
+        verify(resetTokenRepository, never()).invalidateActiveTokens(any(), any());
+    }
+
+    @Test
+    void forgotPasswordWithNonExistentEmailReturnsGenericMessageAndNullToken() {
+        when(userRepository.findByEmailIgnoreCase("nobody@example.com")).thenReturn(Optional.empty());
+
+        ForgotPasswordResponse res = service.forgotPassword(new ForgotPasswordRequest("nobody@example.com"));
+
+        assertThat(res.message()).isEqualTo("Nếu email tồn tại trong hệ thống, mã khôi phục đã được gửi.");
+        assertThat(res.resetToken()).isNull();
+        verifyNoInteractions(resetTokenRepository);
+    }
+
+    @Test
+    void resetPasswordWithLockedUserRejectedWithForbidden() {
+        User locked = user("locked@example.com", Role.MEMBER, UserStatus.LOCKED);
+        locked.setId(99L);
+        PasswordResetToken t = new PasswordResetToken();
+        t.setUser(locked);
+        t.setExpiresAt(LocalDateTime.now().plusMinutes(30));
+
+        when(resetTokenRepository.findByTokenHash(Secrets.sha256("LOCKED11"))).thenReturn(Optional.of(t));
+
+        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest("LOCKED11", "NewPass123")))
+                .isInstanceOfSatisfying(ApiException.class, e -> {
+                    assertThat(e.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
+                    assertThat(e.getMessage()).contains("Tài khoản đã bị khoá");
+                });
+
+        verify(passwordEncoder, never()).encode(any());
+        verify(resetTokenRepository, never()).invalidateActiveTokens(any(), any());
+        verify(auditService).logAs(eq(99L), eq("locked@example.com"), eq("PASSWORD_RESET_FAILED"), eq("USER"), eq(99L), anyString(), eq(false));
     }
 
     private static User user(String email, Role role, UserStatus status) {
