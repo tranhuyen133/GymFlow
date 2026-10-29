@@ -1,3 +1,10 @@
+/**
+ * CHỦ FILE: Linh (Hồ Khánh Linh)
+ * TASK: SCRUM-150 · HẠN: 29/10/2026
+ * CẦN LÀM: Màn hình hồ sơ cá nhân và đổi mật khẩu (UI-03, USR-04).
+ * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
+ */
+
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import type { Gender, Me, Member, Shift, Trainer } from '../../api/types';
