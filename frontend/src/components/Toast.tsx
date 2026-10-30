@@ -22,10 +22,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={api}>
       {children}
-      <div className="toasts" role="status" aria-live="polite">
+      <div className="toasts">
         {items.map((item) => (
-          <div key={item.id} className={`toast ${item.kind}`}>
-            <Icon name={item.kind === 'success' ? 'checkCircle' : item.kind === 'error' ? 'alert' : 'info'} />
+          <div key={item.id} className={`toast ${item.kind}`} role={item.kind === 'error' ? 'alert' : 'status'} aria-live={item.kind === 'error' ? 'assertive' : 'polite'} aria-atomic="true">
+            <Icon aria-hidden="true" name={item.kind === 'success' ? 'checkCircle' : item.kind === 'error' ? 'alert' : 'info'} />
             <div className="grow">{t(item.text)}</div>
             <button className="btn btn-ghost btn-sm btn-icon" aria-label={t('Đóng')} onClick={() => setItems((xs) => xs.filter((x) => x.id !== item.id))}>
               <Icon name="x" size={14} />
