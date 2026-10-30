@@ -34,6 +34,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    // Người cập nhật hiện tại: Đặng Dũng
     private final JwtAuthFilter jwtAuthFilter;
     private final AuthRateLimitFilter rateLimitFilter;
     private final ObjectMapper objectMapper;
