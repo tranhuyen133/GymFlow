@@ -1,11 +1,16 @@
 package com.gymflow.repository;
 
-/**
- * CHỦ FILE: Kiên (Nguyễn Thế Kiên)
- * TASK: SCRUM-181 · HẠN: 06/11/2026
- * CẦN LÀM: Repository cho bảng weight_records.
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
-public interface WeightRecordRepository {
-    // TODO(Kiên): extends JpaRepository<WeightRecord, Long>
+import com.gymflow.domain.WeightRecord;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+public interface WeightRecordRepository extends JpaRepository<WeightRecord, Long> {
+    List<WeightRecord> findByMemberIdOrderByRecordedDateAsc(Long memberId);
+
+    Optional<WeightRecord> findByMemberIdAndRecordedDate(Long memberId, LocalDate recordedDate);
+
+    Optional<WeightRecord> findFirstByMemberIdOrderByRecordedDateDesc(Long memberId);
 }

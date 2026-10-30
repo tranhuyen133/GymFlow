@@ -1,11 +1,40 @@
 package com.gymflow.domain;
 
-/**
- * CHỦ FILE: Huyền (Trần Thị Khánh Huyền)
- * TASK: SCRUM-137 · HẠN: 02/11/2026
- * CẦN LÀM: Bảng trainers.
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "trainers")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Trainer {
-    // TODO(Huyền): thêm @Entity và các cột theo SRS mục 8 (bảng trainers)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    private String specialty;
+
+    @Column(name = "experience_years", nullable = false)
+    private Integer experienceYears = 0;
+
+    private String certificates;
+
+    private String bio;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("dayOfWeek ASC, startTime ASC")
+    private List<TrainerShift> shifts = new ArrayList<>();
 }

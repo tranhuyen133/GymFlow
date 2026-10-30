@@ -1,11 +1,19 @@
 package com.gymflow.repository;
 
-/**
- * CHỦ FILE: Huyền (Trần Thị Khánh Huyền)
- * TASK: SCRUM-135 · HẠN: 29/10/2026
- * CẦN LÀM: Repository cho bảng password_reset_tokens.
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
-public interface PasswordResetTokenRepository {
-    // TODO(Huyền): extends JpaRepository<PasswordResetToken, Long>
+import com.gymflow.domain.PasswordResetToken;
+import com.gymflow.domain.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
+    Optional<PasswordResetToken> findByTokenHash(String tokenHash);
+
+    @Modifying
+    @Query("UPDATE PasswordResetToken t SET t.usedAt = :now WHERE t.user = :user AND t.usedAt IS NULL")
+    int invalidateActiveTokens(@Param("user") User user, @Param("now") LocalDateTime now);
 }

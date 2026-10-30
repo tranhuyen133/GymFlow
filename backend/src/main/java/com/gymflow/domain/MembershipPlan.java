@@ -1,11 +1,43 @@
 package com.gymflow.domain;
 
-/**
- * CHỦ FILE: Kiên (Nguyễn Thế Kiên)
- * TASK: SCRUM-158 · HẠN: 05/11/2026
- * CẦN LÀM: Bảng membership_plans.
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "membership_plans")
+@Getter
+@Setter
+@NoArgsConstructor
 public class MembershipPlan {
-    // TODO(Kiên): thêm @Entity và các cột theo SRS mục 8 (bảng membership_plans)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 100)
+    private String name;
+
+    private String description;
+
+    @Column(nullable = false)
+    private Long price;
+
+    @Column(name = "duration_days", nullable = false)
+    private Integer durationDays;
+
+    private String benefits;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }

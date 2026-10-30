@@ -1,11 +1,49 @@
 package com.gymflow.domain;
 
-/**
- * CHỦ FILE: Huyền (Trần Thị Khánh Huyền)
- * TASK: SCRUM-163 · HẠN: 03/11/2026
- * CẦN LÀM: Bảng workout_plan_items.
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Table(name = "workout_plan_items")
+@Getter
+@Setter
+@NoArgsConstructor
 public class WorkoutPlanItem {
-    // TODO(Huyền): thêm @Entity và các cột theo SRS mục 8 (bảng workout_plan_items)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "plan_id", nullable = false)
+    private WorkoutPlan plan;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "exercise_id", nullable = false)
+    private Exercise exercise;
+
+    @Column(name = "day_of_week", nullable = false)
+    private Integer dayOfWeek;
+
+    @Column(name = "sort_order", nullable = false)
+    private Integer sortOrder = 0;
+
+    @Column(nullable = false)
+    private Integer sets;
+
+    /** Ví dụ "10", "8-12", "45s" */
+    @Column(nullable = false, length = 20)
+    private String reps;
+
+    @Column(name = "weight_kg")
+    private Double weightKg;
+
+    @Column(name = "rest_seconds")
+    private Integer restSeconds;
+
+    @Column(name = "duration_minutes")
+    private Integer durationMinutes;
+
+    private String note;
 }

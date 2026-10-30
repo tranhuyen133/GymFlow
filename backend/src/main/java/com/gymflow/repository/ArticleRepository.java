@@ -1,11 +1,24 @@
 package com.gymflow.repository;
 
-/**
- * CHỦ FILE: Huyền (Trần Thị Khánh Huyền)
- * TASK: SCRUM-209 · HẠN: 11/11/2026
- * CẦN LÀM: Repository cho bảng articles.
- * Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
- */
-public interface ArticleRepository {
-    // TODO(Huyền): extends JpaRepository<Article, Long>
+import com.gymflow.domain.Article;
+import com.gymflow.domain.ArticleStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface ArticleRepository extends JpaRepository<Article, Long> {
+    @EntityGraph(attributePaths = {"sources"})
+    List<Article> findByStatusOrderByPublishedAtDesc(ArticleStatus status);
+
+    @EntityGraph(attributePaths = {"sources"})
+    Optional<Article> findBySlugAndStatus(String slug, ArticleStatus status);
+
+    @EntityGraph(attributePaths = {"sources", "author", "reviewedBy"})
+    List<Article> findAllByOrderByUpdatedAtDescCreatedAtDesc();
+
+    boolean existsBySlug(String slug);
+
+    boolean existsBySlugAndIdNot(String slug, Long id);
 }
