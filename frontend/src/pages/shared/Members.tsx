@@ -1,3 +1,7 @@
+/**
+ * Màn 3.2 – Danh sách hội viên (MEM-01–05, SCRUM-141).
+ * Tìm/lọc/phân trang danh sách, xuất CSV và dùng chung form thêm/sửa hội viên.
+ */
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -20,13 +24,16 @@ export default function Members() {
   const [page, setPage] = useState(0);
   const [creating, setCreating] = useState(admin && params.get('new') === '1');
   const [created, setCreated] = useState<MemberCreated | null>(null);
+  // Debounce ô tìm kiếm để tránh gọi API liên tục; đổi từ khoá/bộ lọc thì quay về trang 1.
   const dq = useDebounced(q);
   useEffect(() => setPage(0), [dq, status, trainerId]);
 
   const trainers = useAsync(() => (admin ? api.get<Trainer[]>('/trainers') : Promise.resolve([] as Trainer[])), [admin]);
+  // Danh sách hội viên theo bộ lọc và trang hiện tại (MEM-01–04).
   const { data, error, loading, reload } = useAsync(
     () => api.get<Page<Member>>('/members', { q: dq, status, trainerId, page, size: 15 }), [dq, status, trainerId, page]);
 
+  // Xuất toàn bộ kết quả đang lọc (không chỉ trang hiện tại) ra CSV.
   const exportCsv = async () => {
     const all = await api.get<Page<Member>>('/members', { q: dq, status, trainerId, size: 200 });
     downloadCsv(`hoi-vien-${new Date().toISOString().slice(0, 10)}`, all.content, [
@@ -73,6 +80,7 @@ export default function Members() {
                     <table className="table">
                       <thead><tr><th>Hội viên</th><th>Liên hệ</th><th>HLV</th><th>Gói hiện tại</th><th>Trạng thái</th><th>Tham gia</th></tr></thead>
                       <tbody>
+                        {/* Bấm vào dòng để mở hồ sơ chi tiết (SCRUM-142). */}
                         {data.content.map((m) => (
                           <tr key={m.id} className="clickable" onClick={() => navigate(`/members/${m.id}`)}>
                             <td><Person name={m.fullName} sub={m.code} /></td>
@@ -96,6 +104,7 @@ export default function Members() {
               )}
       </Card>
 
+      {/* MEM-05: thêm hội viên; sau khi tạo hiển thị mật khẩu tạm nếu có. */}
       {creating && <MemberFormModal onClose={closeCreate} onSaved={(res) => { closeCreate(); void reload(); if (res && 'temporaryPassword' in res) setCreated(res); }} />}
       {created && (
         <Modal title="Đã tạo hội viên" size="narrow" onClose={() => setCreated(null)} footer={<>
@@ -131,6 +140,7 @@ export function MemberFormModal({ member, onClose, onSaved }: { member?: Member;
   const trainers = useAsync(() => api.get<Trainer[]>('/trainers'), []);
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
 
+  // Kiểm tra dữ liệu phía client trước khi gửi; lỗi backend được gắn theo từng trường.
   const submit = async () => {
     const v: Record<string, string> = {};
     if (!f.fullName.trim()) v.fullName = 'Nhập họ tên';
