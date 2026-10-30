@@ -21,6 +21,7 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    // Người cập nhật hiện tại: Đặng Dũng
     /** Tên ràng buộc trong Flyway V1 → thông báo dễ hiểu. Lớp cuối cùng chặn dữ liệu sai dù service bỏ sót. */
     private static final Map<String, String> CONSTRAINT_MESSAGES = Map.ofEntries(
             Map.entry("uq_users_email", "Email đã được sử dụng"),
