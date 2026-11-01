@@ -1,3 +1,8 @@
+/**
+ * CHỦ FILE: Tùng (Lê Thanh Tùng)
+ * TASK: SCRUM-138
+ * Layout dùng chung cho khu ứng dụng: sidebar desktop, topbar, tab bar mobile.
+ */
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
