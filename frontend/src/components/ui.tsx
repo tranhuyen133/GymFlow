@@ -121,7 +121,7 @@ export function Field({ label, error, hint, required, children, className = '', 
       {label && <label htmlFor={htmlFor}>{t(label)}{required && <span className="req">*</span>}</label>}
       {children}
       {error ? (
-        <div className="err" id={htmlFor ? `${htmlFor}-error` : undefined} role={htmlFor ? 'alert' : undefined}>{t(error)}</div>
+        <div className="err" id={htmlFor ? `${htmlFor}-error` : undefined} role={htmlFor ? 'alert' : undefined} aria-live={htmlFor ? 'assertive' : undefined}>{t(error)}</div>
       ) : hint ? (
         <div className="hint" id={htmlFor ? `${htmlFor}-hint` : undefined}>{t(hint)}</div>
       ) : null}
