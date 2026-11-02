@@ -1,0 +1,272 @@
+[
+  {
+    "name": "Bench Press",
+    "nameEn": "Barbell Bench Press",
+    "aliases": "Đẩy ngực ngang thanh đòn, Nằm đẩy tạ đòn",
+    "muscleGroup": "CHEST",
+    "secondaryMuscles": "Cơ vai trước, Cơ tay sau (Tam đầu)",
+    "equipment": "Thanh đòn, Ghế phẳng (Flat Bench), Bánh tạ",
+    "level": "INTERMEDIATE",
+    "location": "GYM",
+    "goals": "STRENGTH,FAT_LOSS",
+    "description": "Bài tập đa khớp kinh điển phát triển sức mạnh và độ dày toàn diện cho cơ ngực lớn, đồng thời tăng cường sức mạnh đẩy của thân trên.",
+    "instructions": "1. Nằm ngửa trên ghế phẳng sao cho mắt nằm ngay dưới thanh đòn. Hai bàn chân đặt phẳng và vững chắc trên sàn.\n2. Thu hai bả vai ép chặt vào ghế, nắm thanh đòn với khoảng cách rộng hơn vai một chút, cổ tay giữ thẳng.\n3. Nhấc thanh đòn khỏi giá khóa, đưa về vị trí thẳng hàng với phần giữa ngực.\n4. Hít sâu, hạ thanh đòn chậm rãi và có kiểm soát xuống điểm chạm nhẹ ở giữa xương ức; góc giữa cánh tay và thân người tạo thành khoảng 45–60 độ (không để cùi chỏ vuông góc 90 độ).\n5. Dùng lực cơ ngực đẩy mạnh thanh đòn thẳng lên vị trí ban đầu mà không khóa cứng hoàn toàn khớp khuỷu tay ở đỉnh.",
+    "breathing": "Hít sâu vào khoang bụng khi hạ thanh đòn có kiểm soát; giữ hơi siết cơ lõi khi chạm ngực và thở mạnh ra qua miệng khi đẩy thanh đòn lên đến 2/3 quãng đường.",
+    "commonMistakes": "Bẻ cong cổ tay chịu lực gây đau cổ tay; mở cùi chỏ quá rộng sang hai bên (vuông góc 90 độ) tạo áp lực chấn thương chóp xoay khớp vai; nảy tạ khỏi xương ức để lấy đà; nhấc mông khỏi mặt ghế khi đẩy nặng.",
+    "safetyNotes": "Bắt buộc cài chốt khóa tạ (collar clamp). Luôn có người hỗ trợ (spotter) hoặc lắp thanh chặn an toàn (safety pins) ở mức cao hơn ngực một chút khi nâng tạ nặng. Dừng tập ngay nếu xuất hiện cơn đau nhói bất thường ở vai hoặc khớp cổ tay.",
+    "variations": "Dumbbell Bench Press (Đẩy tạ đơn), Incline Bench Press (Đẩy ngực dốc lên), Push-up (Hít đất).",
+    "suggestedDose": "3–4 hiệp, mỗi hiệp từ 6–10 lần, thời gian nghỉ 90–120 giây giữa các hiệp.",
+    "contentOrigin": "SELF_AUTHORED",
+    "sources": [
+      {
+        "code": "NHS_STRENGTH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Strength exercises",
+        "url": "https://www.nhs.uk/live-well/exercise/strength-exercises/"
+      }
+    ]
+  },
+  {
+    "name": "Incline Dumbbell Press",
+    "nameEn": "Incline Dumbbell Bench Press",
+    "aliases": "Đẩy ngực dốc lên tạ đơn",
+    "muscleGroup": "CHEST",
+    "secondaryMuscles": "Cơ ngực trên, Cơ vai trước, Cơ tay sau",
+    "equipment": "Ghế dốc (Incline Bench ~30–45 độ), Tạ đơn (Dumbbells)",
+    "level": "INTERMEDIATE",
+    "location": "GYM",
+    "goals": "STRENGTH,FAT_LOSS",
+    "description": "Biến thể đẩy ngực trên ghế nghiêng giúp tập trung phát triển cơ ngực trên và ổn định khớp vai độc lập giữa hai bên cơ thể.",
+    "instructions": "1. Chỉnh góc nghiêng ghế khoảng 30 đến 45 độ. Ngồi tựa lưng vào ghế, hai tay cầm tạ đơn đặt dựng thẳng trên hai đầu gối.\n2. Dùng đùi hỗ trợ đá từng quả tạ lên ngang ngực đồng thời ngả người nằm ép sát vào tựa lưng ghế.\n3. Ép chặt hai bả vai vào đệm, ưỡn ngực nhẹ, lòng bàn tay hướng về phía chân.\n4. Đẩy tạ lên cao theo đường cong hội tụ nhẹ phía trên ngực trên, tránh để hai quả tạ va đập vào nhau.\n5. Hạ tạ từ từ xuống vị trí ngang ngực trên, cảm nhận cơ ngực được kéo giãn an toàn trước khi đẩy tiếp.",
+    "breathing": "Hít vào từ từ khi hạ tạ xuống hai bên ngực; thở đều ra khi gồng ngực đẩy tạ đơn lên cao.",
+    "commonMistakes": "Chỉnh độ dốc ghế quá cao (> 45 độ) khiến áp lực dồn hoàn toàn vào cơ vai trước; hạ tạ quá sâu vượt biên độ khớp vai linh hoạt gây áp lực bao khớp; va đập tạ ở điểm cao nhất làm mất lực căng cơ.",
+    "safetyNotes": "Khi kết thúc hiệp tập, luôn hạ tạ về đùi trước rồi dùng lực ngồi dậy, tuyệt đối không vứt hoặc buông thả tạ sang hai bên sàn nhà khi đang nằm.",
+    "variations": "Incline Barbell Press (Đẩy ngực dốc thanh đòn), Low-to-High Cable Fly (Ép cáp từ dưới lên).",
+    "suggestedDose": "3–4 hiệp, mỗi hiệp 8–12 lần, nghỉ 60–90 giây.",
+    "contentOrigin": "SELF_AUTHORED",
+    "sources": [
+      {
+        "code": "NHS_STRENGTH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Strength exercises",
+        "url": "https://www.nhs.uk/live-well/exercise/strength-exercises/"
+      }
+    ]
+  },
+  {
+    "name": "Deadlift",
+    "nameEn": "Conventional Barbell Deadlift",
+    "aliases": "Kéo tạ từ sàn, Kéo tạ đa khớp",
+    "muscleGroup": "BACK",
+    "secondaryMuscles": "Cơ đùi sau, Cơ mông lớn, Lưng dưới, Cơ cầu vai, Cẳng tay",
+    "equipment": "Thanh đòn chuẩn Olympic, Bánh tạ chuyên dụng (Bumper Plates)",
+    "level": "ADVANCED",
+    "location": "GYM",
+    "goals": "STRENGTH,FAT_LOSS",
+    "description": "Bài tập nền tảng hàng đầu xây dựng chuỗi cơ sau (posterior chain), phát triển sức mạnh bộc phát và độ dẻo dai cho toàn bộ hệ thống cơ xương khớp.",
+    "instructions": "1. Đứng thẳng, hai chân rộng bằng hông, thanh đòn cắt ngang chính giữa mu bàn chân (cách cẳng chân khoảng 2–3 cm).\n2. Gập khớp hông ra sau và hạ nhẹ gối, vươn tay nắm chặt thanh đòn ngoài cẳng chân.\n3. Kéo vai ra sau và hạ bả vai xuống (khóa khớp xô), ưỡn ngực thẳng lưng, mắt nhìn chếch về phía trước sàn.\n4. Hít sâu gồng chặt bụng, dùng lực bàn chân đạp mạnh xuống sàn để nhấc thanh đòn lên sát dọc theo cẳng chân và đùi.\n5. Khóa hông thẳng đứng ở đỉnh động tác (không ngả lưng ra sau); sau đó đẩy hông ra sau hạ tạ theo quỹ đạo thẳng về sàn có kiểm soát.",
+    "breathing": "Thực hiện kỹ thuật Valsalva Maneuver: Hít sâu căng lồng ngực và nén chặt ổ bụng trước khi kéo tạ rời sàn; thở dứt khoát ra khi đã đứng thẳng hoàn toàn hoặc sau khi đặt tạ về sàn an toàn.",
+    "commonMistakes": "Cong tròn lưng dưới (vòng tôm) khi nhấc tạ gây rủi ro thoát vị đĩa đệm; để thanh đòn trôi xa cơ thể; giật tạ đột ngột thay vì đạp sàn kiểm soát; ngửa người quá mức ra sau ở điểm khóa khớp.",
+    "safetyNotes": "Người mới bắt đầu phải có huấn luyện viên giám sát tư thế cột sống. Khởi động kỹ khớp hông và cơ đùi sau. Dừng tập ngay lập tức nếu cảm thấy đau nhói hoặc căng cứng bất thường ở vùng thắt lưng.",
+    "variations": "Sumo Deadlift (Deadlift chân rộng), Trap Bar Deadlift (Thanh đòn lục giác), Romanian Deadlift (RDL).",
+    "suggestedDose": "3–5 hiệp, mỗi hiệp 3–6 lần tạ nặng hoặc 6–8 lần mức tạ vừa, nghỉ 2–3 phút giữa các hiệp.",
+    "contentOrigin": "SELF_AUTHORED",
+    "sources": [
+      {
+        "code": "NHS_STRENGTH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Strength exercises",
+        "url": "https://www.nhs.uk/live-well/exercise/strength-exercises/"
+      }
+    ]
+  },
+  {
+    "name": "Lat Pulldown",
+    "nameEn": "Cable Lat Pulldown",
+    "aliases": "Kéo xô máy, Kéo xô cáp ngồi",
+    "muscleGroup": "BACK",
+    "secondaryMuscles": "Cơ lưng rộng (Lats), Cơ tay trước (Biceps), Cơ vai sau",
+    "equipment": "Máy kéo xô cáp (Lat Pulldown Machine), Thanh đòn dài",
+    "level": "BEGINNER",
+    "location": "GYM",
+    "goals": "STRENGTH,FAT_LOSS",
+    "description": "Bài tập kéo theo phương thẳng đứng an toàn và hiệu quả giúp mở rộng cơ lưng xô (V-taper), bổ trợ tối ưu cho bài tập hít xà đơn.",
+    "instructions": "1. Điều chỉnh thanh đệm đùi ép sát vừa khít lên hai bắp đùi để giữ chắc thân dưới.\n2. Đứng lên nắm thanh kéo với khoảng cách rộng hơn vai khoảng 1.5 lần, sau đó ngồi xuống ghế khóa chặt đùi dưới đệm.\n3. Giữ lưng thẳng, ưỡn nhẹ ngực, hơi ngả thân trên ra sau khoảng 10–15 độ.\n4. Kéo thanh đòn xuống vị trí ngang xương ức bằng cách chủ động kéo cùi chỏ xuống dưới và ép về phía sau, siết chặt cơ lưng xô.\n5. Từ từ nhả thanh đòn ngược lên có kiểm soát cho đến khi hai cánh tay gần duỗi thẳng hoàn toàn.",
+    "breathing": "Thở đều ra khi dùng lực kéo thanh đòn xuống sát ngực; hít sâu vào khi nhả thanh đòn trở lại vị trí ban đầu.",
+    "commonMistakes": "Kéo thanh đòn ra phía sau gáy (gây nguy cơ chấn thương cột sống cổ và chóp xoay vai); dùng đà ngả người ra sau quá nhiều biến thành bài kéo ngang; nhún vai về phía tai thay vì ghì vai xuống.",
+    "safetyNotes": "Không thả lỏng buông tay đột ngột để bánh tạ rơi tự do. Kiểm tra kỹ chốt tạ trước khi ngồi vào máy. Tuyệt đối không kéo ra sau đầu.",
+    "variations": "Close-grip Lat Pulldown (Kéo tay hẹp V-bar), Underhand Pulldown (Kéo tay ngửa), Assisted Pull-up (Hít xà trợ lực).",
+    "suggestedDose": "3–4 hiệp, mỗi hiệp 10–12 lần, thời gian nghỉ 60–90 giây.",
+    "contentOrigin": "SELF_AUTHORED",
+    "sources": [
+      {
+        "code": "NHS_STRENGTH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Strength exercises",
+        "url": "https://www.nhs.uk/live-well/exercise/strength-exercises/"
+      }
+    ]
+  },
+  {
+    "name": "Back Squat",
+    "nameEn": "Barbell Back Squat",
+    "aliases": "Gánh tạ đòn, Ngồi xổm gánh tạ",
+    "muscleGroup": "LEGS",
+    "secondaryMuscles": "Cơ đùi trước (Tứ đầu), Cơ mông lớn, Cơ đùi sau, Cơ lõi",
+    "equipment": "Khung gánh tạ (Squat Rack), Thanh đòn, Bánh tạ",
+    "level": "INTERMEDIATE",
+    "location": "GYM",
+    "goals": "STRENGTH,FAT_LOSS",
+    "description": "Vua của các bài tập thân dưới, kích hoạt gần như toàn bộ cơ bắp nửa thân dưới, tăng cường mật độ xương và sức mạnh thể lực cốt lõi.",
+    "instructions": "1. Đặt thanh đòn trên giá ở độ cao ngang xương ức. Bước vào đặt thanh đòn êm ái trên phần cơ cầu vai (High bar) hoặc gai vai (Low bar).\n2. Nắm thanh đòn chắc chắn, siết bả vai, nhấc tạ ra khỏi giá và lùi lại 2 bước ổn định tư thế.\n3. Đặt hai chân rộng ngang vai hoặc hơn vai một chút, mũi bàn chân chếch nhẹ ra ngoài khoảng 15–30 độ.\n4. Hít sâu gồng chắc cơ bụng, mở gối và đẩy hông ra sau hạ thấp người xuống cho đến khi đùi song song hoặc sâu hơn mặt sàn.\n5. Đạp mạnh đều bàn chân xuống sàn, giữ ngực ngẩng cao và đẩy người đứng thẳng dậy về vị trí ban đầu.",
+    "breathing": "Hít một hơi thật sâu nén khí trong khoang bụng (bracing) trước khi bắt đầu hạ người; duy trì nén khí qua điểm khó nhất (sticking point) và thở ra khi trở lại tư thế đứng thẳng.",
+    "commonMistakes": "Hai đầu gối bị sụp vào trong (valgus collapse) khi đứng lên gây tổn thương dây chằng chéo; gót chân bị nhấc khỏi sàn; gập gù cong lưng trên hoặc gập người quá sâu về phía trước.",
+    "safetyNotes": "Bắt buộc cài thanh bảo hiểm (safety bars) của khung rack ở độ cao dưới điểm sâu nhất của squat. Khởi động kỹ khớp cổ chân và hông. Không gánh tạ quá nặng khi chưa thuần thục tư thế chuẩn.",
+    "variations": "Goblet Squat (Squat giữ tạ trước ngực), Front Squat (Squat gánh tạ trước), Leg Press (Đạp đùi máy).",
+    "suggestedDose": "3–5 hiệp, mỗi hiệp 6–10 lần, thời gian nghỉ 2–3 phút giữa các hiệp.",
+    "contentOrigin": "SELF_AUTHORED",
+    "sources": [
+      {
+        "code": "NHS_STRENGTH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Strength exercises",
+        "url": "https://www.nhs.uk/live-well/exercise/strength-exercises/"
+      }
+    ]
+  },
+  {
+    "name": "Romanian Deadlift",
+    "nameEn": "Barbell Romanian Deadlift (RDL)",
+    "aliases": "Gập hông tạ đòn, RDL",
+    "muscleGroup": "LEGS",
+    "secondaryMuscles": "Cơ đùi sau (Hamstrings), Cơ mông lớn (Glutes), Cơ dựng sống thắt lưng",
+    "equipment": "Thanh đòn, Tạ đơn hoặc Đòn tạ tập",
+    "level": "INTERMEDIATE",
+    "location": "GYM",
+    "goals": "STRENGTH,MOBILITY",
+    "description": "Bài tập chuyển động gập hông (hip hinge) kinh điển nhằm cô lập và kéo giãn tối đa nhóm cơ đùi sau cùng cơ mông mà không gây áp lực xấu lên gối.",
+    "instructions": "1. Đứng thẳng giữ thanh đòn ở phía trước đùi với khoảng cách hai tay rộng bằng vai, hai chân rộng bằng hông.\n2. Giữ khớp gối hơi chùng nhẹ (khóa góc gối cố định trong suốt bài tập, không co duỗi gối).\n3. Giữ cột sống thẳng tự nhiên, từ từ đẩy hông ra xa phía sau đồng thời hạ thanh đòn chạy trượt sát bề mặt đùi.\n4. Hạ tạ xuống đến vị trí dưới đầu gối một chút (ngang cẳng chân) cho đến khi cảm nhận cơ đùi sau căng dãn tối đa mà lưng vẫn thẳng.\n5. Siết chặt cơ mông và đẩy hông về phía trước để đưa cơ thể đứng thẳng trở lại.",
+    "breathing": "Hít vào sâu khi bắt đầu đẩy hông ra sau và hạ tạ; thở đều ra khi siết mông đẩy hông về trước để đứng thẳng.",
+    "commonMistakes": "Gập gối quá nhiều biến thành squat; cong lưng dưới khi cố hạ tạ chạm sàn vượt quá độ dẻo của cơ đùi sau; để thanh đòn trôi ra xa cẳng chân.",
+    "safetyNotes": "Biên độ hạ phụ thuộc vào độ linh hoạt của cơ đùi sau từng người, dừng lại ngay khi cảm thấy lưng dưới có xu hướng muốn cong tròn. Khởi động kỹ chuỗi cơ sau trước khi tập.",
+    "variations": "Dumbbell RDL (RDL tạ đơn), Single-leg RDL (RDL một chân thăng bằng).",
+    "suggestedDose": "3–4 hiệp, mỗi hiệp 8–12 lần, thời gian nghỉ 90 giây.",
+    "contentOrigin": "SELF_AUTHORED",
+    "sources": [
+      {
+        "code": "NHS_STRENGTH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Strength exercises",
+        "url": "https://www.nhs.uk/live-well/exercise/strength-exercises/"
+      }
+    ]
+  },
+  {
+    "name": "Overhead Press",
+    "nameEn": "Barbell Overhead Press (OHP)",
+    "aliases": "Đẩy vai thanh đòn qua đầu, Military Press",
+    "muscleGroup": "SHOULDERS",
+    "secondaryMuscles": "Cơ vai trước và vai giữa, Cơ tay sau, Cơ cầu vai, Cơ bụng",
+    "equipment": "Thanh đòn chuẩn, Bánh tạ",
+    "level": "INTERMEDIATE",
+    "location": "GYM",
+    "goals": "STRENGTH,FAT_LOSS",
+    "description": "Bài tập đứng đẩy tạ qua đầu đa khớp xây dựng đôi vai vững chắc, tăng cường sức mạnh ổn định của toàn bộ vùng cơ thân lõi.",
+    "instructions": "1. Đặt thanh đòn trên giá ngang tầm xương quai xanh. Nắm thanh đòn rộng bằng vai, đặt thanh tạ nằm trên phần trước vai và xương đòn.\n2. Nhấc thanh đòn khỏi giá, bước lùi lại, hai chân đứng vững rộng ngang vai.\n3. Siết chặt cơ mông, đùi và bụng để tạo nền móng vững chắc, hơi ngửa cằm về sau để nhường đường di chuyển cho tạ.\n4. Đẩy thanh đòn thẳng lên trên qua đầu; khi thanh tạ vượt qua trán, đẩy đầu nhẹ về phía trước để thanh tạ khóa thẳng hàng phía trên đỉnh đầu và gót chân.\n5. Hạ thanh đòn có kiểm soát theo đường thẳng về vị trí nghỉ trên xương quai xanh.",
+    "breathing": "Hít sâu gồng cứng cơ bụng trước khi đẩy; thở ra khi thanh đòn lên đến điểm cao nhất qua đầu; hít nhẹ và kiểm soát hơi thở khi hạ tạ.",
+    "commonMistakes": "Ưỡn cong cột sống thắt lưng ra sau quá mức để trợ lực nâng tạ nặng; không khóa chặt cơ bụng và cơ mông; cùi chỏ bị chĩa ra phía sau thay vì chếch nhẹ về trước.",
+    "safetyNotes": "Nếu bạn từng có tiền sử rách chóp xoay vai hoặc đau mạn tính khớp vai, hãy thay thế bằng tạ đơn hoặc máy đẩy vai có góc an toàn hơn.",
+    "variations": "Seated Dumbbell Shoulder Press (Đẩy vai tạ đơn ngồi), Push Press (Đẩy tạ dùng lực nhún chân).",
+    "suggestedDose": "3–4 hiệp, mỗi hiệp 6–8 lần, nghỉ 90–120 giây giữa các hiệp.",
+    "contentOrigin": "SELF_AUTHORED",
+    "sources": [
+      {
+        "code": "NHS_STRENGTH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Strength exercises",
+        "url": "https://www.nhs.uk/live-well/exercise/strength-exercises/"
+      }
+    ]
+  },
+  {
+    "name": "Barbell Bicep Curl",
+    "nameEn": "Standing Barbell Bicep Curl",
+    "aliases": "Cuốn tay trước thanh đòn, Tập tay trước",
+    "muscleGroup": "ARMS",
+    "secondaryMuscles": "Cơ nhị đầu cánh tay (Biceps), Cơ cẳng tay",
+    "equipment": "Thanh đòn thẳng hoặc Thanh đòn lượn sóng (EZ-bar)",
+    "level": "BEGINNER",
+    "location": "GYM",
+    "goals": "STRENGTH",
+    "description": "Bài tập cô lập hàng đầu nhằm xây dựng kích thước và sức mạnh cho bắp tay trước, tạo độ dày cho cánh tay.",
+    "instructions": "1. Đứng thẳng người, hai chân rộng bằng hông, nắm thanh đòn ngửa lòng bàn tay với khoảng cách rộng ngang vai.\n2. Giữ khuỷu tay cố định sát vào hai bên mạn sườn, vai hạ thấp và kéo ra sau.\n3. Dùng lực cơ bắp tay trước cuốn thanh đòn lên theo hình vòng cung về phía ngực trên, siết chặt cơ ở điểm cao nhất trong 1 giây.\n4. Từ từ hạ thanh đòn xuống vị trí ban đầu có kiểm soát, cảm nhận sự kéo dài của sợi cơ bắp tay trước.",
+    "breathing": "Thở ra khi co tay cuốn tạ lên; hít vào từ từ khi hạ tạ xuống tư thế ban đầu.",
+    "commonMistakes": "Đung đưa thân trên lấy đà để nâng tạ nặng; chùi cùi chỏ ra phía trước làm mất lực căng bắp tay; cổ tay bị bẻ gập thụ động.",
+    "safetyNotes": "Nếu thấy đau mỏi ở khớp cổ tay khi dùng thanh đòn thẳng, hãy chuyển sang dùng thanh đòn lượn sóng EZ-bar để giảm áp lực góc xoay cổ tay.",
+    "variations": "Dumbbell Hammer Curl (Cuốn tạ đơn kiểu búa), Incline Dumbbell Curl (Cuốn tạ trên ghế dốc).",
+    "suggestedDose": "3–4 hiệp, mỗi hiệp 10–12 lần, thời gian nghỉ 60 giây.",
+    "contentOrigin": "SELF_AUTHORED",
+    "sources": [
+      {
+        "code": "NHS_STRENGTH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Strength exercises",
+        "url": "https://www.nhs.uk/live-well/exercise/strength-exercises/"
+      }
+    ]
+  },
+  {
+    "name": "Plank",
+    "nameEn": "Forearm Plank",
+    "aliases": "Đo sàn, Giữ thân đo sàn",
+    "muscleGroup": "CORE",
+    "secondaryMuscles": "Cơ bụng thẳng, Cơ bụng ngang, Cơ mông, Cơ vai",
+    "equipment": "Thảm tập (Yoga/Gym Mat)",
+    "level": "BEGINNER",
+    "location": "ANY",
+    "goals": "STRENGTH,ENDURANCE",
+    "description": "Bài tập tĩnh (isometric) tăng cường sức mạnh chịu đựng cho toàn bộ hệ thống cơ lõi (core), củng cố sự ổn định và bảo vệ cột sống thắt lưng.",
+    "instructions": "1. Nằm sấp trên thảm tập, chống hai cẳng tay xuống sàn sao cho khuỷu tay vuông góc ngay dưới khớp vai.\n2. Duỗi thẳng hai chân ra sau, chống bằng các đầu ngón chân.\n3. Nâng toàn bộ cơ thể rời khỏi mặt thảm, tạo thành một đường thẳng tắp từ đỉnh đầu qua mông đến gót chân.\n4. Siết chặt cơ bụng, cuộn nhẹ xương chậu và siết cơ mông, giữ cổ ở vị trí trung tính bằng cách nhìn xuống khoảng giữa hai bàn tay.\n5. Duy trì tư thế ổn định vững chắc trong suốt thời gian quy định.",
+    "breathing": "Tuyệt đối không nín thở; hít sâu bằng mũi và thở ra chậm rãi, đều đặn bằng miệng trong khi vẫn duy trì gồng siết cơ bụng.",
+    "commonMistakes": "Võng lưng dưới xuống sàn gây chèn ép đốt sống thắt lưng; nhấc mông lên quá cao thành hình chữ V; cúi gục đầu hoặc ngửa cổ nhìn về trước.",
+    "safetyNotes": "Dừng bài tập ngay lập tức khi cảm thấy lưng dưới bị võng xuống và không còn đủ lực bụng để giữ thẳng. Thà giữ chuẩn 20 giây hơn là giữ sai tư thế 60 giây.",
+    "variations": "Knee Plank (Plank gối cho người mới), Side Plank (Plank nghiêng tập cơ liên sườn), High Plank (Plank chống thẳng tay).",
+    "suggestedDose": "3–4 hiệp, giữ từ 30–60 giây mỗi hiệp, nghỉ 45–60 giây.",
+    "contentOrigin": "SELF_AUTHORED",
+    "sources": [
+      {
+        "code": "NHS_STRENGTH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Strength exercises",
+        "url": "https://www.nhs.uk/live-well/exercise/strength-exercises/"
+      }
+    ]
+  },
+  {
+    "name": "Hít đất (Push-up)",
+    "nameEn": "Standard Push-up",
+    "aliases": "Chống đẩy, Hít đất",
+    "muscleGroup": "FULL_BODY",
+    "secondaryMuscles": "Cơ ngực, Cơ vai trước, Cơ tay sau, Cơ lõi",
+    "equipment": "Không cần thiết bị (Trọng lượng cơ thể)",
+    "level": "BEGINNER",
+    "location": "ANY",
+    "goals": "STRENGTH,ENDURANCE,FAT_LOSS",
+    "description": "Bài tập thể trọng nền tảng hàng đầu rèn luyện sức mạnh đẩy phần thân trên kết hợp duy trì độ cứng vững của toàn bộ thân lõi.",
+    "instructions": "1. Chống hai bàn tay xuống sàn với khoảng cách rộng hơn vai một chút, các ngón tay xòe tự nhiên hướng về trước.\n2. Duỗi thẳng hai chân, tiếp xúc sàn bằng mũi chân, siết chặt bụng và cơ mông để cơ thể thẳng từ đầu tới gót.\n3. Từ từ hạ thấp ngực xuống sàn bằng cách gập khuỷu tay, cùi chỏ tạo góc khoảng 45 độ so với thân người (không bè ngang sang hai bên).\n4. Hạ xuống đến khi ngực cách mặt sàn khoảng 3–5 cm thì dừng 0.5 giây.\n5. Đạp mạnh lòng bàn tay xuống sàn đẩy cơ thể thẳng lên vị trí ban đầu.",
+    "breathing": "Hít vào có kiểm soát khi hạ người xuống gần sàn; thở mạnh ra khi dùng lực đẩy ngực nâng người lên.",
+    "commonMistakes": "Võng lưng hoặc chổng mông lên trời; ngửa cổ nhìn lên hoặc gục đầu; chỉ hạ nửa biên độ chuyển động; cùi chỏ xòe ngang 90 độ gây đau khớp vai.",
+    "safetyNotes": "Người mới bắt đầu chưa đủ lực ngực và lõi nên bắt đầu bằng hít đất chống tay lên bục cao hoặc chống bằng đầu gối để tránh chấn thương khớp cổ tay và lưng.",
+    "variations": "Incline Push-up (Hít đất chống tay cao), Knee Push-up (Hít đất quỳ gối), Decline Push-up (Hít đất kê chân cao).",
+    "suggestedDose": "3–4 hiệp, mỗi hiệp 10–15 lần (hoặc tối đa số lần giữ đúng form), nghỉ 60 giây.",
+    "contentOrigin": "SELF_AUTHORED",
+    "sources": [
+      {
+        "code": "NHS_STRENGTH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Strength exercises",
+        "url": "https://www.nhs.uk/live-well/exercise/strength-exercises/"
+      }
+    ]
+  }
+]
