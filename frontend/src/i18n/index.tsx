@@ -1,4 +1,4 @@
-import { Children, Fragment, createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Children, cloneElement, Fragment, isValidElement, createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { EN } from './en';
 
 /**
@@ -28,10 +28,21 @@ export function t(vi: string, vars?: Vars): string {
   return vars ? s.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? '')) : s;
 }
 
-/** Dịch node con khi nó là chuỗi (hoặc mảng có chuỗi); phần tử JSX giữ nguyên. */
+/** Dịch chữ giao diện ở mọi cấp JSX; giữ nguyên vùng nội dung được đánh dấu tiếng Việt. */
 export function tx(node: ReactNode): ReactNode {
-  if (typeof node === 'string') return t(node);
-  if (Array.isArray(node)) return Children.map(node, (n) => (typeof n === 'string' ? t(n) : n));
+  if (typeof node === 'string') {
+    const text = node.trim();
+    if (!text) return node;
+    const start = node.indexOf(text);
+    return `${node.slice(0, start)}${t(text)}${node.slice(start + text.length)}`;
+  }
+  if (Array.isArray(node)) return Children.map(node, tx);
+  if (isValidElement<{ children?: ReactNode; lang?: string }>(node)
+    && (node.type === Fragment || typeof node.type === 'string')) {
+    const tag = typeof node.type === 'string' ? node.type : '';
+    if (node.props.lang === 'vi' || tag === 'pre' || tag === 'code') return node;
+    if (node.props.children !== undefined) return cloneElement(node, undefined, tx(node.props.children));
+  }
   return node;
 }
 

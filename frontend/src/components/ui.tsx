@@ -55,7 +55,7 @@ export function Card({ title, icon, actions, children, flush, className = '' }: 
           {actions && <div className="row">{actions}</div>}
         </div>
       )}
-      {children}
+      {tx(children)}
     </section>
   );
 }
@@ -108,9 +108,58 @@ export function Table({ caption, children, className = '', 'aria-label': ariaLab
     <div className="table-wrap" role="region" aria-label={t(caption ?? ariaLabel ?? 'Bảng dữ liệu')} tabIndex={0}>
       <table className={`table ${className}`} {...rest}>
         {caption && <caption className="sr-only">{t(caption)}</caption>}
-        {children}
+        {tx(children)}
       </table>
     </div>
+  );
+}
+
+export interface DataTableColumn<T> {
+  header: string;
+  render: (row: T) => ReactNode;
+  className?: string;
+}
+
+/** Bảng dữ liệu có trạng thái rỗng và phân trang dùng chung cho các danh sách API. */
+export function DataTable<T>({
+  caption,
+  columns,
+  rows,
+  rowKey,
+  page,
+  totalPages,
+  total,
+  onPage,
+  emptyMessage = 'Không có dữ liệu',
+}: {
+  caption: string;
+  columns: DataTableColumn<T>[];
+  rows: T[];
+  rowKey: (row: T) => string | number;
+  page: number;
+  totalPages: number;
+  total: number;
+  onPage: (page: number) => void;
+  emptyMessage?: string;
+}) {
+  return (
+    <>
+      <Table caption={caption}>
+        <thead>
+          <tr>{columns.map((column) => <th key={column.header} scope="col" className={column.className}>{t(column.header)}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.length ? rows.map((row) => (
+            <tr key={rowKey(row)}>
+              {columns.map((column) => <td key={column.header} className={column.className}>{column.render(row)}</td>)}
+            </tr>
+          )) : (
+            <tr><td colSpan={Math.max(columns.length, 1)} role="status" className="muted center">{t(emptyMessage)}</td></tr>
+          )}
+        </tbody>
+      </Table>
+      <Pager page={page} totalPages={totalPages} total={total} onPage={onPage} />
+    </>
   );
 }
 
@@ -119,7 +168,7 @@ export function Field({ label, error, hint, required, children, className = '', 
   return (
     <div className={`field ${className}`}>
       {label && <label htmlFor={htmlFor}>{t(label)}{required && <span className="req">*</span>}</label>}
-      {children}
+      {tx(children)}
       {error ? (
         <div className="err" id={htmlFor ? `${htmlFor}-error` : undefined} role={htmlFor ? 'alert' : undefined} aria-live={htmlFor ? 'assertive' : undefined}>{t(error)}</div>
       ) : hint ? (
@@ -152,7 +201,7 @@ export function Select({ invalid, className = '', children, id, 'aria-label': ar
       aria-describedby={describedBy}
       {...rest}
     >
-      {children}
+      {tx(children)}
     </select>
   );
 }
@@ -277,7 +326,7 @@ export function Modal({ title, onClose, children, footer, size }: { title: React
           <h2 id={titleId}>{tx(title)}</h2>
           <Button variant="ghost" size="sm" icon="x" aria-label="Đóng" onClick={onClose} />
         </div>
-        <div className="modal-body">{children}</div>
+        <div className="modal-body">{tx(children)}</div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
     </div>
