@@ -55,7 +55,7 @@ export function Card({ title, icon, actions, children, flush, className = '' }: 
           {actions && <div className="row">{actions}</div>}
         </div>
       )}
-      {children}
+      {tx(children)}
     </section>
   );
 }
@@ -108,7 +108,7 @@ export function Table({ caption, children, className = '', 'aria-label': ariaLab
     <div className="table-wrap" role="region" aria-label={t(caption ?? ariaLabel ?? 'Bảng dữ liệu')} tabIndex={0}>
       <table className={`table ${className}`} {...rest}>
         {caption && <caption className="sr-only">{t(caption)}</caption>}
-        {children}
+        {tx(children)}
       </table>
     </div>
   );
@@ -168,7 +168,7 @@ export function Field({ label, error, hint, required, children, className = '', 
   return (
     <div className={`field ${className}`}>
       {label && <label htmlFor={htmlFor}>{t(label)}{required && <span className="req">*</span>}</label>}
-      {children}
+      {tx(children)}
       {error ? (
         <div className="err" id={htmlFor ? `${htmlFor}-error` : undefined} role={htmlFor ? 'alert' : undefined} aria-live={htmlFor ? 'assertive' : undefined}>{t(error)}</div>
       ) : hint ? (
@@ -201,7 +201,7 @@ export function Select({ invalid, className = '', children, id, 'aria-label': ar
       aria-describedby={describedBy}
       {...rest}
     >
-      {children}
+      {tx(children)}
     </select>
   );
 }
@@ -326,7 +326,7 @@ export function Modal({ title, onClose, children, footer, size }: { title: React
           <h2 id={titleId}>{tx(title)}</h2>
           <Button variant="ghost" size="sm" icon="x" aria-label="Đóng" onClick={onClose} />
         </div>
-        <div className="modal-body">{children}</div>
+        <div className="modal-body">{tx(children)}</div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
     </div>
