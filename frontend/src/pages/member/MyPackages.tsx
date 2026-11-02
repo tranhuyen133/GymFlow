@@ -26,7 +26,6 @@ export default function MyPackages() {
 
   const current = subs.data.find((s) => s.state === 'ACTIVE' || s.state === 'EXPIRING');
   const upcoming = subs.data.filter((s) => s.state === 'UPCOMING');
-  const history = subs.data.filter((s) => s.state === 'EXPIRED' || s.state === 'CANCELLED');
   const total = current
     ? (parseDate(current.endDate).getTime() - parseDate(current.startDate).getTime()) / 86400000 + 1
     : 1;
@@ -158,7 +157,7 @@ export default function MyPackages() {
           <div className="stack-sm">
             {plans.loading && <LoadingBlock rows={3} />}
             {plans.data?.filter((p) => p.active).length === 0 && (
-              <Empty icon="package" title="Chưa có gói nào đang mở bán" />
+              <Empty icon="ticket" title="Chưa có gói nào đang mở bán" />
             )}
             {plans.data?.filter((p) => p.active).map((p) => (
               <div
