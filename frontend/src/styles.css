@@ -806,3 +806,12 @@ table.table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .article-card:focus-visible { outline: 2px solid var(--primary-bright); outline-offset: 3px; }
 @media (max-width: 900px) { .article-grid { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .info-grid { grid-template-columns: 1fr; } }
+/* ---------- Phân trang ---------- */
+.pager-num { min-width: 32px; height: 32px; padding: 0 8px; border-radius: 8px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pager-num:hover { background: var(--surface); color: var(--ink); }
+.pager-num.on { background: rgba(0, 178, 75, 0.16); color: var(--primary-bright); }
+.pager-num:focus-visible { outline: 2px solid var(--primary-bright); outline-offset: 2px; }
+.pager-gap { min-width: 20px; text-align: center; color: var(--faint); }
+.pager-size { display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; font-size: 13px; color: var(--muted); }
+.select.select-sm { width: auto; height: 32px; padding: 0 28px 0 10px; font-size: 13px; }
+@media (max-width: 640px) { .pager { flex-wrap: wrap; } .pager-num:not(.on) { display: none; } .pager-gap { display: none; } }
