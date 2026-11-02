@@ -1,5 +1,5 @@
 /**
- * CHỦ FILE: Huyền (Trần Thị Khánh Huyền) · TASK: SCRUM-163
+ * CHỦ FILE: Huyền (Trần Thị Khánh Huyền) · TASK: SCRUM-163, SCRUM-164
  * Kiểm thử dịch vụ giáo án: CRUD giáo án, phân bổ bài theo 7 ngày, kiểm tra quyền và lưu trữ giáo án cũ.
  */
 package com.gymflow.service;
@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -501,5 +503,211 @@ class WorkoutPlanServiceTest {
         WorkoutPlanResponse res = service.current(MEMBER_USER);
 
         assertThat(res).isNull();
+    }
+
+    // ==========================================
+    // ===== SCRUM-164 =====
+    // ==========================================
+
+    private WorkoutPlan createDummyPlan(Long id, PlanStatus status) {
+        WorkoutPlan p = new WorkoutPlan();
+        p.setId(id);
+        p.setName("Giáo án " + id);
+        p.setMember(member);
+        p.setTrainer(trainer);
+        p.setStatus(status);
+        p.setStartDate(LocalDate.of(2026, 11, 1));
+        p.setEndDate(LocalDate.of(2026, 12, 1));
+        return p;
+    }
+
+    private WorkoutPlanRequest createPlanRequest(Long memberId, String name) {
+        PlanItemRequest item = new PlanItemRequest(1L, 1, 0, 3, "10", 40.0, 60, null, null);
+        return new WorkoutPlanRequest(
+                memberId, name, "Mục tiêu tập luyện",
+                LocalDate.of(2026, 11, 1), LocalDate.of(2026, 12, 1),
+                "Ghi chú", List.of(item)
+        );
+    }
+
+    @Test
+    @DisplayName("BR-11/WP-04 Trạng thái: Chuyển giáo án sang COMPLETED hoặc ARCHIVED thì các giáo án khác giữ nguyên, không gọi tìm giáo án để lưu trữ")
+    void br11_wp04_setStatusToCompletedOrArchived_doesNotArchiveOtherPlans() {
+        WorkoutPlan plan = createDummyPlan(100L, PlanStatus.ACTIVE);
+        when(planRepository.findById(100L)).thenReturn(Optional.of(plan));
+        when(access.canCoach(ADMIN, member)).thenReturn(true);
+
+        service.setStatus(ADMIN, 100L, PlanStatus.COMPLETED);
+        assertThat(plan.getStatus()).isEqualTo(PlanStatus.COMPLETED);
+
+        service.setStatus(ADMIN, 100L, PlanStatus.ARCHIVED);
+        assertThat(plan.getStatus()).isEqualTo(PlanStatus.ARCHIVED);
+
+        verify(planRepository, never()).findByMemberIdOrderByStartDateDesc(anyLong());
+    }
+
+    @Test
+    @DisplayName("BR-11/WP-05 Lưu trữ: Tạo giáo án cho hội viên A thì chỉ lưu trữ giáo án của A, không gọi hay ảnh hưởng đến hội viên khác")
+    void br11_wp05_createPlanForMemberA_onlyArchivesPlansOfMemberA() {
+        when(access.requireCoach(TRAINER, 10L)).thenReturn(member);
+        when(access.requireTrainerOf(TRAINER)).thenReturn(trainer);
+        when(exerciseService.load(1L)).thenReturn(benchPress);
+
+        WorkoutPlan planAOld = createDummyPlan(101L, PlanStatus.ACTIVE);
+        when(planRepository.findByMemberIdOrderByStartDateDesc(10L)).thenReturn(List.of(planAOld));
+
+        service.create(TRAINER, createPlanRequest(10L, "Giáo án mới cho A"));
+
+        assertThat(planAOld.getStatus()).isEqualTo(PlanStatus.ARCHIVED);
+        verify(planRepository).findByMemberIdOrderByStartDateDesc(10L);
+        verify(planRepository, never()).findByMemberIdOrderByStartDateDesc(argThat(id -> id != null && !id.equals(10L)));
+    }
+
+    @Test
+    @DisplayName("BR-11/WP-04 Trạng thái: Kích hoạt lại giáo án vốn đang ACTIVE thì giáo án đó vẫn ACTIVE, không tự chuyển thành ARCHIVED")
+    void br11_wp04_setStatusActiveOnAlreadyActivePlan_remainsActiveAndDoesNotSelfArchive() {
+        WorkoutPlan currentPlan = createDummyPlan(100L, PlanStatus.ACTIVE);
+        when(planRepository.findById(100L)).thenReturn(Optional.of(currentPlan));
+        when(access.canCoach(ADMIN, member)).thenReturn(true);
+        when(planRepository.findByMemberIdOrderByStartDateDesc(10L)).thenReturn(List.of(currentPlan));
+
+        WorkoutPlanSummary summary = service.setStatus(ADMIN, 100L, PlanStatus.ACTIVE);
+
+        assertThat(currentPlan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+        assertThat(summary.status()).isEqualTo(PlanStatus.ACTIVE);
+    }
+
+    @Test
+    @DisplayName("BR-11/WP-05 Lưu trữ: Nếu dữ liệu có nhiều giáo án ACTIVE cũ, tạo giáo án mới thì tất cả giáo án ACTIVE cũ đều chuyển sang ARCHIVED")
+    void br11_wp05_createPlan_whenMultipleActivePlansExist_archivesAllOldActivePlans() {
+        when(access.requireCoach(TRAINER, 10L)).thenReturn(member);
+        when(access.requireTrainerOf(TRAINER)).thenReturn(trainer);
+        when(exerciseService.load(1L)).thenReturn(benchPress);
+
+        WorkoutPlan oldActive1 = createDummyPlan(81L, PlanStatus.ACTIVE);
+        WorkoutPlan oldActive2 = createDummyPlan(82L, PlanStatus.ACTIVE);
+        WorkoutPlan oldCompleted = createDummyPlan(83L, PlanStatus.COMPLETED);
+
+        when(planRepository.findByMemberIdOrderByStartDateDesc(10L))
+                .thenReturn(List.of(oldActive1, oldActive2, oldCompleted));
+
+        service.create(TRAINER, createPlanRequest(10L, "Giáo án thay thế"));
+
+        assertThat(oldActive1.getStatus()).isEqualTo(PlanStatus.ARCHIVED);
+        assertThat(oldActive2.getStatus()).isEqualTo(PlanStatus.ARCHIVED);
+        assertThat(oldCompleted.getStatus()).isEqualTo(PlanStatus.COMPLETED);
+    }
+
+    @Test
+    @DisplayName("WP-04 Phân quyền: Đổi trạng thái khi canCoach = false ném 403 Forbidden, trạng thái không đổi và không ghi audit")
+    void wp04_setStatus_forbiddenWhenCannotCoach_throws403AndNoAudit() {
+        WorkoutPlan plan = createDummyPlan(100L, PlanStatus.ACTIVE);
+        when(planRepository.findById(100L)).thenReturn(Optional.of(plan));
+        when(access.canCoach(TRAINER, member)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.setStatus(TRAINER, 100L, PlanStatus.COMPLETED))
+                .isInstanceOf(ApiException.class)
+                .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+
+        assertThat(plan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+        verify(auditService, never()).log(anyString(), anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("WP-04 Trạng thái: Đổi trạng thái id giáo án không tồn tại ném 404 Not Found")
+    void wp04_setStatus_notFound_throws404() {
+        when(planRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.setStatus(ADMIN, 999L, PlanStatus.COMPLETED))
+                .isInstanceOf(ApiException.class)
+                .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.NOT_FOUND))
+                .hasMessageContaining("giáo án");
+
+        verify(auditService, never()).log(anyString(), anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("WP-04 Audit: Đổi trạng thái sang COMPLETED ghi audit WORKOUT_PLAN_STATUS chứa '→ COMPLETED'")
+    void wp04_setStatus_auditLogsStatusTransitionWithArrow() {
+        WorkoutPlan plan = createDummyPlan(100L, PlanStatus.ACTIVE);
+        plan.setName("Giáo án Siết cân");
+        when(planRepository.findById(100L)).thenReturn(Optional.of(plan));
+        when(access.canCoach(ADMIN, member)).thenReturn(true);
+
+        service.setStatus(ADMIN, 100L, PlanStatus.COMPLETED);
+
+        verify(auditService).log(eq("WORKOUT_PLAN_STATUS"), eq("WORKOUT_PLAN"), eq(100L), contains("Giáo án Siết cân → COMPLETED"));
+    }
+
+    @Test
+    @DisplayName("WP-07 Phân quyền: Xoá giáo án khi canCoach = false ném 403 Forbidden, không gỡ buổi và không xoá giáo án")
+    void wp07_delete_forbiddenWhenCannotCoach_throws403AndSchedulesUnchanged() {
+        WorkoutPlan plan = createDummyPlan(100L, PlanStatus.ACTIVE);
+        when(planRepository.findById(100L)).thenReturn(Optional.of(plan));
+        when(access.canCoach(TRAINER, member)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.delete(TRAINER, 100L))
+                .isInstanceOf(ApiException.class)
+                .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+
+        verify(scheduleRepository, never()).findByPlanId(anyLong());
+        verify(planRepository, never()).delete(any());
+        verify(auditService, never()).log(anyString(), anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("WP-07 Xoá: Giáo án không có buổi tập nào gắn kèm thì vẫn xoá thành công và ghi audit WORKOUT_PLAN_DELETE")
+    void wp07_delete_planWithNoSchedules_deletesSuccessfullyAndLogsAudit() {
+        WorkoutPlan plan = createDummyPlan(100L, PlanStatus.ACTIVE);
+        plan.setName("Giáo án mới tạo");
+        when(planRepository.findById(100L)).thenReturn(Optional.of(plan));
+        when(access.canCoach(ADMIN, member)).thenReturn(true);
+        when(scheduleRepository.findByPlanId(100L)).thenReturn(List.of());
+
+        service.delete(ADMIN, 100L);
+
+        verify(planRepository).delete(plan);
+        verify(auditService).log(eq("WORKOUT_PLAN_DELETE"), eq("WORKOUT_PLAN"), eq(100L), eq("Giáo án mới tạo"));
+    }
+
+    @Test
+    @DisplayName("WP-07 Xoá giữ buổi tập: Các WorkoutSchedule gắn giáo án không bị xoá, scheduleRepository.delete không bao giờ được gọi, status và thời gian buổi giữ nguyên")
+    void wp07_delete_preservesWorkoutSchedules_detachesPlanAndDoesNotDeleteSchedules() {
+        WorkoutPlan plan = createDummyPlan(100L, PlanStatus.ACTIVE);
+        when(planRepository.findById(100L)).thenReturn(Optional.of(plan));
+        when(access.canCoach(ADMIN, member)).thenReturn(true);
+
+        WorkoutSchedule s1 = new WorkoutSchedule();
+        s1.setId(1L);
+        s1.setPlan(plan);
+        s1.setStatus(ScheduleStatus.SCHEDULED);
+        s1.setStartTime(LocalDateTime.of(2026, 11, 10, 8, 0));
+        s1.setEndTime(LocalDateTime.of(2026, 11, 10, 9, 0));
+
+        WorkoutSchedule s2 = new WorkoutSchedule();
+        s2.setId(2L);
+        s2.setPlan(plan);
+        s2.setStatus(ScheduleStatus.COMPLETED);
+        s2.setStartTime(LocalDateTime.of(2026, 11, 3, 8, 0));
+        s2.setEndTime(LocalDateTime.of(2026, 11, 3, 9, 0));
+
+        when(scheduleRepository.findByPlanId(100L)).thenReturn(List.of(s1, s2));
+
+        service.delete(ADMIN, 100L);
+
+        // Các buổi tập chỉ bị gỡ plan liên kết
+        assertThat(s1.getPlan()).isNull();
+        assertThat(s2.getPlan()).isNull();
+        // Trạng thái và thời gian buổi tập giữ nguyên vẹn
+        assertThat(s1.getStatus()).isEqualTo(ScheduleStatus.SCHEDULED);
+        assertThat(s2.getStatus()).isEqualTo(ScheduleStatus.COMPLETED);
+        assertThat(s1.getStartTime()).isEqualTo(LocalDateTime.of(2026, 11, 10, 8, 0));
+        assertThat(s2.getStartTime()).isEqualTo(LocalDateTime.of(2026, 11, 3, 8, 0));
+
+        // Buổi tập KHÔNG bị xoá khỏi database
+        verify(scheduleRepository, never()).delete(any());
+        verify(scheduleRepository, never()).deleteAll(any());
+        verify(scheduleRepository, never()).deleteById(any());
+        verify(planRepository).delete(plan);
     }
 }
