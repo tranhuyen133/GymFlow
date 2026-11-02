@@ -114,6 +114,55 @@ export function Table({ caption, children, className = '', 'aria-label': ariaLab
   );
 }
 
+export interface DataTableColumn<T> {
+  header: string;
+  render: (row: T) => ReactNode;
+  className?: string;
+}
+
+/** Bảng dữ liệu có trạng thái rỗng và phân trang dùng chung cho các danh sách API. */
+export function DataTable<T>({
+  caption,
+  columns,
+  rows,
+  rowKey,
+  page,
+  totalPages,
+  total,
+  onPage,
+  emptyMessage = 'Không có dữ liệu',
+}: {
+  caption: string;
+  columns: DataTableColumn<T>[];
+  rows: T[];
+  rowKey: (row: T) => string | number;
+  page: number;
+  totalPages: number;
+  total: number;
+  onPage: (page: number) => void;
+  emptyMessage?: string;
+}) {
+  return (
+    <>
+      <Table caption={caption}>
+        <thead>
+          <tr>{columns.map((column) => <th key={column.header} scope="col" className={column.className}>{t(column.header)}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.length ? rows.map((row) => (
+            <tr key={rowKey(row)}>
+              {columns.map((column) => <td key={column.header} className={column.className}>{column.render(row)}</td>)}
+            </tr>
+          )) : (
+            <tr><td colSpan={Math.max(columns.length, 1)} role="status" className="muted center">{t(emptyMessage)}</td></tr>
+          )}
+        </tbody>
+      </Table>
+      <Pager page={page} totalPages={totalPages} total={total} onPage={onPage} />
+    </>
+  );
+}
+
 // ---------- Form controls ----------
 export function Field({ label, error, hint, required, children, className = '', htmlFor }: { label?: string; error?: string; hint?: string; required?: boolean; children: ReactNode; className?: string; htmlFor?: string }) {
   return (
