@@ -42,7 +42,7 @@ Viết tắt: **B/** = `backend/src/main/java/com/gymflow/`, **R/** = `backend/s
 | `B/web/TrainingController.java` (bài tập, giáo án, buổi tập) | SCRUM-162, 163, 186 |
 | `B/domain/WorkoutSchedule.java`, `ScheduleStatus.java`, `B/repository/WorkoutScheduleRepository.java`, `B/service/ScheduleService.java`, `B/web/ScheduleController.java`, `T/service/ScheduleServiceTest.java` | SCRUM-185 (khoá chống trùng giờ: Dũng, SCRUM-176) |
 | `B/domain/WorkoutLog.java`, `B/repository/WorkoutLogRepository.java` | SCRUM-186 |
-| `B/service/DashboardService.java` | SCRUM-187 |
+| `B/service/DashboardService.java`, `T/service/DashboardServiceTest.java` | SCRUM-187 |
 | `B/domain/Article.java`, `ArticleCategory.java`, `ArticleStatus.java`, `B/repository/ArticleRepository.java`, `B/service/ArticleService.java`, `B/web/KnowledgeController.java` | SCRUM-209, 210 |
 
 ## Kiên (Nguyễn Thế Kiên)

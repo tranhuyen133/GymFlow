@@ -414,21 +414,27 @@ public final class Dtos {
 
     public record AdminDashboard(long totalMembers, long activeMembers, long newMembersThisMonth,
                                  long membersWithActivePackage, long expiringSoon, long revenueThisMonth,
-                                 long revenuePrevMonth, long activeTrainers, long sessionsToday,
+                                 long revenuePrevMonth, Double revenueGrowthPercent, long activeTrainers, long sessionsToday,
                                  List<LabelValue> revenueByMonth, List<LabelValue> planDistribution,
                                  List<SubscriptionResponse> expiring, List<AuditResponse> recentActivity) {
+    }
+
+    public record TrainerMemberProgress(Long memberId, String code, String fullName,
+                                        Double attendanceThisWeek, int streakWeeks, ScheduleResponse nextSession) {
     }
 
     public record TrainerDashboard(long memberCount, long sessionsToday, long sessionsThisWeek,
                                    long completedThisWeek, long missedThisWeek, Double completionRate,
                                    long activePlans, List<ScheduleResponse> todaySessions,
-                                   List<SubscriptionResponse> expiringMembers, List<LabelValue> weekLoad) {
+                                   List<SubscriptionResponse> expiringMembers, List<LabelValue> weekLoad,
+                                   List<TrainerMemberProgress> assignedMembers) {
     }
 
     public record MemberDashboard(MemberResponse member, SubscriptionResponse currentSubscription,
                                   ScheduleResponse nextSession, List<ScheduleResponse> weekSessions,
                                   long completedThisMonth, int streakWeeks, WeightResponse latestWeight,
-                                  Double bmi, String bmiCategory, WorkoutPlanSummary currentPlan) {
+                                  Double bmi, String bmiCategory, WorkoutPlanSummary currentPlan,
+                                  List<ScheduleResponse> needsCompletion) {
     }
 
     // ===================== Reports =====================
