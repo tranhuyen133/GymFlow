@@ -2,13 +2,13 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Subscription, SubscriptionState } from '../../api/types';
+import { CancelSubscriptionModal } from '../../components/CancelSubscriptionModal';
 import { SubscriptionForm } from '../../components/SubscriptionForm';
-import { useToast } from '../../components/Toast';
-import { Alert, Button, Card, Confirm, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, Select, Stat, StatusBadge, Textarea } from '../../components/ui';
+import { Button, Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, Select, Stat, StatusBadge } from '../../components/ui';
 import { downloadCsv } from '../../lib/csv';
 import { fmtDate, fmtDateTime, fmtMoney, fmtMoneyShort, subState } from '../../lib/format';
-import { errMsg, useAsync, usePaged } from '../../lib/hooks';
-import { t, tn } from '../../i18n';
+import { useAsync, usePaged } from '../../lib/hooks';
+import { t } from '../../i18n';
 
 type Filter = 'ALL' | SubscriptionState;
 
@@ -94,27 +94,7 @@ export default function Subscriptions() {
         {list.length > 0 && <Pager page={paged.page} totalPages={paged.totalPages} total={paged.total} onPage={paged.setPage} size={paged.size} sizes={[10, 20, 50, 100]} onSize={paged.setSize} />}
       </Card>
       {creating && <SubscriptionForm onClose={() => setCreating(false)} onSaved={() => { setCreating(false); void reload(); }} />}
-      {cancelling && <CancelSubscription sub={cancelling} onClose={() => setCancelling(null)} onDone={() => { setCancelling(null); void reload(); }} />}
+      {cancelling && <CancelSubscriptionModal sub={cancelling} onClose={() => setCancelling(null)} onDone={() => { setCancelling(null); void reload(); }} />}
     </div>
-  );
-}
-
-/** Huỷ gói bắt buộc nhập lý do; gửi đúng field `reason` lên API. */
-function CancelSubscription({ sub, onClose, onDone }: { sub: Subscription; onClose: () => void; onDone: () => void }) {
-  const toast = useToast();
-  const [reason, setReason] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  return (
-    <Confirm danger title={t('Huỷ gói {name}?', { name: sub.planName })} confirmText="Huỷ gói" onClose={onClose}
-      message={<div className="stack">
-        <span>{tn('Gói của {name} ({from} → {to}) sẽ hết hiệu lực ngay. Thao tác được ghi vào nhật ký.', { name: <b>{sub.memberName}</b>, from: fmtDate(sub.startDate), to: fmtDate(sub.endDate) })}</span>
-        <Textarea maxLength={200} value={reason} onChange={(e) => { setReason(e.target.value); setError(null); }} placeholder="Lý do huỷ (bắt buộc)" />
-        {error && <Alert kind="error">{error}</Alert>}
-      </div>}
-      onConfirm={async () => {
-        if (!reason.trim()) { setError('Vui lòng nhập lý do huỷ'); throw new Error('missing-reason'); }
-        try { await api.put(`/subscriptions/${sub.id}/cancel`, { reason: reason.trim() }); toast.success('Đã huỷ gói'); onDone(); }
-        catch (e) { toast.error(errMsg(e)); throw e; }
-      }} />
   );
 }
