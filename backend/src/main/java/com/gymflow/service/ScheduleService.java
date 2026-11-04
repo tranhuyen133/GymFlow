@@ -200,6 +200,7 @@ public class ScheduleService {
         if (mustBeFuture && start.isBefore(LocalDateTime.now(clock))) throw ApiException.badRequest("Không xếp lịch vào thời điểm đã qua");
     }
 
+    // NOTE #1: Khóa đồng thời hội viên rồi HLV để chống trùng giờ khi nhiều request cùng lúc.
     /** Khoá hội viên rồi HLV (thứ tự cố định, tránh deadlock) để kiểm tra trùng giờ không bị yêu cầu đồng thời vượt qua. */
     private void lockForConflictCheck(Member member, Trainer trainer) {
         scheduleRepository.lockMember(member.getId());
