@@ -9,6 +9,7 @@ import { api } from '../../api/client';
 import type { MembershipPlan, Subscription } from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { Alert, Card, Empty, ErrorState, LoadingBlock, Meter, PageHead, StatusBadge } from '../../components/ui';
+import { t, tn } from '../../i18n';
 import { durationLabel, fmtDate, fmtMoney, parseDate, subState } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 
@@ -33,16 +34,18 @@ export default function MyPackages() {
   return (
     <div className="page">
       <PageHead
-        eyebrow="Thành viên"
-        title="Gói tập của tôi"
-        desc="Trạng thái gói tính theo ngày hôm nay. Gia hạn tại quầy sẽ được nối tiếp ngay sau gói hiện tại."
+        eyebrow={t('Thành viên')}
+        title={t('Gói tập của tôi')}
+        desc={t('Trạng thái gói tính theo ngày hôm nay. Gia hạn tại quầy sẽ được nối tiếp ngay sau gói hiện tại.')}
       />
 
       {/* Cảnh báo sắp hết hạn */}
       {current?.state === 'EXPIRING' && upcoming.length === 0 && (
         <div style={{ marginBottom: 18 }}>
           <Alert kind="warning">
-            Gói của bạn còn <b>{current.daysLeft} ngày</b>. Gia hạn sớm để không bị gián đoạn lịch tập.
+            {tn('Gói của bạn còn {days}. Gia hạn sớm để không bị gián đoạn lịch tập.', {
+              days: <b>{t('{n} ngày', { n: current.daysLeft })}</b>,
+            })}
           </Alert>
         </div>
       )}
@@ -51,7 +54,7 @@ export default function MyPackages() {
       {!current && upcoming.length === 0 && (
         <div style={{ marginBottom: 18 }}>
           <Alert kind="error">
-            Bạn chưa có gói tập hiệu lực, chưa thể xếp lịch tập mới.
+            {t('Bạn chưa có gói tập hiệu lực, chưa thể xếp lịch tập mới.')}
           </Alert>
         </div>
       )}
@@ -65,14 +68,14 @@ export default function MyPackages() {
               <div style={{ position: 'relative' }}>
                 <div className="row between">
                   <span className="chip on">
-                    <Icon name="ticket" size={14} /> Gói hiện tại
+                    <Icon name="ticket" size={14} /> {t('Gói hiện tại')}
                   </span>
                   <StatusBadge map={subState} value={current.state} />
                 </div>
                 <h2 className="mt-16">{current.planName}</h2>
                 <div className="row" style={{ alignItems: 'baseline', gap: 8, marginTop: 6 }}>
                   <span className="num" style={{ fontSize: 44 }}>{current.daysLeft}</span>
-                  <span className="muted">ngày còn lại</span>
+                  <span className="muted">{t('ngày còn lại')}</span>
                 </div>
                 <div className="mt-16">
                   <Meter
@@ -82,12 +85,12 @@ export default function MyPackages() {
                   />
                 </div>
                 <div className="row between small muted mt-8">
-                  <span>Bắt đầu {fmtDate(current.startDate)}</span>
-                  <span>Hết hạn {fmtDate(current.endDate)}</span>
+                  <span>{t('Bắt đầu {d}', { d: fmtDate(current.startDate) })}</span>
+                  <span>{t('Hết hạn {d}', { d: fmtDate(current.endDate) })}</span>
                 </div>
                 {current.note && (
                   <div className="tiny faint mt-8" style={{ borderTop: '1px solid var(--hairline-soft)', paddingTop: 8 }}>
-                    Ghi chú: {current.note}
+                    {t('Ghi chú: {note}', { note: current.note })}
                   </div>
                 )}
               </div>
@@ -96,7 +99,7 @@ export default function MyPackages() {
 
           {/* ── Gói sắp tới ── */}
           {upcoming.length > 0 && (
-            <Card title="Gói sắp bắt đầu" icon="clock" flush>
+            <Card title={t('Gói sắp bắt đầu')} icon="clock" flush>
               <div className="stack-sm">
                 {upcoming.map((s) => (
                   <div key={s.id} className="row between" style={{ padding: '10px 16px' }}>
@@ -117,18 +120,18 @@ export default function MyPackages() {
           )}
 
           {/* ── Lịch sử đăng ký ── */}
-          <Card title="Lịch sử đăng ký" icon="scroll" flush>
+          <Card title={t('Lịch sử đăng ký')} icon="scroll" flush>
             {subs.data.length === 0 ? (
-              <Empty icon="ticket" title="Chưa có gói nào" />
+              <Empty icon="ticket" title={t('Chưa có gói nào')} />
             ) : (
               <div className="table-wrap">
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Gói</th>
-                      <th>Thời gian</th>
-                      <th>Số tiền</th>
-                      <th>Trạng thái</th>
+                      <th>{t('Gói')}</th>
+                      <th>{t('Thời gian')}</th>
+                      <th>{t('Số tiền')}</th>
+                      <th>{t('Trạng thái')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -153,11 +156,11 @@ export default function MyPackages() {
         </div>
 
         {/* ── Sidebar: các gói đang mở bán ── */}
-        <Card title="Các gói đang mở bán" icon="sparkle">
+        <Card title={t('Các gói đang mở bán')} icon="sparkle">
           <div className="stack-sm">
             {plans.loading && <LoadingBlock rows={3} />}
             {plans.data?.filter((p) => p.active).length === 0 && (
-              <Empty icon="ticket" title="Chưa có gói nào đang mở bán" />
+              <Empty icon="ticket" title={t('Chưa có gói nào đang mở bán')} />
             )}
             {plans.data?.filter((p) => p.active).map((p) => (
               <div
@@ -178,7 +181,7 @@ export default function MyPackages() {
                 <span className="num small">{fmtMoney(p.price)}</span>
               </div>
             ))}
-            <p className="tiny faint mt-8">Liên hệ lễ tân để đăng ký hoặc gia hạn.</p>
+            <p className="tiny faint mt-8">{t('Liên hệ lễ tân để đăng ký hoặc gia hạn.')}</p>
           </div>
         </Card>
       </div>
