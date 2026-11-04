@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Member, Page, Schedule, ScheduleCreated, ScheduleStatus, Trainer, WorkoutPlanSummary } from '../../api/types';
+import type { Member, Schedule, ScheduleCreated, ScheduleStatus, Trainer, WorkoutPlanSummary } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
+import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
 import { WeekCalendar } from '../../components/WeekCalendar';
 import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
@@ -77,14 +78,14 @@ export default function Schedules() {
         ))}
       </div>
 
-      {open && <SessionModal session={open} onClose={() => setOpen(null)} onChanged={() => { setOpen(null); void reload(); }} />}
+      {open && <SessionModal session={open} onClose={() => setOpen(null)} onChanged={(d) => { setOpen(null); if (d) setWeek(startOfWeek(d)); void reload(); }} />}
       {creating && <ScheduleForm onClose={closeCreate} onSaved={(firstDay) => { closeCreate(); if (firstDay) setWeek(startOfWeek(firstDay)); void reload(); }} />}
     </div>
   );
 }
 
 // ================= Chi tiết buổi tập =================
-export function SessionModal({ session, onClose, onChanged }: { session: Schedule; onClose: () => void; onChanged: () => void }) {
+export function SessionModal({ session, onClose, onChanged }: { session: Schedule; onClose: () => void; onChanged: (d?: Date) => void }) {
   const me = useMe();
   const toast = useToast();
   const staff = me.role !== 'MEMBER';
@@ -98,8 +99,8 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
     catch (e) { toast.error(errMsg(e)); throw e; }
   };
 
-  if (mode === 'complete') return <CompleteForm session={session} onClose={() => setMode('view')} onDone={onChanged} />;
-  if (mode === 'edit') return <ScheduleForm edit={session} onClose={() => setMode('view')} onSaved={() => onChanged()} />;
+  if (mode === 'complete') return <CompleteForm session={session} onClose={() => setMode('view')} onDone={() => onChanged()} />;
+  if (mode === 'edit') return <ScheduleForm edit={session} onClose={() => setMode('view')} onSaved={(start) => onChanged(start)} />;
 
   return (
     <>
@@ -216,8 +217,8 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
   const [error, setError] = useState<string | null>(null);
   const [skipped, setSkipped] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState<Member | null>(null);
 
-  const members = useAsync(() => (edit ? Promise.resolve(null) : api.get<Page<Member>>('/members', { size: 200, status: 'ACTIVE' })), []);
   const trainers = useAsync(() => (me.role === 'ADMIN' ? api.get<Trainer[]>('/trainers') : Promise.resolve([] as Trainer[])), []);
   const plans = useAsync(
     async () => {
@@ -227,7 +228,6 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
     },
     [memberId],
   );
-  const selected = members.data?.content.find((m) => String(m.id) === memberId);
 
   useEffect(() => {
     // Mặc định gắn giáo án đang áp dụng và HLV phụ trách của hội viên.
@@ -300,12 +300,14 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
             <Field label="Hội viên" className="span-2"><Person name={edit.memberName} size="sm" /></Field>
           ) : (
             <Field label="Hội viên" error={errors.memberId} required className="span-2">
-              <Select value={memberId} invalid={!!errors.memberId} onChange={(e) => setMemberId(e.target.value)}>
-                <option value="">— Chọn hội viên —</option>
-                {members.data?.content.map((m) => (
-                  <option key={m.id} value={m.id}>{m.fullName} · {m.code}{m.subscriptionState === 'EXPIRED' || !m.subscriptionState ? ' (không có gói)' : ''}</option>
-                ))}
-              </Select>
+              <MemberSelect
+                value={memberId}
+                invalid={!!errors.memberId}
+                onChange={(newId, m) => {
+                  setMemberId(newId);
+                  setSelected(m ?? null);
+                }}
+              />
             </Field>
           )}
           {selected && (selected.subscriptionState === 'EXPIRED' || !selected.subscriptionState) && (

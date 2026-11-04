@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { Member, MembershipPlan, Page, Subscription, SubscriptionPreview } from '../api/types';
+import type { MembershipPlan, Subscription, SubscriptionPreview } from '../api/types';
+import { MemberSelect } from './MemberSelect';
 import { t, tn } from '../i18n';
 import { durationLabel, fmtDate, fmtMoney } from '../lib/format';
 import { errMsg, useAsync } from '../lib/hooks';
@@ -19,7 +20,6 @@ export function SubscriptionForm({ memberId: preset, onClose, onSaved }: { membe
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const members = useAsync(() => (preset ? Promise.resolve(null) : api.get<Page<Member>>('/members', { size: 200 })), []);
   const plans = useAsync(() => api.get<MembershipPlan[]>('/plans'), []);
   const plan = plans.data?.find((p) => String(p.id) === planId);
 
@@ -55,10 +55,11 @@ export function SubscriptionForm({ memberId: preset, onClose, onSaved }: { membe
         <div className="form-grid">
           {!preset && (
             <Field label="Hội viên" required className="span-2">
-              <Select value={memberId} onChange={(e) => setMemberId(e.target.value)}>
-                <option value="">{t('— Chọn hội viên —')}</option>
-                {members.data?.content.map((m) => <option key={m.id} value={m.id}>{m.fullName} · {m.code}</option>)}
-              </Select>
+              <MemberSelect
+                value={memberId}
+                invalid={!!error && !memberId}
+                onChange={(newId) => setMemberId(newId)}
+              />
             </Field>
           )}
           <Field label="Gói tập" required className="span-2">

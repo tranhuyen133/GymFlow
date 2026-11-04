@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Exercise, Member, MuscleGroup, Page, PlanItem, PlanStatus, WorkoutPlan } from '../../api/types';
+import type { Exercise, Member, MuscleGroup, PlanItem, PlanStatus, WorkoutPlan } from '../../api/types';
 import { Icon } from '../../components/Icon';
+import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
 import { Alert, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, PageHead, Select, StatusBadge, Textarea } from '../../components/ui';
 import { t, tn } from '../../i18n';
@@ -20,10 +21,10 @@ export default function PlanEditor() {
   const toast = useToast();
 
   const plan = useAsync(() => (isNew ? Promise.resolve(null) : api.get<WorkoutPlan>(`/workout-plans/${id}`)), [id]);
-  const members = useAsync(() => api.get<Page<Member>>('/members', { size: 200 }), []);
   const library = useAsync(() => api.get<Exercise[]>('/exercises'), []);
 
   const [memberId, setMemberId] = useState(params.get('memberId') ?? '');
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [name, setName] = useState('');
   const [goal, setGoal] = useState('');
   const [start, setStart] = useState(toIsoDate(new Date()));
@@ -53,12 +54,11 @@ export default function PlanEditor() {
     // Gợi ý mục tiêu từ hồ sơ hội viên khi tạo mới.
     if (!isNew || !memberId) return;
     if (lastSuggestedMemberId.current === memberId) return;
-    const m = members.data?.content.find((x) => String(x.id) === memberId);
-    if (m) {
+    if (selectedMember?.goal) {
       lastSuggestedMemberId.current = memberId;
-      if (m.goal) setGoal(m.goal);
+      setGoal(selectedMember.goal);
     }
-  }, [memberId, members.data, isNew]);
+  }, [memberId, selectedMember, isNew]);
 
   useEffect(() => {
     if (!dirty) return;
@@ -236,10 +236,20 @@ export default function PlanEditor() {
           <Card title="Thông tin" icon="clipboard">
             <div className="stack">
               <Field label="Hội viên" required>
-                <Select value={memberId} disabled={!isNew} onChange={(e) => { setMemberId(e.target.value); touch(); }}>
-                  <option value="">{t('— Chọn hội viên —')}</option>
-                  {members.data?.content.map((m) => <option key={m.id} value={m.id}>{m.fullName} · {m.code}</option>)}
-                </Select>
+                <MemberSelect
+                  value={memberId}
+                  disabled={!isNew}
+                  initialMemberName={plan.data?.summary.memberName}
+                  onChange={(newId, m) => {
+                    setMemberId(newId);
+                    setSelectedMember(m ?? null);
+                    if (m?.goal && isNew && lastSuggestedMemberId.current !== newId) {
+                      lastSuggestedMemberId.current = newId;
+                      setGoal(m.goal);
+                    }
+                    touch();
+                  }}
+                />
               </Field>
               <Field label="Tên giáo án" required><Input maxLength={120} value={name} onChange={(e) => { setName(e.target.value); touch(); }} placeholder="VD: Full body 3 buổi/tuần" /></Field>
               <Field label="Mục tiêu"><Input maxLength={255} value={goal} onChange={(e) => { setGoal(e.target.value); touch(); }} /></Field>
