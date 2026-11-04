@@ -1,19 +1,35 @@
+import { useMemo } from 'react';
 import type { Schedule } from '../api/types';
 import { addDays, DAYS, fmtTime, isSameDay, parseDateTime, scheduleStatus } from '../lib/format';
 import { Badge } from './ui';
 
-const START = 5;
-const END = 22;
 const HOUR_PX = 52;
 
 /** Lịch tuần dạng lưới giờ (desktop) + danh sách theo ngày (mobile). */
 export function WeekCalendar({ weekStart, events, onSelect, showMember = true }: {
   weekStart: Date; events: Schedule[]; onSelect: (s: Schedule) => void; showMember?: boolean;
 }) {
+  const { startHour, endHour } = useMemo(() => {
+    let minH = 5;
+    let maxH = 22;
+    for (const e of events) {
+      const s = parseDateTime(e.startTime);
+      const en = parseDateTime(e.endTime);
+      if (!isNaN(s.getTime())) {
+        minH = Math.min(minH, s.getHours());
+      }
+      if (!isNaN(en.getTime())) {
+        const enH = en.getMinutes() > 0 ? en.getHours() + 1 : en.getHours();
+        maxH = Math.max(maxH, enH);
+      }
+    }
+    return { startHour: Math.max(0, minH), endHour: Math.min(24, maxH) };
+  }, [events]);
+
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const now = new Date();
-  const height = (END - START) * HOUR_PX;
-  const top = (d: Date) => Math.max(0, (d.getHours() + d.getMinutes() / 60 - START) * HOUR_PX);
+  const height = (endHour - startHour) * HOUR_PX;
+  const top = (d: Date) => Math.max(0, (d.getHours() + d.getMinutes() / 60 - startHour) * HOUR_PX);
   const nowTop = top(now);
 
   return (
@@ -26,7 +42,7 @@ export function WeekCalendar({ weekStart, events, onSelect, showMember = true }:
           </div>
         ))}
         <div className="hours" style={{ height }}>
-          {Array.from({ length: END - START }, (_, i) => <div key={i} style={{ top: i * HOUR_PX }}>{String(START + i).padStart(2, '0')}:00</div>)}
+          {Array.from({ length: endHour - startHour }, (_, i) => <div key={i} style={{ top: i * HOUR_PX }}>{String(startHour + i).padStart(2, '0')}:00</div>)}
         </div>
         {days.map((d, i) => {
           const list = events.filter((e) => isSameDay(parseDateTime(e.startTime), d));
