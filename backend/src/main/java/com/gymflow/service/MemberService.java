@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -97,8 +99,22 @@ public class MemberService {
         m.setJoinedAt(mappers.today());
         m.setStatus(MemberStatus.ACTIVE);
         memberRepository.save(m);
-        auditService.logAs(user.getId(), user.getEmail(), "MEMBER_SELF_REGISTER", "MEMBER", m.getId(),
-                m.getCode() + " – " + user.getFullName(), true);
+
+        Long userId = user.getId();
+        String email = user.getEmail();
+        Long memberId = m.getId();
+        String detail = m.getCode() + " – " + user.getFullName();
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    auditService.logAs(userId, email, "MEMBER_SELF_REGISTER", "MEMBER", memberId, detail, true);
+                }
+            });
+        } else {
+            auditService.logAs(userId, email, "MEMBER_SELF_REGISTER", "MEMBER", memberId, detail, true);
+        }
         return m;
     }
 

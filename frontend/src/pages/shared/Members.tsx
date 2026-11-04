@@ -16,12 +16,14 @@ import { errMsg, fieldErrs, useAsync, useDebounced } from '../../lib/hooks';
 export default function Members() {
   const me = useMe();
   const admin = me.role === 'ADMIN';
+  const toast = useToast();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'' | MemberStatus>('');
   const [trainerId, setTrainerId] = useState('');
   const [page, setPage] = useState(0);
+  const [exporting, setExporting] = useState(false);
   const [creating, setCreating] = useState(admin && params.get('new') === '1');
   const [created, setCreated] = useState<MemberCreated | null>(null);
   // Debounce ô tìm kiếm để tránh gọi API liên tục; đổi từ khoá/bộ lọc thì quay về trang 1.
@@ -35,14 +37,36 @@ export default function Members() {
 
   // Xuất toàn bộ kết quả đang lọc (không chỉ trang hiện tại) ra CSV.
   const exportCsv = async () => {
-    const all = await api.get<Page<Member>>('/members', { q: dq, status, trainerId, size: 200 });
-    downloadCsv(`hoi-vien-${new Date().toISOString().slice(0, 10)}`, all.content, [
-      { header: 'Mã', value: (m) => m.code }, { header: 'Họ tên', value: (m) => m.fullName }, { header: 'Email', value: (m) => m.email },
-      { header: 'SĐT', value: (m) => m.phone }, { header: 'Giới tính', value: (m) => (m.gender ? genderLabel[m.gender] : '') },
-      { header: 'HLV', value: (m) => m.trainerName }, { header: 'Trạng thái', value: (m) => memberStatus[m.status][0] },
-      { header: 'Gói hiện tại', value: (m) => m.currentPlanName }, { header: 'Hết hạn', value: (m) => m.subscriptionEndDate },
-      { header: 'Ngày tham gia', value: (m) => m.joinedAt },
-    ]);
+    setExporting(true);
+    try {
+      const items: Member[] = [];
+      let currentPage = 0;
+      let totalPages = 1;
+      const pageSize = 200;
+      while (currentPage < totalPages) {
+        const res = await api.get<Page<Member>>('/members', {
+          q: dq,
+          status,
+          trainerId,
+          page: currentPage,
+          size: pageSize,
+        });
+        items.push(...res.content);
+        totalPages = res.totalPages;
+        currentPage++;
+      }
+      downloadCsv(`hoi-vien-${new Date().toISOString().slice(0, 10)}`, items, [
+        { header: 'Mã', value: (m) => m.code }, { header: 'Họ tên', value: (m) => m.fullName }, { header: 'Email', value: (m) => m.email },
+        { header: 'SĐT', value: (m) => m.phone }, { header: 'Giới tính', value: (m) => (m.gender ? genderLabel[m.gender] : '') },
+        { header: 'HLV', value: (m) => m.trainerName }, { header: 'Trạng thái', value: (m) => memberStatus[m.status][0] },
+        { header: 'Gói hiện tại', value: (m) => m.currentPlanName }, { header: 'Hết hạn', value: (m) => m.subscriptionEndDate },
+        { header: 'Ngày tham gia', value: (m) => m.joinedAt },
+      ]);
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setExporting(false);
+    }
   };
 
   const closeCreate = () => { setCreating(false); if (params.get('new')) { params.delete('new'); setParams(params, { replace: true }); } };
@@ -52,7 +76,7 @@ export default function Members() {
       <PageHead eyebrow={admin ? 'Quản lý' : 'Học viên của tôi'} title="Hội viên"
         desc={admin ? 'Tra cứu, thêm mới, phân công HLV và theo dõi tình trạng gói tập.' : 'Danh sách hội viên bạn đang phụ trách.'}
         actions={<>
-          <Button icon="download" onClick={() => void exportCsv()}>Xuất CSV</Button>
+          <Button icon="download" loading={exporting} onClick={() => void exportCsv()}>Xuất CSV</Button>
           {admin && <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Thêm hội viên</Button>}
         </>} />
 

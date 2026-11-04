@@ -34,7 +34,7 @@ Viết tắt: **B/** = `backend/src/main/java/com/gymflow/`, **R/** = `backend/s
 | File | Task |
 | --- | --- |
 | `B/domain/PasswordResetToken.java`, `B/repository/PasswordResetTokenRepository.java`, `B/service/NotificationService.java` | SCRUM-135 |
-| `T/service/AuthServiceRegisterTest.java`, `T/dto/RegisterRequestValidationTest.java` | SCRUM-135 |
+| `T/service/AuthServiceRegisterTest.java`, `T/dto/RegisterRequestValidationTest.java`, `T/service/AuthRegisterIntegrationTest.java` | SCRUM-135 |
 | `B/domain/Member.java`, `MemberStatus.java`, `Gender.java`, `B/repository/MemberRepository.java`, `B/service/MemberService.java`, `B/web/MemberController.java` | SCRUM-136 |
 | `B/domain/Trainer.java`, `TrainerShift.java`, `B/repository/TrainerRepository.java`, `B/service/TrainerService.java`, `B/web/TrainerController.java` | SCRUM-137 |
 | `B/domain/Exercise.java`, `ExerciseGoal.java`, `ExerciseLocation.java`, `MuscleGroup.java`, `Level.java`, `B/repository/ExerciseRepository.java`, `B/service/ExerciseService.java` | SCRUM-162 |
@@ -42,7 +42,7 @@ Viết tắt: **B/** = `backend/src/main/java/com/gymflow/`, **R/** = `backend/s
 | `B/web/TrainingController.java` (bài tập, giáo án, buổi tập) | SCRUM-162, 163, 186 |
 | `B/domain/WorkoutSchedule.java`, `ScheduleStatus.java`, `B/repository/WorkoutScheduleRepository.java`, `B/service/ScheduleService.java`, `B/web/ScheduleController.java`, `T/service/ScheduleServiceTest.java` | SCRUM-185 (khoá chống trùng giờ: Dũng, SCRUM-176) |
 | `B/domain/WorkoutLog.java`, `B/repository/WorkoutLogRepository.java` | SCRUM-186 |
-| `B/service/DashboardService.java` | SCRUM-187 |
+| `B/service/DashboardService.java`, `T/service/DashboardServiceTest.java` | SCRUM-187 |
 | `B/domain/Article.java`, `ArticleCategory.java`, `ArticleStatus.java`, `B/repository/ArticleRepository.java`, `B/service/ArticleService.java`, `B/web/KnowledgeController.java` | SCRUM-209, 210 |
 
 ## Kiên (Nguyễn Thế Kiên)

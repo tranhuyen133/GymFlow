@@ -1,9 +1,11 @@
 import type { ArticleCategory, ArticleStatus, ExerciseGoal, ExerciseLocation, Gender, Level, MemberStatus, MuscleGroup, PlanStatus, ReviewStatus, Role, ScheduleStatus, SubscriptionState, UserStatus } from '../api/types';
-import { locale, t } from '../i18n';
+import { getLang, locale, t } from '../i18n';
+import { ACTION_EN } from '../i18n/en';
 
 export type Tone = 'green' | 'blue' | 'violet' | 'amber' | 'red' | 'muted';
 
 const roleLabel_VI: Record<Role, string> = { ADMIN: 'Quản lý', TRAINER: 'Huấn luyện viên', MEMBER: 'Hội viên' };
+const roleLabel_EN: Record<Role, string> = { ADMIN: 'Manager', TRAINER: 'Trainer', MEMBER: 'Member' };
 const genderLabel_VI: Record<Gender, string> = { MALE: 'Nam', FEMALE: 'Nữ', OTHER: 'Khác' };
 const memberStatus_VI: Record<MemberStatus, [string, Tone]> = {
   ACTIVE: ['Hoạt động', 'green'], PAUSED: ['Bảo lưu', 'amber'], INACTIVE: ['Ngừng', 'muted'],
@@ -132,7 +134,12 @@ function translated<T extends object>(raw: T): T {
     },
   });
 }
-export const roleLabel = translated(roleLabel_VI);
+export const roleLabel: Record<Role, string> = new Proxy(roleLabel_VI, {
+  get(target, prop: Role) {
+    if (getLang() === 'en') return roleLabel_EN[prop] ?? target[prop];
+    return target[prop];
+  },
+});
 export const genderLabel = translated(genderLabel_VI);
 export const memberStatus = translated(memberStatus_VI);
 export const userStatus = translated(userStatus_VI);
@@ -148,4 +155,9 @@ export const articleCategoryLabel = translated(articleCategoryLabel_VI);
 export const articleStatusLabel = translated(articleStatusLabel_VI);
 export const DAYS = translated(DAYS_VI);
 export const DAY_NAMES = translated(DAY_NAMES_VI);
-export const actionLabel = translated(actionLabel_VI);
+export const actionLabel: Record<string, string> = new Proxy(actionLabel_VI, {
+  get(target, prop: string) {
+    if (getLang() === 'en') return ACTION_EN[prop] ?? target[prop] ?? prop;
+    return target[prop] ?? prop;
+  },
+});
