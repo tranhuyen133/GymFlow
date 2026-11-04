@@ -4,6 +4,8 @@ import { ACTION_EN } from '../i18n/en';
 
 export type Tone = 'green' | 'blue' | 'violet' | 'amber' | 'red' | 'muted';
 
+export const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
 const roleLabel_VI: Record<Role, string> = { ADMIN: 'Quản lý', TRAINER: 'Huấn luyện viên', MEMBER: 'Hội viên' };
 const roleLabel_EN: Record<Role, string> = { ADMIN: 'Manager', TRAINER: 'Trainer', MEMBER: 'Member' };
 const genderLabel_VI: Record<Gender, string> = { MALE: 'Nam', FEMALE: 'Nữ', OTHER: 'Khác' };

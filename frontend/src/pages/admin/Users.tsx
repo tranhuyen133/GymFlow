@@ -5,7 +5,7 @@ import { useMe } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge } from '../../components/ui';
 import { t } from '../../i18n';
-import { fmtDateTime, relativeTime, roleLabel, userStatus } from '../../lib/format';
+import { EMAIL_RE, fmtDateTime, relativeTime, roleLabel, userStatus } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync, useDebounced } from '../../lib/hooks';
 
 const roleTone = { ADMIN: 'violet', TRAINER: 'blue', MEMBER: 'green' } as const;
@@ -114,7 +114,7 @@ function AdminForm({ onClose, onSaved }: { onClose: () => void; onSaved: (c: Use
   const submit = async () => {
     const v: Record<string, string> = {};
     if (!f.fullName.trim()) v.fullName = 'Nhập họ tên';
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email)) v.email = 'Email không hợp lệ';
+    if (!EMAIL_RE.test(f.email.trim())) v.email = 'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)';
     if (f.password && !/^(?=.*[A-Za-z])(?=.*\d).{8,72}$/.test(f.password)) v.password = 'Tối thiểu 8 ký tự, gồm chữ và số';
     setErrors(v); setError(null);
     if (Object.keys(v).length) return;

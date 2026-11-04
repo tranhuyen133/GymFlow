@@ -11,8 +11,8 @@ import { SITE } from '../site';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
 import { focusFormError } from './publicForm';
+import { EMAIL_RE } from '../lib/format';
 
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const ROLE_ICON: Record<Role, IconName> = { ADMIN: 'shield', TRAINER: 'badge', MEMBER: 'user' };
 
 export function AuthArt({ title, lines }: { title?: [string, string]; lines?: { icon: IconName; text: string }[] }) {
@@ -62,7 +62,7 @@ export default function Login() {
     const pw = creds?.password ?? password;
     const v: Record<string, string> = {};
     if (!em) v.email = 'Vui lòng nhập email';
-    else if (!EMAIL_RE.test(em)) v.email = 'Email không hợp lệ';
+    else if (!EMAIL_RE.test(em)) v.email = 'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)';
     if (!pw) v.password = 'Vui lòng nhập mật khẩu';
     setErrors(v); setError(null);
     if (Object.keys(v).length) {

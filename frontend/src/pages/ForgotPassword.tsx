@@ -10,6 +10,7 @@ import { AuthArt } from './Login';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
 import { focusFormError, validateReset } from './publicForm';
+import { EMAIL_RE } from '../lib/format';
 
 export default function ForgotPassword() {
   const toast = useToast();
@@ -36,7 +37,7 @@ export default function ForgotPassword() {
     e.preventDefault();
     if (inFlight.current) return;
     setError(null);
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) { showErrors({ email: 'Email không hợp lệ' }); return; }
+    if (!EMAIL_RE.test(email.trim())) { showErrors({ email: 'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)' }); return; }
     inFlight.current = true;
     setBusy(true); setError(null); setErrors({});
     try {
