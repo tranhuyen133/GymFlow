@@ -3,7 +3,7 @@ import type { Role } from '../api/types';
 
 export function publicPlanAction(role?: Role) {
   if (!role) return { to: '/register', label: 'Đăng ký để chọn gói' };
-  if (role === 'MEMBER') return { to: '/me/packages', label: 'Xem gói của tôi' };
+  if (role === 'MEMBER') return { to: '/me/packages', label: 'Đăng ký gói này' };
   return { to: '/dashboard', label: 'Vào trang của tôi' };
 }
 

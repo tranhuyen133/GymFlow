@@ -33,7 +33,7 @@ const BENEFITS: { icon: IconName; title: string; desc: string }[] = [
 
 const STEPS = [
   { title: 'Tạo tài khoản', desc: 'Đăng ký hội viên trực tuyến miễn phí, chỉ cần họ tên và email.' },
-  { title: 'Chọn gói tại quầy', desc: 'Thanh toán gói phù hợp, lễ tân kích hoạt ngay trên tài khoản của bạn.' },
+  { title: 'Chọn gói trên ứng dụng', desc: 'Gửi đăng ký gói phù hợp, thanh toán tại quầy và gói được kích hoạt ngay trên tài khoản.' },
   { title: 'Bắt đầu tập', desc: 'Huấn luyện viên xếp lịch, soạn giáo án – bạn chỉ việc đến và tập.' },
 ];
 
@@ -165,7 +165,7 @@ export default function Landing() {
       <section className="section" id="plans">
         <div className="kicker">{t('Bảng giá')}</div>
         <h2 className="display-sm">{t('Gói tập minh bạch.')}</h2>
-        <p className="muted mt-8">{t('Giá đã gồm VAT. Gói được kích hoạt sau khi thanh toán tại quầy lễ tân.')}</p>
+        <p className="muted mt-8">{t('Giá đã gồm VAT. Chọn gói trong ứng dụng, gói được kích hoạt sau khi thanh toán tại quầy lễ tân.')}</p>
         <div className="grid grid-3 mt-24" aria-busy={plans.loading}>
           {plans.loading && [0, 1, 2].map((i) => <div key={i} className="skeleton" aria-hidden style={{ height: 260 }} />)}
           {plans.error && <div className="stack" role="alert">
@@ -199,7 +199,7 @@ export default function Landing() {
         <div className="cta-band">
           <div>
             <h2 className="display-sm">{t('Sẵn sàng cho buổi tập đầu tiên?')}</h2>
-            <p className="muted mt-8">{t('Tạo tài khoản miễn phí, ghé quầy chọn gói và bắt đầu ngay trong tuần này.')}</p>
+            <p className="muted mt-8">{t('Tạo tài khoản miễn phí, chọn gói ngay trên ứng dụng và bắt đầu trong tuần này.')}</p>
           </div>
           {primaryCta}
         </div>

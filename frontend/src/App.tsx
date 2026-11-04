@@ -6,6 +6,7 @@ import { BrandMark } from './components/Brand';
 import { Layout } from './components/Layout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AuditLog from './pages/admin/AuditLog';
+import PackageRequests from './pages/admin/PackageRequests';
 import Plans from './pages/admin/Plans';
 import Reports from './pages/admin/Reports';
 import Subscriptions from './pages/admin/Subscriptions';
@@ -98,6 +99,7 @@ export default function App() {
         <Route path="/trainers" element={<Only roles={ADMIN}><Trainers /></Only>} />
         <Route path="/plans" element={<Only roles={ADMIN}><Plans /></Only>} />
         <Route path="/subscriptions" element={<Only roles={ADMIN}><Subscriptions /></Only>} />
+        <Route path="/package-requests" element={<Only roles={ADMIN}><PackageRequests /></Only>} />
         <Route path="/reports" element={<Only roles={ADMIN}><Reports /></Only>} />
         <Route path="/users" element={<Only roles={ADMIN}><Users /></Only>} />
         <Route path="/audit-logs" element={<Only roles={ADMIN}><AuditLog /></Only>} />

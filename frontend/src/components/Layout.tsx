@@ -32,10 +32,12 @@ export const NAV: NavItem[] = [
   { to: '/trainers', label: 'Huấn luyện viên', icon: 'badge', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/plans', label: 'Gói tập', icon: 'ticket', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/subscriptions', label: 'Đăng ký gói', icon: 'card', roles: ['ADMIN'], group: 'Kinh doanh' },
+  { to: '/package-requests', label: 'Duyệt đăng ký gói', icon: 'checkCircle', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/reports', label: 'Báo cáo', icon: 'chart', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/users', label: 'Tài khoản & quyền', icon: 'userCog', roles: ['ADMIN'], group: 'Hệ thống' },
   { to: '/audit-logs', label: 'Nhật ký hệ thống', icon: 'scroll', roles: ['ADMIN'], group: 'Hệ thống' },
   { to: '/profile', label: 'Hồ sơ cá nhân', icon: 'user', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Tài khoản' },
+  { to: '/', label: 'Trang giới thiệu', icon: 'home', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Tài khoản' },
 ];
 
 function Clock() {
@@ -125,7 +127,7 @@ export function Layout() {
   return (
     <div className="shell">
       <aside className={`sidebar ${open ? 'open' : ''}`} aria-label={t('Điều hướng chính')}>
-        <Link to="/dashboard"><Brand /></Link>
+        <Link to="/" title={t('Về trang giới thiệu GymFlow')} aria-label={t('Về trang giới thiệu GymFlow')}><Brand /></Link>
         <nav className="nav">
           {items.map((n) => {
             const showGroup = n.group && n.group !== lastGroup;

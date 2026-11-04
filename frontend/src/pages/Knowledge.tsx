@@ -19,11 +19,9 @@ const basePath = (embedded?: boolean) => (embedded ? '/me/knowledge' : '/knowled
 
 function PublicNav() {
   const { user } = useAuth();
-  // Đã đăng nhập: bấm logo về màn hình chính của ứng dụng, chưa đăng nhập thì về trang chủ.
-  const home = user ? '/dashboard' : '/';
   return (
     <nav className="landing-nav">
-      <Link to={home} aria-label={user ? t('Về màn hình chính') : `GymFlow – ${t('trang chủ')}`} title={user ? t('Về màn hình chính') : undefined}><Brand /></Link>
+      <Link to="/" aria-label={t('Về trang giới thiệu GymFlow')} title={t('Về trang giới thiệu GymFlow')}><Brand /></Link>
       <div style={{ flex: 1 }} />
       <ThemeToggle />
       <Link className="btn btn-ghost btn-sm" to="/knowledge"><Icon name="layers" />{t('Kho kiến thức')}</Link>
@@ -62,7 +60,6 @@ export function KnowledgeList({ embedded }: { embedded?: boolean }) {
 
   return (
     <Frame embedded={embedded}>
-      {embedded && <div style={{ marginBottom: 12 }}><BackButton fallback="/dashboard" label="Quay lại" /></div>}
       <div className="kicker">{t('Kho kiến thức')}</div>
       <h1 className="display-sm">{t('Ăn, ngủ, tập đúng cách')}</h1>
       <p className="lead">{t('Bài viết ngắn về dinh dưỡng, nước uống, giấc ngủ và vận động. Mỗi bài ghi rõ nguồn tham khảo và chỉ xuất hiện sau khi quản lý phòng tập duyệt.')}</p>
