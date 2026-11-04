@@ -6,6 +6,7 @@ import { t } from '../i18n';
 export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const seq = useRef(0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -15,18 +16,25 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
     const id = ++seq.current;
     setLoading(true);
     setError(null);
+    setStatus(null);
     try {
       const res = await run();
-      if (id === seq.current) setData(res);
+      if (id === seq.current) {
+        setData(res);
+        setStatus(200);
+      }
     } catch (e) {
-      if (id === seq.current) setError(t(e instanceof ApiError ? e.message : 'Có lỗi xảy ra'));
+      if (id === seq.current) {
+        setError(t(e instanceof ApiError ? e.message : 'Có lỗi xảy ra'));
+        setStatus(e instanceof ApiError ? e.status : null);
+      }
     } finally {
       if (id === seq.current) setLoading(false);
     }
   }, [run]);
 
   useEffect(() => { void reload(); }, [reload]);
-  return { data, error, loading, reload, setData };
+  return { data, error, status, loading, reload, setData };
 }
 
 export function useDebounced<T>(value: T, ms = 300) {

@@ -62,6 +62,7 @@ export default function Schedules() {
           { value: 'SCHEDULED', label: `Sắp tới ${counts.SCHEDULED}` },
           { value: 'COMPLETED', label: `Hoàn thành ${counts.COMPLETED}` },
           { value: 'MISSED', label: `Vắng ${counts.MISSED}` },
+          { value: 'CANCELLED', label: `Đã huỷ ${counts.CANCELLED}` },
         ]} />
       </div>
 
@@ -218,16 +219,32 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
 
   const members = useAsync(() => (edit ? Promise.resolve(null) : api.get<Page<Member>>('/members', { size: 200, status: 'ACTIVE' })), []);
   const trainers = useAsync(() => (me.role === 'ADMIN' ? api.get<Trainer[]>('/trainers') : Promise.resolve([] as Trainer[])), []);
-  const plans = useAsync(() => (memberId ? api.get<WorkoutPlanSummary[]>('/workout-plans', { memberId }) : Promise.resolve([] as WorkoutPlanSummary[])), [memberId]);
+  const plans = useAsync(
+    async () => {
+      if (!memberId) return { memberId: '', list: [] as WorkoutPlanSummary[] };
+      const list = await api.get<WorkoutPlanSummary[]>('/workout-plans', { memberId });
+      return { memberId, list };
+    },
+    [memberId],
+  );
   const selected = members.data?.content.find((m) => String(m.id) === memberId);
 
   useEffect(() => {
     // Mặc định gắn giáo án đang áp dụng và HLV phụ trách của hội viên.
     if (edit) return;
-    const active = plans.data?.find((p) => p.status === 'ACTIVE');
-    if (active) { setPlanId(String(active.id)); setTitle(`Buổi tập – ${active.name}`.slice(0, 120)); }
-    if (selected?.trainerId && me.role === 'ADMIN') setTrainerId(String(selected.trainerId));
-  }, [plans.data, selected?.trainerId, edit, me.role]);
+    if (plans.loading || !plans.data || plans.data.memberId !== memberId) return;
+    const active = plans.data.list.find((p) => p.status === 'ACTIVE');
+    if (active) {
+      setPlanId(String(active.id));
+      setTitle(`Buổi tập – ${active.name}`.slice(0, 120));
+    } else {
+      setPlanId('');
+      setTitle('Buổi tập với HLV');
+    }
+    if (me.role === 'ADMIN') {
+      setTrainerId(selected?.trainerId ? String(selected.trainerId) : '');
+    }
+  }, [plans.data, plans.loading, memberId, selected?.trainerId, edit, me.role]);
 
   const submit = async () => {
     const v: Record<string, string> = {};
@@ -305,7 +322,7 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
           <Field label="Giáo án" className={me.role === 'ADMIN' ? '' : 'span-2'}>
             <Select value={planId} onChange={(e) => setPlanId(e.target.value)}>
               <option value="">Không gắn giáo án</option>
-              {(plans.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}{p.status !== 'ACTIVE' ? ' (lưu trữ)' : ''}</option>)}
+              {(plans.data?.memberId === memberId ? plans.data.list : []).map((p) => <option key={p.id} value={p.id}>{p.name}{p.status !== 'ACTIVE' ? ' (lưu trữ)' : ''}</option>)}
             </Select>
           </Field>
           <Field label="Tiêu đề" error={errors.title} required className="span-2"><Input maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} /></Field>

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Exercise, Member, MuscleGroup, Page, PlanItem, PlanStatus, WorkoutPlan } from '../../api/types';
 import { Icon } from '../../components/Icon';
@@ -47,18 +47,40 @@ export default function PlanEditor() {
     setDay(p.items[0]?.dayOfWeek ?? 1);
   }, [plan.data]);
 
+  const lastSuggestedMemberId = useRef<string | null>(null);
+
   useEffect(() => {
     // Gợi ý mục tiêu từ hồ sơ hội viên khi tạo mới.
-    if (!isNew || goal) return;
+    if (!isNew || !memberId) return;
+    if (lastSuggestedMemberId.current === memberId) return;
     const m = members.data?.content.find((x) => String(x.id) === memberId);
-    if (m?.goal) setGoal(m.goal);
-  }, [memberId, members.data, isNew, goal]);
+    if (m) {
+      lastSuggestedMemberId.current = memberId;
+      if (m.goal) setGoal(m.goal);
+    }
+  }, [memberId, members.data, isNew]);
 
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
     window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
+    const handleClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('a');
+      if (target && target.getAttribute('href') && !target.getAttribute('target')) {
+        const href = target.getAttribute('href');
+        if (href && !href.startsWith('blob:') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+          if (!window.confirm(t('Thay đổi chưa lưu sẽ bị mất. Bạn có chắc muốn rời đi?'))) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }
+      }
+    };
+    document.addEventListener('click', handleClick, true);
+    return () => {
+      window.removeEventListener('beforeunload', warn);
+      document.removeEventListener('click', handleClick, true);
+    };
   }, [dirty]);
 
   const dayItems = items.filter((i) => i.dayOfWeek === day);
@@ -77,9 +99,17 @@ export default function PlanEditor() {
     setPick(''); touch();
   };
   const update = (key: number, patch: Partial<PlanItem>) => { setItems((xs) => xs.map((x) => (x.key === key ? { ...x, ...patch } : x))); touch(); };
-  const remove = (key: number) => { setItems((xs) => xs.filter((x) => x.key !== key)); touch(); };
+  const remove = (key: number) => {
+    setItems((xs) => {
+      const remaining = xs.filter((x) => x.key !== key);
+      const remainingDay = remaining.filter((x) => x.dayOfWeek === day).sort((a, b) => a.sortOrder - b.sortOrder);
+      const orderMap = new Map(remainingDay.map((x, idx) => [x.key, idx]));
+      return remaining.map((x) => (x.dayOfWeek === day ? { ...x, sortOrder: orderMap.get(x.key) ?? 0 } : x));
+    });
+    touch();
+  };
   const move = (key: number, dir: -1 | 1) => {
-    const list = dayItems.map((x) => x.key);
+    const list = [...dayItems].sort((a, b) => a.sortOrder - b.sortOrder).map((x) => x.key);
     const i = list.indexOf(key); const j = i + dir;
     if (j < 0 || j >= list.length) return;
     [list[i], list[j]] = [list[j], list[i]];
@@ -88,6 +118,10 @@ export default function PlanEditor() {
   };
   const copyDay = (to: number) => {
     if (to === day) return;
+    const destCount = items.filter((x) => x.dayOfWeek === to).length;
+    if (destCount > 0) {
+      if (!window.confirm(t('Ngày {day} đã có {n} bài, ghi đè?', { day: DAYS[to - 1], n: destCount }))) return;
+    }
     setItems((xs) => [...xs.filter((x) => x.dayOfWeek !== to), ...xs.filter((x) => x.dayOfWeek === day).map((x) => ({ ...x, id: undefined, key: keySeq++, dayOfWeek: to }))]);
     toast.info(t('Đã chép {from} sang {to}', { from: DAY_NAMES[day - 1], to: DAY_NAMES[to - 1] })); touch();
   };
@@ -127,7 +161,17 @@ export default function PlanEditor() {
 
   return (
     <div className="page">
-      <Link to="/workout-plans" className="link small row" style={{ gap: 6, marginBottom: 14 }}><Icon name="arrowLeft" size={15} />{t('Danh sách giáo án')}</Link>
+      <button
+        type="button"
+        className="link small row"
+        style={{ gap: 6, marginBottom: 14, background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+        onClick={() => {
+          if (dirty && !window.confirm(t('Thay đổi chưa lưu sẽ bị mất. Bạn có chắc muốn rời đi?'))) return;
+          navigate('/workout-plans');
+        }}
+      >
+        <Icon name="arrowLeft" size={15} />{t('Danh sách giáo án')}
+      </button>
       <PageHead eyebrow={isNew ? 'Giáo án mới' : t('Giáo án #{id}', { id })} title={isNew ? 'Soạn giáo án' : name || 'Giáo án'}
         desc={summary ? <span className="row" style={{ gap: 8 }}><StatusBadge map={planStatus} value={summary.status} /> {tn('HLV {trainer} · {member}', { trainer: summary.trainerName ?? '—', member: summary.memberName })}</span> : 'Chọn bài theo từng ngày trong tuần, đặt số hiệp, số lần, mức tạ và thời gian nghỉ.'}
         actions={<>

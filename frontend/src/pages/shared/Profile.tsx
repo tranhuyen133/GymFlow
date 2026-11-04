@@ -11,7 +11,7 @@ import type { Gender, Me, Member, Shift, Trainer } from '../../api/types';
 import { useAuth, useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Alert, Avatar, Badge, Button, Card, Field, Input, LoadingBlock, PageHead, PasswordInput, Select, Textarea } from '../../components/ui';
+import { Alert, Avatar, Badge, Button, Card, ErrorState, Field, Input, LoadingBlock, PageHead, PasswordInput, Select, Textarea } from '../../components/ui';
 import { DAY_NAMES, fmtDateTime, genderLabel, roleLabel } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 
@@ -112,20 +112,22 @@ function PasswordCard() {
 }
 
 function MemberSelfCard() {
+  const me = useMe();
   const toast = useToast();
-  const { data } = useAsync(() => api.get<Member>('/members/me'), []);
+  const { data, error, reload } = useAsync(() => api.get<Member>('/members/me'), []);
   const [f, setF] = useState({ dateOfBirth: '', gender: '' as Gender | '', heightCm: '', goal: '', address: '' });
   useEffect(() => {
     if (data) setF({ dateOfBirth: data.dateOfBirth ?? '', gender: data.gender ?? '', heightCm: data.heightCm ? String(data.heightCm) : '', goal: data.goal ?? '', address: data.address ?? '' });
   }, [data]);
   const [busy, setBusy] = useState(false);
+  if (error) return <Card><ErrorState message={error} onRetry={reload} /></Card>;
   if (!data) return <Card><LoadingBlock /></Card>;
   const submit = async () => {
     const h = f.heightCm ? Number(f.heightCm) : null;
     if (h != null && (h < 80 || h > 250)) { toast.error('Chiều cao từ 80 đến 250 cm'); return; }
     setBusy(true);
     try {
-      await api.put('/members/me', { phone: data.phone ?? '', dateOfBirth: f.dateOfBirth || null, gender: f.gender || null, heightCm: h, goal: f.goal, address: f.address });
+      await api.put('/members/me', { phone: me.phone ?? '', dateOfBirth: f.dateOfBirth || null, gender: f.gender || null, heightCm: h, goal: f.goal, address: f.address });
       toast.success('Đã lưu hồ sơ tập luyện');
     } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
   };
@@ -148,16 +150,18 @@ function MemberSelfCard() {
 }
 
 function TrainerSelfCard({ trainerId }: { trainerId: number }) {
+  const me = useMe();
   const toast = useToast();
-  const { data, reload } = useAsync(() => api.get<Trainer>(`/trainers/${trainerId}`), [trainerId]);
+  const { data, error, reload } = useAsync(() => api.get<Trainer>(`/trainers/${trainerId}`), [trainerId]);
   const [f, setF] = useState({ specialty: '', experienceYears: '0', certificates: '', bio: '' });
   const [busy, setBusy] = useState(false);
   useEffect(() => { if (data) setF({ specialty: data.specialty ?? '', experienceYears: String(data.experienceYears), certificates: data.certificates ?? '', bio: data.bio ?? '' }); }, [data]);
+  if (error) return <Card><ErrorState message={error} onRetry={reload} /></Card>;
   if (!data) return <Card><LoadingBlock /></Card>;
   const submit = async () => {
     setBusy(true);
     try {
-      await api.put(`/trainers/${trainerId}`, { fullName: data.fullName, phone: data.phone ?? '', specialty: f.specialty, experienceYears: Number(f.experienceYears) || 0, certificates: f.certificates, bio: f.bio });
+      await api.put(`/trainers/${trainerId}`, { fullName: me.fullName, phone: me.phone ?? '', specialty: f.specialty, experienceYears: Number(f.experienceYears) || 0, certificates: f.certificates, bio: f.bio });
       toast.success('Đã lưu hồ sơ chuyên môn');
     } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
   };
