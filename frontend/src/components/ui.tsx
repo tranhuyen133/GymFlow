@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TableHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { cloneElement, isValidElement, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TableHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { locale, t, tx } from '../i18n';
 import { hueOf, initials, type Tone } from '../lib/format';
 import { Icon, type IconName } from './Icon';
@@ -165,14 +165,27 @@ export function DataTable<T>({
 
 // ---------- Form controls ----------
 export function Field({ label, error, hint, required, children, className = '', htmlFor }: { label?: string; error?: string; hint?: string; required?: boolean; children: ReactNode; className?: string; htmlFor?: string }) {
+  const autoId = useId();
+  let finalId = htmlFor;
+  let content = children;
+
+  if (isValidElement<{ id?: string }>(children)) {
+    finalId = htmlFor ?? children.props.id ?? autoId;
+    if (!children.props.id) {
+      content = cloneElement(children, { id: finalId });
+    }
+  } else if (!finalId) {
+    finalId = autoId;
+  }
+
   return (
     <div className={`field ${className}`}>
-      {label && <label htmlFor={htmlFor}>{t(label)}{required && <span className="req">*</span>}</label>}
-      {tx(children)}
+      {label && <label htmlFor={finalId}>{t(label)}{required && <span className="req">*</span>}</label>}
+      {tx(content)}
       {error ? (
-        <div className="err" id={htmlFor ? `${htmlFor}-error` : undefined} role={htmlFor ? 'alert' : undefined} aria-live={htmlFor ? 'assertive' : undefined}>{t(error)}</div>
+        <div className="err" id={finalId ? `${finalId}-error` : undefined} role={finalId ? 'alert' : undefined} aria-live={finalId ? 'assertive' : undefined}>{t(error)}</div>
       ) : hint ? (
-        <div className="hint" id={htmlFor ? `${htmlFor}-hint` : undefined}>{t(hint)}</div>
+        <div className="hint" id={finalId ? `${finalId}-hint` : undefined}>{t(hint)}</div>
       ) : null}
     </div>
   );

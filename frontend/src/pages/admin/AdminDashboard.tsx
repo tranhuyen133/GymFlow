@@ -43,7 +43,13 @@ export default function AdminDashboard() {
 
       <div className="grid grid-main mt-24">
         <Card title="Doanh thu 6 tháng" icon="chart" actions={<span className="tiny faint">Theo ngày thu tiền</span>}>
-          <BarChart data={data.revenueByMonth.map((r) => ({ label: r.label.slice(0, 5), value: r.value }))} format={fmtMoneyShort} />
+          <BarChart
+            data={data.revenueByMonth.map((r) => {
+              const [m, y] = r.label.split('/');
+              return { label: m && y ? `T${m}/${y.slice(-2)}` : r.label, value: r.value };
+            })}
+            format={fmtMoneyShort}
+          />
         </Card>
         <Card title="Gói đang hiệu lực" icon="layers">
           {data.planDistribution.length ? <Donut data={data.planDistribution} sub="hội viên" /> : <Empty title="Chưa có gói hiệu lực" />}

@@ -4,6 +4,7 @@ import type { Page, Role, UserAccount, UserCreated, UserStatus } from '../../api
 import { useMe } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge } from '../../components/ui';
+import { t } from '../../i18n';
 import { fmtDateTime, relativeTime, roleLabel, userStatus } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync, useDebounced } from '../../lib/hooks';
 
@@ -53,7 +54,15 @@ export default function Users() {
                         <td className="small muted">{u.lastLoginAt ? relativeTime(u.lastLoginAt) : 'Chưa đăng nhập'}</td>
                         <td className="tiny faint nowrap">{fmtDateTime(u.createdAt)}</td>
                         <td className="actions">
-                          <Button size="sm" variant="ghost" icon="key" aria-label="Cấp mật khẩu tạm" title="Cấp mật khẩu tạm" onClick={() => setResetting(u)} />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon="key"
+                            aria-label={t('Cấp mật khẩu tạm')}
+                            title={u.id === me.id ? t('Đổi mật khẩu của bạn ở trang Hồ sơ') : t('Cấp mật khẩu tạm')}
+                            disabled={u.id === me.id}
+                            onClick={() => setResetting(u)}
+                          />
                           {u.id !== me.id && <Button size="sm" variant="ghost" icon={u.status === 'LOCKED' ? 'unlock' : 'lock'} aria-label={u.status === 'LOCKED' ? 'Mở khoá' : 'Khoá'} title={u.status === 'LOCKED' ? 'Mở khoá' : 'Khoá'} onClick={() => setLocking(u)} />}
                         </td>
                       </tr>

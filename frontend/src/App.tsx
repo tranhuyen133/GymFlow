@@ -100,8 +100,8 @@ export default function App() {
         <Route path="/users" element={<Only roles={ADMIN}><Users /></Only>} />
         <Route path="/audit-logs" element={<Only roles={ADMIN}><AuditLog /></Only>} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="*" element={<NotFound />} />
       </Route>
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
