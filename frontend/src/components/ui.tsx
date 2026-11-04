@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TableHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { cloneElement, isValidElement, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TableHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { locale, t, tx } from '../i18n';
 import { hueOf, initials, type Tone } from '../lib/format';
 import { Icon, type IconName } from './Icon';
@@ -55,7 +55,7 @@ export function Card({ title, icon, actions, children, flush, className = '' }: 
           {actions && <div className="row">{actions}</div>}
         </div>
       )}
-      {children}
+      {tx(children)}
     </section>
   );
 }
@@ -108,22 +108,84 @@ export function Table({ caption, children, className = '', 'aria-label': ariaLab
     <div className="table-wrap" role="region" aria-label={t(caption ?? ariaLabel ?? 'Bảng dữ liệu')} tabIndex={0}>
       <table className={`table ${className}`} {...rest}>
         {caption && <caption className="sr-only">{t(caption)}</caption>}
-        {children}
+        {tx(children)}
       </table>
     </div>
   );
 }
 
+export interface DataTableColumn<T> {
+  header: string;
+  render: (row: T) => ReactNode;
+  className?: string;
+}
+
+/** Bảng dữ liệu có trạng thái rỗng và phân trang dùng chung cho các danh sách API. */
+export function DataTable<T>({
+  caption,
+  columns,
+  rows,
+  rowKey,
+  page,
+  totalPages,
+  total,
+  onPage,
+  emptyMessage = 'Không có dữ liệu',
+}: {
+  caption: string;
+  columns: DataTableColumn<T>[];
+  rows: T[];
+  rowKey: (row: T) => string | number;
+  page: number;
+  totalPages: number;
+  total: number;
+  onPage: (page: number) => void;
+  emptyMessage?: string;
+}) {
+  return (
+    <>
+      <Table caption={caption}>
+        <thead>
+          <tr>{columns.map((column) => <th key={column.header} scope="col" className={column.className}>{t(column.header)}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.length ? rows.map((row) => (
+            <tr key={rowKey(row)}>
+              {columns.map((column) => <td key={column.header} className={column.className}>{column.render(row)}</td>)}
+            </tr>
+          )) : (
+            <tr><td colSpan={Math.max(columns.length, 1)} role="status" className="muted center">{t(emptyMessage)}</td></tr>
+          )}
+        </tbody>
+      </Table>
+      <Pager page={page} totalPages={totalPages} total={total} onPage={onPage} />
+    </>
+  );
+}
+
 // ---------- Form controls ----------
 export function Field({ label, error, hint, required, children, className = '', htmlFor }: { label?: string; error?: string; hint?: string; required?: boolean; children: ReactNode; className?: string; htmlFor?: string }) {
+  const autoId = useId();
+  let finalId = htmlFor;
+  let content = children;
+
+  if (isValidElement<{ id?: string }>(children)) {
+    finalId = htmlFor ?? children.props.id ?? autoId;
+    if (!children.props.id) {
+      content = cloneElement(children, { id: finalId });
+    }
+  } else if (!finalId) {
+    finalId = autoId;
+  }
+
   return (
     <div className={`field ${className}`}>
-      {label && <label htmlFor={htmlFor}>{t(label)}{required && <span className="req">*</span>}</label>}
-      {children}
+      {label && <label htmlFor={finalId}>{t(label)}{required && <span className="req">*</span>}</label>}
+      {tx(content)}
       {error ? (
-        <div className="err" id={htmlFor ? `${htmlFor}-error` : undefined} role={htmlFor ? 'alert' : undefined}>{t(error)}</div>
+        <div className="err" id={finalId ? `${finalId}-error` : undefined} role={finalId ? 'alert' : undefined} aria-live={finalId ? 'assertive' : undefined}>{t(error)}</div>
       ) : hint ? (
-        <div className="hint" id={htmlFor ? `${htmlFor}-hint` : undefined}>{t(hint)}</div>
+        <div className="hint" id={finalId ? `${finalId}-hint` : undefined}>{t(hint)}</div>
       ) : null}
     </div>
   );
@@ -152,7 +214,7 @@ export function Select({ invalid, className = '', children, id, 'aria-label': ar
       aria-describedby={describedBy}
       {...rest}
     >
-      {children}
+      {tx(children)}
     </select>
   );
 }
@@ -277,7 +339,7 @@ export function Modal({ title, onClose, children, footer, size }: { title: React
           <h2 id={titleId}>{tx(title)}</h2>
           <Button variant="ghost" size="sm" icon="x" aria-label="Đóng" onClick={onClose} />
         </div>
-        <div className="modal-body">{children}</div>
+        <div className="modal-body">{tx(children)}</div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
     </div>
@@ -326,16 +388,48 @@ export function Meter({ value, max = 100, color }: { value: number; max?: number
   return <div className="meter" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${pct}%`, ['--c' as string]: color }} /></div>;
 }
 
-export function Pager({ page, totalPages, total, onPage }: { page: number; totalPages: number; total: number; onPage: (p: number) => void }) {
-  if (totalPages <= 1) return <div className="pager"><span>{t('{n} bản ghi', { n: total })}</span></div>;
+function pageWindow(page: number, totalPages: number): (number | null)[] {
+  const keep = new Set([0, totalPages - 1, page - 1, page, page + 1]);
+  const out: (number | null)[] = [];
+  for (let i = 0; i < totalPages; i++) {
+    if (keep.has(i)) out.push(i);
+    else if (out[out.length - 1] !== null) out.push(null);
+  }
+  return out;
+}
+
+/**
+ * Thanh phân trang. page tính từ 0. Truyền size + sizes + onSize để cho chọn số dòng mỗi trang.
+ * Dùng chung cho phân trang phía server (Page<T>) và phía client (usePaged).
+ */
+export function Pager({ page, totalPages, total, onPage, size, sizes, onSize }: {
+  page: number; totalPages: number; total: number; onPage: (p: number) => void;
+  size?: number; sizes?: number[]; onSize?: (s: number) => void;
+}) {
+  const sizePicker = size && sizes && onSize && total > Math.min(...sizes) && (
+    <label className="pager-size">
+      <span>{t('Hiển thị')}</span>
+      <select className="select select-sm" value={size} onChange={(e) => onSize(Number(e.target.value))} aria-label={t('Số dòng mỗi trang')}>
+        {sizes.map((s) => <option key={s} value={s}>{s}</option>)}
+      </select>
+    </label>
+  );
+  if (totalPages <= 1) return <div className="pager"><span>{t('{n} bản ghi', { n: total })}</span>{sizePicker}</div>;
+  const from = size ? page * size + 1 : null;
+  const to = size ? Math.min(total, (page + 1) * size) : null;
   return (
-    <div className="pager">
-      <span>{t('{n} bản ghi · trang {p}/{tp}', { n: total, p: page + 1, tp: totalPages })}</span>
-      <div className="row">
+    <nav className="pager" aria-label={t('Phân trang')}>
+      <span>{from ? t('{a}–{b} trên {n} bản ghi', { a: from, b: to ?? total, n: total }) : t('{n} bản ghi · trang {p}/{tp}', { n: total, p: page + 1, tp: totalPages })}</span>
+      <div className="row row-wrap" style={{ gap: 4 }}>
+        {sizePicker}
         <Button size="sm" icon="chevronLeft" disabled={page === 0} onClick={() => onPage(page - 1)} aria-label="Trang trước" />
+        {pageWindow(page, totalPages).map((p, i) => p === null
+          ? <span key={`gap${i}`} className="pager-gap" aria-hidden>…</span>
+          : <button key={p} type="button" className={`pager-num ${p === page ? 'on' : ''}`} aria-current={p === page ? 'page' : undefined}
+              aria-label={t('Trang {p}', { p: p + 1 })} onClick={() => onPage(p)}>{p + 1}</button>)}
         <Button size="sm" icon="chevronRight" disabled={page + 1 >= totalPages} onClick={() => onPage(page + 1)} aria-label="Trang sau" />
       </div>
-    </div>
+    </nav>
   );
 }
 

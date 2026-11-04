@@ -29,6 +29,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthService {
 
+    // Người cập nhật hiện tại: Đặng Dũng
     private static final String BAD_LOGIN = "Email hoặc mật khẩu không đúng";
 
     private final UserRepository userRepository;

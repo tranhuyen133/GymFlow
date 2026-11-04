@@ -10,9 +10,9 @@ Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
 
 <!-- TODO(Linh): Chuẩn bị 2 file JSON dữ liệu mẫu (KHÔNG tạo file JSON rỗng trước): -->
 
-1. `exercises.json` (Hạn: 05/11/2026 - SCRUM-173):
-   - Chứa ít nhất 10 bài tập mẫu.
-   - Có đầy đủ thông tin: hướng dẫn kỹ thuật, cách hít thở, lỗi thường gặp, lưu ý an toàn, nguồn tham khảo.
+1. `exercises.json` (Hạn: 05/11/2026 - SCRUM-173) - **ĐÃ HOÀN THÀNH**:
+   - Chứa 10 bài tập mẫu đa dạng nhóm cơ (Ngực, Lưng, Chân, Vai, Tay, Bụng, Toàn thân).
+   - Có đầy đủ thông tin: hướng dẫn kỹ thuật chi tiết, cách hít thở, lỗi thường gặp, lưu ý an toàn và nguồn tham khảo chuẩn y tế (NHS OGL v3.0).
 
 2. `articles.json` (Hạn: 13/11/2026 - SCRUM-221):
    - Chứa các bài viết kiến thức mẫu có nguồn trích dẫn.

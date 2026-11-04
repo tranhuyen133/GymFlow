@@ -31,7 +31,7 @@ export default function Articles() {
   return (
     <div className="page">
       <PageHead eyebrow="Nội dung" title="Kho kiến thức"
-        desc={<>{t('Bài viết chỉ hiện ở trang công khai sau khi quản lý duyệt. Mỗi bài cần ít nhất một nguồn tham khảo.')} <Link to="/knowledge">/knowledge</Link></>}
+        desc={<>{t('Bài viết chỉ hiện ở trang công khai sau khi quản lý duyệt. Mỗi bài cần ít nhất một nguồn tham khảo.')}{' '}<Link to="/knowledge" className="link" target="_blank">{t('Xem trang công khai')}</Link></>}
         actions={<Button variant="primary" icon="plus" onClick={() => setEditing('new')}>Soạn bài viết</Button>} />
       <div className="chips" style={{ marginBottom: 18 }}>
         <button className={`chip ${status === '' ? 'on' : ''}`} onClick={() => setStatus('')}>{t('Tất cả')}</button>

@@ -52,6 +52,7 @@ export default function Register() {
   const [f, setF] = useState<RegisterRequest>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [emailTaken, setEmailTaken] = useState(false);
   const [busy, setBusy] = useState(false);
   const [doc, setDoc] = useState<'terms' | 'privacy' | null>(null);
   const inFlight = useRef(false);
@@ -59,6 +60,7 @@ export default function Register() {
 
   const set = <K extends keyof RegisterRequest>(k: K, val: RegisterRequest[K]) => {
     setF((p) => ({ ...p, [k]: val }));
+    if (k === 'email') setEmailTaken(false);
     if (errors[k]) setErrors((p) => { const n = { ...p }; delete n[k]; return n; });
   };
 
@@ -79,10 +81,12 @@ export default function Register() {
       });
       navigate('/login', { replace: true, state: { registered: res.email } });
     } catch (err) {
-      const fields = err instanceof ApiError && err.status === 409 ? { email: err.message } : fieldErrs(err);
+      const is409 = err instanceof ApiError && err.status === 409;
+      setEmailTaken(is409);
+      const fields = is409 ? { email: err.message } : fieldErrs(err);
       setErrors(fields);
       requestAnimationFrame(() => focusFormError(formRef.current, fields));
-      if (err instanceof ApiError && err.status === 409) {
+      if (is409) {
         setError(null);
       } else {
         setError(errMsg(err));
@@ -128,7 +132,7 @@ export default function Register() {
                     value={f.email} onChange={(e) => set('email', e.target.value)} placeholder="ban@email.com" aria-invalid={!!errors.email} />
                 </div>
               </Field>
-              {errors.email === t('Email đã được sử dụng') && (
+              {emailTaken && (
                 <p className="tiny muted" style={{ marginTop: -6 }}>{t('Email này đã có tài khoản.')} <Link className="link" to="/login" state={{ registered: f.email.trim() }}>{t('Đăng nhập')}</Link> {t('hoặc')} <Link className="link" to="/forgot-password">{t('khôi phục mật khẩu')}</Link>.</p>
               )}
               <Field htmlFor="register-phone" label="Số điện thoại" error={errors.phone} hint="Không bắt buộc – để huấn luyện viên liên hệ khi đổi lịch">

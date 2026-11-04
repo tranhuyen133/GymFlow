@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Exercise, Member, MuscleGroup, Page, PlanItem, PlanStatus, WorkoutPlan } from '../../api/types';
+import type { Exercise, Member, MuscleGroup, PlanItem, PlanStatus, WorkoutPlan } from '../../api/types';
 import { Icon } from '../../components/Icon';
+import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
 import { Alert, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, PageHead, Select, StatusBadge, Textarea } from '../../components/ui';
+import { t, tn } from '../../i18n';
 import { addDays, DAYS, DAY_NAMES, muscleColor, muscleLabel, planStatus, toIsoDate } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 
@@ -19,10 +21,10 @@ export default function PlanEditor() {
   const toast = useToast();
 
   const plan = useAsync(() => (isNew ? Promise.resolve(null) : api.get<WorkoutPlan>(`/workout-plans/${id}`)), [id]);
-  const members = useAsync(() => api.get<Page<Member>>('/members', { size: 200 }), []);
   const library = useAsync(() => api.get<Exercise[]>('/exercises'), []);
 
   const [memberId, setMemberId] = useState(params.get('memberId') ?? '');
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [name, setName] = useState('');
   const [goal, setGoal] = useState('');
   const [start, setStart] = useState(toIsoDate(new Date()));
@@ -46,18 +48,39 @@ export default function PlanEditor() {
     setDay(p.items[0]?.dayOfWeek ?? 1);
   }, [plan.data]);
 
+  const lastSuggestedMemberId = useRef<string | null>(null);
+
   useEffect(() => {
     // Gợi ý mục tiêu từ hồ sơ hội viên khi tạo mới.
-    if (!isNew || goal) return;
-    const m = members.data?.content.find((x) => String(x.id) === memberId);
-    if (m?.goal) setGoal(m.goal);
-  }, [memberId, members.data, isNew, goal]);
+    if (!isNew || !memberId) return;
+    if (lastSuggestedMemberId.current === memberId) return;
+    if (selectedMember?.goal) {
+      lastSuggestedMemberId.current = memberId;
+      setGoal(selectedMember.goal);
+    }
+  }, [memberId, selectedMember, isNew]);
 
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
     window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
+    const handleClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('a');
+      if (target && target.getAttribute('href') && !target.getAttribute('target')) {
+        const href = target.getAttribute('href');
+        if (href && !href.startsWith('blob:') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+          if (!window.confirm(t('Thay đổi chưa lưu sẽ bị mất. Bạn có chắc muốn rời đi?'))) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }
+      }
+    };
+    document.addEventListener('click', handleClick, true);
+    return () => {
+      window.removeEventListener('beforeunload', warn);
+      document.removeEventListener('click', handleClick, true);
+    };
   }, [dirty]);
 
   const dayItems = items.filter((i) => i.dayOfWeek === day);
@@ -76,9 +99,17 @@ export default function PlanEditor() {
     setPick(''); touch();
   };
   const update = (key: number, patch: Partial<PlanItem>) => { setItems((xs) => xs.map((x) => (x.key === key ? { ...x, ...patch } : x))); touch(); };
-  const remove = (key: number) => { setItems((xs) => xs.filter((x) => x.key !== key)); touch(); };
+  const remove = (key: number) => {
+    setItems((xs) => {
+      const remaining = xs.filter((x) => x.key !== key);
+      const remainingDay = remaining.filter((x) => x.dayOfWeek === day).sort((a, b) => a.sortOrder - b.sortOrder);
+      const orderMap = new Map(remainingDay.map((x, idx) => [x.key, idx]));
+      return remaining.map((x) => (x.dayOfWeek === day ? { ...x, sortOrder: orderMap.get(x.key) ?? 0 } : x));
+    });
+    touch();
+  };
   const move = (key: number, dir: -1 | 1) => {
-    const list = dayItems.map((x) => x.key);
+    const list = [...dayItems].sort((a, b) => a.sortOrder - b.sortOrder).map((x) => x.key);
     const i = list.indexOf(key); const j = i + dir;
     if (j < 0 || j >= list.length) return;
     [list[i], list[j]] = [list[j], list[i]];
@@ -87,8 +118,12 @@ export default function PlanEditor() {
   };
   const copyDay = (to: number) => {
     if (to === day) return;
+    const destCount = items.filter((x) => x.dayOfWeek === to).length;
+    if (destCount > 0) {
+      if (!window.confirm(t('Ngày {day} đã có {n} bài, ghi đè?', { day: DAYS[to - 1], n: destCount }))) return;
+    }
     setItems((xs) => [...xs.filter((x) => x.dayOfWeek !== to), ...xs.filter((x) => x.dayOfWeek === day).map((x) => ({ ...x, id: undefined, key: keySeq++, dayOfWeek: to }))]);
-    toast.info(`Đã chép ${DAY_NAMES[day - 1]} sang ${DAY_NAMES[to - 1]}`); touch();
+    toast.info(t('Đã chép {from} sang {to}', { from: DAY_NAMES[day - 1], to: DAY_NAMES[to - 1] })); touch();
   };
 
   const save = async () => {
@@ -98,7 +133,7 @@ export default function PlanEditor() {
     if (end < start) return setError('Ngày kết thúc phải sau ngày bắt đầu');
     if (items.length === 0) return setError('Thêm ít nhất một bài tập');
     const bad = items.find((i) => !i.reps.trim() || i.sets < 1 || i.sets > 20);
-    if (bad) { setDay(bad.dayOfWeek); return setError(`Bài "${bad.exerciseName}" (${DAY_NAMES[bad.dayOfWeek - 1]}): số hiệp 1–20 và phải có số lần`); }
+    if (bad) { setDay(bad.dayOfWeek); return setError(t('Bài "{name}" ({day}): số hiệp 1–20 và phải có số lần', { name: bad.exerciseName, day: DAY_NAMES[bad.dayOfWeek - 1] })); }
     setBusy(true);
     const body = {
       memberId: Number(memberId), name: name.trim(), goal: goal || null, startDate: start, endDate: end, note: note || null,
@@ -126,9 +161,19 @@ export default function PlanEditor() {
 
   return (
     <div className="page">
-      <Link to="/workout-plans" className="link small row" style={{ gap: 6, marginBottom: 14 }}><Icon name="arrowLeft" size={15} />Danh sách giáo án</Link>
-      <PageHead eyebrow={isNew ? 'Giáo án mới' : `Giáo án #${id}`} title={isNew ? 'Soạn giáo án' : name || 'Giáo án'}
-        desc={summary ? <span className="row" style={{ gap: 8 }}><StatusBadge map={planStatus} value={summary.status} /> HLV {summary.trainerName ?? '—'} · {summary.memberName}</span> : 'Chọn bài theo từng ngày trong tuần, đặt số hiệp, số lần, mức tạ và thời gian nghỉ.'}
+      <button
+        type="button"
+        className="link small row"
+        style={{ gap: 6, marginBottom: 14, background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+        onClick={() => {
+          if (dirty && !window.confirm(t('Thay đổi chưa lưu sẽ bị mất. Bạn có chắc muốn rời đi?'))) return;
+          navigate('/workout-plans');
+        }}
+      >
+        <Icon name="arrowLeft" size={15} />{t('Danh sách giáo án')}
+      </button>
+      <PageHead eyebrow={isNew ? 'Giáo án mới' : t('Giáo án #{id}', { id })} title={isNew ? 'Soạn giáo án' : name || 'Giáo án'}
+        desc={summary ? <span className="row" style={{ gap: 8 }}><StatusBadge map={planStatus} value={summary.status} /> {tn('HLV {trainer} · {member}', { trainer: summary.trainerName ?? '—', member: summary.memberName })}</span> : 'Chọn bài theo từng ngày trong tuần, đặt số hiệp, số lần, mức tạ và thời gian nghỉ.'}
         actions={<>
           {!isNew && <Button variant="ghost" icon="trash" onClick={() => setRemoving(true)}>Xoá</Button>}
           {summary && summary.status !== 'ACTIVE' && <Button icon="play" onClick={() => void setStatus('ACTIVE')}>Áp dụng lại</Button>}
@@ -142,14 +187,14 @@ export default function PlanEditor() {
           <div className="days-tabs">
             {[1, 2, 3, 4, 5, 6, 7].map((d) => {
               const n = items.filter((i) => i.dayOfWeek === d).length;
-              return <button key={d} className={`${d === day ? 'on' : ''} ${n ? 'has' : ''}`} onClick={() => setDay(d)}>{DAYS[d - 1]}<small>{n ? `${n} bài` : 'Nghỉ'}</small></button>;
+              return <button key={d} className={`${d === day ? 'on' : ''} ${n ? 'has' : ''}`} onClick={() => setDay(d)}>{DAYS[d - 1]}<small>{n ? t('{n} bài', { n }) : t('Nghỉ')}</small></button>;
             })}
           </div>
           <div className="row between mt-16 row-wrap">
             <b>{DAY_NAMES[day - 1]}</b>
             {dayItems.length > 0 && (
               <Select style={{ width: 'auto', height: 32 }} value="" onChange={(e) => { if (e.target.value) copyDay(Number(e.target.value)); }} aria-label="Chép sang ngày khác">
-                <option value="">Chép ngày này sang…</option>
+                <option value="">{t('Chép ngày này sang…')}</option>
                 {[1, 2, 3, 4, 5, 6, 7].filter((d) => d !== day).map((d) => <option key={d} value={d}>{DAY_NAMES[d - 1]}</option>)}
               </Select>
             )}
@@ -158,7 +203,7 @@ export default function PlanEditor() {
             {dayItems.length === 0 && <Empty icon="dumbbell" title="Ngày nghỉ" desc="Chọn bài ở khung bên phải để thêm vào ngày này." />}
             {dayItems.length > 0 && (
               <div className="item-row tiny faint" style={{ background: 'none', animation: 'none' }}>
-                <span>#</span><span>Bài tập</span><span>Hiệp</span><span>Số lần</span><span className="hide-sm">Tạ (kg)</span><span className="hide-sm">Nghỉ (s)</span><span />
+                <span>#</span><span>{t('Bài tập')}</span><span>{t('Hiệp')}</span><span>{t('Số lần')}</span><span className="hide-sm">{t('Tạ (kg)')}</span><span className="hide-sm">{t('Nghỉ (s)')}</span><span />
               </div>
             )}
             {[...dayItems].sort((a, b) => a.sortOrder - b.sortOrder).map((it, idx, arr) => (
@@ -169,14 +214,14 @@ export default function PlanEditor() {
                     <i style={{ width: 8, height: 8, borderRadius: 2, background: it.muscleGroup ? muscleColor[it.muscleGroup] : 'var(--faint)', flex: 'none' }} />
                     <b className="ellipsis small">{it.exerciseName}</b>
                   </div>
-                  <input className="input" style={{ height: 28, marginTop: 4, fontSize: 12 }} maxLength={255} placeholder="Ghi chú…" value={it.note ?? ''} onChange={(e) => update(it.key, { note: e.target.value })} />
+                  <input className="input" style={{ height: 28, marginTop: 4, fontSize: 12 }} maxLength={255} placeholder={t('Ghi chú…')} value={it.note ?? ''} onChange={(e) => update(it.key, { note: e.target.value })} />
                 </div>
-                <input className="input" type="number" min={1} max={20} value={it.sets} onChange={(e) => update(it.key, { sets: Number(e.target.value) })} aria-label="Số hiệp" />
+                <input className="input" type="number" min={1} max={20} value={it.sets} onChange={(e) => update(it.key, { sets: Number(e.target.value) })} aria-label={t('Số hiệp')} />
                 <input className="input" maxLength={20} value={it.durationMinutes ? `${it.durationMinutes}'` : it.reps}
                   onChange={(e) => { const v = e.target.value; if (v.endsWith("'")) update(it.key, { durationMinutes: Number(v.slice(0, -1)) || null }); else update(it.key, { reps: v, durationMinutes: null }); }}
-                  aria-label="Số lần" title="Nhập 10-12, 45s, hoặc 15' cho số phút" />
-                <input className="input hide-sm" type="number" min={0} step={0.5} value={it.weightKg ?? ''} onChange={(e) => update(it.key, { weightKg: e.target.value === '' ? null : Number(e.target.value) })} aria-label="Mức tạ" />
-                <input className="input hide-sm" type="number" min={0} max={900} step={15} value={it.restSeconds ?? ''} onChange={(e) => update(it.key, { restSeconds: e.target.value === '' ? null : Number(e.target.value) })} aria-label="Nghỉ" />
+                  aria-label={t('Số lần')} title={t("Nhập 10-12, 45s, hoặc 15' cho số phút")} />
+                <input className="input hide-sm" type="number" min={0} step={0.5} value={it.weightKg ?? ''} onChange={(e) => update(it.key, { weightKg: e.target.value === '' ? null : Number(e.target.value) })} aria-label={t('Mức tạ')} />
+                <input className="input hide-sm" type="number" min={0} max={900} step={15} value={it.restSeconds ?? ''} onChange={(e) => update(it.key, { restSeconds: e.target.value === '' ? null : Number(e.target.value) })} aria-label={t('Nghỉ')} />
                 <div className="stack-sm" style={{ gap: 2 }}>
                   <Button size="sm" variant="ghost" icon="chevronDown" style={{ transform: 'rotate(180deg)' }} aria-label="Lên" disabled={idx === 0} onClick={() => move(it.key, -1)} />
                   <Button size="sm" variant="ghost" icon="x" aria-label="Bỏ bài" onClick={() => remove(it.key)} />
@@ -191,10 +236,20 @@ export default function PlanEditor() {
           <Card title="Thông tin" icon="clipboard">
             <div className="stack">
               <Field label="Hội viên" required>
-                <Select value={memberId} disabled={!isNew} onChange={(e) => { setMemberId(e.target.value); touch(); }}>
-                  <option value="">— Chọn hội viên —</option>
-                  {members.data?.content.map((m) => <option key={m.id} value={m.id}>{m.fullName} · {m.code}</option>)}
-                </Select>
+                <MemberSelect
+                  value={memberId}
+                  disabled={!isNew}
+                  initialMemberName={plan.data?.summary.memberName}
+                  onChange={(newId, m) => {
+                    setMemberId(newId);
+                    setSelectedMember(m ?? null);
+                    if (m?.goal && isNew && lastSuggestedMemberId.current !== newId) {
+                      lastSuggestedMemberId.current = newId;
+                      setGoal(m.goal);
+                    }
+                    touch();
+                  }}
+                />
               </Field>
               <Field label="Tên giáo án" required><Input maxLength={120} value={name} onChange={(e) => { setName(e.target.value); touch(); }} placeholder="VD: Full body 3 buổi/tuần" /></Field>
               <Field label="Mục tiêu"><Input maxLength={255} value={goal} onChange={(e) => { setGoal(e.target.value); touch(); }} /></Field>
@@ -205,20 +260,20 @@ export default function PlanEditor() {
               <Field label="Ghi chú chung"><Textarea maxLength={1000} value={note} onChange={(e) => { setNote(e.target.value); touch(); }} placeholder="Khởi động, dinh dưỡng, lưu ý chấn thương…" /></Field>
             </div>
           </Card>
-          <Card title={`Thêm bài vào ${DAYS[day - 1]}`} icon="plus">
+          <Card title={t('Thêm bài vào {day}', { day: DAYS[day - 1] })} icon="plus">
             <div className="stack">
               <div className="chips">
-                <button className={`chip ${groupFilter === '' ? 'on' : ''}`} onClick={() => setGroupFilter('')}>Tất cả</button>
+                <button className={`chip ${groupFilter === '' ? 'on' : ''}`} onClick={() => setGroupFilter('')}>{t('Tất cả')}</button>
                 {(Object.keys(muscleLabel) as MuscleGroup[]).map((g) => <button key={g} className={`chip ${groupFilter === g ? 'on' : ''}`} onClick={() => setGroupFilter(g)}>{muscleLabel[g]}</button>)}
               </div>
               <div className="row">
                 <Select value={pick} onChange={(e) => setPick(e.target.value)} aria-label="Chọn bài tập">
-                  <option value="">— Chọn bài tập ({visibleLib.length}) —</option>
+                  <option value="">{t('— Chọn bài tập ({n}) —', { n: visibleLib.length })}</option>
                   {visibleLib.map((e) => <option key={e.id} value={e.id}>{e.name} · {muscleLabel[e.muscleGroup]}</option>)}
                 </Select>
-                <Button variant="primary" icon="plus" disabled={!pick} onClick={() => add(Number(pick))} aria-label="Thêm" />
+                <Button variant="primary" icon="plus" disabled={!pick} onClick={() => add(Number(pick))} aria-label="Thêm bài" />
               </div>
-              <div className="tiny faint">Mẹo: ô “Số lần” nhận 10-12, 8, 45s; nhập 15' để đặt theo phút (cardio).</div>
+              <div className="tiny faint">{t("Mẹo: ô “Số lần” nhận 10-12, 8, 45s; nhập 15' để đặt theo phút (cardio).")}</div>
             </div>
           </Card>
         </div>
