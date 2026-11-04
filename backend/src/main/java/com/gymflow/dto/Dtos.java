@@ -16,12 +16,14 @@ public final class Dtos {
 
     private static final String PASSWORD_RULE = "^(?=.*[A-Za-z])(?=.*\\d).{8,72}$";
     private static final String PASSWORD_MSG = "Mật khẩu tối thiểu 8 ký tự, gồm cả chữ và số";
+    private static final String EMAIL_RULE = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+    private static final String EMAIL_MSG = "Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)";
     private static final String PHONE_RULE = "^$|^(0|\\+84)\\d{9,10}$";
     private static final String PHONE_MSG = "Số điện thoại không hợp lệ";
 
     // ===================== Auth =====================
     public record LoginRequest(
-            @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
+            @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
             @NotBlank(message = "Vui lòng nhập mật khẩu") String password) {
     }
 
@@ -38,7 +40,7 @@ public final class Dtos {
      */
     public record RegisterRequest(
             @NotBlank(message = "Vui lòng nhập họ tên") @Size(min = 2, max = 100, message = "Họ tên từ 2 đến 100 ký tự") String fullName,
-            @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
+            @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone,
             @NotBlank(message = "Vui lòng nhập mật khẩu") @Pattern(regexp = PASSWORD_RULE, message = PASSWORD_MSG) String password,
             @NotBlank(message = "Vui lòng nhập lại mật khẩu") String confirmPassword,
@@ -61,7 +63,7 @@ public final class Dtos {
     }
 
     public record ForgotPasswordRequest(
-            @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Size(max = 120, message = "Email tối đa 120 ký tự") String email) {
+            @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email) {
     }
 
     /** resetToken chỉ trả về khi bật chế độ demo (app.reset.expose-token=true) vì chưa tích hợp gửi email. */
@@ -80,7 +82,7 @@ public final class Dtos {
 
     // ===================== Member =====================
     public record MemberCreateRequest(
-            @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
+            @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
             @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") String fullName,
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone,
             @Pattern(regexp = "^$|" + PASSWORD_RULE, message = PASSWORD_MSG) String password,
@@ -151,7 +153,7 @@ public final class Dtos {
 
     // ===================== Trainer =====================
     public record TrainerCreateRequest(
-            @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
+            @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
             @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") String fullName,
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone,
             @Pattern(regexp = "^$|" + PASSWORD_RULE, message = PASSWORD_MSG) String password,
@@ -457,7 +459,7 @@ public final class Dtos {
     }
 
     public record AdminCreateRequest(
-            @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
+            @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
             @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") String fullName,
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone,
             @Pattern(regexp = "^$|" + PASSWORD_RULE, message = PASSWORD_MSG) String password) {

@@ -10,9 +10,9 @@ import { PrivacyContent, TermsContent } from './Policies';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
 import { focusFormError } from './publicForm';
+import { EMAIL_RE } from '../lib/format';
 
-// Trùng quy tắc với backend (Dtos.PASSWORD_RULE / PHONE_RULE) để báo lỗi ngay, server vẫn kiểm tra lại.
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+// Trùng quy tắc với backend (Dtos.PASSWORD_RULE / PHONE_RULE / EMAIL_RULE) để báo lỗi ngay, server vẫn kiểm tra lại.
 const PHONE_RE = /^(0|\+84)\d{9,10}$/;
 const PW_RE = /^(?=.*[A-Za-z])(?=.*\d).{8,72}$/;
 
@@ -24,7 +24,7 @@ function validate(f: RegisterRequest) {
   if (!name) v.fullName = 'Vui lòng nhập họ tên';
   else if (name.length < 2 || name.length > 100) v.fullName = 'Họ tên từ 2 đến 100 ký tự';
   if (!f.email.trim()) v.email = 'Vui lòng nhập email';
-  else if (!EMAIL_RE.test(f.email.trim())) v.email = 'Email không hợp lệ';
+  else if (!EMAIL_RE.test(f.email.trim())) v.email = 'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)';
   if (f.phone.trim() && !PHONE_RE.test(f.phone.trim())) v.phone = 'Số điện thoại không hợp lệ (VD: 0912345678)';
   if (!f.password) v.password = 'Vui lòng nhập mật khẩu';
   else if (!PW_RE.test(f.password)) v.password = 'Tối thiểu 8 ký tự, gồm cả chữ và số';

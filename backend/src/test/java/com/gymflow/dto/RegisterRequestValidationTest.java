@@ -55,4 +55,21 @@ class RegisterRequestValidationTest {
         assertThat(invalidFields(new RegisterRequest("Lê Thu Hà", "ha@example.com", null, "Ab1", "Ab1", true)))
                 .containsExactly("password");
     }
+
+    @Test
+    void rejectsNonAsciiAndInvalidEmail() {
+        assertThat(invalidFields(new RegisterRequest("Lê Thu Hà", "huyền@gmail.com", "0912345678", "Pass1234", "Pass1234", true)))
+                .contains("email");
+        assertThat(invalidFields(new RegisterRequest("Lê Thu Hà", "a b@gmail.com", "0912345678", "Pass1234", "Pass1234", true)))
+                .contains("email");
+        assertThat(invalidFields(new RegisterRequest("Lê Thu Hà", "abc@gmail", "0912345678", "Pass1234", "Pass1234", true)))
+                .contains("email");
+
+        assertThat(invalidFields(new RegisterRequest("Lê Thu Hà", "huyen.tran+gym@gmail.com", "0912345678", "Pass1234", "Pass1234", true)))
+                .isEmpty();
+
+        Set<String> messages = validator.validate(new RegisterRequest("Lê Thu Hà", "huyền@gmail.com", "0912345678", "Pass1234", "Pass1234", true))
+                .stream().map(ConstraintViolation::getMessage).collect(Collectors.toSet());
+        assertThat(messages).contains("Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)");
+    }
 }

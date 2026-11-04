@@ -10,7 +10,7 @@ import { useMe } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge, Textarea } from '../../components/ui';
 import { downloadCsv } from '../../lib/csv';
-import { fmtDate, genderLabel, memberStatus, subState } from '../../lib/format';
+import { EMAIL_RE, fmtDate, genderLabel, memberStatus, subState } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync, useDebounced } from '../../lib/hooks';
 
 export default function Members() {
@@ -168,7 +168,7 @@ export function MemberFormModal({ member, onClose, onSaved }: { member?: Member;
   const submit = async () => {
     const v: Record<string, string> = {};
     if (!f.fullName.trim()) v.fullName = 'Nhập họ tên';
-    if (!member && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email ?? '')) v.email = 'Email không hợp lệ';
+    if (!member && !EMAIL_RE.test(f.email?.trim() ?? '')) v.email = 'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)';
     if (!member && f.password && !/^(?=.*[A-Za-z])(?=.*\d).{8,72}$/.test(f.password)) v.password = 'Tối thiểu 8 ký tự, gồm chữ và số';
     if (!PHONE.test(f.phone.trim())) v.phone = 'SĐT dạng 0xxxxxxxxx hoặc +84…';
     if (f.heightCm != null && (f.heightCm < 80 || f.heightCm > 250)) v.heightCm = 'Từ 80 đến 250 cm';
