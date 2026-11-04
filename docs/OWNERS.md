@@ -34,7 +34,7 @@ Viết tắt: **B/** = `backend/src/main/java/com/gymflow/`, **R/** = `backend/s
 | File | Task |
 | --- | --- |
 | `B/domain/PasswordResetToken.java`, `B/repository/PasswordResetTokenRepository.java`, `B/service/NotificationService.java` | SCRUM-135 |
-| `T/service/AuthServiceRegisterTest.java`, `T/dto/RegisterRequestValidationTest.java` | SCRUM-135 |
+| `T/service/AuthServiceRegisterTest.java`, `T/dto/RegisterRequestValidationTest.java`, `T/service/AuthRegisterIntegrationTest.java` | SCRUM-135 |
 | `B/domain/Member.java`, `MemberStatus.java`, `Gender.java`, `B/repository/MemberRepository.java`, `B/service/MemberService.java`, `B/web/MemberController.java` | SCRUM-136 |
 | `B/domain/Trainer.java`, `TrainerShift.java`, `B/repository/TrainerRepository.java`, `B/service/TrainerService.java`, `B/web/TrainerController.java` | SCRUM-137 |
 | `B/domain/Exercise.java`, `ExerciseGoal.java`, `ExerciseLocation.java`, `MuscleGroup.java`, `Level.java`, `B/repository/ExerciseRepository.java`, `B/service/ExerciseService.java` | SCRUM-162 |
