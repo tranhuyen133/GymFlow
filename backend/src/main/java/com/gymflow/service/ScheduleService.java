@@ -177,6 +177,7 @@ public class ScheduleService {
     }
 
     // NOTE #1: Tự đánh vắng vào 00:05 khi buổi đã quá giờ kết thúc mà chưa hoàn thành.
+    // NOTE #2: Chỉ ghi chú nghiệp vụ, không thay đổi logic tự đánh vắng buổi tập.
     /** 00:05 hằng ngày và khi khởi động: buổi đã qua giờ kết thúc mà chưa hoàn thành → "Vắng". */
     @Scheduled(cron = "0 5 0 * * *", zone = "Asia/Ho_Chi_Minh")
     @EventListener(ApplicationReadyEvent.class)
