@@ -1,4 +1,5 @@
 import { cloneElement, isValidElement, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TableHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { createPortal } from 'react-dom';
 import { locale, t, tx } from '../i18n';
 import { hueOf, initials, type Tone } from '../lib/format';
 import { Icon, type IconName } from './Icon';
@@ -332,7 +333,9 @@ export function Modal({ title, onClose, children, footer, size }: { title: React
     };
   }, []);
 
-  return (
+  // Gắn thẳng vào <body>: .page có animation transform nên position: fixed bên trong bị neo theo cả trang,
+  // trang dài thì hộp thoại tụt xuống dưới màn hình (phải thu nhỏ trình duyệt mới thấy nút Lưu).
+  return createPortal(
     <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={`modal ${size ?? ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId} ref={ref}>
         <div className="modal-head">
@@ -342,7 +345,8 @@ export function Modal({ title, onClose, children, footer, size }: { title: React
         <div className="modal-body">{tx(children)}</div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

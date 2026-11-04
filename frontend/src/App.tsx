@@ -85,6 +85,8 @@ export default function App() {
         <Route path="/me/plan" element={<Only roles={MEMBER}><MyPlan /></Only>} />
         <Route path="/me/progress" element={<Only roles={MEMBER}><MyProgress /></Only>} />
         <Route path="/me/packages" element={<Only roles={MEMBER}><MyPackages /></Only>} />
+        <Route path="/me/knowledge" element={<Only roles={MEMBER}><KnowledgeList embedded /></Only>} />
+        <Route path="/me/knowledge/:slug" element={<Only roles={MEMBER}><KnowledgeArticle embedded /></Only>} />
         <Route path="/schedules" element={<Only roles={STAFF}><Schedules /></Only>} />
         <Route path="/members" element={<Only roles={STAFF}><Members /></Only>} />
         <Route path="/members/:id" element={<Only roles={STAFF}><MemberDetail /></Only>} />
