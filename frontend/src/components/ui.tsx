@@ -333,8 +333,6 @@ export function Modal({ title, onClose, children, footer, size }: { title: React
     };
   }, []);
 
-  // Gắn thẳng vào <body>: .page có animation transform nên position: fixed bên trong bị neo theo cả trang,
-  // trang dài thì hộp thoại tụt xuống dưới màn hình (phải thu nhỏ trình duyệt mới thấy nút Lưu).
   return createPortal(
     <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={`modal ${size ?? ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId} ref={ref}>
@@ -346,7 +344,7 @@ export function Modal({ title, onClose, children, footer, size }: { title: React
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
     </div>,
-    document.body,
+    document.body
   );
 }
 

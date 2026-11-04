@@ -377,7 +377,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .clock { text-align: right; line-height: 1.2; }
 .clock .num { font-size: 18px; }
 .content { padding: 28px; flex: 1; width: 100%; max-width: 1440px; margin: 0 auto; }
-.page { animation: pageIn 0.5s var(--ease-out) both; }
+.page { animation: pageIn 0.5s var(--ease-out) backwards; }
 @keyframes pageIn { from { opacity: 0; transform: translateY(14px); } }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
 .page-head h1 { font-size: 32px; }
