@@ -117,6 +117,8 @@ export const EN: Record<string, string> = {
   'Máy chủ gặp lỗi, vui lòng thử lại': 'Server error, please try again',
   'Email hoặc mật khẩu không đúng': 'Incorrect email or password',
   'Email đã được sử dụng': 'Email is already in use',
+  'Email không hợp lệ': 'Invalid email',
+  'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)': 'Invalid email (no accented characters or spaces)',
   'Dữ liệu không hợp lệ': 'Invalid data',
   'Không tìm thấy bài viết': 'Article not found',
   'Không tìm thấy bài tập': 'Exercise not found',
