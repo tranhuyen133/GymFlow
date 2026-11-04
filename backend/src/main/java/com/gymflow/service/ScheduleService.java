@@ -176,6 +176,7 @@ public class ScheduleService {
         return mappers.schedule(s, log);
     }
 
+    // FIX #1: Task 176 - note-only, không thay đổi logic tự đánh vắng khi buổi đã quá giờ kết thúc.
     /** 00:05 hằng ngày và khi khởi động: buổi đã qua giờ kết thúc mà chưa hoàn thành → "Vắng". */
     @Scheduled(cron = "0 5 0 * * *", zone = "Asia/Ho_Chi_Minh")
     @EventListener(ApplicationReadyEvent.class)
