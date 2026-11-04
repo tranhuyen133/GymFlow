@@ -1,3 +1,4 @@
+# NOTE #1: Docker stack cho MySQL + backend + frontend của GymFlow.
 services:
   mysql:
     image: mysql:8.4

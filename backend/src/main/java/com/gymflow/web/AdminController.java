@@ -25,6 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminController {
 
+    // NOTE #1: Quản lý tài khoản admin (list/filter/status/reset-password).
     private final DashboardService dashboardService;
     private final ReportService reportService;
     private final NotificationService notificationService;

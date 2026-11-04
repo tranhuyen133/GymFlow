@@ -1,24 +1,41 @@
+import { useMemo } from 'react';
 import type { Schedule } from '../api/types';
+import { t } from '../i18n';
 import { addDays, DAYS, fmtTime, isSameDay, parseDateTime, scheduleStatus } from '../lib/format';
 import { Badge } from './ui';
 
-const START = 5;
-const END = 22;
 const HOUR_PX = 52;
 
 /** Lịch tuần dạng lưới giờ (desktop) + danh sách theo ngày (mobile). */
 export function WeekCalendar({ weekStart, events, onSelect, showMember = true }: {
   weekStart: Date; events: Schedule[]; onSelect: (s: Schedule) => void; showMember?: boolean;
 }) {
+  const { startHour, endHour } = useMemo(() => {
+    let minH = 5;
+    let maxH = 22;
+    for (const e of events) {
+      const s = parseDateTime(e.startTime);
+      const en = parseDateTime(e.endTime);
+      if (!isNaN(s.getTime())) {
+        minH = Math.min(minH, s.getHours());
+      }
+      if (!isNaN(en.getTime())) {
+        const enH = en.getMinutes() > 0 ? en.getHours() + 1 : en.getHours();
+        maxH = Math.max(maxH, enH);
+      }
+    }
+    return { startHour: Math.max(0, minH), endHour: Math.min(24, maxH) };
+  }, [events]);
+
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const now = new Date();
-  const height = (END - START) * HOUR_PX;
-  const top = (d: Date) => Math.max(0, (d.getHours() + d.getMinutes() / 60 - START) * HOUR_PX);
+  const height = (endHour - startHour) * HOUR_PX;
+  const top = (d: Date) => Math.max(0, (d.getHours() + d.getMinutes() / 60 - startHour) * HOUR_PX);
   const nowTop = top(now);
 
   return (
     <>
-      <div className="week" role="grid" aria-label="Lịch tuần">
+      <div className="week" role="grid" aria-label={t('Lịch tuần')}>
         <div className="wh" />
         {days.map((d, i) => (
           <div key={i} className={`wh ${isSameDay(d, now) ? 'today' : ''}`}>
@@ -26,7 +43,7 @@ export function WeekCalendar({ weekStart, events, onSelect, showMember = true }:
           </div>
         ))}
         <div className="hours" style={{ height }}>
-          {Array.from({ length: END - START }, (_, i) => <div key={i} style={{ top: i * HOUR_PX }}>{String(START + i).padStart(2, '0')}:00</div>)}
+          {Array.from({ length: endHour - startHour }, (_, i) => <div key={i} style={{ top: i * HOUR_PX }}>{String(startHour + i).padStart(2, '0')}:00</div>)}
         </div>
         {days.map((d, i) => {
           const list = events.filter((e) => isSameDay(parseDateTime(e.startTime), d));
@@ -42,7 +59,7 @@ export function WeekCalendar({ weekStart, events, onSelect, showMember = true }:
                     role="button" tabIndex={0} onClick={() => onSelect(e)} onKeyDown={(ev) => { if (ev.key === 'Enter') onSelect(e); }}
                     title={`${e.title} · ${fmtTime(e.startTime)}–${fmtTime(e.endTime)}`}>
                     <b>{fmtTime(e.startTime)} {showMember ? e.memberName : e.title}</b>
-                    {h > 40 && <span>{showMember ? e.title : e.trainerName ?? 'Tự tập'}</span>}
+                    {h > 40 && <span>{showMember ? e.title : e.trainerName ?? t('Tự tập')}</span>}
                   </div>
                 );
               })}
@@ -59,7 +76,7 @@ export function WeekCalendar({ weekStart, events, onSelect, showMember = true }:
             <div key={i} className="card" style={{ padding: 14 }}>
               <div className="row between" style={{ marginBottom: 8 }}>
                 <b className={isSameDay(d, now) ? 'ok' : ''}>{DAYS[i]} · {d.getDate()}/{d.getMonth() + 1}</b>
-                <span className="tiny faint">{list.length} buổi</span>
+                <span className="tiny faint">{t('{n} buổi', { n: list.length })}</span>
               </div>
               <div className="stack-sm">
                 {list.map((e) => {
@@ -78,7 +95,7 @@ export function WeekCalendar({ weekStart, events, onSelect, showMember = true }:
             </div>
           );
         })}
-        {events.length === 0 && <div className="muted small">Tuần này chưa có buổi tập.</div>}
+        {events.length === 0 && <div className="muted small">{t('Tuần này chưa có buổi tập.')}</div>}
       </div>
     </>
   );

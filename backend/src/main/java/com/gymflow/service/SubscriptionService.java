@@ -19,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SubscriptionService {
 
+    // NOTE #1: khóa member khi tạo gói để chống race condition và trùng thời gian đồng thời.
     private final MemberSubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
     private final PlanService planService;

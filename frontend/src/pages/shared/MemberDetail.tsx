@@ -6,8 +6,9 @@ import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
 import { ProgressPanel } from '../../components/ProgressPanel';
 import { SubscriptionForm } from '../../components/SubscriptionForm';
+import { CancelSubscriptionModal } from '../../components/CancelSubscriptionModal';
 import { useToast } from '../../components/Toast';
-import { Avatar, Badge, Button, Card, Confirm, Empty, ErrorState, Field, LoadingBlock, Modal, Segmented, Select, Stat, StatusBadge, Textarea } from '../../components/ui';
+import { Avatar, Badge, Button, Card, Empty, ErrorState, Field, LoadingBlock, Modal, Segmented, Select, Stat, StatusBadge } from '../../components/ui';
 import { age, fmtDate, fmtMoney, genderLabel, memberStatus, planStatus, subState } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import { ScheduleForm } from './Schedules';
@@ -139,7 +140,7 @@ export default function MemberDetail() {
       {modal === 'subscribe' && <SubscriptionForm memberId={m.id} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
       {modal === 'schedule' && <ScheduleForm presetMemberId={m.id} onClose={() => setModal(null)} onSaved={() => { setModal(null); toast.info('Xem lịch trong mục Lịch tập'); }} />}
       {modal === 'status' && <StatusModal member={m} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
-      {cancelling && <CancelSubscription sub={cancelling} onClose={() => setCancelling(null)} onDone={() => { setCancelling(null); void reload(); }} />}
+      {cancelling && <CancelSubscriptionModal sub={cancelling} onClose={() => setCancelling(null)} onDone={() => { setCancelling(null); void reload(); }} />}
     </div>
   );
 }
@@ -163,23 +164,5 @@ function StatusModal({ member, onClose, onSaved }: { member: Member; onClose: ()
         </Select>
       </Field>
     </Modal>
-  );
-}
-
-export function CancelSubscription({ sub, onClose, onDone }: { sub: Subscription; onClose: () => void; onDone: () => void }) {
-  const toast = useToast();
-  const [reason, setReason] = useState('');
-  const [open, setOpen] = useState(true);
-  if (!open) return null;
-  return (
-    <Confirm danger title={`Huỷ gói ${sub.planName}?`} confirmText="Huỷ gói" onClose={() => { setOpen(false); onClose(); }}
-      message={<div className="stack">
-        <span>Gói của <b>{sub.memberName}</b> ({fmtDate(sub.startDate)} → {fmtDate(sub.endDate)}) sẽ hết hiệu lực ngay. Thao tác được ghi vào nhật ký.</span>
-        <Textarea maxLength={200} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Lý do huỷ (không bắt buộc)" />
-      </div>}
-      onConfirm={async () => {
-        try { await api.put(`/subscriptions/${sub.id}/cancel`, { reason: reason || null }); toast.success('Đã huỷ gói'); onDone(); }
-        catch (e) { toast.error(errMsg(e)); throw e; }
-      }} />
   );
 }

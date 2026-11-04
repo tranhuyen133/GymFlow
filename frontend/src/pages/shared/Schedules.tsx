@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Member, Page, Schedule, ScheduleCreated, ScheduleStatus, Trainer, WorkoutPlanSummary } from '../../api/types';
+import type { Member, Schedule, ScheduleCreated, ScheduleStatus, Trainer, WorkoutPlanSummary } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
+import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
 import { WeekCalendar } from '../../components/WeekCalendar';
 import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
+import { t } from '../../i18n';
 import { addDays, fmtDateTime, fmtTime, fmtWeekday, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 
@@ -58,10 +60,11 @@ export default function Schedules() {
           </Select>
         )}
         <Segmented<Filter> value={filter} onChange={setFilter} options={[
-          { value: 'ALL', label: `Tất cả ${data?.length ?? ''}` },
-          { value: 'SCHEDULED', label: `Sắp tới ${counts.SCHEDULED}` },
-          { value: 'COMPLETED', label: `Hoàn thành ${counts.COMPLETED}` },
-          { value: 'MISSED', label: `Vắng ${counts.MISSED}` },
+          { value: 'ALL', label: t('Tất cả {n}', { n: data?.length ?? '' }) },
+          { value: 'SCHEDULED', label: t('Sắp tới {n}', { n: counts.SCHEDULED }) },
+          { value: 'COMPLETED', label: t('Hoàn thành {n}', { n: counts.COMPLETED }) },
+          { value: 'MISSED', label: t('Vắng {n}', { n: counts.MISSED }) },
+          { value: 'CANCELLED', label: t('Đã huỷ {n}', { n: counts.CANCELLED }) },
         ]} />
       </div>
 
@@ -76,14 +79,14 @@ export default function Schedules() {
         ))}
       </div>
 
-      {open && <SessionModal session={open} onClose={() => setOpen(null)} onChanged={() => { setOpen(null); void reload(); }} />}
+      {open && <SessionModal session={open} onClose={() => setOpen(null)} onChanged={(d) => { setOpen(null); if (d) setWeek(startOfWeek(d)); void reload(); }} />}
       {creating && <ScheduleForm onClose={closeCreate} onSaved={(firstDay) => { closeCreate(); if (firstDay) setWeek(startOfWeek(firstDay)); void reload(); }} />}
     </div>
   );
 }
 
 // ================= Chi tiết buổi tập =================
-export function SessionModal({ session, onClose, onChanged }: { session: Schedule; onClose: () => void; onChanged: () => void }) {
+export function SessionModal({ session, onClose, onChanged }: { session: Schedule; onClose: () => void; onChanged: (d?: Date) => void }) {
   const me = useMe();
   const toast = useToast();
   const staff = me.role !== 'MEMBER';
@@ -97,19 +100,19 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
     catch (e) { toast.error(errMsg(e)); throw e; }
   };
 
-  if (mode === 'complete') return <CompleteForm session={session} onClose={() => setMode('view')} onDone={onChanged} />;
-  if (mode === 'edit') return <ScheduleForm edit={session} onClose={() => setMode('view')} onSaved={() => onChanged()} />;
+  if (mode === 'complete') return <CompleteForm session={session} onClose={() => setMode('view')} onDone={() => onChanged()} />;
+  if (mode === 'edit') return <ScheduleForm edit={session} onClose={() => setMode('view')} onSaved={(start) => onChanged(start)} />;
 
   return (
     <>
       <Modal title={session.title} onClose={onClose} footer={<>
         {staff && session.status === 'SCHEDULED' && <>
-          <Button variant="danger" icon="ban" onClick={() => setConfirm('cancel')}>Huỷ buổi</Button>
-          {started && <Button icon="x" onClick={() => setConfirm('missed')}>Đánh vắng</Button>}
-          {!started && <Button icon="edit" onClick={() => setMode('edit')}>Dời lịch</Button>}
+          <Button variant="danger" icon="ban" onClick={() => setConfirm('cancel')}>{t('Huỷ buổi')}</Button>
+          {started && <Button icon="x" onClick={() => setConfirm('missed')}>{t('Đánh vắng')}</Button>}
+          {!started && <Button icon="edit" onClick={() => setMode('edit')}>{t('Dời lịch')}</Button>}
         </>}
         <span className="grow" />
-        {canComplete && <Button variant="primary" icon="checkCircle" onClick={() => setMode('complete')}>Hoàn thành buổi</Button>}
+        {canComplete && <Button variant="primary" icon="checkCircle" onClick={() => setMode('complete')}>{t('Hoàn thành buổi')}</Button>}
       </>}>
         <div className="stack">
           <div className="row between row-wrap">
@@ -117,30 +120,30 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
             <StatusBadge map={scheduleStatus} value={session.status} />
           </div>
           <dl className="kv">
-            <dt>Hội viên</dt><dd><Person name={session.memberName} size="sm" /></dd>
-            <dt>Huấn luyện viên</dt><dd>{session.trainerName ?? <span className="faint">Tự tập</span>}</dd>
-            <dt>Giáo án</dt><dd>{session.planName ?? <span className="faint">Không gắn</span>}</dd>
-            {session.note && <><dt>Ghi chú</dt><dd>{session.note}</dd></>}
+            <dt>{t('Hội viên')}</dt><dd><Person name={session.memberName} size="sm" /></dd>
+            <dt>{t('Huấn luyện viên')}</dt><dd>{session.trainerName ?? <span className="faint">{t('Tự tập')}</span>}</dd>
+            <dt>{t('Giáo án')}</dt><dd>{session.planName ?? <span className="faint">{t('Không gắn')}</span>}</dd>
+            {session.note && <><dt>{t('Ghi chú')}</dt><dd>{session.note}</dd></>}
           </dl>
-          {!started && session.status === 'SCHEDULED' && <Alert kind="info">Chỉ đánh dấu hoàn thành được khi đã đến giờ tập.</Alert>}
-          {session.status === 'MISSED' && canComplete && <Alert kind="warning">Buổi này đang bị đánh vắng. Nếu bạn đã tập, có thể ghi nhận bù trong vòng 7 ngày.</Alert>}
+          {!started && session.status === 'SCHEDULED' && <Alert kind="info">{t('Chỉ đánh dấu hoàn thành được khi đã đến giờ tập.')}</Alert>}
+          {session.status === 'MISSED' && canComplete && <Alert kind="warning">{t('Buổi này đang bị đánh vắng. Nếu bạn đã tập, có thể ghi nhận bù trong vòng 7 ngày.')}</Alert>}
           {session.log && (
             <div className="card" style={{ background: 'var(--rail)' }}>
-              <div className="row between"><b className="ok">Đã hoàn thành</b><span className="tiny faint">{fmtDateTime(session.log.completedAt)}</span></div>
+              <div className="row between"><b className="ok">{t('Đã hoàn thành')}</b><span className="tiny faint">{fmtDateTime(session.log.completedAt)}</span></div>
               <div className="grid grid-3 mt-8 small">
-                <div><div className="faint tiny">Thời lượng</div><b>{session.log.durationMinutes ?? '—'} phút</b></div>
-                <div><div className="faint tiny">Calo</div><b>{session.log.calories ?? '—'} kcal</b></div>
-                <div><div className="faint tiny">Cảm nhận</div><Stars value={session.log.rating} /></div>
+                <div><div className="faint tiny">{t('Thời lượng')}</div><b>{session.log.durationMinutes != null ? t('{n} phút', { n: session.log.durationMinutes }) : '—'}</b></div>
+                <div><div className="faint tiny">{t('Calo')}</div><b>{session.log.calories != null ? t('{n} kcal', { n: session.log.calories }) : '—'}</b></div>
+                <div><div className="faint tiny">{t('Cảm nhận')}</div><Stars value={session.log.rating} /></div>
               </div>
               {session.log.note && <p className="small muted mt-8">“{session.log.note}”</p>}
             </div>
           )}
         </div>
       </Modal>
-      {confirm === 'cancel' && <Confirm danger title="Huỷ buổi tập?" message="Buổi tập sẽ chuyển sang trạng thái Đã huỷ và không tính vào chuyên cần." confirmText="Huỷ buổi"
-        onClose={() => setConfirm(null)} onConfirm={() => act('cancel', 'Đã huỷ buổi tập')} />}
-      {confirm === 'missed' && <Confirm title="Đánh vắng buổi này?" message="Hội viên vẫn có thể ghi nhận bù trong 7 ngày nếu thực tế có tập." confirmText="Đánh vắng"
-        onClose={() => setConfirm(null)} onConfirm={() => act('missed', 'Đã đánh vắng')} />}
+      {confirm === 'cancel' && <Confirm danger title={t('Huỷ buổi tập?')} message={t('Buổi tập sẽ chuyển sang trạng thái Đã huỷ và không tính vào chuyên cần.')} confirmText={t('Huỷ buổi')}
+        onClose={() => setConfirm(null)} onConfirm={() => act('cancel', t('Đã huỷ buổi tập'))} />}
+      {confirm === 'missed' && <Confirm title={t('Đánh vắng buổi này?')} message={t('Hội viên vẫn có thể ghi nhận bù trong 7 ngày nếu thực tế có tập.')} confirmText={t('Đánh vắng')}
+        onClose={() => setConfirm(null)} onConfirm={() => act('missed', t('Đã đánh vắng'))} />}
     </>
   );
 }
@@ -155,43 +158,45 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
+  const ratingLabels = ['', t('Rất mệt'), t('Hơi đuối'), t('Ổn'), t('Tốt'), t('Xuất sắc')];
+
   const submit = async () => {
     const v: Record<string, string> = {};
     const d = Number(duration); const c = calories === '' ? null : Number(calories);
-    if (!Number.isInteger(d) || d < 1 || d > 600) v.durationMinutes = 'Từ 1 đến 600 phút';
-    if (c != null && (!Number.isInteger(c) || c < 0 || c > 5000)) v.calories = 'Từ 0 đến 5000 kcal';
+    if (!Number.isInteger(d) || d < 1 || d > 600) v.durationMinutes = t('Từ 1 đến 600 phút');
+    if (c != null && (!Number.isInteger(c) || c < 0 || c > 5000)) v.calories = t('Từ 0 đến 5000 kcal');
     setErrors(v);
     if (Object.keys(v).length) return;
     setBusy(true);
     try {
       await api.post(`/schedules/${session.id}/complete`, { durationMinutes: d, calories: c, rating, note: note || null });
-      toast.success('Tuyệt vời! Đã ghi nhận buổi tập 💪');
+      toast.success(t('Tuyệt vời! Đã ghi nhận buổi tập 💪'));
       onDone();
     } catch (e) { toast.error(errMsg(e)); setErrors(fieldErrs(e)); } finally { setBusy(false); }
   };
 
   return (
-    <Modal title="Hoàn thành buổi tập" onClose={onClose} size="narrow" footer={<>
-      <Button variant="ghost" onClick={onClose}>Quay lại</Button>
-      <Button variant="primary" icon="check" loading={busy} onClick={submit}>Lưu kết quả</Button>
+    <Modal title={t('Hoàn thành buổi tập')} onClose={onClose} size="narrow" footer={<>
+      <Button variant="ghost" onClick={onClose}>{t('Quay lại')}</Button>
+      <Button variant="primary" icon="check" loading={busy} onClick={submit}>{t('Lưu kết quả')}</Button>
     </>}>
       <div className="stack">
         <div className="muted small">{session.title} · {fmtTime(session.startTime)}–{fmtTime(session.endTime)}</div>
         <div className="form-grid">
-          <Field label="Thời lượng (phút)" error={errors.durationMinutes} required><Input type="number" min={1} max={600} value={duration} onChange={(e) => setDuration(e.target.value)} /></Field>
-          <Field label="Calo tiêu thụ (kcal)" error={errors.calories} hint="Xem trên đồng hồ / máy tập"><Input type="number" min={0} max={5000} value={calories} onChange={(e) => setCalories(e.target.value)} placeholder="VD: 420" /></Field>
+          <Field label={t('Thời lượng (phút)')} error={errors.durationMinutes} required><Input type="number" min={1} max={600} value={duration} onChange={(e) => setDuration(e.target.value)} /></Field>
+          <Field label={t('Calo tiêu thụ (kcal)')} error={errors.calories} hint={t('Xem trên đồng hồ / máy tập')}><Input type="number" min={0} max={5000} value={calories} onChange={(e) => setCalories(e.target.value)} placeholder="VD: 420" /></Field>
         </div>
-        <Field label="Cảm nhận buổi tập">
+        <Field label={t('Cảm nhận buổi tập')}>
           <div className="row" style={{ gap: 4 }}>
             {[1, 2, 3, 4, 5].map((n) => (
               <button key={n} type="button" className="btn btn-ghost btn-icon" aria-label={`${n} sao`} onClick={() => setRating(n)} style={{ color: n <= rating ? 'var(--warning)' : 'var(--faint)' }}>
                 <Icon name="star" fill={n <= rating ? 'currentColor' : 'none'} />
               </button>
             ))}
-            <span className="small muted">{['', 'Rất mệt', 'Hơi đuối', 'Ổn', 'Tốt', 'Xuất sắc'][rating]}</span>
+            <span className="small muted">{ratingLabels[rating]}</span>
           </div>
         </Field>
-        <Field label="Ghi chú" error={errors.note}><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: tăng 2.5kg bench press" /></Field>
+        <Field label={t('Ghi chú')} error={errors.note}><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: tăng 2.5kg bench press" /></Field>
       </div>
     </Modal>
   );
@@ -215,19 +220,34 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
   const [error, setError] = useState<string | null>(null);
   const [skipped, setSkipped] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState<Member | null>(null);
 
-  const members = useAsync(() => (edit ? Promise.resolve(null) : api.get<Page<Member>>('/members', { size: 200, status: 'ACTIVE' })), []);
   const trainers = useAsync(() => (me.role === 'ADMIN' ? api.get<Trainer[]>('/trainers') : Promise.resolve([] as Trainer[])), []);
-  const plans = useAsync(() => (memberId ? api.get<WorkoutPlanSummary[]>('/workout-plans', { memberId }) : Promise.resolve([] as WorkoutPlanSummary[])), [memberId]);
-  const selected = members.data?.content.find((m) => String(m.id) === memberId);
+  const plans = useAsync(
+    async () => {
+      if (!memberId) return { memberId: '', list: [] as WorkoutPlanSummary[] };
+      const list = await api.get<WorkoutPlanSummary[]>('/workout-plans', { memberId });
+      return { memberId, list };
+    },
+    [memberId],
+  );
 
   useEffect(() => {
     // Mặc định gắn giáo án đang áp dụng và HLV phụ trách của hội viên.
     if (edit) return;
-    const active = plans.data?.find((p) => p.status === 'ACTIVE');
-    if (active) { setPlanId(String(active.id)); setTitle(`Buổi tập – ${active.name}`.slice(0, 120)); }
-    if (selected?.trainerId && me.role === 'ADMIN') setTrainerId(String(selected.trainerId));
-  }, [plans.data, selected?.trainerId, edit, me.role]);
+    if (plans.loading || !plans.data || plans.data.memberId !== memberId) return;
+    const active = plans.data.list.find((p) => p.status === 'ACTIVE');
+    if (active) {
+      setPlanId(String(active.id));
+      setTitle(`Buổi tập – ${active.name}`.slice(0, 120));
+    } else {
+      setPlanId('');
+      setTitle('Buổi tập với HLV');
+    }
+    if (me.role === 'ADMIN') {
+      setTrainerId(selected?.trainerId ? String(selected.trainerId) : '');
+    }
+  }, [plans.data, plans.loading, memberId, selected?.trainerId, edit, me.role]);
 
   const submit = async () => {
     const v: Record<string, string> = {};
@@ -283,12 +303,14 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
             <Field label="Hội viên" className="span-2"><Person name={edit.memberName} size="sm" /></Field>
           ) : (
             <Field label="Hội viên" error={errors.memberId} required className="span-2">
-              <Select value={memberId} invalid={!!errors.memberId} onChange={(e) => setMemberId(e.target.value)}>
-                <option value="">— Chọn hội viên —</option>
-                {members.data?.content.map((m) => (
-                  <option key={m.id} value={m.id}>{m.fullName} · {m.code}{m.subscriptionState === 'EXPIRED' || !m.subscriptionState ? ' (không có gói)' : ''}</option>
-                ))}
-              </Select>
+              <MemberSelect
+                value={memberId}
+                invalid={!!errors.memberId}
+                onChange={(newId, m) => {
+                  setMemberId(newId);
+                  setSelected(m ?? null);
+                }}
+              />
             </Field>
           )}
           {selected && (selected.subscriptionState === 'EXPIRED' || !selected.subscriptionState) && (
@@ -305,7 +327,7 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
           <Field label="Giáo án" className={me.role === 'ADMIN' ? '' : 'span-2'}>
             <Select value={planId} onChange={(e) => setPlanId(e.target.value)}>
               <option value="">Không gắn giáo án</option>
-              {(plans.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}{p.status !== 'ACTIVE' ? ' (lưu trữ)' : ''}</option>)}
+              {(plans.data?.memberId === memberId ? plans.data.list : []).map((p) => <option key={p.id} value={p.id}>{p.name}{p.status !== 'ACTIVE' ? ' (lưu trữ)' : ''}</option>)}
             </Select>
           </Field>
           <Field label="Tiêu đề" error={errors.title} required className="span-2"><Input maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} /></Field>

@@ -1,3 +1,7 @@
+/**
+ * Màn 3.2 – Danh sách hội viên (MEM-01–05, SCRUM-141).
+ * Tìm/lọc/phân trang danh sách, xuất CSV và dùng chung form thêm/sửa hội viên.
+ */
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -12,30 +16,57 @@ import { errMsg, fieldErrs, useAsync, useDebounced } from '../../lib/hooks';
 export default function Members() {
   const me = useMe();
   const admin = me.role === 'ADMIN';
+  const toast = useToast();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'' | MemberStatus>('');
   const [trainerId, setTrainerId] = useState('');
   const [page, setPage] = useState(0);
+  const [exporting, setExporting] = useState(false);
   const [creating, setCreating] = useState(admin && params.get('new') === '1');
   const [created, setCreated] = useState<MemberCreated | null>(null);
+  // Debounce ô tìm kiếm để tránh gọi API liên tục; đổi từ khoá/bộ lọc thì quay về trang 1.
   const dq = useDebounced(q);
   useEffect(() => setPage(0), [dq, status, trainerId]);
 
   const trainers = useAsync(() => (admin ? api.get<Trainer[]>('/trainers') : Promise.resolve([] as Trainer[])), [admin]);
+  // Danh sách hội viên theo bộ lọc và trang hiện tại (MEM-01–04).
   const { data, error, loading, reload } = useAsync(
     () => api.get<Page<Member>>('/members', { q: dq, status, trainerId, page, size: 15 }), [dq, status, trainerId, page]);
 
+  // Xuất toàn bộ kết quả đang lọc (không chỉ trang hiện tại) ra CSV.
   const exportCsv = async () => {
-    const all = await api.get<Page<Member>>('/members', { q: dq, status, trainerId, size: 200 });
-    downloadCsv(`hoi-vien-${new Date().toISOString().slice(0, 10)}`, all.content, [
-      { header: 'Mã', value: (m) => m.code }, { header: 'Họ tên', value: (m) => m.fullName }, { header: 'Email', value: (m) => m.email },
-      { header: 'SĐT', value: (m) => m.phone }, { header: 'Giới tính', value: (m) => (m.gender ? genderLabel[m.gender] : '') },
-      { header: 'HLV', value: (m) => m.trainerName }, { header: 'Trạng thái', value: (m) => memberStatus[m.status][0] },
-      { header: 'Gói hiện tại', value: (m) => m.currentPlanName }, { header: 'Hết hạn', value: (m) => m.subscriptionEndDate },
-      { header: 'Ngày tham gia', value: (m) => m.joinedAt },
-    ]);
+    setExporting(true);
+    try {
+      const items: Member[] = [];
+      let currentPage = 0;
+      let totalPages = 1;
+      const pageSize = 200;
+      while (currentPage < totalPages) {
+        const res = await api.get<Page<Member>>('/members', {
+          q: dq,
+          status,
+          trainerId,
+          page: currentPage,
+          size: pageSize,
+        });
+        items.push(...res.content);
+        totalPages = res.totalPages;
+        currentPage++;
+      }
+      downloadCsv(`hoi-vien-${new Date().toISOString().slice(0, 10)}`, items, [
+        { header: 'Mã', value: (m) => m.code }, { header: 'Họ tên', value: (m) => m.fullName }, { header: 'Email', value: (m) => m.email },
+        { header: 'SĐT', value: (m) => m.phone }, { header: 'Giới tính', value: (m) => (m.gender ? genderLabel[m.gender] : '') },
+        { header: 'HLV', value: (m) => m.trainerName }, { header: 'Trạng thái', value: (m) => memberStatus[m.status][0] },
+        { header: 'Gói hiện tại', value: (m) => m.currentPlanName }, { header: 'Hết hạn', value: (m) => m.subscriptionEndDate },
+        { header: 'Ngày tham gia', value: (m) => m.joinedAt },
+      ]);
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setExporting(false);
+    }
   };
 
   const closeCreate = () => { setCreating(false); if (params.get('new')) { params.delete('new'); setParams(params, { replace: true }); } };
@@ -45,7 +76,7 @@ export default function Members() {
       <PageHead eyebrow={admin ? 'Quản lý' : 'Học viên của tôi'} title="Hội viên"
         desc={admin ? 'Tra cứu, thêm mới, phân công HLV và theo dõi tình trạng gói tập.' : 'Danh sách hội viên bạn đang phụ trách.'}
         actions={<>
-          <Button icon="download" onClick={() => void exportCsv()}>Xuất CSV</Button>
+          <Button icon="download" loading={exporting} onClick={() => void exportCsv()}>Xuất CSV</Button>
           {admin && <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Thêm hội viên</Button>}
         </>} />
 
@@ -73,6 +104,7 @@ export default function Members() {
                     <table className="table">
                       <thead><tr><th>Hội viên</th><th>Liên hệ</th><th>HLV</th><th>Gói hiện tại</th><th>Trạng thái</th><th>Tham gia</th></tr></thead>
                       <tbody>
+                        {/* Bấm vào dòng để mở hồ sơ chi tiết (SCRUM-142). */}
                         {data.content.map((m) => (
                           <tr key={m.id} className="clickable" onClick={() => navigate(`/members/${m.id}`)}>
                             <td><Person name={m.fullName} sub={m.code} /></td>
@@ -96,6 +128,7 @@ export default function Members() {
               )}
       </Card>
 
+      {/* MEM-05: thêm hội viên; sau khi tạo hiển thị mật khẩu tạm nếu có. */}
       {creating && <MemberFormModal onClose={closeCreate} onSaved={(res) => { closeCreate(); void reload(); if (res && 'temporaryPassword' in res) setCreated(res); }} />}
       {created && (
         <Modal title="Đã tạo hội viên" size="narrow" onClose={() => setCreated(null)} footer={<>
@@ -131,6 +164,7 @@ export function MemberFormModal({ member, onClose, onSaved }: { member?: Member;
   const trainers = useAsync(() => api.get<Trainer[]>('/trainers'), []);
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
 
+  // Kiểm tra dữ liệu phía client trước khi gửi; lỗi backend được gắn theo từng trường.
   const submit = async () => {
     const v: Record<string, string> = {};
     if (!f.fullName.trim()) v.fullName = 'Nhập họ tên';

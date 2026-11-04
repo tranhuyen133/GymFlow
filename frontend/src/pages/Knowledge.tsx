@@ -75,7 +75,7 @@ export function KnowledgeList() {
 /** /knowledge/:slug – bài đã xuất bản; bài chưa duyệt trả 404 từ backend. */
 export function KnowledgeArticle() {
   const { slug = '' } = useParams();
-  const { data, error, loading, reload } = useAsync(() => api.get<Article>(`/articles/public/${encodeURIComponent(slug)}`), [slug]);
+  const { data, error, status, loading, reload } = useAsync(() => api.get<Article>(`/articles/public/${encodeURIComponent(slug)}`), [slug]);
 
   return (
     <div className="public">
@@ -83,7 +83,7 @@ export function KnowledgeArticle() {
       <main className="section page legal-page">
         <Link className="muted small" to="/knowledge"><Icon name="arrowLeft" size={14} style={{ display: 'inline', verticalAlign: -2 }} /> {t('Tất cả bài viết')}</Link>
         {error ? (
-          error === t('Không tìm thấy bài viết')
+          status === 404
             ? <div className="mt-24"><Empty icon="layers" title="Không tìm thấy bài viết" desc="Bài viết không tồn tại hoặc chưa được xuất bản." /></div>
             : <ErrorState message={error} onRetry={reload} />
         ) : loading || !data ? <LoadingBlock rows={6} /> : (

@@ -21,6 +21,7 @@ import java.util.Objects;
 @Transactional(readOnly = true)
 public class AccessService {
 
+    // NOTE #1: kiểm tra phạm vi dữ liệu theo vai trò ADMIN / TRAINER / MEMBER.
     private final MemberRepository memberRepository;
     private final TrainerRepository trainerRepository;
 

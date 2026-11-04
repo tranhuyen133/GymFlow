@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { PlanStatus, WorkoutPlanSummary } from '../../api/types';
-import { Card, Empty, ErrorState, LoadingBlock, PageHead, Person, SearchInput, Segmented, StatusBadge, Button } from '../../components/ui';
+import { Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, StatusBadge, Button } from '../../components/ui';
 import { fmtDate, planStatus, relativeTime } from '../../lib/format';
-import { useAsync } from '../../lib/hooks';
+import { useAsync, usePaged } from '../../lib/hooks';
+import { t } from '../../i18n';
 
 type Filter = 'ALL' | PlanStatus;
 
@@ -15,6 +16,7 @@ export default function WorkoutPlans() {
   const { data, error, loading, reload } = useAsync(() => api.get<WorkoutPlanSummary[]>('/workout-plans'), []);
   const list = useMemo(() => (data ?? []).filter((p) => (filter === 'ALL' || p.status === filter)
     && (q === '' || (p.name + p.memberName).toLowerCase().includes(q.toLowerCase()))), [data, filter, q]);
+  const paged = usePaged(list, 'workout-plans', `${filter}|${q}`);
 
   return (
     <div className="page">
@@ -32,15 +34,15 @@ export default function WorkoutPlans() {
           : list.length === 0 ? <Empty icon="clipboard" title="Không có giáo án" desc="Bấm “Soạn giáo án” để bắt đầu." /> : (
             <div className="table-wrap">
               <table className="table">
-                <thead><tr><th>Giáo án</th><th>Hội viên</th><th>HLV</th><th>Thời gian</th><th>Nội dung</th><th>Trạng thái</th></tr></thead>
+                <thead><tr><th>{t('Giáo án')}</th><th>{t('Hội viên')}</th><th>{t('HLV')}</th><th>{t('Thời gian')}</th><th>{t('Nội dung')}</th><th>{t('Trạng thái')}</th></tr></thead>
                 <tbody>
-                  {list.map((p) => (
+                  {paged.items.map((p) => (
                     <tr key={p.id} className="clickable" onClick={() => navigate(`/workout-plans/${p.id}`)}>
-                      <td><b>{p.name}</b><div className="tiny faint">Tạo {relativeTime(p.createdAt)}</div></td>
+                      <td><b>{p.name}</b><div className="tiny faint">{t('Tạo {d}', { d: relativeTime(p.createdAt) })}</div></td>
                       <td><Person name={p.memberName} size="sm" /></td>
                       <td className="muted">{p.trainerName ?? '—'}</td>
                       <td className="small nowrap">{fmtDate(p.startDate)} → {fmtDate(p.endDate)}</td>
-                      <td className="small">{p.trainingDays} ngày/tuần · {p.itemCount} bài</td>
+                      <td className="small">{t('{d} ngày/tuần · {n} bài', { d: p.trainingDays, n: p.itemCount })}</td>
                       <td><StatusBadge map={planStatus} value={p.status} /></td>
                     </tr>
                   ))}
@@ -48,6 +50,7 @@ export default function WorkoutPlans() {
               </table>
             </div>
           )}
+        {list.length > 0 && <Pager page={paged.page} totalPages={paged.totalPages} total={paged.total} onPage={paged.setPage} size={paged.size} sizes={[10, 20, 50]} onSize={paged.setSize} />}
       </Card>
     </div>
   );
