@@ -176,6 +176,7 @@ public class ScheduleService {
         return mappers.schedule(s, log);
     }
 
+    // FIX #1: Task 176 - note-only, không thay đổi logic tự đánh vắng khi buổi đã quá giờ kết thúc.
     /** 00:05 hằng ngày và khi khởi động: buổi đã qua giờ kết thúc mà chưa hoàn thành → "Vắng". */
     @Scheduled(cron = "0 5 0 * * *", zone = "Asia/Ho_Chi_Minh")
     @EventListener(ApplicationReadyEvent.class)
@@ -200,6 +201,7 @@ public class ScheduleService {
         if (mustBeFuture && start.isBefore(LocalDateTime.now(clock))) throw ApiException.badRequest("Không xếp lịch vào thời điểm đã qua");
     }
 
+    // NOTE #1: Khóa đồng thời hội viên rồi HLV để chống trùng giờ khi nhiều request cùng lúc.
     /** Khoá hội viên rồi HLV (thứ tự cố định, tránh deadlock) để kiểm tra trùng giờ không bị yêu cầu đồng thời vượt qua. */
     private void lockForConflictCheck(Member member, Trainer trainer) {
         scheduleRepository.lockMember(member.getId());
