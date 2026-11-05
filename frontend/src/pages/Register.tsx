@@ -11,6 +11,7 @@ import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
 import { focusFormError } from './publicForm';
 import { EMAIL_RE } from '../lib/format';
+import { NAME_RE } from '../lib/validation';
 
 // Trùng quy tắc với backend (Dtos.PASSWORD_RULE / PHONE_RULE / EMAIL_RULE) để báo lỗi ngay, server vẫn kiểm tra lại.
 const PHONE_RE = /^(0|\+84)\d{9,10}$/;
@@ -23,6 +24,7 @@ function validate(f: RegisterRequest) {
   const name = f.fullName.trim();
   if (!name) v.fullName = 'Vui lòng nhập họ tên';
   else if (name.length < 2 || name.length > 100) v.fullName = 'Họ tên từ 2 đến 100 ký tự';
+  else if (!NAME_RE.test(name)) v.fullName = 'Họ tên chỉ gồm chữ cái và khoảng trắng';
   if (!f.email.trim()) v.email = 'Vui lòng nhập email';
   else if (!EMAIL_RE.test(f.email.trim())) v.email = 'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)';
   if (f.phone.trim() && !PHONE_RE.test(f.phone.trim())) v.phone = 'Số điện thoại không hợp lệ (VD: 0912345678)';
@@ -62,6 +64,12 @@ export default function Register() {
     setF((p) => ({ ...p, [k]: val }));
     if (k === 'email') setEmailTaken(false);
     if (errors[k]) setErrors((p) => { const n = { ...p }; delete n[k]; return n; });
+  };
+
+  // Rời ô là kiểm tra luôn ô đó, không đợi bấm Tạo tài khoản.
+  const blur = (k: keyof RegisterRequest) => {
+    const msg = validate(f)[k];
+    if (msg) setErrors((p) => ({ ...p, [k]: msg }));
   };
 
   const submit = async (e: FormEvent) => {
@@ -123,13 +131,13 @@ export default function Register() {
               {error && <Alert kind="error">{error}</Alert>}
               <Field htmlFor="register-name" label="Họ và tên" error={errors.fullName} required>
                 <Input id="register-name" name="fullName" required aria-describedby={errors.fullName ? 'register-name-error' : ''} autoComplete="name" value={f.fullName} invalid={!!errors.fullName} maxLength={100}
-                  onChange={(e) => set('fullName', e.target.value)} placeholder="Nguyễn Văn An" />
+                  onChange={(e) => set('fullName', e.target.value)} onBlur={() => blur('fullName')} placeholder="Nguyễn Văn An" />
               </Field>
               <Field htmlFor="register-email" label="Email" error={errors.email} required hint="Dùng để đăng nhập và khôi phục mật khẩu">
                 <div className="input-icon">
                   <Icon name="mail" />
                   <input id="register-email" name="email" required aria-describedby={errors.email ? 'register-email-error' : 'register-email-hint'} className={`input ${errors.email ? 'has-err' : ''}`} type="email" autoComplete="email" maxLength={120}
-                    value={f.email} onChange={(e) => set('email', e.target.value)} placeholder="ban@email.com" aria-invalid={!!errors.email} />
+                    value={f.email} onChange={(e) => set('email', e.target.value)} onBlur={() => blur('email')} placeholder="ban@email.com" aria-invalid={!!errors.email} />
                 </div>
               </Field>
               {emailTaken && (
@@ -139,17 +147,17 @@ export default function Register() {
                 <div className="input-icon">
                   <Icon name="phone" />
                   <input id="register-phone" name="phone" aria-describedby={errors.phone ? 'register-phone-error' : 'register-phone-hint'} className={`input ${errors.phone ? 'has-err' : ''}`} type="tel" inputMode="tel" autoComplete="tel"
-                    value={f.phone} onChange={(e) => set('phone', e.target.value)} placeholder="0912 345 678" aria-invalid={!!errors.phone} />
+                    value={f.phone} onChange={(e) => set('phone', e.target.value)} onBlur={() => blur('phone')} placeholder="0912 345 678" aria-invalid={!!errors.phone} />
                 </div>
               </Field>
               <Field htmlFor="register-password" label="Mật khẩu" error={errors.password} required hint="Tối thiểu 8 ký tự, gồm cả chữ và số">
                 <PasswordInput id="register-password" name="password" required aria-describedby={errors.password ? 'register-password-error' : 'register-password-hint'} autoComplete="new-password" value={f.password} invalid={!!errors.password}
-                  onChange={(e) => set('password', e.target.value)} />
+                  onChange={(e) => set('password', e.target.value)} onBlur={() => blur('password')} />
               </Field>
               <Strength pw={f.password} />
               <Field htmlFor="register-confirm" label="Nhập lại mật khẩu" error={errors.confirmPassword} required>
                 <PasswordInput id="register-confirm" name="confirmPassword" required aria-describedby={errors.confirmPassword ? 'register-confirm-error' : ''} autoComplete="new-password" value={f.confirmPassword} invalid={!!errors.confirmPassword}
-                  onChange={(e) => set('confirmPassword', e.target.value)} />
+                  onChange={(e) => set('confirmPassword', e.target.value)} onBlur={() => blur('confirmPassword')} />
               </Field>
               <div className="field">
                 <label className="check" style={{ alignItems: 'flex-start', color: 'var(--ink)' }}>

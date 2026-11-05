@@ -76,7 +76,7 @@ class AuthRegisterIntegrationTest {
         RegisterRequest req = new RegisterRequest(
                 "Nguyễn Văn Test",
                 testEmail,
-                "0912345678",
+                "09" + String.format("%08d", System.currentTimeMillis() % 100_000_000L),
                 "Password123",
                 "Password123",
                 true

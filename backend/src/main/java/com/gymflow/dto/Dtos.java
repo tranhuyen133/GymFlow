@@ -20,6 +20,8 @@ public final class Dtos {
     private static final String EMAIL_MSG = "Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)";
     private static final String PHONE_RULE = "^$|^(0|\\+84)\\d{9,10}$";
     private static final String PHONE_MSG = "Số điện thoại không hợp lệ";
+    private static final String NAME_RULE = "^[\\p{L}\\p{M}][\\p{L}\\p{M} .'-]*$";
+    private static final String NAME_MSG = "Họ tên chỉ gồm chữ cái và khoảng trắng";
 
     // ===================== Auth =====================
     public record LoginRequest(
@@ -39,7 +41,7 @@ public final class Dtos {
      * Mật khẩu xác nhận được kiểm tra lại ở service (FE đã kiểm tra trước).
      */
     public record RegisterRequest(
-            @NotBlank(message = "Vui lòng nhập họ tên") @Size(min = 2, max = 100, message = "Họ tên từ 2 đến 100 ký tự") String fullName,
+            @NotBlank(message = "Vui lòng nhập họ tên") @Size(min = 2, max = 100, message = "Họ tên từ 2 đến 100 ký tự") @Pattern(regexp = NAME_RULE, message = NAME_MSG) String fullName,
             @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone,
             @NotBlank(message = "Vui lòng nhập mật khẩu") @Pattern(regexp = PASSWORD_RULE, message = PASSWORD_MSG) String password,
@@ -76,19 +78,19 @@ public final class Dtos {
     }
 
     public record UpdateProfileRequest(
-            @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") String fullName,
+            @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") @Pattern(regexp = NAME_RULE, message = NAME_MSG) String fullName,
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone) {
     }
 
     // ===================== Member =====================
     public record MemberCreateRequest(
             @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
-            @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") String fullName,
+            @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") @Pattern(regexp = NAME_RULE, message = NAME_MSG) String fullName,
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone,
             @Pattern(regexp = "^$|" + PASSWORD_RULE, message = PASSWORD_MSG) String password,
             @Past(message = "Ngày sinh phải ở quá khứ") LocalDate dateOfBirth,
             Gender gender,
-            @DecimalMin(value = "80", message = "Chiều cao từ 80 cm") @DecimalMax(value = "250", message = "Chiều cao tối đa 250 cm") Double heightCm,
+            @DecimalMin(value = "80", message = "Chiều cao phải từ 80 cm trở lên") @DecimalMax(value = "250", message = "Chiều cao không được vượt quá 250 cm") Double heightCm,
             @Size(max = 255, message = "Mục tiêu tối đa 255 ký tự") String goal,
             @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự") String address,
             Long trainerId,
@@ -100,11 +102,11 @@ public final class Dtos {
     }
 
     public record MemberUpdateRequest(
-            @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") String fullName,
+            @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") @Pattern(regexp = NAME_RULE, message = NAME_MSG) String fullName,
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone,
             @Past(message = "Ngày sinh phải ở quá khứ") LocalDate dateOfBirth,
             Gender gender,
-            @DecimalMin(value = "80", message = "Chiều cao từ 80 cm") @DecimalMax(value = "250", message = "Chiều cao tối đa 250 cm") Double heightCm,
+            @DecimalMin(value = "80", message = "Chiều cao phải từ 80 cm trở lên") @DecimalMax(value = "250", message = "Chiều cao không được vượt quá 250 cm") Double heightCm,
             @Size(max = 255, message = "Mục tiêu tối đa 255 ký tự") String goal,
             @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự") String address,
             Long trainerId,
@@ -120,7 +122,7 @@ public final class Dtos {
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone,
             @Past(message = "Ngày sinh phải ở quá khứ") LocalDate dateOfBirth,
             Gender gender,
-            @DecimalMin(value = "80", message = "Chiều cao từ 80 cm") @DecimalMax(value = "250", message = "Chiều cao tối đa 250 cm") Double heightCm,
+            @DecimalMin(value = "80", message = "Chiều cao phải từ 80 cm trở lên") @DecimalMax(value = "250", message = "Chiều cao không được vượt quá 250 cm") Double heightCm,
             @Size(max = 255, message = "Mục tiêu tối đa 255 ký tự") String goal,
             @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự") String address) {
         @AssertTrue(message = "Ngày sinh phải sau ngày 01/01/1900")
@@ -392,8 +394,8 @@ public final class Dtos {
     // ===================== Weight & progress =====================
     public record WeightRequest(
             @NotNull(message = "Chọn ngày") @PastOrPresent(message = "Không ghi cho ngày tương lai") LocalDate recordedDate,
-            @NotNull(message = "Nhập cân nặng") @DecimalMin(value = "20", message = "Cân nặng từ 20 kg") @DecimalMax(value = "300", message = "Cân nặng tối đa 300 kg") Double weightKg,
-            @DecimalMin(value = "2", message = "% mỡ từ 2") @DecimalMax(value = "70", message = "% mỡ tối đa 70") Double bodyFat,
+            @NotNull(message = "Nhập cân nặng") @DecimalMin(value = "20", message = "Cân nặng phải từ 20 kg trở lên") @DecimalMax(value = "300", message = "Cân nặng không được vượt quá 300 kg") Double weightKg,
+            @DecimalMin(value = "2", message = "% mỡ cơ thể phải từ 2% trở lên") @DecimalMax(value = "70", message = "% mỡ cơ thể không được vượt quá 70%") Double bodyFat,
             @Size(max = 255) String note) {
     }
 

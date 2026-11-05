@@ -29,6 +29,7 @@ public class NotificationService {
     private static final DateTimeFormatter HM = DateTimeFormatter.ofPattern("HH:mm");
 
     private final MemberSubscriptionRepository subscriptionRepository;
+    private final PackageRequestRepository packageRequestRepository;
     private final WorkoutScheduleRepository scheduleRepository;
     private final WeightRecordRepository weightRepository;
     private final MemberRepository memberRepository;
@@ -45,7 +46,13 @@ public class NotificationService {
             Member m = access.requireMemberOf(user);
             MemberSubscription cur = mappers.pickCurrent(subscriptionRepository.findByMemberIdOrderByStartDateDesc(m.getId()), today);
             if (cur == null || cur.stateOn(today) == SubscriptionState.EXPIRED) {
-                out.add(n("sub-none", "danger", "Bạn chưa có gói tập hiệu lực", "Liên hệ quầy lễ tân để đăng ký hoặc gia hạn.", "/me/packages", now));
+                PackageRequest waiting = packageRequestRepository.findFirstByMemberIdAndStatus(m.getId(), PackageRequestStatus.PENDING).orElse(null);
+                if (waiting != null) {
+                    out.add(n("preq-wait-" + waiting.getId(), "info", "Đơn đăng ký " + waiting.getPlanName() + " đang chờ xác nhận",
+                            "Thanh toán tại quầy lễ tân để quản lý kích hoạt gói.", "/me/packages", waiting.getCreatedAt()));
+                } else {
+                    out.add(n("sub-none", "danger", "Bạn chưa có gói tập hiệu lực", "Chọn gói và gửi đăng ký trong mục Gói tập của tôi.", "/me/packages", now));
+                }
             } else if (cur.stateOn(today) == SubscriptionState.EXPIRING) {
                 out.add(n("sub-exp-" + cur.getId(), "warning", "Gói " + cur.getPlan().getName() + " sắp hết hạn",
                         "Còn " + cur.daysLeft(today) + " ngày (hết hạn " + cur.getEndDate() + ").", "/me/packages", now));
@@ -57,6 +64,16 @@ public class NotificationService {
                     out.add(n("ws-" + s.getId(), started ? "warning" : "info",
                             started ? "Đánh dấu hoàn thành: " + s.getTitle() : "Hôm nay " + s.getStartTime().format(HM) + ": " + s.getTitle(),
                             s.getTrainer() == null ? "Tự tập" : "Với HLV " + s.getTrainer().getUser().getFullName(), "/me/schedule", s.getStartTime()));
+                }
+            }
+            for (PackageRequest r : packageRequestRepository.findByMemberIdOrderByCreatedAtDesc(m.getId())) {
+                if (r.getDecidedAt() == null || r.getDecidedAt().isBefore(now.minusDays(3))) continue;
+                if (r.getStatus() == PackageRequestStatus.APPROVED) {
+                    out.add(n("preq-ok-" + r.getId(), "info", "Đơn đăng ký " + r.getPlanName() + " đã được duyệt",
+                            "Gói đã được kích hoạt trên tài khoản của bạn.", "/me/packages", r.getDecidedAt()));
+                } else if (r.getStatus() == PackageRequestStatus.REJECTED) {
+                    out.add(n("preq-no-" + r.getId(), "warning", "Đơn đăng ký " + r.getPlanName() + " bị từ chối",
+                            r.getDecisionNote() == null ? "Xem chi tiết trong mục Gói tập của tôi." : "Lý do: " + r.getDecisionNote(), "/me/packages", r.getDecidedAt()));
                 }
             }
             WeightRecord w = weightRepository.findFirstByMemberIdOrderByRecordedDateDesc(m.getId()).orElse(null);
@@ -74,6 +91,9 @@ public class NotificationService {
                     .forEach(s -> out.add(n("sub-" + s.getId(), "warning", s.getMember().getUser().getFullName() + " sắp hết gói",
                             "Hết hạn " + s.getEndDate() + ", nhắc hội viên gia hạn.", "/members/" + s.getMember().getId(), now)));
         } else {
+            long waitingRequests = packageRequestRepository.countByStatus(PackageRequestStatus.PENDING);
+            if (waitingRequests > 0) out.add(n("preq-pending", "warning", waitingRequests + " đơn đăng ký gói chờ xác nhận",
+                    "Thu tiền tại quầy rồi duyệt để kích hoạt gói cho hội viên.", "/package-requests", now));
             long expiring = subscriptionRepository.findEndingBetween(today, today.plusDays(MemberSubscription.EXPIRING_DAYS)).size();
             if (expiring > 0) out.add(n("expiring", "warning", expiring + " gói sắp hết hạn trong 7 ngày", "Liên hệ hội viên để gia hạn.", "/subscriptions?state=EXPIRING", now));
             long failed = auditRepository.search("", "LOGIN_FAILED", now.minusDays(1), now.plusMinutes(1), PageRequest.of(0, 1)).getTotalElements();

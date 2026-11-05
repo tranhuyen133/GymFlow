@@ -5,6 +5,7 @@ import com.gymflow.domain.MembershipPlan;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.repository.MemberSubscriptionRepository;
 import com.gymflow.repository.MembershipPlanRepository;
+import com.gymflow.repository.PackageRequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ public class PlanService {
 
     private final MembershipPlanRepository planRepository;
     private final MemberSubscriptionRepository subscriptionRepository;
+    private final PackageRequestRepository packageRequestRepository;
     private final AuditService auditService;
     private final Mappers mappers;
 
@@ -60,7 +62,7 @@ public class PlanService {
     @Transactional
     public void delete(Long id) {
         MembershipPlan p = load(id);
-        if (subscriptionRepository.existsByPlanId(id)) {
+        if (subscriptionRepository.existsByPlanId(id) || packageRequestRepository.existsByPlanId(id)) {
             throw ApiException.conflict("Gói đã có người đăng ký, hãy chuyển sang \"Ngừng cung cấp\" thay vì xoá");
         }
         planRepository.delete(p);
