@@ -8,7 +8,7 @@ import { api } from '../../api/client';
 import type { Gender, Member, MemberCreated, MemberForm as Form, MemberStatus, Page, Trainer } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge, Textarea } from '../../components/ui';
+import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge, Table, Textarea } from '../../components/ui';
 import { downloadCsv } from '../../lib/csv';
 import { EMAIL_RE, fmtDate, genderLabel, memberStatus, subState } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync, useDebounced } from '../../lib/hooks';
@@ -100,29 +100,27 @@ export default function Members() {
             : data && data.content.length === 0 ? <Empty icon="users" title="Không có hội viên phù hợp" desc="Thử đổi từ khoá hoặc bộ lọc." />
               : data && (
                 <>
-                  <div className="table-wrap">
-                    <table className="table">
-                      <thead><tr><th>Hội viên</th><th>Liên hệ</th><th>HLV</th><th>Gói hiện tại</th><th>Trạng thái</th><th>Tham gia</th></tr></thead>
-                      <tbody>
-                        {/* Bấm vào dòng để mở hồ sơ chi tiết (SCRUM-142). */}
-                        {data.content.map((m) => (
-                          <tr key={m.id} className="clickable" onClick={() => navigate(`/members/${m.id}`)}>
-                            <td><Person name={m.fullName} sub={m.code} /></td>
-                            <td><div className="small">{m.phone ?? '—'}</div><div className="tiny faint">{m.email}</div></td>
-                            <td>{m.trainerName ?? <span className="faint">Chưa phân công</span>}</td>
-                            <td>
-                              {m.currentPlanName ? <div className="stack-sm" style={{ gap: 4 }}>
-                                <span className="small">{m.currentPlanName}</span>
-                                <span className="row" style={{ gap: 6 }}><StatusBadge map={subState} value={m.subscriptionState} />{m.subscriptionState !== 'EXPIRED' && m.daysLeft != null && <span className="tiny faint">{m.daysLeft} ngày</span>}</span>
-                              </div> : <Badge tone="muted">Chưa có gói</Badge>}
-                            </td>
-                            <td><StatusBadge map={memberStatus} value={m.status} />{m.accountStatus === 'LOCKED' && <div className="mt-4"><Badge tone="red">TK khoá</Badge></div>}</td>
-                            <td className="nowrap muted">{fmtDate(m.joinedAt)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <Table caption="Danh sách hội viên">
+                    <thead><tr><th>Hội viên</th><th>Liên hệ</th><th>HLV</th><th>Gói hiện tại</th><th>Trạng thái</th><th>Tham gia</th></tr></thead>
+                    <tbody>
+                      {/* Bấm vào dòng để mở hồ sơ chi tiết (SCRUM-142). */}
+                      {data.content.map((m) => (
+                        <tr key={m.id} className="clickable" onClick={() => navigate(`/members/${m.id}`)}>
+                          <td><Person name={m.fullName} sub={m.code} /></td>
+                          <td><div className="small">{m.phone ?? '—'}</div><div className="tiny faint">{m.email}</div></td>
+                          <td>{m.trainerName ?? <span className="faint">Chưa phân công</span>}</td>
+                          <td>
+                            {m.currentPlanName ? <div className="stack-sm" style={{ gap: 4 }}>
+                              <span className="small">{m.currentPlanName}</span>
+                              <span className="row" style={{ gap: 6 }}><StatusBadge map={subState} value={m.subscriptionState} />{m.subscriptionState !== 'EXPIRED' && m.daysLeft != null && <span className="tiny faint">{m.daysLeft} ngày</span>}</span>
+                            </div> : <Badge tone="muted">Chưa có gói</Badge>}
+                          </td>
+                          <td><StatusBadge map={memberStatus} value={m.status} />{m.accountStatus === 'LOCKED' && <div className="mt-4"><Badge tone="red">TK khoá</Badge></div>}</td>
+                          <td className="nowrap muted">{fmtDate(m.joinedAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
                   <Pager page={data.page} totalPages={data.totalPages} total={data.totalElements} onPage={setPage} />
                 </>
               )}

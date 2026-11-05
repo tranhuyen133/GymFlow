@@ -1,4 +1,4 @@
-import { cloneElement, isValidElement, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TableHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { cloneElement, isValidElement, useEffect, useId, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TableHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import { locale, t, tx } from '../i18n';
 import { hueOf, initials, type Tone } from '../lib/format';
@@ -105,9 +105,24 @@ export function PageHead({ eyebrow, title, desc, actions }: { eyebrow?: string; 
 // ---------- Table ----------
 export function Table({ caption, children, className = '', 'aria-label': ariaLabel, ...rest }:
   TableHTMLAttributes<HTMLTableElement> & { caption?: string }) {
+  const ref = useRef<HTMLTableElement>(null);
+
+  // Gắn nhãn cột vào từng ô để CSS chuyển bảng thành dạng card trên màn hình hẹp.
+  useLayoutEffect(() => {
+    const table = ref.current;
+    if (!table) return;
+    const headers = Array.from(table.querySelectorAll('thead th')).map((cell) => cell.textContent?.trim() ?? '');
+    table.querySelectorAll('tbody tr').forEach((row) => {
+      Array.from((row as HTMLTableRowElement).cells).forEach((cell, index) => {
+        if (cell.colSpan > 1) return;
+        cell.dataset.label = headers[index] ?? '';
+      });
+    });
+  });
+
   return (
-    <div className="table-wrap" role="region" aria-label={t(caption ?? ariaLabel ?? 'Bảng dữ liệu')} tabIndex={0}>
-      <table className={`table ${className}`} {...rest}>
+    <div className="table-wrap table-responsive" role="region" aria-label={t(caption ?? ariaLabel ?? 'Bảng dữ liệu')} tabIndex={0}>
+      <table ref={ref} className={`table ${className}`} {...rest}>
         {caption && <caption className="sr-only">{t(caption)}</caption>}
         {tx(children)}
       </table>

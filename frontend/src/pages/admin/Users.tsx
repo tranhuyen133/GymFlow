@@ -3,7 +3,7 @@ import { api } from '../../api/client';
 import type { Page, Role, UserAccount, UserCreated, UserStatus } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge } from '../../components/ui';
+import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge, Table } from '../../components/ui';
 import { t } from '../../i18n';
 import { EMAIL_RE, fmtDateTime, relativeTime, roleLabel, userStatus } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync, useDebounced } from '../../lib/hooks';
@@ -42,34 +42,32 @@ export default function Users() {
         {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div> : loading && !data ? <div style={{ padding: 20 }}><LoadingBlock /></div>
           : data && data.content.length === 0 ? <Empty icon="userCog" title="Không có tài khoản phù hợp" /> : data && (
             <>
-              <div className="table-wrap">
-                <table className="table">
-                  <thead><tr><th>Tài khoản</th><th>Vai trò</th><th>Trạng thái</th><th>Đăng nhập gần nhất</th><th>Tạo lúc</th><th /></tr></thead>
-                  <tbody>
-                    {data.content.map((u) => (
-                      <tr key={u.id}>
-                        <td><Person name={u.fullName} sub={u.email} size="sm" /></td>
-                        <td><Badge tone={roleTone[u.role]}>{roleLabel[u.role]}</Badge></td>
-                        <td><StatusBadge map={userStatus} value={u.status} /></td>
-                        <td className="small muted">{u.lastLoginAt ? relativeTime(u.lastLoginAt) : 'Chưa đăng nhập'}</td>
-                        <td className="tiny faint nowrap">{fmtDateTime(u.createdAt)}</td>
-                        <td className="actions">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            icon="key"
-                            aria-label={t('Cấp mật khẩu tạm')}
-                            title={u.id === me.id ? t('Đổi mật khẩu của bạn ở trang Hồ sơ') : t('Cấp mật khẩu tạm')}
-                            disabled={u.id === me.id}
-                            onClick={() => setResetting(u)}
-                          />
-                          {u.id !== me.id && <Button size="sm" variant="ghost" icon={u.status === 'LOCKED' ? 'unlock' : 'lock'} aria-label={u.status === 'LOCKED' ? 'Mở khoá' : 'Khoá'} title={u.status === 'LOCKED' ? 'Mở khoá' : 'Khoá'} onClick={() => setLocking(u)} />}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table caption="Tài khoản và quyền">
+                <thead><tr><th>Tài khoản</th><th>Vai trò</th><th>Trạng thái</th><th>Đăng nhập gần nhất</th><th>Tạo lúc</th><th /></tr></thead>
+                <tbody>
+                  {data.content.map((u) => (
+                    <tr key={u.id}>
+                      <td><Person name={u.fullName} sub={u.email} size="sm" /></td>
+                      <td><Badge tone={roleTone[u.role]}>{roleLabel[u.role]}</Badge></td>
+                      <td><StatusBadge map={userStatus} value={u.status} /></td>
+                      <td className="small muted">{u.lastLoginAt ? relativeTime(u.lastLoginAt) : 'Chưa đăng nhập'}</td>
+                      <td className="tiny faint nowrap">{fmtDateTime(u.createdAt)}</td>
+                      <td className="actions">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon="key"
+                          aria-label={t('Cấp mật khẩu tạm')}
+                          title={u.id === me.id ? t('Đổi mật khẩu của bạn ở trang Hồ sơ') : t('Cấp mật khẩu tạm')}
+                          disabled={u.id === me.id}
+                          onClick={() => setResetting(u)}
+                        />
+                        {u.id !== me.id && <Button size="sm" variant="ghost" icon={u.status === 'LOCKED' ? 'unlock' : 'lock'} aria-label={u.status === 'LOCKED' ? 'Mở khoá' : 'Khoá'} title={u.status === 'LOCKED' ? 'Mở khoá' : 'Khoá'} onClick={() => setLocking(u)} />}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
               <Pager page={data.page} totalPages={data.totalPages} total={data.totalElements} onPage={setPage} />
             </>
           )}

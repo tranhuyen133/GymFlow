@@ -8,7 +8,7 @@ import { ProgressPanel } from '../../components/ProgressPanel';
 import { SubscriptionForm } from '../../components/SubscriptionForm';
 import { CancelSubscriptionModal } from '../../components/CancelSubscriptionModal';
 import { useToast } from '../../components/Toast';
-import { Avatar, Badge, Button, Card, Empty, ErrorState, Field, LoadingBlock, Modal, Segmented, Select, Stat, StatusBadge } from '../../components/ui';
+import { Avatar, Badge, Button, Card, Empty, ErrorState, Field, LoadingBlock, Modal, Segmented, Select, Stat, StatusBadge, Table } from '../../components/ui';
 import { age, fmtDate, fmtMoney, genderLabel, memberStatus, planStatus, subState } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import { ScheduleForm } from './Schedules';
@@ -76,22 +76,20 @@ export default function MemberDetail() {
             <div className="grid grid-main">
               <Card title="Lịch sử gói tập" icon="card" flush>
                 {data.subscriptions.length === 0 ? <Empty icon="ticket" title="Chưa đăng ký gói nào" action={admin && <Button variant="primary" size="sm" onClick={() => setModal('subscribe')}>Đăng ký ngay</Button>} /> : (
-                  <div className="table-wrap">
-                    <table className="table">
-                      <thead><tr><th>Gói</th><th>Thời gian</th><th>Số tiền</th><th>Trạng thái</th>{admin && <th />}</tr></thead>
-                      <tbody>
-                        {data.subscriptions.map((s) => (
-                          <tr key={s.id}>
-                            <td><b>{s.planName}</b>{s.note && <div className="tiny faint ellipsis" style={{ maxWidth: 220 }}>{s.note}</div>}</td>
-                            <td className="nowrap small">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</td>
-                            <td className="num">{fmtMoney(s.pricePaid)}</td>
-                            <td><StatusBadge map={subState} value={s.state} />{(s.state === 'ACTIVE' || s.state === 'EXPIRING') && <div className="tiny faint mt-4">còn {s.daysLeft} ngày</div>}</td>
-                            {admin && <td className="actions">{!s.cancelled && s.state !== 'EXPIRED' && <Button size="sm" variant="ghost" icon="ban" aria-label="Huỷ gói" title="Huỷ gói" onClick={() => setCancelling(s)} />}</td>}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <Table caption="Lịch sử gói tập">
+                    <thead><tr><th>Gói</th><th>Thời gian</th><th>Số tiền</th><th>Trạng thái</th>{admin && <th />}</tr></thead>
+                    <tbody>
+                      {data.subscriptions.map((s) => (
+                        <tr key={s.id}>
+                          <td><b>{s.planName}</b>{s.note && <div className="tiny faint ellipsis" style={{ maxWidth: 220 }}>{s.note}</div>}</td>
+                          <td className="nowrap small">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</td>
+                          <td className="num">{fmtMoney(s.pricePaid)}</td>
+                          <td><StatusBadge map={subState} value={s.state} />{(s.state === 'ACTIVE' || s.state === 'EXPIRING') && <div className="tiny faint mt-4">còn {s.daysLeft} ngày</div>}</td>
+                          {admin && <td className="actions">{!s.cancelled && s.state !== 'EXPIRED' && <Button size="sm" variant="ghost" icon="ban" aria-label="Huỷ gói" title="Huỷ gói" onClick={() => setCancelling(s)} />}</td>}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
                 )}
               </Card>
               <Card title="Thông tin" icon="user">
@@ -115,22 +113,20 @@ export default function MemberDetail() {
         {tab === 'plans' && (
           <Card flush>
             {data.plans.length === 0 ? <Empty icon="clipboard" title="Chưa có giáo án" action={<Button variant="primary" size="sm" onClick={() => navigate(`/workout-plans/new?memberId=${m.id}`)}>Soạn giáo án</Button>} /> : (
-              <div className="table-wrap">
-                <table className="table">
-                  <thead><tr><th>Giáo án</th><th>HLV</th><th>Thời gian</th><th>Nội dung</th><th>Trạng thái</th></tr></thead>
-                  <tbody>
-                    {data.plans.map((p) => (
-                      <tr key={p.id} className="clickable" onClick={() => navigate(`/workout-plans/${p.id}`)}>
-                        <td><b>{p.name}</b><div className="tiny faint">{p.goal}</div></td>
-                        <td>{p.trainerName ?? '—'}</td>
-                        <td className="small nowrap">{fmtDate(p.startDate)} → {fmtDate(p.endDate)}</td>
-                        <td className="small">{p.trainingDays} ngày/tuần · {p.itemCount} bài</td>
-                        <td><StatusBadge map={planStatus} value={p.status} /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table caption="Giáo án">
+                <thead><tr><th>Giáo án</th><th>HLV</th><th>Thời gian</th><th>Nội dung</th><th>Trạng thái</th></tr></thead>
+                <tbody>
+                  {data.plans.map((p) => (
+                    <tr key={p.id} className="clickable" onClick={() => navigate(`/workout-plans/${p.id}`)}>
+                      <td><b>{p.name}</b><div className="tiny faint">{p.goal}</div></td>
+                      <td>{p.trainerName ?? '—'}</td>
+                      <td className="small nowrap">{fmtDate(p.startDate)} → {fmtDate(p.endDate)}</td>
+                      <td className="small">{p.trainingDays} ngày/tuần · {p.itemCount} bài</td>
+                      <td><StatusBadge map={planStatus} value={p.status} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
             )}
           </Card>
         )}

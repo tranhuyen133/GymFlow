@@ -9,7 +9,7 @@ import { api } from '../../api/client';
 import type { MembershipPlan, PackageRequest, Subscription } from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Alert, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Meter, Modal, PageHead, Segmented, StatusBadge, Textarea } from '../../components/ui';
+import { Alert, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Meter, Modal, PageHead, Segmented, StatusBadge, Table, Textarea } from '../../components/ui';
 import { t, tn } from '../../i18n';
 import { addDays, durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus, parseDate, subState, toIsoDate, todayIso } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
@@ -142,37 +142,35 @@ export default function MyPackages() {
               : !reqs.data ? <div style={{ padding: 16 }}><LoadingBlock rows={2} /></div>
               : reqs.data.length === 0 ? <Empty icon="clipboard" title="Chưa có đơn đăng ký nào" desc="Chọn gói ở mục Các gói đang mở bán để gửi đơn." />
               : (
-                <div className="table-wrap">
-                  <table className="table">
-                    <thead>
-                      <tr><th>{t('Gói')}</th><th>{t('Số tiền')}</th><th>{t('Gửi lúc')}</th><th>{t('Trạng thái')}</th><th aria-label={t('Thao tác')} /></tr>
-                    </thead>
-                    <tbody>
-                      {reqs.data.map((r) => (
-                        <tr key={r.id}>
-                          <td>
-                            <b>{r.planName}</b>
-                            <div className="tiny faint">
-                              {durationLabel(r.durationDays)} · {r.desiredStartDate ? t('Bắt đầu mong muốn {d}', { d: fmtDate(r.desiredStartDate) }) : t('Bắt đầu sớm nhất')}
-                            </div>
-                            {r.note && <div className="tiny faint">{t('Ghi chú: {note}', { note: r.note })}</div>}
-                          </td>
-                          <td className="num nowrap">{fmtMoney(r.price)}</td>
-                          <td className="small nowrap">{fmtDateTime(r.createdAt)}</td>
-                          <td>
-                            <StatusBadge map={packageRequestStatus} value={r.status} />
-                            {r.status === 'REJECTED' && r.decisionNote && <div className="tiny" style={{ color: 'var(--danger)', marginTop: 4 }}>{t('Lý do: {r}', { r: r.decisionNote })}</div>}
-                            {r.status === 'APPROVED' && <div className="tiny faint mt-4">{t('Duyệt {d}', { d: fmtDateTime(r.decidedAt) })}</div>}
-                            {r.status === 'PENDING' && !r.planStillOnSale && <div className="tiny" style={{ color: 'var(--warning)', marginTop: 4 }}>{t('Gói đã ngừng kinh doanh')}</div>}
-                          </td>
-                          <td className="nowrap">
-                            {r.status === 'PENDING' && <Button size="sm" variant="ghost" icon="x" onClick={() => setCancelling(r)}>{t('Huỷ đơn')}</Button>}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <Table caption={t('Đơn đăng ký của tôi')}>
+                  <thead>
+                    <tr><th>{t('Gói')}</th><th>{t('Số tiền')}</th><th>{t('Gửi lúc')}</th><th>{t('Trạng thái')}</th><th aria-label={t('Thao tác')} /></tr>
+                  </thead>
+                  <tbody>
+                    {reqs.data.map((r) => (
+                      <tr key={r.id}>
+                        <td>
+                          <b>{r.planName}</b>
+                          <div className="tiny faint">
+                            {durationLabel(r.durationDays)} · {r.desiredStartDate ? t('Bắt đầu mong muốn {d}', { d: fmtDate(r.desiredStartDate) }) : t('Bắt đầu sớm nhất')}
+                          </div>
+                          {r.note && <div className="tiny faint">{t('Ghi chú: {note}', { note: r.note })}</div>}
+                        </td>
+                        <td className="num nowrap">{fmtMoney(r.price)}</td>
+                        <td className="small nowrap">{fmtDateTime(r.createdAt)}</td>
+                        <td>
+                          <StatusBadge map={packageRequestStatus} value={r.status} />
+                          {r.status === 'REJECTED' && r.decisionNote && <div className="tiny" style={{ color: 'var(--danger)', marginTop: 4 }}>{t('Lý do: {r}', { r: r.decisionNote })}</div>}
+                          {r.status === 'APPROVED' && <div className="tiny faint mt-4">{t('Duyệt {d}', { d: fmtDateTime(r.decidedAt) })}</div>}
+                          {r.status === 'PENDING' && !r.planStillOnSale && <div className="tiny" style={{ color: 'var(--warning)', marginTop: 4 }}>{t('Gói đã ngừng kinh doanh')}</div>}
+                        </td>
+                        <td className="nowrap">
+                          {r.status === 'PENDING' && <Button size="sm" variant="ghost" icon="x" onClick={() => setCancelling(r)}>{t('Huỷ đơn')}</Button>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
               )}
           </Card>
 
@@ -180,21 +178,19 @@ export default function MyPackages() {
             {subs.data.length === 0 ? (
               <Empty icon="ticket" title="Chưa có gói nào" desc="Gói đã được kích hoạt sẽ hiện ở đây." />
             ) : (
-              <div className="table-wrap">
-                <table className="table">
-                  <thead><tr><th>{t('Gói')}</th><th>{t('Thời gian')}</th><th>{t('Số tiền')}</th><th>{t('Trạng thái')}</th></tr></thead>
-                  <tbody>
-                    {subs.data.map((s) => (
-                      <tr key={s.id}>
-                        <td><b>{s.planName}</b>{s.note && <div className="tiny faint">{s.note}</div>}</td>
-                        <td className="small nowrap">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</td>
-                        <td className="num nowrap">{fmtMoney(s.pricePaid)}</td>
-                        <td><StatusBadge map={subState} value={s.state} /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table caption={t('Lịch sử gói tập')}>
+                <thead><tr><th>{t('Gói')}</th><th>{t('Thời gian')}</th><th>{t('Số tiền')}</th><th>{t('Trạng thái')}</th></tr></thead>
+                <tbody>
+                  {subs.data.map((s) => (
+                    <tr key={s.id}>
+                      <td><b>{s.planName}</b>{s.note && <div className="tiny faint">{s.note}</div>}</td>
+                      <td className="small nowrap">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</td>
+                      <td className="num nowrap">{fmtMoney(s.pricePaid)}</td>
+                      <td><StatusBadge map={subState} value={s.state} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
             )}
           </Card>
         </div>

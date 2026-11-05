@@ -4,7 +4,7 @@ import { api } from '../../api/client';
 import type { Subscription, SubscriptionState } from '../../api/types';
 import { CancelSubscriptionModal } from '../../components/CancelSubscriptionModal';
 import { SubscriptionForm } from '../../components/SubscriptionForm';
-import { Button, Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, Select, Stat, StatusBadge } from '../../components/ui';
+import { Button, Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, Select, Stat, StatusBadge, Table } from '../../components/ui';
 import { downloadCsv } from '../../lib/csv';
 import { fmtDate, fmtDateTime, fmtMoney, fmtMoneyShort, subState } from '../../lib/format';
 import { useAsync, usePaged } from '../../lib/hooks';
@@ -72,24 +72,22 @@ export default function Subscriptions() {
       <Card flush>
         {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div> : loading ? <div style={{ padding: 20 }}><LoadingBlock /></div>
           : list.length === 0 ? <Empty icon="card" title="Không có đăng ký phù hợp" /> : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead><tr><th>{t('Hội viên')}</th><th>{t('Gói')}</th><th>{t('Thời gian')}</th><th>{t('Số tiền')}</th><th>{t('Trạng thái')}</th><th>{t('Ngày thu')}</th><th /></tr></thead>
-                <tbody>
-                  {paged.items.map((s) => (
-                    <tr key={s.id}>
-                      <td className="clickable" onClick={() => navigate(`/members/${s.memberId}`)}><Person name={s.memberName} sub={s.memberCode} size="sm" /></td>
-                      <td>{s.planName}</td>
-                      <td className="small nowrap">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</td>
-                      <td className="num">{fmtMoney(s.pricePaid)}</td>
-                      <td><StatusBadge map={subState} value={s.state} />{(s.state === 'ACTIVE' || s.state === 'EXPIRING') && <div className="tiny faint mt-4">{t('còn {n} ngày', { n: s.daysLeft })}</div>}</td>
-                      <td className="tiny muted nowrap">{fmtDateTime(s.createdAt)}<div className="faint">{s.createdByName ?? ''}</div></td>
-                      <td className="actions">{!s.cancelled && s.state !== 'EXPIRED' && <Button size="sm" variant="ghost" icon="ban" aria-label="Huỷ" title="Huỷ gói" onClick={() => setCancelling(s)} />}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table caption={t('Đăng ký gói')}>
+              <thead><tr><th>{t('Hội viên')}</th><th>{t('Gói')}</th><th>{t('Thời gian')}</th><th>{t('Số tiền')}</th><th>{t('Trạng thái')}</th><th>{t('Ngày thu')}</th><th /></tr></thead>
+              <tbody>
+                {paged.items.map((s) => (
+                  <tr key={s.id}>
+                    <td className="clickable" onClick={() => navigate(`/members/${s.memberId}`)}><Person name={s.memberName} sub={s.memberCode} size="sm" /></td>
+                    <td>{s.planName}</td>
+                    <td className="small nowrap">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</td>
+                    <td className="num">{fmtMoney(s.pricePaid)}</td>
+                    <td><StatusBadge map={subState} value={s.state} />{(s.state === 'ACTIVE' || s.state === 'EXPIRING') && <div className="tiny faint mt-4">{t('còn {n} ngày', { n: s.daysLeft })}</div>}</td>
+                    <td className="tiny muted nowrap">{fmtDateTime(s.createdAt)}<div className="faint">{s.createdByName ?? ''}</div></td>
+                    <td className="actions">{!s.cancelled && s.state !== 'EXPIRED' && <Button size="sm" variant="ghost" icon="ban" aria-label="Huỷ" title="Huỷ gói" onClick={() => setCancelling(s)} />}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
           )}
         {list.length > 0 && <Pager page={paged.page} totalPages={paged.totalPages} total={paged.total} onPage={paged.setPage} size={paged.size} sizes={[10, 20, 50, 100]} onSize={paged.setSize} />}
       </Card>

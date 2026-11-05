@@ -8,7 +8,7 @@ import { checkBodyFat, checkRecordedDate, checkWeight, NOT_NUMBER, toNumber, use
 import { LineChart, Ring, StackedBars } from './charts';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
-import { Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, Stat, Textarea } from './ui';
+import { Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, Stat, Table, Textarea } from './ui';
 
 const BMI_SCALE = [
   { to: 18.5, label: 'Thiếu cân', color: '#3d97ff' },
@@ -91,22 +91,20 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
 
       {data.weights.length > 0 && (
         <Card title={t('Nhật ký cân nặng')} icon="scroll" flush>
-          <div className="table-wrap">
-            <table className="table">
-              <thead><tr><th>{t('Ngày')}</th><th>{t('Cân nặng')}</th><th>{t('% mỡ')}</th><th>{t('Ghi chú')}</th>{canEdit && <th />}</tr></thead>
-              <tbody>
-                {[...data.weights].reverse().map((w) => (
-                  <tr key={w.id}>
-                    <td>{fmtDate(w.recordedDate)}</td>
-                    <td className="num">{w.weightKg} kg</td>
-                    <td>{w.bodyFat != null ? `${w.bodyFat}%` : '—'}</td>
-                    <td className="muted">{w.note ?? ''}</td>
-                    {canEdit && <td className="actions"><Button size="sm" variant="ghost" icon="trash" aria-label={t('Xoá')} onClick={() => setRemoving(w)} /></td>}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table caption={t('Nhật ký cân nặng')}>
+            <thead><tr><th>{t('Ngày')}</th><th>{t('Cân nặng')}</th><th>{t('% mỡ')}</th><th>{t('Ghi chú')}</th>{canEdit && <th />}</tr></thead>
+            <tbody>
+              {[...data.weights].reverse().map((w) => (
+                <tr key={w.id}>
+                  <td>{fmtDate(w.recordedDate)}</td>
+                  <td className="num">{w.weightKg} kg</td>
+                  <td>{w.bodyFat != null ? `${w.bodyFat}%` : '—'}</td>
+                  <td className="muted">{w.note ?? ''}</td>
+                  {canEdit && <td className="actions"><Button size="sm" variant="ghost" icon="trash" aria-label={t('Xoá')} onClick={() => setRemoving(w)} /></td>}
+                </tr>
+              ))}
+            </tbody>
+          </Table>
         </Card>
       )}
 

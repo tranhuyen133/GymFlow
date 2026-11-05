@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { PackageRequest, PackageRequestStatus } from '../../api/types';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, Person, SearchInput, Segmented, Stat, StatusBadge, Textarea } from '../../components/ui';
+import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, Person, SearchInput, Segmented, Stat, StatusBadge, Table, Textarea } from '../../components/ui';
 import { durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus } from '../../lib/format';
 import { errMsg, useAsync, usePaged } from '../../lib/hooks';
 import { t, tn } from '../../i18n';
@@ -58,42 +58,40 @@ export default function PackageRequests() {
         {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div>
           : loading && !data ? <div style={{ padding: 20 }}><LoadingBlock /></div>
           : list.length === 0 ? <Empty icon="clipboard" title={filter === 'PENDING' ? 'Không có đơn nào chờ xác nhận' : 'Không có đơn phù hợp'} /> : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead><tr>
-                  <th>{t('Hội viên')}</th><th>{t('Gói')}</th><th>{t('Số tiền')}</th><th>{t('Bắt đầu')}</th>
-                  <th>{t('Gửi lúc')}</th><th>{t('Trạng thái')}</th><th aria-label={t('Thao tác')} />
-                </tr></thead>
-                <tbody>
-                  {paged.items.map((r) => (
-                    <tr key={r.id}>
-                      <td><Link to={`/members/${r.memberId}`}><Person name={r.memberName} sub={[r.memberCode, r.memberPhone].filter(Boolean).join(' · ')} size="sm" /></Link></td>
-                      <td>
-                        <b>{r.planName}</b>
-                        <div className="tiny faint">{durationLabel(r.durationDays)}</div>
-                        {r.status === 'PENDING' && !r.planStillOnSale && <Badge tone="red">{t('Gói đã ngừng bán')}</Badge>}
-                        {r.note && <div className="tiny faint">{t('Ghi chú: {note}', { note: r.note })}</div>}
-                      </td>
-                      <td className="num nowrap">{fmtMoney(r.price)}</td>
-                      <td className="small nowrap">{r.desiredStartDate ? fmtDate(r.desiredStartDate) : t('Sớm nhất')}</td>
-                      <td className="tiny muted nowrap">{fmtDateTime(r.createdAt)}</td>
-                      <td>
-                        <StatusBadge map={packageRequestStatus} value={r.status} />
-                        {r.decidedAt && r.status !== 'CANCELLED' && <div className="tiny faint mt-4">{r.decidedByName ?? ''} · {fmtDateTime(r.decidedAt)}</div>}
-                        {r.decisionNote && <div className="tiny muted">{r.decisionNote}</div>}
-                      </td>
-                      <td className="actions nowrap">
-                        {r.status === 'PENDING' && <>
-                          <Button size="sm" variant="primary" icon="check" disabled={!r.planStillOnSale}
-                            title={r.planStillOnSale ? undefined : t('Gói đã ngừng bán, hãy từ chối đơn')} onClick={() => setApproving(r)}>{t('Duyệt')}</Button>
-                          <Button size="sm" variant="ghost" icon="x" onClick={() => setRejecting(r)}>{t('Từ chối')}</Button>
-                        </>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table caption={t('Đơn đăng ký gói')}>
+              <thead><tr>
+                <th>{t('Hội viên')}</th><th>{t('Gói')}</th><th>{t('Số tiền')}</th><th>{t('Bắt đầu')}</th>
+                <th>{t('Gửi lúc')}</th><th>{t('Trạng thái')}</th><th aria-label={t('Thao tác')} />
+              </tr></thead>
+              <tbody>
+                {paged.items.map((r) => (
+                  <tr key={r.id}>
+                    <td><Link to={`/members/${r.memberId}`}><Person name={r.memberName} sub={[r.memberCode, r.memberPhone].filter(Boolean).join(' · ')} size="sm" /></Link></td>
+                    <td>
+                      <b>{r.planName}</b>
+                      <div className="tiny faint">{durationLabel(r.durationDays)}</div>
+                      {r.status === 'PENDING' && !r.planStillOnSale && <Badge tone="red">{t('Gói đã ngừng bán')}</Badge>}
+                      {r.note && <div className="tiny faint">{t('Ghi chú: {note}', { note: r.note })}</div>}
+                    </td>
+                    <td className="num nowrap">{fmtMoney(r.price)}</td>
+                    <td className="small nowrap">{r.desiredStartDate ? fmtDate(r.desiredStartDate) : t('Sớm nhất')}</td>
+                    <td className="tiny muted nowrap">{fmtDateTime(r.createdAt)}</td>
+                    <td>
+                      <StatusBadge map={packageRequestStatus} value={r.status} />
+                      {r.decidedAt && r.status !== 'CANCELLED' && <div className="tiny faint mt-4">{r.decidedByName ?? ''} · {fmtDateTime(r.decidedAt)}</div>}
+                      {r.decisionNote && <div className="tiny muted">{r.decisionNote}</div>}
+                    </td>
+                    <td className="actions nowrap">
+                      {r.status === 'PENDING' && <>
+                        <Button size="sm" variant="primary" icon="check" disabled={!r.planStillOnSale}
+                          title={r.planStillOnSale ? undefined : t('Gói đã ngừng bán, hãy từ chối đơn')} onClick={() => setApproving(r)}>{t('Duyệt')}</Button>
+                        <Button size="sm" variant="ghost" icon="x" onClick={() => setRejecting(r)}>{t('Từ chối')}</Button>
+                      </>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
           )}
         {list.length > 0 && <Pager page={paged.page} totalPages={paged.totalPages} total={paged.total} onPage={paged.setPage} size={paged.size} sizes={[10, 20, 50, 100]} onSize={paged.setSize} />}
       </Card>
