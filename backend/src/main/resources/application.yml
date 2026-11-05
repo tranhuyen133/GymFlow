@@ -27,6 +27,8 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    # CSDL VPS đã có V4–V7 của bản demo cũ: bỏ qua migration đã chạy mà code không có, không coi là lỗi.
+    ignore-migration-patterns: "*:missing,*:future"
   jackson:
     time-zone: Asia/Ho_Chi_Minh
     serialization:
