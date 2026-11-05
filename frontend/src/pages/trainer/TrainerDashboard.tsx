@@ -9,6 +9,7 @@ import { Badge, Card, CountUp, Empty, ErrorState, LoadingBlock, PageHead, Person
 import { fmtDate, fmtTime, parseDateTime, scheduleStatus } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 import { SessionModal } from '../shared/Schedules';
+import { t } from '../../i18n';
 
 export default function TrainerDashboard() {
   const me = useMe();
@@ -23,22 +24,22 @@ export default function TrainerDashboard() {
 
   return (
     <div className="page">
-      <PageHead eyebrow="Huấn luyện viên" title={`Hôm nay của ${me.fullName.split(' ').slice(-1)[0]}`}
-        desc={next ? `Buổi tiếp theo lúc ${fmtTime(next.startTime)} với ${next.memberName}.` : 'Không còn buổi nào trong hôm nay.'}
+      <PageHead eyebrow="Huấn luyện viên" title={t('Hôm nay của {name}', { name: me.fullName.split(' ').slice(-1)[0] })}
+        desc={next ? t('Buổi tiếp theo lúc {time} với {name}.', { time: fmtTime(next.startTime), name: next.memberName }) : 'Không còn buổi nào trong hôm nay.'}
         actions={<>
-          <Link className="btn btn-secondary" to="/workout-plans/new"><Icon name="clipboard" /><span>Soạn giáo án</span></Link>
-          <Link className="btn btn-primary" to="/schedules?new=1"><Icon name="plus" /><span>Xếp lịch</span></Link>
+          <Link className="btn btn-secondary" to="/workout-plans/new"><Icon name="clipboard" /><span>{t('Soạn giáo án')}</span></Link>
+          <Link className="btn btn-primary" to="/schedules?new=1"><Icon name="plus" /><span>{t('Xếp lịch')}</span></Link>
         </>} />
 
       <div className="grid grid-4">
-        <Stat icon="users" label="Hội viên phụ trách" value={<CountUp value={data.memberCount} />} foot={`${data.activePlans} giáo án đang áp dụng`} />
-        <Stat icon="calendar" label="Buổi hôm nay" value={<CountUp value={data.sessionsToday} />} accent="#3d97ff" foot={`${data.sessionsThisWeek} buổi trong tuần`} />
-        <Stat icon="checkCircle" label="Hoàn thành tuần này" value={<CountUp value={data.completedThisWeek} />} accent="#00d95b" foot={`${data.missedThisWeek} buổi vắng`} />
+        <Stat icon="users" label="Hội viên phụ trách" value={<CountUp value={data.memberCount} />} foot={t('{n} giáo án đang áp dụng', { n: data.activePlans })} />
+        <Stat icon="calendar" label="Buổi hôm nay" value={<CountUp value={data.sessionsToday} />} accent="#3d97ff" foot={t('{n} buổi trong tuần', { n: data.sessionsThisWeek })} />
+        <Stat icon="checkCircle" label="Hoàn thành tuần này" value={<CountUp value={data.completedThisWeek} />} accent="#00d95b" foot={t('{n} buổi vắng', { n: data.missedThisWeek })} />
         <Stat icon="target" label="Tỉ lệ đi tập" value={data.completionRate == null ? '—' : <CountUp value={data.completionRate} />} unit={data.completionRate == null ? undefined : '%'} accent="#8b7cff" foot="Hoàn thành / (hoàn thành + vắng)" />
       </div>
 
       <div className="grid grid-main mt-24">
-        <Card title="Lịch hôm nay" icon="clock" flush actions={<Link to="/schedules" className="link small">Mở lịch tuần</Link>}>
+        <Card title="Lịch hôm nay" icon="clock" flush actions={<Link to="/schedules" className="link small">{t('Mở lịch tuần')}</Link>}>
           {data.todaySessions.length === 0 ? <Empty icon="calendar" title="Hôm nay không có buổi tập" desc="Tranh thủ soạn giáo án mới nhé!" /> : (
             <Table caption="Lịch hôm nay">
               <thead><tr><th>Giờ</th><th>Hội viên</th><th>Nội dung</th><th>Trạng thái</th></tr></thead>
@@ -58,7 +59,7 @@ export default function TrainerDashboard() {
         <Card title="Tuần này" icon="activity">
           <div className="row" style={{ justifyContent: 'center' }}>
             <Ring value={data.completedThisWeek} max={Math.max(1, data.completedThisWeek + data.missedThisWeek)}
-              sub="đi tập" label={data.completionRate == null ? '—' : `${Math.round(data.completionRate)}%`} />
+              sub={t('đi tập')} label={data.completionRate == null ? '—' : `${Math.round(data.completionRate)}%`} />
           </div>
           <BarChart data={data.weekLoad} height={150} highlightLast={false} />
         </Card>

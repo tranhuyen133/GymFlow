@@ -4,6 +4,7 @@ import type { Role } from './api/types';
 import { useAuth } from './auth/AuthContext';
 import { BrandMark } from './components/Brand';
 import { Layout } from './components/Layout';
+import { t } from './i18n';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AuditLog from './pages/admin/AuditLog';
 import PackageRequests from './pages/admin/PackageRequests';
@@ -19,6 +20,7 @@ import Login from './pages/Login';
 import MemberDashboard from './pages/member/MemberDashboard';
 import MyPackages from './pages/member/MyPackages';
 import MyPlan from './pages/member/MyPlan';
+import MyJourney from './pages/member/MyJourney';
 import MyProgress from './pages/member/MyProgress';
 import Policies from './pages/Policies';
 import Register from './pages/Register';
@@ -38,7 +40,7 @@ function Splash() {
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
       <div className="stack" style={{ alignItems: 'center' }}>
         <div style={{ animation: 'floaty 1.6s ease-in-out infinite' }}><BrandMark size={52} /></div>
-        <span className="muted small">Đang tải GymFlow…</span>
+        <span className="muted small">{t('Đang tải GymFlow…')}</span>
       </div>
     </div>
   );
@@ -85,6 +87,7 @@ export default function App() {
         <Route path="/me/schedule" element={<Only roles={MEMBER}><Schedules /></Only>} />
         <Route path="/me/plan" element={<Only roles={MEMBER}><MyPlan /></Only>} />
         <Route path="/me/progress" element={<Only roles={MEMBER}><MyProgress /></Only>} />
+        <Route path="/me/journey" element={<Only roles={MEMBER}><MyJourney /></Only>} />
         <Route path="/me/packages" element={<Only roles={MEMBER}><MyPackages /></Only>} />
         <Route path="/me/knowledge" element={<Only roles={MEMBER}><KnowledgeList embedded /></Only>} />
         <Route path="/me/knowledge/:slug" element={<Only roles={MEMBER}><KnowledgeArticle embedded /></Only>} />

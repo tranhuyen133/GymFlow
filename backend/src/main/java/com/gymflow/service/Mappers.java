@@ -191,7 +191,8 @@ public class Mappers {
 
     // ---------- Others ----------
     public WeightResponse weight(WeightRecord w) {
-        return w == null ? null : new WeightResponse(w.getId(), w.getRecordedDate(), w.getWeightKg(), w.getBodyFat(), w.getNote());
+        return w == null ? null : new WeightResponse(w.getId(), w.getRecordedDate(), w.getWeightKg(), w.getBodyFat(),
+                w.getWaistCm(), w.getChestCm(), w.getArmCm(), w.getThighCm(), w.getNote());
     }
 
     public UserResponse user(User u) {

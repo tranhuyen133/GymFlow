@@ -13,6 +13,7 @@ import { age, fmtDate, fmtMoney, genderLabel, memberStatus, planStatus, subState
 import { errMsg, useAsync } from '../../lib/hooks';
 import { ScheduleForm } from './Schedules';
 import { MemberFormModal } from './Members';
+import { t, tn } from '../../i18n';
 
 type Tab = 'overview' | 'progress' | 'plans';
 
@@ -28,14 +29,14 @@ export default function MemberDetail() {
   const [cancelling, setCancelling] = useState<Subscription | null>(null);
   const { data, error, loading, reload } = useAsync(() => api.get<Detail>(`/members/${memberId}`), [memberId]);
 
-  if (error) return <div className="page"><ErrorState message={error} onRetry={reload} /><Link to="/members" className="link small mt-16" style={{ display: 'inline-block' }}>← Danh sách hội viên</Link></div>;
+  if (error) return <div className="page"><ErrorState message={error} onRetry={reload} /><Link to="/members" className="link small mt-16" style={{ display: 'inline-block' }}>← {t('Danh sách hội viên')}</Link></div>;
   if (loading || !data) return <div className="page"><LoadingBlock rows={8} /></div>;
   const m = data.member;
   const rate = data.totalSessions ? Math.round((data.completedSessions / data.totalSessions) * 100) : null;
 
   return (
     <div className="page">
-      <Link to="/members" className="link small row" style={{ gap: 6, marginBottom: 14 }}><Icon name="arrowLeft" size={15} />Danh sách hội viên</Link>
+      <Link to="/members" className="link small row" style={{ gap: 6, marginBottom: 14 }}><Icon name="arrowLeft" size={15} />{t('Danh sách hội viên')}</Link>
       <div className="hero" style={{ marginBottom: 22 }}>
         <div className="row between row-wrap" style={{ position: 'relative', gap: 18 }}>
           <div className="row" style={{ gap: 16 }}>
@@ -61,7 +62,7 @@ export default function MemberDetail() {
       </div>
 
       <Segmented<Tab> value={tab} onChange={setTab} options={[
-        { value: 'overview', label: 'Tổng quan' }, { value: 'progress', label: 'Tiến độ' }, { value: 'plans', label: `Giáo án (${data.plans.length})` },
+        { value: 'overview', label: 'Tổng quan' }, { value: 'progress', label: 'Tiến độ' }, { value: 'plans', label: t('Giáo án ({n})', { n: data.plans.length }) },
       ]} />
 
       <div className="mt-16">
@@ -69,7 +70,7 @@ export default function MemberDetail() {
           <div className="stack" style={{ gap: 18 }}>
             <div className="grid grid-4">
               <Stat icon="ticket" label="Gói hiện tại" value={m.daysLeft ?? '—'} unit={m.daysLeft != null ? 'ngày' : undefined} foot={m.currentPlanName ?? 'Chưa có gói'} />
-              <Stat icon="checkCircle" label="Buổi hoàn thành" value={data.completedSessions} accent="#3d97ff" foot={`/${data.totalSessions} buổi đã xếp`} />
+              <Stat icon="checkCircle" label="Buổi hoàn thành" value={data.completedSessions} accent="#3d97ff" foot={t('/{n} buổi đã xếp', { n: data.totalSessions })} />
               <Stat icon="target" label="Tỉ lệ hoàn thành" value={rate ?? '—'} unit={rate != null ? '%' : undefined} accent="#8b7cff" foot="Không tính buổi đã huỷ" />
               <Stat icon="scale" label="Cân nặng gần nhất" value={data.latestWeight?.weightKg ?? '—'} unit={data.latestWeight ? 'kg' : undefined} accent="#ffb020" foot={data.latestWeight ? fmtDate(data.latestWeight.recordedDate) : '—'} />
             </div>
@@ -95,15 +96,15 @@ export default function MemberDetail() {
               <Card title="Thông tin" icon="user">
                 <dl className="kv small">
                   <dt>Email</dt><dd className="ellipsis">{m.email}</dd>
-                  <dt>Điện thoại</dt><dd>{m.phone ?? '—'}</dd>
-                  <dt>Giới tính</dt><dd>{m.gender ? genderLabel[m.gender] : '—'}</dd>
-                  <dt>Ngày sinh</dt><dd>{fmtDate(m.dateOfBirth)}{age(m.dateOfBirth) != null && <span className="faint"> · {age(m.dateOfBirth)} tuổi</span>}</dd>
-                  <dt>Chiều cao</dt><dd>{m.heightCm ? `${m.heightCm} cm` : '—'}</dd>
-                  <dt>Mục tiêu</dt><dd>{m.goal ?? '—'}</dd>
-                  <dt>HLV</dt><dd>{m.trainerName ?? <span className="faint">Chưa phân công</span>}</dd>
-                  <dt>Địa chỉ</dt><dd>{m.address ?? '—'}</dd>
-                  <dt>Tham gia</dt><dd>{fmtDate(m.joinedAt)}</dd>
-                  {m.note && <><dt>Ghi chú</dt><dd className="warn">{m.note}</dd></>}
+                  <dt>{t('Điện thoại')}</dt><dd>{m.phone ?? '—'}</dd>
+                  <dt>{t('Giới tính')}</dt><dd>{m.gender ? genderLabel[m.gender] : '—'}</dd>
+                  <dt>{t('Ngày sinh')}</dt><dd>{fmtDate(m.dateOfBirth)}{age(m.dateOfBirth) != null && <span className="faint"> · {t('{n} tuổi', { n: age(m.dateOfBirth) })}</span>}</dd>
+                  <dt>{t('Chiều cao')}</dt><dd>{m.heightCm ? `${m.heightCm} cm` : '—'}</dd>
+                  <dt>{t('Mục tiêu')}</dt><dd>{m.goal ?? '—'}</dd>
+                  <dt>{t('HLV')}</dt><dd>{m.trainerName ?? <span className="faint">{t('Chưa phân công')}</span>}</dd>
+                  <dt>{t('Địa chỉ')}</dt><dd>{m.address ?? '—'}</dd>
+                  <dt>{t('Tham gia')}</dt><dd>{fmtDate(m.joinedAt)}</dd>
+                  {m.note && <><dt>{t('Ghi chú')}</dt><dd className="warn">{m.note}</dd></>}
                 </dl>
               </Card>
             </div>

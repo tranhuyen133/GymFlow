@@ -30,7 +30,7 @@ public final class Dtos {
     }
 
     public record MeResponse(Long id, String email, String fullName, String phone, Role role,
-                             Long memberId, Long trainerId, LocalDateTime lastLoginAt) {
+                             Long memberId, Long trainerId, LocalDateTime lastLoginAt, LocalDateTime avatarUpdatedAt) {
     }
 
     public record LoginResponse(String token, long expiresInMinutes, MeResponse user) {
@@ -396,10 +396,15 @@ public final class Dtos {
             @NotNull(message = "Chọn ngày") @PastOrPresent(message = "Không ghi cho ngày tương lai") LocalDate recordedDate,
             @NotNull(message = "Nhập cân nặng") @DecimalMin(value = "20", message = "Cân nặng phải từ 20 kg trở lên") @DecimalMax(value = "300", message = "Cân nặng không được vượt quá 300 kg") Double weightKg,
             @DecimalMin(value = "2", message = "% mỡ cơ thể phải từ 2% trở lên") @DecimalMax(value = "70", message = "% mỡ cơ thể không được vượt quá 70%") Double bodyFat,
+            @DecimalMin(value = "40", message = "Vòng eo phải từ 40 cm trở lên") @DecimalMax(value = "200", message = "Vòng eo không được vượt quá 200 cm") Double waistCm,
+            @DecimalMin(value = "50", message = "Vòng ngực phải từ 50 cm trở lên") @DecimalMax(value = "200", message = "Vòng ngực không được vượt quá 200 cm") Double chestCm,
+            @DecimalMin(value = "15", message = "Vòng tay phải từ 15 cm trở lên") @DecimalMax(value = "80", message = "Vòng tay không được vượt quá 80 cm") Double armCm,
+            @DecimalMin(value = "25", message = "Vòng đùi phải từ 25 cm trở lên") @DecimalMax(value = "120", message = "Vòng đùi không được vượt quá 120 cm") Double thighCm,
             @Size(max = 255) String note) {
     }
 
-    public record WeightResponse(Long id, LocalDate recordedDate, Double weightKg, Double bodyFat, String note) {
+    public record WeightResponse(Long id, LocalDate recordedDate, Double weightKg, Double bodyFat,
+                                 Double waistCm, Double chestCm, Double armCm, Double thighCm, String note) {
     }
 
     public record WeekAttendance(LocalDate weekStart, long scheduled, long completed, long missed) {

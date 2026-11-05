@@ -31,7 +31,8 @@ export function StatusBadge({ map, value }: { map: Record<string, [string, Tone]
 }
 
 // ---------- Avatar / Person ----------
-export function Avatar({ name, size }: { name: string; size?: 'sm' | 'lg' }) {
+export function Avatar({ name, size, src }: { name: string; size?: 'sm' | 'lg' | 'xl'; src?: string | null }) {
+  if (src) return <img className={`avatar avatar-img ${size ?? ''}`} src={src} alt="" aria-hidden decoding="async" />;
   return <div className={`avatar ${size ?? ''}`} style={{ ['--h' as string]: hueOf(name) }} aria-hidden>{initials(name)}</div>;
 }
 export function Person({ name, sub, size }: { name: string; sub?: ReactNode; size?: 'sm' | 'lg' }) {
@@ -292,7 +293,7 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
 // ---------- Modal ----------
 const FOCUSABLE_SELECTOR = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
-export function Modal({ title, onClose, children, footer, size }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; size?: 'wide' | 'narrow' }) {
+export function Modal({ title, onClose, children, footer, size }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; size?: 'wide' | 'medium' | 'narrow' }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const closeRef = useRef(onClose);
@@ -405,6 +406,7 @@ export function Meter({ value, max = 100, color }: { value: number; max?: number
   return <div className="meter" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${pct}%`, ['--c' as string]: color }} /></div>;
 }
 
+/** Các số trang cần hiện: luôn có trang đầu, trang cuối và 1 trang mỗi bên trang hiện tại; khoảng trống = null (…). */
 function pageWindow(page: number, totalPages: number): (number | null)[] {
   const keep = new Set([0, totalPages - 1, page - 1, page, page + 1]);
   const out: (number | null)[] = [];

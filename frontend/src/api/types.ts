@@ -19,6 +19,8 @@ export interface LabelValue { label: string; value: number }
 export interface Me {
   id: number; email: string; fullName: string; phone: string | null; role: Role;
   memberId: number | null; trainerId: number | null; lastLoginAt: string | null;
+  /** null = chưa có ảnh đại diện; đổi giá trị mỗi lần đổi ảnh */
+  avatarUpdatedAt: string | null;
 }
 export interface LoginResponse { token: string; expiresInMinutes: number; user: Me }
 export interface ForgotPasswordResponse { message: string; resetToken: string | null; validMinutes: number }
@@ -128,7 +130,10 @@ export interface Schedule {
 export interface ScheduleCreated { created: Schedule[]; skipped: string[] }
 
 // ---------- Progress ----------
-export interface Weight { id: number; recordedDate: string; weightKg: number; bodyFat: number | null; note: string | null }
+export interface Weight {
+  id: number; recordedDate: string; weightKg: number; bodyFat: number | null;
+  waistCm: number | null; chestCm: number | null; armCm: number | null; thighCm: number | null; note: string | null;
+}
 export interface WeekAttendance { weekStart: string; scheduled: number; completed: number; missed: number }
 export interface Progress {
   memberId: number; heightCm: number | null; currentWeight: number | null; startWeight: number | null;

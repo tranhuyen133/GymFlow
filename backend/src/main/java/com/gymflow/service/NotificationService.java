@@ -76,6 +76,16 @@ public class NotificationService {
                             r.getDecisionNote() == null ? "Xem chi tiết trong mục Gói tập của tôi." : "Lý do: " + r.getDecisionNote(), "/me/packages", r.getDecidedAt()));
                 }
             }
+            // Buổi bị đánh dấu vắng trong 7 ngày qua (gồm cả buổi hệ thống tự chuyển sang MISSED khi quá hạn)
+            List<WorkoutSchedule> missed = scheduleRepository.findByMemberIdAndStartTimeBetweenOrderByStartTimeAsc(
+                    m.getId(), today.minusDays(7).atStartOfDay(), today.atStartOfDay()).stream()
+                    .filter(s -> s.getStatus() == ScheduleStatus.MISSED).toList();
+            if (!missed.isEmpty()) {
+                WorkoutSchedule last = missed.get(missed.size() - 1);
+                out.add(n("missed-" + last.getId(), "warning", "Bạn đã lỡ " + missed.size() + " buổi tập trong 7 ngày qua",
+                        "Gần nhất: " + last.getTitle() + " (" + last.getStartTime().toLocalDate() + "). Trao đổi với HLV để xếp lại lịch.",
+                        "/me/schedule", last.getStartTime()));
+            }
             WeightRecord w = weightRepository.findFirstByMemberIdOrderByRecordedDateDesc(m.getId()).orElse(null);
             if (w == null || w.getRecordedDate().isBefore(today.minusDays(7))) {
                 out.add(n("weight", "info", "Cập nhật cân nặng", "Đã hơn 7 ngày bạn chưa ghi cân nặng.", "/me/progress", now));

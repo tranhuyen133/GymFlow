@@ -8,6 +8,8 @@ interface AuthState {
   login: (email: string, password: string) => Promise<Me>;
   logout: () => void;
   refresh: () => Promise<void>;
+  /** Cập nhật thông tin tài khoản từ response vừa nhận (VD sau khi đổi ảnh đại diện), không cần gọi lại /auth/me */
+  update: (user: Me) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -42,7 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.user;
   }, []);
 
-  const value = useMemo(() => ({ user, loading, login, logout, refresh }), [user, loading, login, logout, refresh]);
+  const update = useCallback((u: Me) => setUser(u), []);
+  const value = useMemo(() => ({ user, loading, login, logout, refresh, update }), [user, loading, login, logout, refresh, update]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

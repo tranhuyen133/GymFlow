@@ -53,7 +53,7 @@ const DAY_NAMES_VI = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ
 
 const actionLabel_VI: Record<string, string> = {
   LOGIN: 'Đăng nhập', LOGIN_FAILED: 'Đăng nhập thất bại', PASSWORD_CHANGE: 'Đổi mật khẩu', PASSWORD_RESET_REQUEST: 'Yêu cầu khôi phục',
-  PASSWORD_RESET: 'Đặt lại mật khẩu', PROFILE_UPDATE: 'Sửa hồ sơ', USER_CREATE: 'Tạo tài khoản', USER_LOCK: 'Khoá tài khoản',
+  PASSWORD_RESET: 'Đặt lại mật khẩu', PROFILE_UPDATE: 'Sửa hồ sơ', AVATAR_UPDATE: 'Đổi ảnh đại diện', AVATAR_DELETE: 'Xoá ảnh đại diện', USER_CREATE: 'Tạo tài khoản', USER_LOCK: 'Khoá tài khoản',
   USER_UNLOCK: 'Mở khoá tài khoản', USER_RESET_PASSWORD: 'Cấp mật khẩu tạm', MEMBER_CREATE: 'Thêm hội viên', MEMBER_UPDATE: 'Sửa hội viên',
   MEMBER_SELF_UPDATE: 'Hội viên sửa hồ sơ', MEMBER_STATUS: 'Đổi trạng thái hội viên', MEMBER_ASSIGN_TRAINER: 'Phân công HLV',
   TRAINER_CREATE: 'Thêm HLV', TRAINER_UPDATE: 'Sửa HLV', TRAINER_ACTIVATE: 'Kích hoạt HLV', TRAINER_DEACTIVATE: 'Ngừng HLV', TRAINER_SHIFTS: 'Cập nhật ca làm',
