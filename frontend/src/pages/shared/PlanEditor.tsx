@@ -240,14 +240,14 @@ export default function PlanEditor() {
                   value={memberId}
                   disabled={!isNew}
                   initialMemberName={plan.data?.summary.memberName}
-                  onChange={(newId, m) => {
+                  onChange={(newId, m, initial) => {
                     setMemberId(newId);
                     setSelectedMember(m ?? null);
                     if (m?.goal && isNew && lastSuggestedMemberId.current !== newId) {
                       lastSuggestedMemberId.current = newId;
                       setGoal(m.goal);
                     }
-                    touch();
+                    if (!initial) touch();
                   }}
                 />
               </Field>

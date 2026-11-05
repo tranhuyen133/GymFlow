@@ -883,3 +883,17 @@ table.table { width: 100%; border-collapse: collapse; font-size: 14px; }
 @media (max-width: 560px) {
   .plan-summary { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---- Ô chọn hội viên: danh sách gợi ý vẽ qua portal, nằm trên hộp thoại (z-index 100) ---- */
+.member-select-list {
+  z-index: 150; overflow-y: auto; background: var(--surface); border: 1px solid var(--hairline);
+  border-radius: var(--r-sm); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); overscroll-behavior: contain;
+}
+.member-select-msg { padding: 10px 14px; }
+.member-select-opt {
+  padding: 9px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--hairline); user-select: none;
+}
+.member-select-opt:last-child { border-bottom: none; }
+.member-select-opt.active { background: var(--rail); }
+.member-select-value:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
