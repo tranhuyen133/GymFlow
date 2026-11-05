@@ -1,11 +1,13 @@
 -- =====================================================================
--- GymFlow · V4 · Hội viên tự đăng ký gói tập (SUB-08)
+-- GymFlow · V8 · Hội viên tự đăng ký gói tập (SUB-08)
+-- Trước đây là V4__package_requests.sql. Đổi sang V8 vì CSDL trên VPS (gymflow.io.vn) đã có
+-- V4–V7 của bản demo cũ (constraints and indexes, seed more content, user avatars, body measurements)
+-- → V4 trùng số, Flyway báo checksum mismatch và backend không khởi động.
+-- IF NOT EXISTS: máy đã chạy V4__package_requests (bảng đã có) thì bước này không làm gì.
 -- Hội viên gửi đơn chọn gói → quản lý xác nhận đã thu tiền tại quầy → hệ thống tạo member_subscriptions.
--- Giá, tên gói và thời hạn được chốt lúc gửi đơn: quản lý sửa giá sau đó không ảnh hưởng đơn đã gửi.
--- Chỉ thêm bảng mới, không sửa dữ liệu cũ.
--- Mỗi hội viên tối đa 1 đơn PENDING: kiểm tra ở PackageRequestService (khoá dòng hội viên như khi tạo gói).
+-- Giá, tên gói và thời hạn được chốt lúc gửi đơn. Chỉ thêm bảng mới, không sửa dữ liệu cũ.
 -- =====================================================================
-CREATE TABLE package_requests (
+CREATE TABLE IF NOT EXISTS package_requests (
     id                  BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
     member_id           BIGINT       NOT NULL,
     plan_id             BIGINT       NOT NULL,
