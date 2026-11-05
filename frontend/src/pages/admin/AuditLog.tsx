@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { AuditEntry, Page } from '../../api/types';
-import { Badge, Button, Card, Empty, ErrorState, Input, LoadingBlock, PageHead, Pager, SearchInput, Select } from '../../components/ui';
+import { Badge, Button, Card, Empty, ErrorState, Input, LoadingBlock, PageHead, Pager, SearchInput, Select, Table } from '../../components/ui';
 import { downloadCsv } from '../../lib/csv';
 import { actionLabel, fmtDateTime } from '../../lib/format';
 import { useAsync, useDebounced } from '../../lib/hooks';
@@ -39,23 +39,21 @@ export default function AuditLog() {
         {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div> : loading && !data ? <div style={{ padding: 20 }}><LoadingBlock /></div>
           : data && data.content.length === 0 ? <Empty icon="scroll" title="Không có bản ghi" /> : data && (
             <>
-              <div className="table-wrap">
-                <table className="table">
-                  <thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Hành động</th><th>Chi tiết</th><th>Kết quả</th><th>IP</th></tr></thead>
-                  <tbody>
-                    {data.content.map((a) => (
-                      <tr key={a.id}>
-                        <td className="tiny nowrap muted">{fmtDateTime(a.createdAt)}</td>
-                        <td className="small">{a.actorEmail ?? <span className="faint">hệ thống</span>}</td>
-                        <td><b className="small">{actionLabel[a.action] ?? a.action}</b>{a.targetType && <div className="tiny faint">{a.targetType} #{a.targetId}</div>}</td>
-                        <td className="small muted" style={{ maxWidth: 360 }}>{a.detail ?? ''}</td>
-                        <td>{a.success ? <Badge tone="green">OK</Badge> : <Badge tone="red">Thất bại</Badge>}</td>
-                        <td className="tiny faint">{a.ip ?? ''}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table caption="Nhật ký hệ thống">
+                <thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Hành động</th><th>Chi tiết</th><th>Kết quả</th><th>IP</th></tr></thead>
+                <tbody>
+                  {data.content.map((a) => (
+                    <tr key={a.id}>
+                      <td className="tiny nowrap muted">{fmtDateTime(a.createdAt)}</td>
+                      <td className="small">{a.actorEmail ?? <span className="faint">hệ thống</span>}</td>
+                      <td><b className="small">{actionLabel[a.action] ?? a.action}</b>{a.targetType && <div className="tiny faint">{a.targetType} #{a.targetId}</div>}</td>
+                      <td className="small muted" style={{ maxWidth: 360 }}>{a.detail ?? ''}</td>
+                      <td>{a.success ? <Badge tone="green">OK</Badge> : <Badge tone="red">Thất bại</Badge>}</td>
+                      <td className="tiny faint">{a.ip ?? ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
               <Pager page={data.page} totalPages={data.totalPages} total={data.totalElements} onPage={setPage} />
             </>
           )}

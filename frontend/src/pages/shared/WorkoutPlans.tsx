@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { PlanStatus, WorkoutPlanSummary } from '../../api/types';
-import { Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, StatusBadge, Button } from '../../components/ui';
+import { Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, StatusBadge, Table, Button } from '../../components/ui';
 import { fmtDate, planStatus, relativeTime } from '../../lib/format';
 import { useAsync, usePaged } from '../../lib/hooks';
 import { t } from '../../i18n';
@@ -32,23 +32,21 @@ export default function WorkoutPlans() {
       <Card flush>
         {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div> : loading ? <div style={{ padding: 20 }}><LoadingBlock /></div>
           : list.length === 0 ? <Empty icon="clipboard" title="Không có giáo án" desc="Bấm “Soạn giáo án” để bắt đầu." /> : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead><tr><th>{t('Giáo án')}</th><th>{t('Hội viên')}</th><th>{t('HLV')}</th><th>{t('Thời gian')}</th><th>{t('Nội dung')}</th><th>{t('Trạng thái')}</th></tr></thead>
-                <tbody>
-                  {paged.items.map((p) => (
-                    <tr key={p.id} className="clickable" onClick={() => navigate(`/workout-plans/${p.id}`)}>
-                      <td><b>{p.name}</b><div className="tiny faint">{t('Tạo {d}', { d: relativeTime(p.createdAt) })}</div></td>
-                      <td><Person name={p.memberName} size="sm" /></td>
-                      <td className="muted">{p.trainerName ?? '—'}</td>
-                      <td className="small nowrap">{fmtDate(p.startDate)} → {fmtDate(p.endDate)}</td>
-                      <td className="small">{t('{d} ngày/tuần · {n} bài', { d: p.trainingDays, n: p.itemCount })}</td>
-                      <td><StatusBadge map={planStatus} value={p.status} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table caption={t('Giáo án')}>
+              <thead><tr><th>{t('Giáo án')}</th><th>{t('Hội viên')}</th><th>{t('HLV')}</th><th>{t('Thời gian')}</th><th>{t('Nội dung')}</th><th>{t('Trạng thái')}</th></tr></thead>
+              <tbody>
+                {paged.items.map((p) => (
+                  <tr key={p.id} className="clickable" onClick={() => navigate(`/workout-plans/${p.id}`)}>
+                    <td><b>{p.name}</b><div className="tiny faint">{t('Tạo {d}', { d: relativeTime(p.createdAt) })}</div></td>
+                    <td><Person name={p.memberName} size="sm" /></td>
+                    <td className="muted">{p.trainerName ?? '—'}</td>
+                    <td className="small nowrap">{fmtDate(p.startDate)} → {fmtDate(p.endDate)}</td>
+                    <td className="small">{t('{d} ngày/tuần · {n} bài', { d: p.trainingDays, n: p.itemCount })}</td>
+                    <td><StatusBadge map={planStatus} value={p.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
           )}
         {list.length > 0 && <Pager page={paged.page} totalPages={paged.totalPages} total={paged.total} onPage={paged.setPage} size={paged.size} sizes={[10, 20, 50]} onSize={paged.setSize} />}
       </Card>

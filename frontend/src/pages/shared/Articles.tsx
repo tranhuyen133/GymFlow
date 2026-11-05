@@ -5,7 +5,7 @@ import type { Article, ArticleAction, ArticleCategory, ArticleStatus, ContentOri
 import { useMe } from '../../auth/AuthContext';
 import { HealthDisclaimer, Prose, SourceList } from '../../components/Content';
 import { useToast } from '../../components/Toast';
-import { Alert, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Select, StatusBadge, Textarea } from '../../components/ui';
+import { Alert, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Select, StatusBadge, Table, Textarea } from '../../components/ui';
 import { articleCategoryLabel, articleStatusLabel, fmtDateTime } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { t } from '../../i18n';
@@ -41,26 +41,24 @@ export default function Articles() {
         <Card><Empty icon="layers" title="Không có bài viết" /></Card>
       ) : (
         <Card flush>
-          <div className="table-wrap">
-            <table className="table">
-              <thead><tr><th>{t('Bài viết')}</th><th>{t('Chủ đề')}</th><th>{t('Trạng thái')}</th><th>{t('Nguồn')}</th><th>{t('Cập nhật')}</th><th aria-label={t('Thao tác')} /></tr></thead>
-              <tbody>
-                {data?.map((a) => (
-                  <tr key={a.id}>
-                    <td><b>{a.title}</b><div className="tiny muted">/{a.slug}{a.authorName && ` · ${a.authorName}`}</div></td>
-                    <td>{articleCategoryLabel[a.category]}</td>
-                    <td><StatusBadge map={articleStatusLabel} value={a.status} /></td>
-                    <td>{a.sources.length}</td>
-                    <td className="tiny muted">{fmtDateTime(a.updatedAt ?? a.createdAt)}</td>
-                    <td className="row" style={{ gap: 2, justifyContent: 'flex-end' }}>
-                      <Button size="sm" variant="ghost" icon="eye" aria-label="Xem" onClick={() => setViewingId(a.id)} />
-                      {canEdit(a) && <Button size="sm" variant="ghost" icon="edit" aria-label="Sửa" onClick={() => setEditing(a)} />}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table caption={t('Bài viết')}>
+            <thead><tr><th>{t('Bài viết')}</th><th>{t('Chủ đề')}</th><th>{t('Trạng thái')}</th><th>{t('Nguồn')}</th><th>{t('Cập nhật')}</th><th aria-label={t('Thao tác')} /></tr></thead>
+            <tbody>
+              {data?.map((a) => (
+                <tr key={a.id}>
+                  <td><b>{a.title}</b><div className="tiny muted">/{a.slug}{a.authorName && ` · ${a.authorName}`}</div></td>
+                  <td>{articleCategoryLabel[a.category]}</td>
+                  <td><StatusBadge map={articleStatusLabel} value={a.status} /></td>
+                  <td>{a.sources.length}</td>
+                  <td className="tiny muted">{fmtDateTime(a.updatedAt ?? a.createdAt)}</td>
+                  <td className="row" style={{ gap: 2, justifyContent: 'flex-end' }}>
+                    <Button size="sm" variant="ghost" icon="eye" aria-label="Xem" onClick={() => setViewingId(a.id)} />
+                    {canEdit(a) && <Button size="sm" variant="ghost" icon="edit" aria-label="Sửa" onClick={() => setEditing(a)} />}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
         </Card>
       )}
       {viewing && <ArticleReview article={viewing} isAdmin={isAdmin} canEdit={canEdit(viewing)} onClose={() => setViewingId(null)} onChanged={() => void reload()} />}

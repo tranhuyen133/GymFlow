@@ -5,7 +5,7 @@ import type { Schedule, TrainerDashboard as Data } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { BarChart, Ring } from '../../components/charts';
 import { Icon } from '../../components/Icon';
-import { Badge, Card, CountUp, Empty, ErrorState, LoadingBlock, PageHead, Person, Stat, StatusBadge } from '../../components/ui';
+import { Badge, Card, CountUp, Empty, ErrorState, LoadingBlock, PageHead, Person, Stat, StatusBadge, Table } from '../../components/ui';
 import { fmtDate, fmtTime, parseDateTime, scheduleStatus } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 import { SessionModal } from '../shared/Schedules';
@@ -40,21 +40,19 @@ export default function TrainerDashboard() {
       <div className="grid grid-main mt-24">
         <Card title="Lịch hôm nay" icon="clock" flush actions={<Link to="/schedules" className="link small">Mở lịch tuần</Link>}>
           {data.todaySessions.length === 0 ? <Empty icon="calendar" title="Hôm nay không có buổi tập" desc="Tranh thủ soạn giáo án mới nhé!" /> : (
-            <div className="table-wrap">
-              <table className="table">
-                <thead><tr><th>Giờ</th><th>Hội viên</th><th>Nội dung</th><th>Trạng thái</th></tr></thead>
-                <tbody>
-                  {data.todaySessions.map((s) => (
-                    <tr key={s.id} className="clickable" onClick={() => setOpen(s)}>
-                      <td className="num nowrap">{fmtTime(s.startTime)}–{fmtTime(s.endTime)}</td>
-                      <td><Person name={s.memberName} size="sm" /></td>
-                      <td className="muted">{s.title}</td>
-                      <td><StatusBadge map={scheduleStatus} value={s.status} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table caption="Lịch hôm nay">
+              <thead><tr><th>Giờ</th><th>Hội viên</th><th>Nội dung</th><th>Trạng thái</th></tr></thead>
+              <tbody>
+                {data.todaySessions.map((s) => (
+                  <tr key={s.id} className="clickable" onClick={() => setOpen(s)}>
+                    <td className="num nowrap">{fmtTime(s.startTime)}–{fmtTime(s.endTime)}</td>
+                    <td><Person name={s.memberName} size="sm" /></td>
+                    <td className="muted">{s.title}</td>
+                    <td><StatusBadge map={scheduleStatus} value={s.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
           )}
         </Card>
         <Card title="Tuần này" icon="activity">
@@ -68,21 +66,19 @@ export default function TrainerDashboard() {
 
       <Card className="mt-24" title="Hội viên sắp hết gói" icon="alert" flush>
         {data.expiringMembers.length === 0 ? <Empty icon="checkCircle" title="Không có hội viên nào sắp hết gói" /> : (
-          <div className="table-wrap">
-            <table className="table">
-              <thead><tr><th>Hội viên</th><th>Gói</th><th>Hết hạn</th><th className="right">Còn lại</th></tr></thead>
-              <tbody>
-                {data.expiringMembers.map((s) => (
-                  <tr key={s.id} className="clickable" onClick={() => navigate(`/members/${s.memberId}`)}>
-                    <td><Person name={s.memberName} sub={s.memberCode} size="sm" /></td>
-                    <td>{s.planName}</td>
-                    <td>{fmtDate(s.endDate)}</td>
-                    <td className="right"><Badge tone="amber">{s.daysLeft} ngày</Badge></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table caption="Hội viên sắp hết gói">
+            <thead><tr><th>Hội viên</th><th>Gói</th><th>Hết hạn</th><th className="right">Còn lại</th></tr></thead>
+            <tbody>
+              {data.expiringMembers.map((s) => (
+                <tr key={s.id} className="clickable" onClick={() => navigate(`/members/${s.memberId}`)}>
+                  <td><Person name={s.memberName} sub={s.memberCode} size="sm" /></td>
+                  <td>{s.planName}</td>
+                  <td>{fmtDate(s.endDate)}</td>
+                  <td className="right"><Badge tone="amber">{s.daysLeft} ngày</Badge></td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
         )}
       </Card>
       {open && <SessionModal session={open} onClose={() => setOpen(null)} onChanged={() => { setOpen(null); void reload(); }} />}
