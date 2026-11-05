@@ -65,4 +65,8 @@ Không dùng `.display` trong khu ứng dụng; không dùng bảng/thẻ số l
 - Chỉ đổi **token** trong `:root[data-theme='light']` (`styles.css`). Thành phần mới phải dùng `var(--…)`, không viết mã màu cứng. Màu nhấn của biểu đồ, nhóm cơ, trạng thái giữ nguyên ở cả hai chế độ để người dùng nhận ra.
 - Ở chế độ sáng, màu xanh hành động đậm hơn (`#008a3a`) để chữ xanh trên nền trắng vẫn đủ tương phản.
 <!-- history SCRUM-170 -->
+<<<<<<< HEAD
+<!-- history SCRUM-193 -->
+=======
 <!-- history SCRUM-192 -->
+>>>>>>> origin/develop
