@@ -4,7 +4,7 @@
  * Mỗi hàm check* trả về thông báo lỗi tiếng Việt (Field tự dịch) hoặc undefined nếu hợp lệ.
  */
 import { useEffect, useRef, useState } from 'react';
-import { todayIso } from './format';
+import { EMAIL_RE, todayIso } from './format';
 
 export const LIMITS = {
   weightKg: { min: 20, max: 300 },
@@ -72,6 +72,23 @@ export function checkDateOfBirth(s: string) {
   if (!s) return undefined;
   if (s >= todayIso()) return 'Ngày sinh phải ở quá khứ';
   return s > '1900-01-01' ? undefined : 'Ngày sinh không hợp lệ';
+}
+
+export const HAS_ACCENT_OR_SPACE = (s: string) => /[^\x21-\x7E]/.test(s);
+export const EMAIL_INVALID_MSG = 'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)';
+
+/** Báo lỗi ngay lập tức khi đang gõ nếu phát hiện chữ có dấu hoặc khoảng trắng. */
+export function checkEmailLive(s: string): string | undefined {
+  if (HAS_ACCENT_OR_SPACE(s)) return EMAIL_INVALID_MSG;
+  return undefined;
+}
+
+/** Kiểm tra toàn diện khi rời ô (onBlur) hoặc submit form. */
+export function checkEmail(s: string): string | undefined {
+  const v = s.trim();
+  if (!v) return 'Vui lòng nhập email';
+  if (HAS_ACCENT_OR_SPACE(s) || !EMAIL_RE.test(v)) return EMAIL_INVALID_MSG;
+  return undefined;
 }
 
 type Rules<K extends string> = Record<K, (value: string) => string | undefined>;

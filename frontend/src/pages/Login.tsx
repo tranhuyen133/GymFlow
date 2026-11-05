@@ -11,7 +11,7 @@ import { SITE } from '../site';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
 import { focusFormError } from './publicForm';
-import { EMAIL_RE } from '../lib/format';
+import { checkEmail, checkEmailLive } from '../lib/validation';
 
 const ROLE_ICON: Record<Role, IconName> = { ADMIN: 'shield', TRAINER: 'badge', MEMBER: 'user' };
 
@@ -55,14 +55,34 @@ export default function Login() {
   const formRef = useRef<HTMLFormElement>(null);
   const options = useAsync(() => api.get<AuthOptions>('/auth/options'), []);
 
+  const onEmailChange = (val: string) => {
+    setEmail(val);
+    const liveErr = checkEmailLive(val);
+    if (liveErr) {
+      setErrors((p) => ({ ...p, email: liveErr }));
+    } else if (errors.email) {
+      setErrors((p) => { const n = { ...p }; delete n.email; return n; });
+    }
+  };
+
+  const onEmailBlur = () => {
+    if (!email) return;
+    const err = checkEmail(email);
+    if (err) {
+      setErrors((p) => ({ ...p, email: err }));
+    } else if (errors.email) {
+      setErrors((p) => { const n = { ...p }; delete n.email; return n; });
+    }
+  };
+
   const submit = async (e?: FormEvent, creds?: { email: string; password: string }) => {
     e?.preventDefault();
     if (inFlight.current) return; // chặn bấm liên tiếp trước khi React kịp vẽ lại nút "đang tải"
     const em = (creds?.email ?? email).trim();
     const pw = creds?.password ?? password;
     const v: Record<string, string> = {};
-    if (!em) v.email = 'Vui lòng nhập email';
-    else if (!EMAIL_RE.test(em)) v.email = 'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)';
+    const emailErr = checkEmail(creds?.email ?? email);
+    if (emailErr) v.email = emailErr;
     if (!pw) v.password = 'Vui lòng nhập mật khẩu';
     setErrors(v); setError(null);
     if (Object.keys(v).length) {
@@ -106,7 +126,7 @@ export default function Login() {
             <div className="input-icon">
               <Icon name="mail" />
               <input id="login-email" name="email" required aria-describedby={errors.email ? 'login-email-error' : undefined} className={`input ${errors.email ? 'has-err' : ''}`} type="email" autoComplete="username" value={email}
-                onChange={(e) => setEmail(e.target.value)} placeholder="ban@email.com" aria-invalid={!!errors.email} />
+                onChange={(e) => onEmailChange(e.target.value)} onBlur={onEmailBlur} placeholder="ban@email.com" aria-invalid={!!errors.email} />
             </div>
           </Field>
           <Field htmlFor="login-password" label="Mật khẩu" error={errors.password} required>

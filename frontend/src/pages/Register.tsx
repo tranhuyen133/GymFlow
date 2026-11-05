@@ -10,8 +10,7 @@ import { PrivacyContent, TermsContent } from './Policies';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
 import { focusFormError } from './publicForm';
-import { EMAIL_RE } from '../lib/format';
-import { NAME_RE } from '../lib/validation';
+import { checkEmail, checkEmailLive, NAME_RE } from '../lib/validation';
 
 // Trùng quy tắc với backend (Dtos.PASSWORD_RULE / PHONE_RULE / EMAIL_RULE) để báo lỗi ngay, server vẫn kiểm tra lại.
 const PHONE_RE = /^(0|\+84)\d{9,10}$/;
@@ -25,8 +24,8 @@ function validate(f: RegisterRequest) {
   if (!name) v.fullName = 'Vui lòng nhập họ tên';
   else if (name.length < 2 || name.length > 100) v.fullName = 'Họ tên từ 2 đến 100 ký tự';
   else if (!NAME_RE.test(name)) v.fullName = 'Họ tên chỉ gồm chữ cái và khoảng trắng';
-  if (!f.email.trim()) v.email = 'Vui lòng nhập email';
-  else if (!EMAIL_RE.test(f.email.trim())) v.email = 'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)';
+  const emailErr = checkEmail(f.email);
+  if (emailErr) v.email = emailErr;
   if (f.phone.trim() && !PHONE_RE.test(f.phone.trim())) v.phone = 'Số điện thoại không hợp lệ (VD: 0912345678)';
   if (!f.password) v.password = 'Vui lòng nhập mật khẩu';
   else if (!PW_RE.test(f.password)) v.password = 'Tối thiểu 8 ký tự, gồm cả chữ và số';
@@ -62,7 +61,14 @@ export default function Register() {
 
   const set = <K extends keyof RegisterRequest>(k: K, val: RegisterRequest[K]) => {
     setF((p) => ({ ...p, [k]: val }));
-    if (k === 'email') setEmailTaken(false);
+    if (k === 'email') {
+      setEmailTaken(false);
+      const liveErr = checkEmailLive(String(val));
+      if (liveErr) {
+        setErrors((p) => ({ ...p, email: liveErr }));
+        return;
+      }
+    }
     if (errors[k]) setErrors((p) => { const n = { ...p }; delete n[k]; return n; });
   };
 
@@ -70,6 +76,7 @@ export default function Register() {
   const blur = (k: keyof RegisterRequest) => {
     const msg = validate(f)[k];
     if (msg) setErrors((p) => ({ ...p, [k]: msg }));
+    else if (errors[k]) setErrors((p) => { const n = { ...p }; delete n[k]; return n; });
   };
 
   const submit = async (e: FormEvent) => {

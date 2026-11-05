@@ -10,7 +10,7 @@ import { AuthArt } from './Login';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
 import { focusFormError, validateReset } from './publicForm';
-import { EMAIL_RE } from '../lib/format';
+import { checkEmail, checkEmailLive } from '../lib/validation';
 
 export default function ForgotPassword() {
   const toast = useToast();
@@ -37,7 +37,8 @@ export default function ForgotPassword() {
     e.preventDefault();
     if (inFlight.current) return;
     setError(null);
-    if (!EMAIL_RE.test(email.trim())) { showErrors({ email: 'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)' }); return; }
+    const err = checkEmail(email);
+    if (err) { showErrors({ email: err }); return; }
     inFlight.current = true;
     setBusy(true); setError(null); setErrors({});
     try {
@@ -83,7 +84,21 @@ export default function ForgotPassword() {
           {step === 1 ? (
             <form ref={formRef} className="stack" onSubmit={request} noValidate>
               <Field htmlFor="recovery-email" label="Email" error={errors.email} required>
-                <Input id="recovery-email" name="email" required autoComplete="email" aria-describedby={errors.email ? 'recovery-email-error' : ''} type="email" value={email} invalid={!!errors.email} onChange={(e) => setEmail(e.target.value)} placeholder="ban@gymflow.vn" />
+                <Input id="recovery-email" name="email" required autoComplete="email" aria-describedby={errors.email ? 'recovery-email-error' : ''} type="email" value={email} invalid={!!errors.email}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEmail(val);
+                    const liveErr = checkEmailLive(val);
+                    if (liveErr) setErrors((p) => ({ ...p, email: liveErr }));
+                    else if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; });
+                  }}
+                  onBlur={() => {
+                    if (!email) return;
+                    const err = checkEmail(email);
+                    if (err) setErrors((p) => ({ ...p, email: err }));
+                    else if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; });
+                  }}
+                  placeholder="ban@gymflow.vn" />
               </Field>
               <Button type="submit" variant="primary" size="lg" block loading={busy}>Gửi mã khôi phục</Button>
             </form>
