@@ -13,7 +13,7 @@ import { age, fmtDate, fmtMoney, genderLabel, memberStatus, planStatus, subState
 import { errMsg, useAsync } from '../../lib/hooks';
 import { ScheduleForm } from './Schedules';
 import { MemberFormModal } from './Members';
-import { t, tn } from '../../i18n';
+import { t } from '../../i18n';
 
 type Tab = 'overview' | 'progress' | 'plans';
 
