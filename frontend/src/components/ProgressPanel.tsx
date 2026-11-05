@@ -45,6 +45,8 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
   if (error) return <ErrorState message={error} onRetry={reload} />;
   if (loading || !data) return <LoadingBlock rows={5} />;
   const change = data.weightChange;
+  const hasCm = data.weights.some((w) => w.waistCm != null || w.chestCm != null || w.armCm != null || w.thighCm != null);
+  const waist = data.weights.filter((w) => w.waistCm != null);
   const weeks = data.attendance.map((w) => ({ label: fmtDateShort(w.weekStart), values: [w.completed, w.missed, Math.max(0, w.scheduled - w.completed - w.missed)] }));
 
   return (
@@ -66,6 +68,12 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
             <div className="mt-16">
               <div className="tiny faint" style={{ marginBottom: 6 }}>{t('Tỉ lệ mỡ (%)')}</div>
               <LineChart height={140} color="#ffb020" points={data.weights.filter((w) => w.bodyFat != null).map((w) => ({ label: fmtDateShort(w.recordedDate), value: w.bodyFat as number }))} />
+            </div>
+          )}
+          {waist.length > 1 && (
+            <div className="mt-16">
+              <div className="tiny faint" style={{ marginBottom: 6 }}>{t('Vòng eo (cm)')}</div>
+              <LineChart height={140} color="#3d97ff" points={waist.map((w) => ({ label: fmtDateShort(w.recordedDate), value: w.waistCm as number }))} />
             </div>
           )}
         </Card>
@@ -92,13 +100,14 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
       {data.weights.length > 0 && (
         <Card title={t('Nhật ký cân nặng')} icon="scroll" flush>
           <Table caption={t('Nhật ký cân nặng')}>
-            <thead><tr><th>{t('Ngày')}</th><th>{t('Cân nặng')}</th><th>{t('% mỡ')}</th><th>{t('Ghi chú')}</th>{canEdit && <th />}</tr></thead>
+            <thead><tr><th>{t('Ngày')}</th><th>{t('Cân nặng')}</th><th>{t('% mỡ')}</th>{hasCm && <th>{t('Eo / Ngực / Tay / Đùi (cm)')}</th>}<th>{t('Ghi chú')}</th>{canEdit && <th />}</tr></thead>
             <tbody>
               {[...data.weights].reverse().map((w) => (
                 <tr key={w.id}>
                   <td>{fmtDate(w.recordedDate)}</td>
                   <td className="num">{w.weightKg} kg</td>
                   <td>{w.bodyFat != null ? `${w.bodyFat}%` : '—'}</td>
+                  {hasCm && <td className="num">{[w.waistCm, w.chestCm, w.armCm, w.thighCm].map((v) => v ?? '–').join(' / ')}</td>}
                   <td className="muted">{w.note ?? ''}</td>
                   {canEdit && <td className="actions"><Button size="sm" variant="ghost" icon="trash" aria-label={t('Xoá')} onClick={() => setRemoving(w)} /></td>}
                 </tr>
@@ -117,28 +126,48 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
   );
 }
 
+// Số đo vòng (cm): khoảng chỉ để chặn lỗi gõ, khớp Dtos.WeightRequest và CHECK trong V7
+const MEASURES: { key: 'waistCm' | 'chestCm' | 'armCm' | 'thighCm'; label: string; min: number; max: number }[] = [
+  { key: 'waistCm', label: 'Vòng eo', min: 40, max: 200 },
+  { key: 'chestCm', label: 'Vòng ngực', min: 50, max: 200 },
+  { key: 'armCm', label: 'Vòng tay', min: 15, max: 80 },
+  { key: 'thighCm', label: 'Vòng đùi', min: 25, max: 120 },
+];
+const num = (s: string) => (s.trim() === '' ? null : Number(s.replace(',', '.')));
+
 function WeightForm({ memberId, last, onClose, onSaved }: { memberId: number; last?: Weight; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const [date, setDate] = useState(todayIso());
   const [weight, setWeight] = useState(last ? String(last.weightKg) : '');
   const [fat, setFat] = useState(last?.bodyFat != null ? String(last.bodyFat) : '');
+  const [cm, setCm] = useState<Record<string, string>>({});
+  const [showCm, setShowCm] = useState(!!last && MEASURES.some((m) => last[m.key] != null));
   const [note, setNote] = useState('');
   const live = useLiveErrors({ recordedDate: checkRecordedDate, weightKg: checkWeight, bodyFat: checkBodyFat }, { weightKg: NOT_NUMBER, bodyFat: NOT_NUMBER });
   const errors = live.errors;
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    if (!live.validateAll({ recordedDate: date, weightKg: weight, bodyFat: fat })) return;
+    const ok = live.validateAll({ recordedDate: date, weightKg: weight, bodyFat: fat });
+    const cmErr: Record<string, string> = {};
+    const measures: Record<string, number | null> = {};
+    MEASURES.forEach((m) => {
+      const n = num(cm[m.key] ?? '');
+      if (n != null && (Number.isNaN(n) || n < m.min || n > m.max)) cmErr[m.key] = t('{label} từ {a} đến {b} cm', { label: t(m.label), a: m.min, b: m.max });
+      measures[m.key] = n;
+    });
+    if (Object.keys(cmErr).length) { live.setErrors((p) => ({ ...p, ...cmErr })); setShowCm(true); }
+    if (!ok || Object.keys(cmErr).length) return;
     setBusy(true);
     try {
-      await api.post(`/members/${memberId}/weights`, { recordedDate: date, weightKg: toNumber(weight), bodyFat: toNumber(fat), note: note.trim() || null });
+      await api.post(`/members/${memberId}/weights`, { recordedDate: date, weightKg: toNumber(weight), bodyFat: toNumber(fat), ...measures, note: note.trim() || null });
       toast.success(t('Đã lưu cân nặng'));
       onSaved();
     } catch (e) { toast.error(errMsg(e)); live.setErrors(fieldErrs(e)); } finally { setBusy(false); }
   };
 
   return (
-    <Modal title={t('Ghi cân nặng')} onClose={onClose} size="narrow" footer={<>
+    <Modal title={t('Ghi chỉ số cơ thể')} onClose={onClose} size="narrow" footer={<>
       <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
       <Button variant="primary" icon="check" loading={busy} disabled={Object.keys(errors).length > 0} onClick={submit}>{t('Lưu')}</Button>
     </>}>
@@ -164,6 +193,23 @@ function WeightForm({ memberId, last, onClose, onSaved }: { memberId: number; la
             </div>
           </Field>
         </div>
+        <button type="button" className="link-btn small" aria-expanded={showCm} onClick={() => setShowCm((s) => !s)}>
+          <Icon name={showCm ? 'chevronDown' : 'chevronRight'} size={14} />{t('Số đo vòng (cm) – không bắt buộc')}
+        </button>
+        {showCm && (
+          <div className="form-grid">
+            {MEASURES.map((m) => (
+              <Field key={m.key} htmlFor={`weight-${m.key}`} label={`${t(m.label)} (cm)`} error={errors[m.key]}>
+                <Input id={`weight-${m.key}`} inputMode="decimal" autoComplete="off" value={cm[m.key] ?? ''} invalid={!!errors[m.key]}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCm((c) => ({ ...c, [m.key]: v }));
+                    live.setErrors((p) => { if (!p[m.key]) return p; const n = { ...p }; delete n[m.key]; return n; });
+                  }} />
+              </Field>
+            ))}
+          </div>
+        )}
         <Field label={t('Ghi chú')}><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('VD: đo buổi sáng, trước ăn')} /></Field>
       </div>
     </Modal>

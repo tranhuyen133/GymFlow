@@ -9,41 +9,123 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import type { Gender, Me, Member, Shift, Trainer } from '../../api/types';
 import { useAuth, useMe } from '../../auth/AuthContext';
-import { Icon } from '../../components/Icon';
+import { Link, useNavigate } from 'react-router-dom';
+import { AvatarEditor, MyAvatar } from '../../components/AvatarEditor';
+import { Icon, type IconName } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Alert, Avatar, Badge, Button, Card, ErrorState, Field, Input, LoadingBlock, PageHead, PasswordInput, Select, Textarea } from '../../components/ui';
+import { Alert, Badge, Button, Card, Confirm, ErrorState, Field, Input, LoadingBlock, PasswordInput, Select, StatusBadge, Textarea } from '../../components/ui';
 import { t } from '../../i18n';
-import { DAY_NAMES, fmtDateTime, genderLabel, roleLabel, todayIso } from '../../lib/format';
+import { DAY_NAMES, fmtDate, fmtDateTime, genderLabel, memberStatus, roleLabel, subState, todayIso } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { checkDateOfBirth, checkFullName, checkHeight, checkPhone, HAS_DIGIT, NOT_NUMBER, NOT_PHONE, toNumber, useLiveErrors } from '../../lib/validation';
 
+type Section = 'info' | 'training' | 'security';
+
 export default function Profile() {
   const me = useMe();
+  const [editAvatar, setEditAvatar] = useState(false);
+  const [askLogout, setAskLogout] = useState(false);
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  // Hồ sơ hội viên tải 1 lần ở đây để dùng cho cả phần đầu trang (gói, ngày tham gia) lẫn thẻ hồ sơ tập luyện
+  const member = useAsync<Member | null>(() => (me.role === 'MEMBER' ? api.get<Member>('/members/me') : Promise.resolve(null)), [me.role]);
+  const sections: { id: Section; label: string; icon: IconName }[] = [
+    { id: 'info', label: 'Thông tin cá nhân', icon: 'user' },
+    ...(me.role === 'MEMBER' ? [{ id: 'training' as Section, label: 'Hồ sơ tập luyện', icon: 'heart' as IconName }] : []),
+    ...(me.role === 'TRAINER' && me.trainerId ? [{ id: 'training' as Section, label: 'Chuyên môn & ca làm', icon: 'badge' as IconName }] : []),
+    { id: 'security', label: 'Bảo mật', icon: 'shield' },
+  ];
+  const [section, setSection] = useState<Section>('info');
+  const m = member.data;
+
   return (
     <div className="page">
-      <PageHead eyebrow={t('Tài khoản')} title={t('Hồ sơ cá nhân')} desc={t('Cập nhật thông tin liên hệ, đổi mật khẩu và các thông tin theo vai trò.')} />
-      <div className="grid grid-main" style={{ alignItems: 'start' }}>
-        <div className="stack" style={{ gap: 18 }}>
-          <AccountCard />
-          {me.role === 'MEMBER' && <MemberSelfCard />}
-          {me.role === 'TRAINER' && me.trainerId && <TrainerSelfCard trainerId={me.trainerId} />}
+      <section className="profile-hero">
+        <div className="profile-hero-bg" aria-hidden />
+        <button type="button" className="profile-avatar" onClick={() => setEditAvatar(true)} aria-label={t('Đổi ảnh đại diện')}>
+          <MyAvatar size="xl" />
+          <span className="profile-avatar-cam"><Icon name="camera" size={16} /></span>
+        </button>
+        <div className="profile-id">
+          <div className="eyebrow-sm">{t('Hồ sơ cá nhân')}</div>
+          <h1>{me.fullName}</h1>
+          <div className="small muted ellipsis">{me.email}{me.phone && ` · ${me.phone}`}</div>
+          <div className="row row-wrap mt-8" style={{ gap: 6 }}>
+            <Badge tone="green">{roleLabel[me.role]}</Badge>
+            {m && <StatusBadge map={memberStatus} value={m.status} />}
+            {m?.code && <Badge tone="muted">{m.code}</Badge>}
+          </div>
         </div>
-        <div className="stack" style={{ gap: 18 }}>
-          <PasswordCard />
-          <Card title={t('Phiên đăng nhập')} icon="shield">
-            <dl className="kv small">
-              <dt>{t('Vai trò')}</dt><dd><Badge tone="green">{roleLabel[me.role]}</Badge></dd>
-              <dt>{t('Lần đăng nhập')}</dt><dd>{fmtDateTime(me.lastLoginAt)}</dd>
-            </dl>
-            <p className="tiny faint mt-16">{t('Tài khoản bị khoá sẽ mất quyền truy cập ngay cả khi đang đăng nhập.')}</p>
-          </Card>
+        <dl className="profile-facts">
+          {m && <div><dt>{t('Ngày tham gia')}</dt><dd>{fmtDate(m.joinedAt)}</dd></div>}
+          {m && (
+            <div>
+              <dt>{t('Gói hiện tại')}</dt>
+              <dd>{m.currentPlanName ? <>{m.currentPlanName} <StatusBadge map={subState} value={m.subscriptionState} /></> : <span className="faint">{t('Chưa có gói')}</span>}</dd>
+            </div>
+          )}
+          {m?.daysLeft != null && m.currentPlanName && <div><dt>{t('Còn lại')}</dt><dd>{t('{n} ngày', { n: m.daysLeft })}</dd></div>}
+          <div><dt>{t('Lần đăng nhập')}</dt><dd>{fmtDateTime(me.lastLoginAt)}</dd></div>
+        </dl>
+      </section>
+
+      {me.role === 'MEMBER' && (
+        <div className="profile-links">
+          <Link to="/me/schedule" className="profile-link"><Icon name="calendar" /><span>{t('Lịch tập của tôi')}</span><Icon name="chevronRight" size={16} /></Link>
+          <Link to="/me/progress" className="profile-link"><Icon name="chart" /><span>{t('Tiến độ')}</span><Icon name="chevronRight" size={16} /></Link>
+          <Link to="/me/journey" className="profile-link"><Icon name="trophy" /><span>{t('Hành trình của tôi')}</span><Icon name="chevronRight" size={16} /></Link>
+          <Link to="/me/packages" className="profile-link"><Icon name="ticket" /><span>{t('Gói tập của tôi')}</span><Icon name="chevronRight" size={16} /></Link>
         </div>
+      )}
+
+      <div className="profile-tabs" role="tablist" aria-label={t('Các mục hồ sơ')}>
+        {sections.map((s) => (
+          <button key={s.id} type="button" role="tab" aria-selected={section === s.id} className={`profile-tab ${section === s.id ? 'on' : ''}`} onClick={() => setSection(s.id)}>
+            <Icon name={s.icon} size={16} />{t(s.label)}
+          </button>
+        ))}
       </div>
+
+      <div className="profile-panel" role="tabpanel">
+        {section === 'info' && (
+          <div className="grid grid-main" style={{ alignItems: 'start' }}>
+            <AccountCard onAvatar={() => setEditAvatar(true)} />
+            <Card title="Ảnh đại diện" icon="user">
+              <div className="row" style={{ gap: 14 }}>
+                <MyAvatar size="lg" />
+                <div className="grow">
+                  <p className="small muted" style={{ margin: 0 }}>{me.avatarUpdatedAt ? t('Cập nhật lần cuối {d}', { d: fmtDateTime(me.avatarUpdatedAt) }) : t('Đang dùng ảnh mặc định (chữ viết tắt tên).')}</p>
+                  <Button size="sm" icon="upload" className="mt-8" onClick={() => setEditAvatar(true)}>{me.avatarUpdatedAt ? 'Đổi ảnh' : 'Tải ảnh lên'}</Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+        {section === 'training' && me.role === 'MEMBER' && (m ? <MemberSelfCard data={m} onSaved={member.reload} /> : member.error ? <Alert kind="error">{member.error}</Alert> : <Card><LoadingBlock /></Card>)}
+        {section === 'training' && me.role === 'TRAINER' && me.trainerId && <div className="stack" style={{ gap: 18 }}><TrainerSelfCard trainerId={me.trainerId} /></div>}
+        {section === 'security' && (
+          <div className="grid grid-main" style={{ alignItems: 'start' }}>
+            <PasswordCard />
+            <Card title="Phiên đăng nhập" icon="shield">
+              <dl className="kv small">
+                <dt>{t('Vai trò')}</dt><dd><Badge tone="green">{roleLabel[me.role]}</Badge></dd>
+                <dt>{t('Lần đăng nhập')}</dt><dd>{fmtDateTime(me.lastLoginAt)}</dd>
+              </dl>
+              <p className="tiny faint mt-16">{t('Tài khoản bị khoá sẽ mất quyền truy cập ngay cả khi đang đăng nhập.')}</p>
+              <Button variant="danger" icon="logout" block className="mt-16" onClick={() => setAskLogout(true)}>Đăng xuất</Button>
+            </Card>
+          </div>
+        )}
+      </div>
+
+      {editAvatar && <AvatarEditor onClose={() => setEditAvatar(false)} />}
+      {askLogout && <Confirm title="Đăng xuất?" message={t('Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng GymFlow.')} confirmText="Đăng xuất"
+        onClose={() => setAskLogout(false)} onConfirm={() => { logout(); navigate('/login'); }} />}
     </div>
   );
 }
 
-function AccountCard() {
+function AccountCard({ onAvatar }: { onAvatar: () => void }) {
   const me = useMe();
   const { refresh } = useAuth();
   const toast = useToast();
@@ -52,6 +134,7 @@ function AccountCard() {
   const live = useLiveErrors({ fullName: checkFullName, phone: checkPhone }, { fullName: HAS_DIGIT, phone: NOT_PHONE });
   const errors = live.errors;
   const [busy, setBusy] = useState(false);
+  const dirty = fullName !== me.fullName || phone !== (me.phone ?? '');
   const submit = async () => {
     if (!live.validateAll({ fullName, phone })) return;
     setBusy(true);
@@ -59,10 +142,10 @@ function AccountCard() {
     catch (e) { toast.error(errMsg(e)); live.setErrors(fieldErrs(e)); } finally { setBusy(false); }
   };
   return (
-    <Card title={t('Thông tin tài khoản')} icon="user" actions={<Button size="sm" variant="primary" loading={busy} disabled={Object.keys(errors).length > 0} onClick={submit}>{t('Lưu')}</Button>}>
+    <Card title={t('Thông tin tài khoản')} icon="user" actions={<Button size="sm" variant="primary" loading={busy} disabled={!dirty || Object.keys(errors).length > 0} onClick={submit}>{t('Lưu')}</Button>}>
       <div className="row" style={{ gap: 14, marginBottom: 18 }}>
-        <Avatar name={me.fullName} size="lg" />
-        <div><b style={{ fontSize: 18 }}>{me.fullName}</b><div className="small muted">{me.email}</div></div>
+        <button type="button" className="avatar-btn" onClick={onAvatar} aria-label={t('Đổi ảnh đại diện')}><MyAvatar size="lg" /></button>
+        <div style={{ minWidth: 0 }}><b style={{ fontSize: 18 }}>{me.fullName}</b><div className="small muted ellipsis">{me.email}</div></div>
       </div>
       <div className="form-grid">
         <Field label={t('Họ và tên')} error={errors.fullName} required>
@@ -116,26 +199,22 @@ function PasswordCard() {
   );
 }
 
-function MemberSelfCard() {
-  const me = useMe();
+function MemberSelfCard({ data, onSaved }: { data: Member; onSaved: () => void }) {
   const toast = useToast();
-  const { data, error, reload } = useAsync(() => api.get<Member>('/members/me'), []);
   const [f, setF] = useState({ dateOfBirth: '', gender: '' as Gender | '', heightCm: '', goal: '', address: '' });
   useEffect(() => {
-    if (data) setF({ dateOfBirth: data.dateOfBirth ?? '', gender: data.gender ?? '', heightCm: data.heightCm ? String(data.heightCm) : '', goal: data.goal ?? '', address: data.address ?? '' });
+    setF({ dateOfBirth: data.dateOfBirth ?? '', gender: data.gender ?? '', heightCm: data.heightCm ? String(data.heightCm) : '', goal: data.goal ?? '', address: data.address ?? '' });
   }, [data]);
   const live = useLiveErrors({ dateOfBirth: checkDateOfBirth, heightCm: checkHeight }, { heightCm: NOT_NUMBER });
   const errors = live.errors;
   const [busy, setBusy] = useState(false);
-  if (error) return <Card><ErrorState message={error} onRetry={reload} /></Card>;
-  if (!data) return <Card><LoadingBlock /></Card>;
   const submit = async () => {
     if (!live.validateAll({ dateOfBirth: f.dateOfBirth, heightCm: f.heightCm })) return;
     setBusy(true);
     try {
-      await api.put('/members/me', { phone: me.phone ?? '', dateOfBirth: f.dateOfBirth || null, gender: f.gender || null, heightCm: toNumber(f.heightCm), goal: f.goal.trim(), address: f.address.trim() });
+      await api.put('/members/me', { phone: data.phone ?? '', dateOfBirth: f.dateOfBirth || null, gender: f.gender || null, heightCm: toNumber(f.heightCm), goal: f.goal.trim(), address: f.address.trim() });
       toast.success(t('Đã lưu hồ sơ tập luyện'));
-      void reload();
+      onSaved();
     } catch (e) { toast.error(errMsg(e)); live.setErrors(fieldErrs(e)); } finally { setBusy(false); }
   };
   return (
@@ -203,7 +282,7 @@ export function ShiftEditor({ trainer, onSaved }: { trainer: Trainer; onSaved: (
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => setShifts(trainer.shifts), [trainer]);
-  const hm = (t: string) => t.slice(0, 5);
+  const hm = (v: string) => v.slice(0, 5);
   const save = async () => {
     setError(null);
     const bad = shifts.find((s) => hm(s.endTime) <= hm(s.startTime));

@@ -55,8 +55,8 @@ export default function Schedules() {
         <div className="spacer" />
         {me.role === 'ADMIN' && (
           <Select value={trainerId} onChange={(e) => setTrainerId(e.target.value)} aria-label="Lọc theo HLV">
-            <option value="">Tất cả HLV</option>
-            {trainers.data?.map((t) => <option key={t.id} value={t.id}>{t.fullName}</option>)}
+            <option value="">{t('Tất cả HLV')}</option>
+            {trainers.data?.map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}</option>)}
           </Select>
         )}
         <Segmented<Filter> value={filter} onChange={setFilter} options={[
@@ -189,7 +189,7 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
         <Field label={t('Cảm nhận buổi tập')}>
           <div className="row" style={{ gap: 4 }}>
             {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} type="button" className="btn btn-ghost btn-icon" aria-label={`${n} sao`} onClick={() => setRating(n)} style={{ color: n <= rating ? 'var(--warning)' : 'var(--faint)' }}>
+              <button key={n} type="button" className="btn btn-ghost btn-icon" aria-label={t('{n}/5 sao', { n })} onClick={() => setRating(n)} style={{ color: n <= rating ? 'var(--warning)' : 'var(--faint)' }}>
                 <Icon name="star" fill={n <= rating ? 'currentColor' : 'none'} />
               </button>
             ))}
@@ -274,7 +274,7 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
         onSaved(start);
       } else {
         const res = await api.post<ScheduleCreated>('/schedules', { ...body, memberId: Number(memberId), repeatWeeks: Number(repeat) });
-        toast.success(`Đã xếp ${res.created.length} buổi tập`);
+        toast.success(t('Đã xếp {n} buổi tập', { n: res.created.length }));
         if (res.skipped.length) { setSkipped(res.skipped); setBusy(false); return; }
         onSaved(start);
       }
@@ -319,8 +319,8 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
           {me.role === 'ADMIN' && (
             <Field label="Huấn luyện viên" hint="Để trống = HLV phụ trách của hội viên">
               <Select value={trainerId} onChange={(e) => setTrainerId(e.target.value)}>
-                <option value="">Mặc định</option>
-                {trainers.data?.filter((t) => t.active).map((t) => <option key={t.id} value={t.id}>{t.fullName}</option>)}
+                <option value="">{t('Mặc định')}</option>
+                {trainers.data?.filter((tr) => tr.active).map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}</option>)}
               </Select>
             </Field>
           )}
@@ -335,21 +335,21 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
           <Field label="Giờ bắt đầu" required><Input type="time" step={900} value={time} onChange={(e) => setTime(e.target.value)} /></Field>
           <Field label="Thời lượng (phút)" error={errors.duration} required>
             <Select value={duration} onChange={(e) => setDuration(e.target.value)}>
-              {[30, 45, 60, 75, 90, 120].map((m) => <option key={m} value={m}>{m} phút</option>)}
-              {![30, 45, 60, 75, 90, 120].includes(Number(duration)) && <option value={duration}>{duration} phút</option>}
+              {[30, 45, 60, 75, 90, 120].map((m) => <option key={m} value={m}>{t('{n} phút', { n: m })}</option>)}
+              {![30, 45, 60, 75, 90, 120].includes(Number(duration)) && <option value={duration}>{t('{n} phút', { n: duration })}</option>}
             </Select>
           </Field>
           {!edit && (
             <Field label="Lặp lại hằng tuần" hint="Tuần nào trùng giờ / hết gói sẽ được bỏ qua">
               <Select value={repeat} onChange={(e) => setRepeat(e.target.value)}>
-                <option value="0">Không lặp</option>
-                {[1, 2, 3, 4, 6, 8, 12].map((n) => <option key={n} value={n}>Thêm {n} tuần ({n + 1} buổi)</option>)}
+                <option value="0">{t('Không lặp')}</option>
+                {[1, 2, 3, 4, 6, 8, 12].map((n) => <option key={n} value={n}>{t('Thêm {n} tuần ({m} buổi)', { n, m: n + 1 })}</option>)}
               </Select>
             </Field>
           )}
           <Field label="Ghi chú" className="span-2"><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: tập trung kỹ thuật squat" /></Field>
         </div>
-        {!edit && Number(repeat) > 0 && <Badge tone="blue">Sẽ tạo tối đa {Number(repeat) + 1} buổi vào {fmtWeekday(`${date}T${time}:00`).split(',')[0]} hằng tuần</Badge>}
+        {!edit && Number(repeat) > 0 && <Badge tone="blue">{t('Sẽ tạo tối đa {n} buổi vào {day} hằng tuần', { n: Number(repeat) + 1, day: fmtWeekday(`${date}T${time}:00`).split(',')[0] })}</Badge>}
       </div>
     </Modal>
   );

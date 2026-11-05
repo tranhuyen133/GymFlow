@@ -3,7 +3,7 @@
  * TASK: SCRUM-138
  * Layout dùng chung cho khu ứng dụng: sidebar desktop, topbar, tab bar mobile.
  */
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Notification, Role } from '../api/types';
@@ -11,7 +11,8 @@ import { useMe, useAuth } from '../auth/AuthContext';
 import { relativeTime, roleLabel } from '../lib/format';
 import { Brand } from './Brand';
 import { Icon, type IconName } from './Icon';
-import { Avatar, Button } from './ui';
+import { MyAvatar } from './AvatarEditor';
+import { Badge, Button, Confirm } from './ui';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { locale, t } from '../i18n';
 
@@ -22,6 +23,7 @@ export const NAV: NavItem[] = [
   { to: '/me/schedule', label: 'Lịch tập của tôi', icon: 'calendar', roles: ['MEMBER'], tab: true },
   { to: '/me/plan', label: 'Giáo án của tôi', icon: 'clipboard', roles: ['MEMBER'], tab: true },
   { to: '/me/progress', label: 'Tiến độ', icon: 'chart', roles: ['MEMBER'], tab: true },
+  { to: '/me/journey', label: 'Hành trình của tôi', icon: 'trophy', roles: ['MEMBER'] },
   { to: '/me/packages', label: 'Gói tập của tôi', icon: 'ticket', roles: ['MEMBER'] },
   { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['ADMIN', 'TRAINER'], tab: true },
   { to: '/members', label: 'Hội viên', icon: 'users', roles: ['ADMIN', 'TRAINER'], group: 'Huấn luyện', tab: true },
@@ -111,23 +113,90 @@ function Notifications() {
   );
 }
 
+/** Đóng khi bấm ra ngoài hoặc nhấn Esc – dùng cho menu tài khoản. */
+function useDismiss(open: boolean, ref: RefObject<HTMLElement>, close: () => void) {
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) close(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [open, ref, close]);
+}
+
+/** Avatar + menu tài khoản ở góc phải topbar: có ở mọi kích thước màn hình nên luôn tìm được nút Đăng xuất. */
+function AccountMenu({ onLogout }: { onLogout: () => void }) {
+  const user = useMe();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(open, ref, close);
+  const { pathname } = useLocation();
+  useEffect(() => setOpen(false), [pathname]);
+  return (
+    <div className="account" ref={ref}>
+      <button type="button" className="account-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}
+        aria-label={t('Tài khoản: {name}', { name: user.fullName })}>
+        <MyAvatar size="sm" />
+        <span className="account-name">{user.fullName}</span>
+        <Icon name="chevronDown" size={15} className="account-caret" />
+      </button>
+      {open && (
+        <div className="popover account-pop" role="menu">
+          <div className="account-head">
+            <MyAvatar size="lg" />
+            <div style={{ minWidth: 0 }}>
+              <b className="ellipsis">{user.fullName}</b>
+              <div className="tiny muted ellipsis">{user.email}</div>
+              <div className="mt-4"><Badge tone="green">{roleLabel[user.role]}</Badge></div>
+            </div>
+          </div>
+          <Link to="/profile" role="menuitem" className="menu-item"><Icon name="user" />{t('Hồ sơ cá nhân')}</Link>
+          {user.role === 'MEMBER' && <Link to="/me/packages" role="menuitem" className="menu-item"><Icon name="ticket" />{t('Gói tập của tôi')}</Link>}
+          {user.role === 'MEMBER' && <Link to="/me/progress" role="menuitem" className="menu-item"><Icon name="chart" />{t('Tiến độ')}</Link>}
+          <div className="menu-prefs"><span className="tiny muted">{t('Giao diện & ngôn ngữ')}</span><ThemeToggle /></div>
+          <button type="button" role="menuitem" className="menu-item danger" onClick={() => { setOpen(false); onLogout(); }}><Icon name="logout" />{t('Đăng xuất')}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Layout() {
   const user = useMe();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+  const [askLogout, setAskLogout] = useState(false);
+  const closeBtn = useRef<HTMLButtonElement>(null);
   useEffect(() => { setOpen(false); window.scrollTo({ top: 0 }); }, [pathname]);
+
+  // Drawer mở trên tablet/điện thoại: khoá cuộn trang phía sau, Esc để đóng, đưa focus vào nút đóng
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('keydown', onKey);
+    closeBtn.current?.focus();
+    return () => { document.body.style.overflow = prev; document.removeEventListener('keydown', onKey); };
+  }, [open]);
 
   const items = NAV.filter((n) => n.roles.includes(user.role));
   const current = items.find((n) => pathname === n.to || pathname.startsWith(n.to + '/'));
   const tabs = items.filter((n) => n.tab).slice(0, 4);
+  const doLogout = () => { logout(); navigate('/login'); };
   let lastGroup: string | undefined;
 
   return (
     <div className="shell">
-      <aside className={`sidebar ${open ? 'open' : ''}`} aria-label={t('Điều hướng chính')}>
-        <Link to="/" title={t('Về trang giới thiệu GymFlow')} aria-label={t('Về trang giới thiệu GymFlow')}><Brand /></Link>
+      <aside id="app-sidebar" className={`sidebar ${open ? 'open' : ''}`} aria-label={t('Điều hướng chính')}>
+        <div className="side-head">
+          <Link to="/" title={t('Về trang giới thiệu GymFlow')} aria-label={t('Về trang giới thiệu GymFlow')}><Brand /></Link>
+          <button ref={closeBtn} type="button" className="btn btn-ghost btn-icon side-close" aria-label={t('Đóng menu')} onClick={() => setOpen(false)}><Icon name="x" /></button>
+        </div>
         <nav className="nav">
           {items.map((n) => {
             const showGroup = n.group && n.group !== lastGroup;
@@ -142,25 +211,31 @@ export function Layout() {
             );
           })}
         </nav>
+        <div className="side-prefs"><ThemeToggle /></div>
         <div className="side-user">
-          <Avatar name={user.fullName} />
-          <div className="grow">
-            <div>{user.fullName}</div>
-            <div className="tiny faint">{roleLabel[user.role]}</div>
-          </div>
-          <Button variant="ghost" size="sm" icon="logout" aria-label="Đăng xuất" title="Đăng xuất" onClick={() => { logout(); navigate('/login'); }} />
+          <Link to="/profile" className="side-user-link" aria-label={t('Hồ sơ cá nhân')}>
+            <MyAvatar />
+            <div className="grow" style={{ minWidth: 0 }}>
+              <div>{user.fullName}</div>
+              <div className="tiny faint">{roleLabel[user.role]}</div>
+            </div>
+          </Link>
+          <Button variant="ghost" size="sm" icon="logout" className="side-logout" aria-label="Đăng xuất" title="Đăng xuất" onClick={() => setAskLogout(true)}>
+            <span className="side-logout-text">{t('Đăng xuất')}</span>
+          </Button>
         </div>
       </aside>
-      {open && <div className="mobile-scrim" onClick={() => setOpen(false)} />}
+      {open && <div className="mobile-scrim" onClick={() => setOpen(false)} aria-hidden />}
 
       <div className="main">
         <header className="topbar">
-          <Button className="menu-btn" variant="ghost" icon="menu" aria-label="Mở menu" onClick={() => setOpen(true)} />
-          <div className="crumb">GymFlow / <b>{t(current?.label ?? 'Chi tiết')}</b></div>
+          <Button className="menu-btn" variant="ghost" icon="menu" aria-label="Mở menu" aria-controls="app-sidebar" aria-expanded={open} onClick={() => setOpen(true)} />
+          <div className="crumb"><span className="crumb-root">GymFlow / </span><b>{t(current?.label ?? 'Chi tiết')}</b></div>
           <div className="spacer" />
           <Clock />
           <ThemeToggle className="top-theme" />
           <Notifications />
+          <AccountMenu onLogout={() => setAskLogout(true)} />
         </header>
         <main className="content" id="main">
           <Outlet />
@@ -173,8 +248,11 @@ export function Layout() {
             <Icon name={n.icon} /><span>{t(n.label.replace(' của tôi', ''))}</span>
           </NavLink>
         ))}
-        <a href="#menu" onClick={(e) => { e.preventDefault(); setOpen(true); }}><Icon name="more" /><span>{t('Thêm')}</span></a>
+        <a href="#menu" aria-controls="app-sidebar" aria-expanded={open} onClick={(e) => { e.preventDefault(); setOpen(true); }}><Icon name="more" /><span>{t('Thêm')}</span></a>
       </nav>
+
+      {askLogout && <Confirm title="Đăng xuất?" message={t('Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng GymFlow.')} confirmText="Đăng xuất"
+        onClose={() => setAskLogout(false)} onConfirm={doLogout} />}
     </div>
   );
 }

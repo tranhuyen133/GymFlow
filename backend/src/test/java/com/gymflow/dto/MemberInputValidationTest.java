@@ -42,7 +42,7 @@ class MemberInputValidationTest {
     }
 
     private static WeightRequest weight(Double kg, Double fat) {
-        return new WeightRequest(LocalDate.now().minusDays(1), kg, fat, null);
+        return new WeightRequest(LocalDate.now().minusDays(1), kg, fat, null, null, null, null, null);
     }
 
     @Test
@@ -58,7 +58,18 @@ class MemberInputValidationTest {
 
     @Test
     void weightCannotBeRecordedForTheFuture() {
-        assertThat(errors(new WeightRequest(LocalDate.now().plusDays(1), 62.5, null, null))).containsKey("recordedDate");
+        assertThat(errors(new WeightRequest(LocalDate.now().plusDays(1), 62.5, null, null, null, null, null, null))).containsKey("recordedDate");
+    }
+
+    @Test
+    void bodyMeasurementsAreOptionalButBounded() {
+        LocalDate d = LocalDate.now().minusDays(1);
+        assertThat(errors(new WeightRequest(d, 62.5, null, 40.0, 50.0, 15.0, 25.0, null))).isEmpty();
+        assertThat(errors(new WeightRequest(d, 62.5, null, 200.0, 200.0, 80.0, 120.0, null))).isEmpty();
+        assertThat(errors(new WeightRequest(d, 62.5, null, 39.9, null, null, null, null))).containsEntry("waistCm", "Vòng eo phải từ 40 cm trở lên");
+        assertThat(errors(new WeightRequest(d, 62.5, null, null, 200.1, null, null, null))).containsKey("chestCm");
+        assertThat(errors(new WeightRequest(d, 62.5, null, null, null, 80.1, null, null))).containsKey("armCm");
+        assertThat(errors(new WeightRequest(d, 62.5, null, null, null, null, 24.9, null))).containsKey("thighCm");
     }
 
     @Test

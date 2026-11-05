@@ -118,7 +118,7 @@ public class AuthService {
         Long memberId = u.getRole() == Role.MEMBER ? memberRepository.findByUserId(u.getId()).map(Member::getId).orElse(null) : null;
         Long trainerId = u.getRole() == Role.TRAINER ? trainerRepository.findByUserId(u.getId()).map(Trainer::getId).orElse(null) : null;
         return new MeResponse(u.getId(), u.getEmail(), u.getFullName(), u.getPhone(), u.getRole(), memberId, trainerId,
-                u.getLastLoginAt());
+                u.getLastLoginAt(), u.getAvatarUpdatedAt());
     }
 
     @Transactional

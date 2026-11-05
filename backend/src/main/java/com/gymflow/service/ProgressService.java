@@ -52,6 +52,10 @@ public class ProgressService {
         boolean isNew = w.getId() == null;
         w.setWeightKg(round1(req.weightKg()));
         w.setBodyFat(req.bodyFat() == null ? null : round1(req.bodyFat()));
+        w.setWaistCm(req.waistCm() == null ? null : round1(req.waistCm()));
+        w.setChestCm(req.chestCm() == null ? null : round1(req.chestCm()));
+        w.setArmCm(req.armCm() == null ? null : round1(req.armCm()));
+        w.setThighCm(req.thighCm() == null ? null : round1(req.thighCm()));
         w.setNote(Mappers.blankToNull(req.note()));
         weightRepository.save(w);
         auditService.log(isNew ? "WEIGHT_CREATE" : "WEIGHT_UPDATE", "MEMBER", memberId,

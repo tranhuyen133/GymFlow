@@ -14,6 +14,7 @@ import { focusFormError } from './publicForm';
 import { EMAIL_RE } from '../lib/format';
 
 const ROLE_ICON: Record<Role, IconName> = { ADMIN: 'shield', TRAINER: 'badge', MEMBER: 'user' };
+const ROLE_HINT: Record<Role, string> = { ADMIN: 'Toàn quyền quản trị', TRAINER: 'Hội viên được phân công', MEMBER: 'Lịch tập & tiến độ' };
 
 export function AuthArt({ title, lines }: { title?: [string, string]; lines?: { icon: IconName; text: string }[] }) {
   const [a, b] = title ?? ['Tập có kế hoạch.', 'Tiến bộ đo được.'];
@@ -51,6 +52,7 @@ export default function Login() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [caps, setCaps] = useState(false);
   const inFlight = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const options = useAsync(() => api.get<AuthOptions>('/auth/options'), []);
@@ -93,7 +95,7 @@ export default function Login() {
       <AuthArt />
       <div className="auth-form">
         <ThemeToggle className="auth-theme" />
-        <form ref={formRef} className="box stack page" onSubmit={submit} noValidate>
+        <form ref={formRef} className="box auth-card beam stack page" onSubmit={submit} noValidate>
           <Link to="/" className="link small row" style={{ gap: 6, width: 'fit-content' }}><Icon name="arrowLeft" size={15} />{t('Trang chủ')}</Link>
           <div>
             <div className="kicker">{t('Hội viên & nhân viên')}</div>
@@ -106,11 +108,14 @@ export default function Login() {
             <div className="input-icon">
               <Icon name="mail" />
               <input id="login-email" name="email" required aria-describedby={errors.email ? 'login-email-error' : undefined} className={`input ${errors.email ? 'has-err' : ''}`} type="email" autoComplete="username" value={email}
-                onChange={(e) => setEmail(e.target.value)} placeholder="ban@email.com" aria-invalid={!!errors.email} />
+                onChange={(e) => setEmail(e.target.value)} placeholder="ban@email.com" aria-invalid={!!errors.email} autoFocus={!state?.registered} />
             </div>
           </Field>
           <Field htmlFor="login-password" label="Mật khẩu" error={errors.password} required>
-            <PasswordInput id="login-password" name="password" required aria-describedby={errors.password ? 'login-password-error' : ''} invalid={!!errors.password} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoFocus={!!state?.registered} />
+            <PasswordInput id="login-password" name="password" required invalid={!!errors.password} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoFocus={!!state?.registered}
+              onKeyUp={(e) => setCaps(e.getModifierState('CapsLock'))} onBlur={() => setCaps(false)}
+              aria-describedby={[errors.password ? 'login-password-error' : '', caps ? 'caps-warn' : ''].filter(Boolean).join(' ') || undefined} />
+            {caps && <div id="caps-warn" className="caps-warn" role="status"><Icon name="alert" size={14} />{t('Caps Lock đang bật')}</div>}
           </Field>
           <div className="row between">
             <span />
@@ -132,7 +137,7 @@ export default function Login() {
                 {demo.map((d) => (
                   <button key={d.email} type="button" disabled={busy}
                     onClick={() => { setEmail(d.email); setPassword(d.password); void submit(undefined, d); }}>
-                    <Icon name={ROLE_ICON[d.role]} />{t(d.label)}
+                    <Icon name={ROLE_ICON[d.role]} />{t(d.label)}<span className="demo-hint">{t(ROLE_HINT[d.role])}</span>
                   </button>
                 ))}
               </div>
