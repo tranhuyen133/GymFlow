@@ -68,6 +68,13 @@ export interface Subscription {
   cancelled: boolean; cancelledAt: string | null; note: string | null; createdAt: string; createdByName: string | null;
 }
 export interface SubscriptionPreview { startDate: string; endDate: string; price: number; chained: boolean }
+export type PackageRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export interface PackageRequest {
+  id: number; memberId: number; memberName: string; memberCode: string; memberPhone: string | null;
+  planId: number; planName: string; price: number; durationDays: number; planStillOnSale: boolean;
+  desiredStartDate: string | null; note: string | null; status: PackageRequestStatus; decisionNote: string | null;
+  decidedByName: string | null; decidedAt: string | null; subscriptionId: number | null; createdAt: string;
+}
 
 // ---------- Exercises & plans ----------
 export type ReviewStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'NEEDS_REVIEW';

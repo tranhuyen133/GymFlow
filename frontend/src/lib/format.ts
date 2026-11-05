@@ -1,4 +1,4 @@
-import type { ArticleCategory, ArticleStatus, ExerciseGoal, ExerciseLocation, Gender, Level, MemberStatus, MuscleGroup, PlanStatus, ReviewStatus, Role, ScheduleStatus, SubscriptionState, UserStatus } from '../api/types';
+import type { ArticleCategory, ArticleStatus, ExerciseGoal, ExerciseLocation, Gender, Level, MemberStatus, MuscleGroup, PackageRequestStatus, PlanStatus, ReviewStatus, Role, ScheduleStatus, SubscriptionState, UserStatus } from '../api/types';
 import { getLang, locale, t } from '../i18n';
 import { ACTION_EN } from '../i18n/en';
 
@@ -16,6 +16,9 @@ const userStatus_VI: Record<UserStatus, [string, Tone]> = { ACTIVE: ['Đang mở
 const subState_VI: Record<SubscriptionState, [string, Tone]> = {
   UPCOMING: ['Sắp bắt đầu', 'blue'], ACTIVE: ['Còn hiệu lực', 'green'], EXPIRING: ['Sắp hết hạn', 'amber'],
   EXPIRED: ['Hết hạn', 'red'], CANCELLED: ['Đã huỷ', 'muted'],
+};
+const packageRequestStatus_VI: Record<PackageRequestStatus, [string, Tone]> = {
+  PENDING: ['Chờ xác nhận', 'amber'], APPROVED: ['Đã duyệt', 'green'], REJECTED: ['Bị từ chối', 'red'], CANCELLED: ['Đã huỷ', 'muted'],
 };
 const scheduleStatus_VI: Record<ScheduleStatus, [string, Tone]> = {
   SCHEDULED: ['Đã lên lịch', 'blue'], COMPLETED: ['Hoàn thành', 'green'], MISSED: ['Vắng', 'red'], CANCELLED: ['Đã huỷ', 'muted'],
@@ -56,6 +59,8 @@ const actionLabel_VI: Record<string, string> = {
   TRAINER_CREATE: 'Thêm HLV', TRAINER_UPDATE: 'Sửa HLV', TRAINER_ACTIVATE: 'Kích hoạt HLV', TRAINER_DEACTIVATE: 'Ngừng HLV', TRAINER_SHIFTS: 'Cập nhật ca làm',
   PLAN_CREATE: 'Thêm gói tập', PLAN_UPDATE: 'Sửa gói tập', PLAN_ACTIVATE: 'Mở bán gói', PLAN_DEACTIVATE: 'Ngừng bán gói', PLAN_DELETE: 'Xoá gói tập',
   SUBSCRIPTION_CREATE: 'Đăng ký gói', SUBSCRIPTION_RENEW: 'Gia hạn gói', SUBSCRIPTION_CANCEL: 'Huỷ gói',
+  PACKAGE_REQUEST_CREATE: 'Hội viên gửi đơn đăng ký gói', PACKAGE_REQUEST_CANCEL: 'Hội viên huỷ đơn đăng ký gói',
+  PACKAGE_REQUEST_APPROVE: 'Duyệt đơn đăng ký gói', PACKAGE_REQUEST_REJECT: 'Từ chối đơn đăng ký gói',
   EXERCISE_CREATE: 'Thêm bài tập', EXERCISE_UPDATE: 'Sửa bài tập', EXERCISE_HIDE: 'Ẩn bài tập', EXERCISE_SHOW: 'Hiện bài tập', EXERCISE_DELETE: 'Xoá bài tập', EXERCISE_REVIEW: 'Duyệt bài tập',
   ARTICLE_CREATE: 'Soạn bài viết', ARTICLE_UPDATE: 'Sửa bài viết', ARTICLE_SUBMIT: 'Gửi duyệt bài viết', ARTICLE_APPROVE: 'Xuất bản bài viết',
   ARTICLE_REJECT: 'Trả bài viết về nháp', ARTICLE_ARCHIVE: 'Gỡ bài viết', ARTICLE_RESTORE: 'Khôi phục bài viết', ARTICLE_DELETE: 'Xoá bài viết',
@@ -146,6 +151,7 @@ export const genderLabel = translated(genderLabel_VI);
 export const memberStatus = translated(memberStatus_VI);
 export const userStatus = translated(userStatus_VI);
 export const subState = translated(subState_VI);
+export const packageRequestStatus = translated(packageRequestStatus_VI);
 export const scheduleStatus = translated(scheduleStatus_VI);
 export const planStatus = translated(planStatus_VI);
 export const muscleLabel = translated(muscleLabel_VI);

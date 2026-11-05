@@ -4,6 +4,7 @@ import type { Progress, Weight } from '../api/types';
 import { t } from '../i18n';
 import { fmtDate, fmtDateShort, fmtNum, todayIso } from '../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../lib/hooks';
+import { checkBodyFat, checkRecordedDate, checkWeight, NOT_NUMBER, toNumber, useLiveErrors } from '../lib/validation';
 import { LineChart, Ring, StackedBars } from './charts';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
@@ -124,36 +125,46 @@ function WeightForm({ memberId, last, onClose, onSaved }: { memberId: number; la
   const [weight, setWeight] = useState(last ? String(last.weightKg) : '');
   const [fat, setFat] = useState(last?.bodyFat != null ? String(last.bodyFat) : '');
   const [note, setNote] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const live = useLiveErrors({ recordedDate: checkRecordedDate, weightKg: checkWeight, bodyFat: checkBodyFat }, { weightKg: NOT_NUMBER, bodyFat: NOT_NUMBER });
+  const errors = live.errors;
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    const v: Record<string, string> = {};
-    const w = Number(weight.replace(',', '.')); const f = fat === '' ? null : Number(fat.replace(',', '.'));
-    if (!weight || Number.isNaN(w) || w < 20 || w > 300) v.weightKg = t('Cân nặng từ 20 đến 300 kg');
-    if (f != null && (Number.isNaN(f) || f < 2 || f > 70)) v.bodyFat = t('% mỡ từ 2 đến 70');
-    if (date > todayIso()) v.recordedDate = t('Không ghi cho ngày tương lai');
-    setErrors(v);
-    if (Object.keys(v).length) return;
+    if (!live.validateAll({ recordedDate: date, weightKg: weight, bodyFat: fat })) return;
     setBusy(true);
     try {
-      await api.post(`/members/${memberId}/weights`, { recordedDate: date, weightKg: w, bodyFat: f, note: note || null });
+      await api.post(`/members/${memberId}/weights`, { recordedDate: date, weightKg: toNumber(weight), bodyFat: toNumber(fat), note: note.trim() || null });
       toast.success(t('Đã lưu cân nặng'));
       onSaved();
-    } catch (e) { toast.error(errMsg(e)); setErrors(fieldErrs(e)); } finally { setBusy(false); }
+    } catch (e) { toast.error(errMsg(e)); live.setErrors(fieldErrs(e)); } finally { setBusy(false); }
   };
 
   return (
     <Modal title={t('Ghi cân nặng')} onClose={onClose} size="narrow" footer={<>
       <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
-      <Button variant="primary" icon="check" loading={busy} onClick={submit}>{t('Lưu')}</Button>
+      <Button variant="primary" icon="check" loading={busy} disabled={Object.keys(errors).length > 0} onClick={submit}>{t('Lưu')}</Button>
     </>}>
       <div className="stack">
         <p className="small muted"><Icon name="info" size={14} style={{ display: 'inline', verticalAlign: -2 }} /> {t('Mỗi ngày một bản ghi, ghi lại cùng ngày sẽ cập nhật số cũ.')}</p>
-        <Field label={t('Ngày')} error={errors.recordedDate} required><Input type="date" max={todayIso()} value={date} onChange={(e) => setDate(e.target.value)} /></Field>
+        <Field label={t('Ngày')} error={errors.recordedDate} required>
+          <Input type="date" max={todayIso()} value={date} invalid={!!errors.recordedDate}
+            onChange={(e) => { setDate(e.target.value); live.blur('recordedDate', e.target.value); }} />
+        </Field>
         <div className="form-grid">
-          <Field label={t('Cân nặng (kg)')} error={errors.weightKg} required><Input inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="VD: 62.5" /></Field>
-          <Field label={t('% mỡ cơ thể')} error={errors.bodyFat} hint={t('Không bắt buộc')}><Input inputMode="decimal" value={fat} onChange={(e) => setFat(e.target.value)} placeholder="VD: 22" /></Field>
+          <Field htmlFor="weight-kg" label={t('Cân nặng (kg)')} error={errors.weightKg} required>
+            <div className="input-suffix" id="weight-kg-wrap">
+              <Input id="weight-kg" inputMode="decimal" autoComplete="off" value={weight} invalid={!!errors.weightKg} placeholder="VD: 65.5"
+                onChange={(e) => { setWeight(e.target.value); live.change('weightKg', e.target.value); }} onBlur={(e) => live.blur('weightKg', e.target.value)} />
+              <span className="unit">kg</span>
+            </div>
+          </Field>
+          <Field htmlFor="weight-fat" label={t('% mỡ cơ thể')} error={errors.bodyFat} hint={t('Không bắt buộc')}>
+            <div className="input-suffix" id="weight-fat-wrap">
+              <Input id="weight-fat" inputMode="decimal" autoComplete="off" value={fat} invalid={!!errors.bodyFat} placeholder="VD: 22"
+                onChange={(e) => { setFat(e.target.value); live.change('bodyFat', e.target.value); }} onBlur={(e) => live.blur('bodyFat', e.target.value)} />
+              <span className="unit">%</span>
+            </div>
+          </Field>
         </div>
         <Field label={t('Ghi chú')}><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('VD: đo buổi sáng, trước ăn')} /></Field>
       </div>

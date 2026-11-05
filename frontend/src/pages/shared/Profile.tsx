@@ -13,8 +13,9 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Alert, Avatar, Badge, Button, Card, ErrorState, Field, Input, LoadingBlock, PageHead, PasswordInput, Select, Textarea } from '../../components/ui';
 import { t } from '../../i18n';
-import { DAY_NAMES, fmtDateTime, genderLabel, roleLabel } from '../../lib/format';
+import { DAY_NAMES, fmtDateTime, genderLabel, roleLabel, todayIso } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
+import { checkDateOfBirth, checkFullName, checkHeight, checkPhone, HAS_DIGIT, NOT_NUMBER, NOT_PHONE, toNumber, useLiveErrors } from '../../lib/validation';
 
 export default function Profile() {
   const me = useMe();
@@ -48,27 +49,30 @@ function AccountCard() {
   const toast = useToast();
   const [fullName, setFullName] = useState(me.fullName);
   const [phone, setPhone] = useState(me.phone ?? '');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const live = useLiveErrors({ fullName: checkFullName, phone: checkPhone }, { fullName: HAS_DIGIT, phone: NOT_PHONE });
+  const errors = live.errors;
   const [busy, setBusy] = useState(false);
   const submit = async () => {
-    const v: Record<string, string> = {};
-    if (!fullName.trim()) v.fullName = t('Nhập họ tên');
-    if (!/^$|^(0|\+84)\d{9,10}$/.test(phone.trim())) v.phone = t('SĐT không hợp lệ');
-    setErrors(v);
-    if (Object.keys(v).length) return;
+    if (!live.validateAll({ fullName, phone })) return;
     setBusy(true);
-    try { await api.put<Me>('/auth/me', { fullName: fullName.trim(), phone: phone.trim() }); await refresh(); toast.success(t('Đã lưu thông tin')); }
-    catch (e) { toast.error(errMsg(e)); setErrors(fieldErrs(e)); } finally { setBusy(false); }
+    try { await api.put<Me>('/auth/me', { fullName: fullName.trim().replace(/\s+/g, ' '), phone: phone.trim() }); await refresh(); toast.success(t('Đã lưu thông tin')); }
+    catch (e) { toast.error(errMsg(e)); live.setErrors(fieldErrs(e)); } finally { setBusy(false); }
   };
   return (
-    <Card title={t('Thông tin tài khoản')} icon="user" actions={<Button size="sm" variant="primary" loading={busy} onClick={submit}>{t('Lưu')}</Button>}>
+    <Card title={t('Thông tin tài khoản')} icon="user" actions={<Button size="sm" variant="primary" loading={busy} disabled={Object.keys(errors).length > 0} onClick={submit}>{t('Lưu')}</Button>}>
       <div className="row" style={{ gap: 14, marginBottom: 18 }}>
         <Avatar name={me.fullName} size="lg" />
         <div><b style={{ fontSize: 18 }}>{me.fullName}</b><div className="small muted">{me.email}</div></div>
       </div>
       <div className="form-grid">
-        <Field label={t('Họ và tên')} error={errors.fullName} required><Input maxLength={100} value={fullName} onChange={(e) => setFullName(e.target.value)} /></Field>
-        <Field label={t('Số điện thoại')} error={errors.phone}><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>
+        <Field label={t('Họ và tên')} error={errors.fullName} required>
+          <Input maxLength={100} autoComplete="name" value={fullName} invalid={!!errors.fullName}
+            onChange={(e) => { setFullName(e.target.value); live.change('fullName', e.target.value); }} onBlur={(e) => live.blur('fullName', e.target.value)} />
+        </Field>
+        <Field label={t('Số điện thoại')} error={errors.phone}>
+          <Input type="tel" inputMode="tel" autoComplete="tel" maxLength={13} value={phone} invalid={!!errors.phone} placeholder="0912345678"
+            onChange={(e) => { setPhone(e.target.value); live.change('phone', e.target.value); }} onBlur={(e) => live.blur('phone', e.target.value)} />
+        </Field>
         <Field label={t('Email đăng nhập')} hint={t('Liên hệ quản lý để đổi email')} className="span-2"><Input value={me.email} disabled /></Field>
       </div>
     </Card>
@@ -120,31 +124,42 @@ function MemberSelfCard() {
   useEffect(() => {
     if (data) setF({ dateOfBirth: data.dateOfBirth ?? '', gender: data.gender ?? '', heightCm: data.heightCm ? String(data.heightCm) : '', goal: data.goal ?? '', address: data.address ?? '' });
   }, [data]);
+  const live = useLiveErrors({ dateOfBirth: checkDateOfBirth, heightCm: checkHeight }, { heightCm: NOT_NUMBER });
+  const errors = live.errors;
   const [busy, setBusy] = useState(false);
   if (error) return <Card><ErrorState message={error} onRetry={reload} /></Card>;
   if (!data) return <Card><LoadingBlock /></Card>;
   const submit = async () => {
-    const h = f.heightCm ? Number(f.heightCm) : null;
-    if (h != null && (h < 80 || h > 250)) { toast.error(t('Chiều cao từ 80 đến 250 cm')); return; }
+    if (!live.validateAll({ dateOfBirth: f.dateOfBirth, heightCm: f.heightCm })) return;
     setBusy(true);
     try {
-      await api.put('/members/me', { phone: me.phone ?? '', dateOfBirth: f.dateOfBirth || null, gender: f.gender || null, heightCm: h, goal: f.goal, address: f.address });
+      await api.put('/members/me', { phone: me.phone ?? '', dateOfBirth: f.dateOfBirth || null, gender: f.gender || null, heightCm: toNumber(f.heightCm), goal: f.goal.trim(), address: f.address.trim() });
       toast.success(t('Đã lưu hồ sơ tập luyện'));
-    } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
+      void reload();
+    } catch (e) { toast.error(errMsg(e)); live.setErrors(fieldErrs(e)); } finally { setBusy(false); }
   };
   return (
-    <Card title={t('Hồ sơ tập luyện · {code}', { code: data.code })} icon="heart" actions={<Button size="sm" variant="primary" loading={busy} onClick={submit}>{t('Lưu')}</Button>}>
+    <Card title={t('Hồ sơ tập luyện · {code}', { code: data.code })} icon="heart" actions={<Button size="sm" variant="primary" loading={busy} disabled={Object.keys(errors).length > 0} onClick={submit}>{t('Lưu')}</Button>}>
       <div className="form-grid">
-        <Field label={t('Ngày sinh')}><Input type="date" value={f.dateOfBirth} onChange={(e) => setF({ ...f, dateOfBirth: e.target.value })} /></Field>
+        <Field label={t('Ngày sinh')} error={errors.dateOfBirth}>
+          <Input type="date" min="1900-01-02" max={todayIso()} autoComplete="bday" value={f.dateOfBirth} invalid={!!errors.dateOfBirth}
+            onChange={(e) => { setF({ ...f, dateOfBirth: e.target.value }); live.blur('dateOfBirth', e.target.value); }} />
+        </Field>
         <Field label={t('Giới tính')}>
           <Select value={f.gender} onChange={(e) => setF({ ...f, gender: e.target.value as Gender | '' })}>
             <option value="">—</option>{(Object.keys(genderLabel) as Gender[]).map((g) => <option key={g} value={g}>{genderLabel[g]}</option>)}
           </Select>
         </Field>
-        <Field label={t('Chiều cao (cm)')} hint={t('Dùng để tính BMI')}><Input type="number" min={80} max={250} value={f.heightCm} onChange={(e) => setF({ ...f, heightCm: e.target.value })} /></Field>
-        <Field label={t('Mục tiêu')}><Input maxLength={255} value={f.goal} onChange={(e) => setF({ ...f, goal: e.target.value })} /></Field>
-        <Field label={t('Địa chỉ')} className="span-2"><Input maxLength={255} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} /></Field>
-        <Field label={t('Huấn luyện viên')} className="span-2"><Input disabled value={data.trainerName ?? t('Chưa phân công')} /></Field>
+        <Field htmlFor="profile-height" label={t('Chiều cao (cm)')} error={errors.heightCm} hint={t('Dùng để tính BMI')}>
+          <div className="input-suffix" id="profile-height-wrap">
+            <Input id="profile-height" inputMode="decimal" autoComplete="off" value={f.heightCm} invalid={!!errors.heightCm} placeholder="VD: 168"
+              onChange={(e) => { setF({ ...f, heightCm: e.target.value }); live.change('heightCm', e.target.value); }} onBlur={(e) => live.blur('heightCm', e.target.value)} />
+            <span className="unit">cm</span>
+          </div>
+        </Field>
+        <Field label={t('Mục tiêu')}><Input maxLength={255} autoComplete="off" value={f.goal} placeholder={t('VD: giảm 5 kg trong 3 tháng')} onChange={(e) => setF({ ...f, goal: e.target.value })} /></Field>
+        <Field label={t('Địa chỉ')} className="span-2"><Input maxLength={255} autoComplete="street-address" value={f.address} placeholder={t('Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành')} onChange={(e) => setF({ ...f, address: e.target.value })} /></Field>
+        <Field label={t('Huấn luyện viên')} className="span-2" hint={data.trainerName ? undefined : t('Quản lý phòng tập sẽ phân công huấn luyện viên cho bạn')}><Input disabled value={data.trainerName ?? t('Chưa được phân công huấn luyện viên')} /></Field>
       </div>
     </Card>
   );
