@@ -115,3 +115,38 @@ Hướng tham khảo: Nike, Gymshark. Mạnh, gọn, nhiều khoảng trống, c
 - **Thẻ HLV** `.trainer-card`: vạch nghiêng như thẻ gói, số hội viên phụ trách cỡ lớn; HLV phụ trách nhiều hội viên nhất có nhãn "Nhiều hội viên nhất" và viền sáng.
 - Nhấc thẻ dùng thuộc tính `translate` (không dùng `transform`) vì `.stat` có animation xuất hiện giữ lại `transform`.
 - Mọi chuyển động trên tắt khi bật "giảm chuyển động".
+
+## 11. Động lực tập luyện: vòng hoạt động, huy hiệu, dải giờ
+
+Mỗi nhóm người dùng có một mục tiêu giao diện riêng:
+- **Hội viên** cần động lực để quay lại tập, theo kiểu Apple Fitness và Nike Run Club.
+- **HLV** cần thấy nhịp làm việc trong ngày, theo kiểu Strava.
+- **Quản lý** cần đọc nhanh sức khoẻ phòng tập.
+
+Thành phần chung nằm ở `components/motivation.tsx` và `motivation.css`.
+
+- **Vòng hoạt động** `ActivityRings`: tối đa 3 vòng lồng nhau, màu `--ring-1` (xanh GymFlow), `--ring-2` (`--info`), `--ring-3` (`--warning`).
+  - Vòng tự vẽ khi xuất hiện. Vòng đầy thì phát sáng.
+  - Vượt mục tiêu thì vòng dừng ở 100%, con số thật ghi bên cạnh.
+  - Hội viên, theo tuần hiện tại:
+    - số buổi hoàn thành trên số buổi đã xếp;
+    - phút vận động, lấy từ nhật ký buổi tập (không có thì tính theo giờ buổi), so với mục tiêu 150 phút của WHO;
+    - chuỗi tuần, so với mốc tiếp theo (2, 4, 8, 12, 26, 52 tuần).
+  - Quản lý: tỉ lệ hội viên có gói, tỉ lệ hội viên đang hoạt động, doanh thu so với tháng trước. Không tự đặt chỉ tiêu.
+- **Huy hiệu** `achievements()`: tính hoàn toàn từ dữ liệu tiến độ có sẵn, không lưu thêm ở backend.
+  - Nhóm huy hiệu:
+    - số buổi tập: 1, 10, 25, 50, 100;
+    - chuỗi tuần: 2, 4, 8, 12;
+    - phút tập: 600, 3.000;
+    - 10.000 kcal;
+    - ghi cân nặng 4 lần;
+    - chuyên cần 80% (chỉ tính khi đã có ít nhất 4 tuần được xếp lịch).
+  - Huy chương hình lục giác, 4 hạng: đồng, bạc, vàng, xanh GymFlow.
+  - Huy hiệu chưa đạt: khoá, màu xám, có thanh tiến độ và ghi "còn bao nhiêu".
+  - Tổng quan hội viên chỉ hiện huy hiệu cao nhất và 2 huy hiệu sắp đạt. Trang Tiến độ hiện đủ.
+- **Nhịp 8 tuần** `WeekHeat`: 8 ô, đậm dần theo tỉ lệ buổi hoàn thành của tuần. Tuần đi đủ dùng nền `--grad-go`.
+- **Dải giờ trong ngày** `DayTimeline` (HLV):
+  - Trục từ `GYM_OPEN` đến `GYM_CLOSE`. Mỗi buổi là một khối màu theo trạng thái, giống `.ev` của lịch tuần.
+  - Vạch đỏ nhấp nháy là giờ hiện tại. Bấm khối thì mở chi tiết buổi.
+- Thẻ "Tỉ lệ đi tập" của HLV dùng `Stat highlight` khi đạt từ 80%.
+- Nhấc thẻ dùng `translate`. Mọi chuyển động tắt khi bật "giảm chuyển động".

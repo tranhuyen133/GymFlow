@@ -1,0 +1,105 @@
+/* ---------- Động lực tập luyện: vòng hoạt động, huy hiệu, nhịp 8 tuần, dải giờ của HLV ----------
+   Màu lấy từ theme (sáng/tối). Chuyển động tắt khi bật "giảm chuyển động" (cuối file). */
+
+/* ----- Vòng hoạt động (3 vòng lồng nhau) ----- */
+.act-rings { --ring-1: var(--primary-bright); --ring-2: var(--info); --ring-3: var(--warning);
+  display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.act-rings svg { flex: none; overflow: visible; }
+.ar-track { fill: none; stroke: color-mix(in srgb, var(--c) 16%, transparent); stroke-width: 10; }
+.ar-arc {
+  fill: none; stroke: var(--c); stroke-width: 10; stroke-linecap: round;
+  stroke-dashoffset: var(--off); animation: arDraw 1.2s var(--d, 0.15s) var(--ease-out) both;
+}
+.act-rings g.full .ar-arc { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 70%, transparent)); }
+@keyframes arDraw { from { stroke-dashoffset: var(--len); } }
+
+.ar-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; min-width: 170px; flex: 1; }
+.ar-legend li { display: grid; grid-template-columns: 12px 1fr auto; align-items: center; gap: 10px; }
+.ar-legend i { width: 12px; height: 12px; border-radius: 4px; background: var(--c); transform: skewX(var(--slant)); }
+.ar-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.ar-legend b { font-size: 20px; font-weight: 900; letter-spacing: -0.02em; color: var(--c); }
+.ar-legend .ar-done { display: flex; gap: 6px; font-size: 12px; font-weight: 800; color: var(--primary-bright); padding-top: 4px; border-top: 1px dashed var(--hairline); }
+
+/* ----- Huy hiệu ----- */
+.badge-shelf ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.badge-shelf.compact ul { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.bs-count { margin: 0 0 10px; }
+.bs-item {
+  position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--hairline-soft);
+  transition: translate 0.4s var(--ease-spring), border-color 0.25s;
+}
+.bs-item.earned:hover { translate: 0 -3px; border-color: var(--line-strong); }
+.bs-item.locked { opacity: 0.85; }
+.bs-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.bs-text b { font-size: 14px; font-weight: 800; }
+.bs-meter { display: block; height: 4px; border-radius: 999px; background: var(--chart-track); overflow: hidden; margin-top: 3px; }
+.bs-meter i { display: block; height: 100%; border-radius: inherit; background: var(--grad-go); animation: meterIn 1s var(--ease-out) both; }
+.bs-check {
+  position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 999px;
+  background: var(--primary); color: var(--on-primary);
+}
+
+/* Huy chương: lục giác, 4 hạng (đồng, bạc, vàng, xanh GymFlow) */
+.medal {
+  --m1: #c98a4b; --m2: #7a4a1f;
+  flex: none; display: grid; place-items: center; width: 46px; height: 52px; color: #fff;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: linear-gradient(150deg, var(--m1), var(--m2));
+}
+.medal.tier-2 { --m1: #d9dde3; --m2: #7d8692; color: #1d2126; }
+.medal.tier-3 { --m1: #ffd45c; --m2: #b47a00; color: #2b1d00; }
+.medal.tier-4 { --m1: #3cff8f; --m2: #00873a; color: #02170a; }
+.medal.earned { animation: medalIn 0.6s var(--ease-spring) both; }
+.medal.locked { --m1: var(--surface-2); --m2: var(--hairline); color: var(--faint); }
+.bs-item.earned .medal { box-shadow: none; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25)); }
+@keyframes medalIn { from { transform: scale(0.6) rotate(-12deg); opacity: 0; } }
+
+/* ----- Nhịp 8 tuần ----- */
+.week-heat { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.wh-cell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 58px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--hairline-soft); transition: translate 0.35s var(--ease-spring);
+}
+.wh-cell:hover { translate: 0 -2px; }
+.wh-cell b { font-size: 18px; font-weight: 900; line-height: 1; }
+.wh-cell span { font-size: 10px; color: var(--faint); font-weight: 700; }
+.wh-cell.lv-1 { background: color-mix(in srgb, var(--primary) 18%, var(--surface)); }
+.wh-cell.lv-2 { background: color-mix(in srgb, var(--primary) 34%, var(--surface)); }
+.wh-cell.lv-3 { background: color-mix(in srgb, var(--primary) 55%, var(--surface)); border-color: transparent; }
+.wh-cell.lv-4 { background: var(--grad-go); border-color: transparent; color: var(--on-primary); }
+.wh-cell.lv-3 span, .wh-cell.lv-4 span { color: inherit; opacity: 0.8; }
+
+/* ----- Dải giờ trong ngày (HLV) ----- */
+.day-line { padding: 26px 4px 6px; }
+.dl-track { position: relative; height: 46px; border-radius: 12px; background: var(--surface); border: 1px solid var(--hairline-soft); }
+.dl-tick { position: absolute; top: -22px; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: var(--faint); }
+.dl-tick::after { content: ''; position: absolute; left: 50%; top: 18px; width: 1px; height: 50px; background: var(--hairline-soft); }
+.dl-block {
+  --c: var(--info);
+  position: absolute; top: 6px; bottom: 6px; z-index: 1; min-width: 18px; padding: 0 6px; border: 0; border-radius: 8px; cursor: pointer;
+  background: color-mix(in srgb, var(--c) 28%, var(--surface-2)); border-left: 3px solid var(--c);
+  color: var(--ink); font: inherit; font-size: 11px; font-weight: 800; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  transition: translate 0.3s var(--ease-spring), box-shadow 0.3s;
+}
+.dl-block:hover, .dl-block:focus-visible { translate: 0 -2px; box-shadow: var(--shadow-float); z-index: 2; }
+.dl-block.COMPLETED { --c: var(--primary-bright); }
+.dl-block.MISSED { --c: var(--bad); }
+.dl-block.CANCELLED { --c: var(--faint); opacity: 0.6; text-decoration: line-through; }
+.dl-now { position: absolute; top: -6px; bottom: -6px; width: 2px; z-index: 3; background: var(--bad); border-radius: 2px; pointer-events: none; }
+.dl-now::before { content: ''; position: absolute; top: -4px; left: -4px; width: 10px; height: 10px; border-radius: 999px; background: var(--bad); animation: dlPulse 1.8s ease-out infinite; }
+@keyframes dlPulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--bad) 60%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+
+@media (max-width: 640px) {
+  .act-rings { justify-content: center; }
+  .week-heat { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .dl-tick:nth-of-type(even) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ar-arc, .medal.earned, .bs-meter i { animation: none; }
+  .dl-now::before { animation: none; }
+  .bs-item, .wh-cell, .dl-block { transition: none; }
+  .bs-item.earned:hover, .wh-cell:hover, .dl-block:hover, .dl-block:focus-visible { translate: none; }
+}
+.dl-wrap { padding: 4px 20px 14px; border-bottom: 1px solid var(--hairline-soft); }
