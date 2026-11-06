@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
-import type { ArticleSummary, MembershipPlan } from '../api/types';
+import { FORUM_CATEGORY_VI, type ForumPage, type TopicSummary } from '../api/forum';
+import type { MembershipPlan } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { Brand } from '../components/Brand';
 import { Icon, type IconName } from '../components/Icon';
 import { Button } from '../components/ui';
-import { articleCategoryLabel, durationLabel, fmtMoney } from '../lib/format';
+import { durationLabel, fmtMoney, relativeTime } from '../lib/format';
 import { useAsync } from '../lib/hooks';
 import { SITE } from '../site';
 import { ThemeToggle } from '../theme/ThemeToggle';
@@ -61,8 +62,8 @@ export default function Landing() {
   const { user } = useAuth();
   const plans = useAsync(() => api.get<MembershipPlan[]>('/plans/public'), []);
   const planAction = publicPlanAction(user?.role);
-  const articles = useAsync(() => api.get<ArticleSummary[]>('/articles/public', { q: '', category: '' }), []);
-  const latest = articles.data?.slice(0, 3) ?? [];
+  const topics = useAsync(() => api.get<ForumPage<TopicSummary>>('/forum/topics', { page: 0, size: 3 }), []);
+  const latest = topics.data?.content ?? [];
   const best = plans.data && plans.data.length > 2 ? plans.data[1].id : null;
   const [menu, setMenu] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -81,7 +82,7 @@ export default function Landing() {
       io.observe(el);
     });
     return () => io.disconnect();
-  }, [plans.data, articles.data]);
+  }, [plans.data, topics.data]);
 
   // Ánh sáng đi theo con trỏ trên các thẻ .spot (lấy ý tưởng "cursor light" của libraries.dev/metal)
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
@@ -113,7 +114,7 @@ export default function Landing() {
           <a href="#programs">{t('Chương trình')}</a>
           <a href="#benefits">{t('Quyền lợi')}</a>
           <a href="#plans">{t('Bảng giá')}</a>
-          <Link to="/knowledge">{t('Kiến thức')}</Link>
+          <Link to="/forum">{t('Diễn đàn')}</Link>
           <a href="#faq">{t('Hỏi đáp')}</a>
           <a href="#contact">{t('Hỗ trợ')}</a>
           <div className="nav-cta">
@@ -285,30 +286,30 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="section" id="knowledge">
+      <section className="section" id="forum">
         <div className="row between row-wrap" style={{ gap: 12, alignItems: 'end' }}>
           <div>
-            <div className="kicker">{t('Kho kiến thức')}</div>
-            <h2 className="display-sm">{t('Ăn, ngủ, tập đúng cách.')}</h2>
-            <p className="muted mt-8">{t('Dinh dưỡng, nước uống, giấc ngủ, khởi động và phòng chấn thương – mỗi bài đều ghi nguồn tham khảo.')}</p>
+            <div className="kicker">{t('Cộng đồng')}</div>
+            <h2 className="display-sm">{t('Hỏi gì cũng có người trả lời.')}</h2>
+            <p className="muted mt-8">{t('Hội viên chia sẻ kinh nghiệm, huấn luyện viên góp ý trực tiếp ngay trong diễn đàn.')}</p>
           </div>
-          <Link className="btn btn-secondary" to="/knowledge"><span>{t('Xem tất cả')}</span><Icon name="arrowRight" /></Link>
+          <Link className="btn btn-secondary" to={user ? '/community' : '/forum'}><span>{t('Vào diễn đàn')}</span><Icon name="arrowRight" /></Link>
         </div>
-        {articles.loading && <div className="article-grid mt-24">{[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 150 }} />)}</div>}
+        {topics.loading && <div className="article-grid mt-24">{[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 150 }} />)}</div>}
         {latest.length > 0 && (
           <div className="article-grid mt-24">
-            {latest.map((a) => (
-              <Link key={a.id} to={`/knowledge/${a.slug}`} className="article-card spot reveal">
-                <span className="kicker">{articleCategoryLabel[a.category]}</span>
-                <h3>{a.title}</h3>
-                <p className="small muted">{a.summary}</p>
-                <span className="link-btn small">{t('Đọc bài')} <Icon name="arrowRight" size={14} /></span>
+            {latest.map((x) => (
+              <Link key={x.id} to={`${user ? '/community' : '/forum'}/${x.id}`} className="article-card spot reveal">
+                <span className="kicker">{t(FORUM_CATEGORY_VI[x.category])}</span>
+                <h3>{x.title}</h3>
+                <p className="small muted">{x.excerpt}</p>
+                <span className="link-btn small">{t('{n} trả lời', { n: x.replyCount })} · {relativeTime(x.lastActivityAt)} <Icon name="arrowRight" size={14} /></span>
               </Link>
             ))}
           </div>
         )}
-        {!articles.loading && latest.length === 0 && (
-          <p className="muted small mt-16">{t('Các bài viết đang được quản lý phòng tập duyệt nội dung và nguồn, sẽ sớm xuất hiện tại đây.')}</p>
+        {!topics.loading && latest.length === 0 && (
+          <p className="muted small mt-16">{t('Chưa có chủ đề nào. Đăng nhập để mở đầu cuộc trò chuyện.')}</p>
         )}
       </section>
 
@@ -356,7 +357,7 @@ export default function Landing() {
           </div>
           <div className="stack-sm small">
             <b>{t('Pháp lý')}</b>
-            <Link className="muted" to="/knowledge">{t('Kho kiến thức')}</Link>
+            <Link className="muted" to="/forum">{t('Diễn đàn')}</Link>
             <Link className="muted" to="/policies#terms">{t('Điều khoản sử dụng')}</Link>
             <Link className="muted" to="/policies#privacy">{t('Chính sách bảo mật')}</Link>
           </div>

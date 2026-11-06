@@ -14,7 +14,7 @@ import Subscriptions from './pages/admin/Subscriptions';
 import Trainers from './pages/admin/Trainers';
 import Users from './pages/admin/Users';
 import ForgotPassword from './pages/ForgotPassword';
-import { KnowledgeArticle, KnowledgeList } from './pages/Knowledge';
+import { ForumList, ForumTopicPage } from './pages/Forum';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import MemberDashboard from './pages/member/MemberDashboard';
@@ -80,17 +80,22 @@ export default function App() {
       <Route path="/register" element={loading ? <Splash /> : user ? <Navigate to="/dashboard" replace /> : <Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/policies" element={<Policies />} />
-      <Route path="/knowledge" element={<KnowledgeList />} />
-      <Route path="/knowledge/:slug" element={<KnowledgeArticle />} />
+      <Route path="/forum" element={<ForumList />} />
+      <Route path="/forum/:id" element={<ForumTopicPage />} />
+      {/* Kho kiến thức đã thay bằng Diễn đàn: giữ đường dẫn cũ để link / bookmark cũ không ra 404 */}
+      <Route path="/knowledge/*" element={<Navigate to="/forum" replace />} />
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
         <Route path="/dashboard" element={<Dashboard />} />
+        {/* Gõ nhầm kiểu /dashboard/login thì về trang tổng quan (chưa đăng nhập sẽ được chuyển sang đăng nhập trước) */}
+        <Route path="/dashboard/*" element={<Navigate to="/dashboard" replace />} />
         <Route path="/me/schedule" element={<Only roles={MEMBER}><Schedules /></Only>} />
         <Route path="/me/plan" element={<Only roles={MEMBER}><MyPlan /></Only>} />
         <Route path="/me/progress" element={<Only roles={MEMBER}><MyProgress /></Only>} />
         <Route path="/me/journey" element={<Only roles={MEMBER}><MyJourney /></Only>} />
         <Route path="/me/packages" element={<Only roles={MEMBER}><MyPackages /></Only>} />
-        <Route path="/me/knowledge" element={<Only roles={MEMBER}><KnowledgeList embedded /></Only>} />
-        <Route path="/me/knowledge/:slug" element={<Only roles={MEMBER}><KnowledgeArticle embedded /></Only>} />
+        <Route path="/community" element={<ForumList embedded />} />
+        <Route path="/community/:id" element={<ForumTopicPage embedded />} />
+        <Route path="/me/knowledge/*" element={<Navigate to="/community" replace />} />
         <Route path="/schedules" element={<Only roles={STAFF}><Schedules /></Only>} />
         <Route path="/members" element={<Only roles={STAFF}><Members /></Only>} />
         <Route path="/members/:id" element={<Only roles={STAFF}><MemberDetail /></Only>} />

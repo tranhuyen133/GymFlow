@@ -62,6 +62,15 @@ export const ACTION_EN: Record<string, string> = {
   WEIGHT_UPDATE: 'Weight edited',
   WEIGHT_DELETE: 'Weight deleted',
   SYSTEM_SEED: 'Data seeded',
+  FORUM_HIDE: 'Forum post hidden',
+  FORUM_SHOW: 'Forum post shown',
+  FORUM_PIN: 'Topic pinned',
+  FORUM_UNPIN: 'Topic unpinned',
+  FORUM_LOCK: 'Topic locked',
+  FORUM_UNLOCK: 'Topic unlocked',
+  FORUM_DELETE: 'Forum post deleted',
+  FORUM_REPORT: 'Post reported',
+  FORUM_REPORT_RESOLVE: 'Report handled',
 };
 
 export const EN: Record<string, string> = {
