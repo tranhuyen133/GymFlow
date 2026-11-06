@@ -1,6 +1,7 @@
 package com.gymflow.service;
 
 import com.gymflow.common.ApiException;
+import com.gymflow.common.GymHours;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.repository.TrainerRepository;
@@ -197,6 +198,9 @@ public class ScheduleService {
         long minutes = Duration.between(start, end).toMinutes();
         if (minutes < MIN_MINUTES || minutes > MAX_MINUTES) {
             throw ApiException.badRequest("Buổi tập dài từ " + MIN_MINUTES + " đến " + MAX_MINUTES + " phút");
+        }
+        if (!GymHours.contains(start.toLocalTime(), end.toLocalTime())) {
+            throw ApiException.badRequest("Phòng tập mở cửa " + GymHours.LABEL + ", buổi tập phải nằm trong giờ này");
         }
         if (mustBeFuture && start.isBefore(LocalDateTime.now(clock))) throw ApiException.badRequest("Không xếp lịch vào thời điểm đã qua");
     }

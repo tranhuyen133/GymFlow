@@ -119,3 +119,95 @@ export function useLiveErrors<K extends string>(rules: Rules<K>, instant: Partia
     },
   };
 }
+
+// ---------- Giáo án & bài tập (trùng Dtos.TITLE_RULE, REPS_RULE, TEXT_RULE, NAME_EN_RULE) ----------
+
+/** Tên phải có ít nhất một chữ cái; được kèm số và dấu câu thường gặp. "12345" bị từ chối, "Full body 3 buổi/tuần" hợp lệ. */
+export const TITLE_RE = /^(?=.*\p{L})[\p{L}\p{M}\d .,:;\/()+&#'’–-]+$/u;
+/** Số lần: 10 · 10-12 · 45s */
+export const REPS_RE = /^\d{1,3}(\s*-\s*\d{1,3})?\s*[sS]?$/;
+/** Ô chữ tự do (dụng cụ, tên khác…): rỗng hoặc có chữ cái, không chỉ toàn số/ký hiệu. */
+export const TEXT_RE = /^$|\p{L}/u;
+export const NAME_EN_RE = /^$|^[A-Za-z][A-Za-z0-9 ()'’\/,.&+-]*$/;
+
+function checkTitle(s: string, what: string, min: number, max: number, example: string) {
+  const v = s.trim().replace(/\s+/g, ' ');
+  if (!v) return `Vui lòng nhập tên ${what}`;
+  if (v.length < min || v.length > max) return `Tên ${what} từ ${min} đến ${max} ký tự`;
+  return TITLE_RE.test(v) ? undefined : `Tên ${what} phải có chữ cái (có thể kèm số), VD: ${example}`;
+}
+export const checkPlanName = (s: string) => checkTitle(s, 'giáo án', 3, 120, 'Full body 3 buổi/tuần');
+export const checkExerciseName = (s: string) => checkTitle(s, 'bài tập', 2, 120, 'Squat thanh đòn');
+
+export type ItemField = 'sets' | 'reps' | 'weightKg' | 'restSeconds' | 'durationMinutes';
+type ItemLike = { sets: number; reps: string; weightKg: number | null; restSeconds: number | null; durationMinutes: number | null };
+
+/** Lỗi của một dòng bài trong giáo án; object rỗng = hợp lệ. */
+export function itemProblems(i: ItemLike): Partial<Record<ItemField, string>> {
+  const p: Partial<Record<ItemField, string>> = {};
+  if (!Number.isInteger(i.sets) || i.sets < 1 || i.sets > 20) p.sets = 'Số hiệp từ 1 đến 20';
+  if (i.durationMinutes != null) {
+    if (!Number.isInteger(i.durationMinutes) || i.durationMinutes < 1 || i.durationMinutes > 300) p.durationMinutes = 'Thời lượng từ 1 đến 300 phút';
+  } else {
+    const r = i.reps.trim();
+    const m = r.match(/^(\d{1,3})(?:\s*-\s*(\d{1,3}))?/);
+    if (!r) p.reps = 'Nhập số lần (VD: 10-12)';
+    else if (!REPS_RE.test(r)) p.reps = 'Số lần ghi dạng 10, 10-12 hoặc 45s';
+    else if (m && Number(m[1]) === 0) p.reps = 'Số lần phải lớn hơn 0';
+    else if (m && m[2] && Number(m[2]) <= Number(m[1])) p.reps = 'Khoảng số lần: số đầu phải nhỏ hơn số sau (VD: 8-12)';
+  }
+  if (i.weightKg != null && (Number.isNaN(i.weightKg) || i.weightKg < 0 || i.weightKg > 500)) p.weightKg = 'Mức tạ từ 0 đến 500 kg';
+  if (i.restSeconds != null && (!Number.isInteger(i.restSeconds) || i.restSeconds < 0 || i.restSeconds > 900)) p.restSeconds = 'Nghỉ từ 0 đến 900 giây';
+  return p;
+}
+
+// ---------- Duyệt bài tập (trùng ExerciseChecklist.java) ----------
+
+export const MIN_DESCRIPTION = 20;
+export const MIN_STEPS = 2;
+export const countSteps = (s: string | null | undefined) => (s ?? '').split('\n').filter((l) => l.trim()).length;
+
+type Reviewable = {
+  description: string | null; instructions: string | null; safetyNotes: string | null;
+  location: string | null; goals: readonly string[]; sourceCount: number;
+};
+export interface CheckItem { id: string; label: string; ok: boolean; hint?: string }
+
+/** Các điều kiện máy kiểm tra được; backend từ chối duyệt nếu còn mục nào chưa đạt. */
+export function autoChecks(e: Reviewable): CheckItem[] {
+  const desc = (e.description ?? '').trim().length;
+  const steps = countSteps(e.instructions);
+  return [
+    { id: 'source', label: 'Có ít nhất 1 nguồn tham khảo', ok: e.sourceCount > 0, hint: 'Tab "Nguồn và giấy phép"' },
+    { id: 'desc', label: `Mô tả ngắn từ ${MIN_DESCRIPTION} ký tự`, ok: desc >= MIN_DESCRIPTION, hint: `hiện ${desc} ký tự` },
+    { id: 'steps', label: `Hướng dẫn từ ${MIN_STEPS} bước (mỗi bước một dòng)`, ok: steps >= MIN_STEPS, hint: `hiện ${steps} bước` },
+    { id: 'safety', label: 'Có lưu ý an toàn', ok: !!(e.safetyNotes ?? '').trim() },
+    { id: 'location', label: 'Đã chọn nơi tập', ok: !!e.location },
+    { id: 'goals', label: 'Đã chọn mục tiêu', ok: e.goals.length > 0 },
+  ];
+}
+
+/** Những việc chỉ người duyệt làm được: mở trang nguồn và đọc đối chiếu. */
+export const MANUAL_CHECKS: CheckItem[] = [
+  { id: 'match', label: 'Đã mở trang nguồn và nội dung khớp với nguồn', ok: false },
+  { id: 'numbers', label: 'Không có số liệu (liều, số lần, calo…) mà nguồn không nêu', ok: false },
+  { id: 'own', label: 'Nội dung tự viết lại, không chép nguyên văn nguồn có bản quyền', ok: false },
+];
+
+type ExerciseFields = { name: string; nameEn: string; aliases: string; equipment: string; secondaryMuscles: string; videoUrl: string; goals: readonly string[]; sourceIds: readonly number[] };
+
+/** Lỗi theo ô của form bài tập; trùng ràng buộc của Dtos.ExerciseRequest. */
+export function exerciseFieldErrors(f: ExerciseFields): Record<string, string> {
+  const v: Record<string, string> = {};
+  const nameErr = checkExerciseName(f.name);
+  if (nameErr) v.name = nameErr;
+  if (!NAME_EN_RE.test(f.nameEn.trim())) v.nameEn = 'Tên tiếng Anh chỉ gồm chữ không dấu, số và khoảng trắng, bắt đầu bằng chữ';
+  if (!TEXT_RE.test(f.aliases.trim())) v.aliases = 'Tên gọi khác phải có chữ';
+  if (!TEXT_RE.test(f.equipment.trim())) v.equipment = 'Dụng cụ phải có chữ, VD: Tạ đơn';
+  if (!TEXT_RE.test(f.secondaryMuscles.trim())) v.secondaryMuscles = 'Cơ phụ trợ phải có chữ, VD: Mông, lưng dưới';
+  const url = f.videoUrl.trim();
+  if (url && !/^https?:\/\/\S+\.\S+$/.test(url)) v.videoUrl = 'Link video phải là địa chỉ web đầy đủ, bắt đầu bằng http(s)://';
+  if (f.goals.length > 5) v.goals = 'Tối đa 5 mục tiêu';
+  if (f.sourceIds.length > 20) v.sourceIds = 'Tối đa 20 nguồn';
+  return v;
+}

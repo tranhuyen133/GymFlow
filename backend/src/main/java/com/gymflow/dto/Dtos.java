@@ -22,6 +22,15 @@ public final class Dtos {
     private static final String PHONE_MSG = "Số điện thoại không hợp lệ";
     private static final String NAME_RULE = "^[\\p{L}\\p{M}][\\p{L}\\p{M} .'-]*$";
     private static final String NAME_MSG = "Họ tên chỉ gồm chữ cái và khoảng trắng";
+    /** Tên giáo án / bài tập: phải có chữ cái (không chỉ gồm số), cho phép số và dấu câu thường gặp. Trùng validation.ts. */
+    private static final String TITLE_RULE = "^(?=.*\\p{L})[\\p{L}\\p{M}\\d .,:;/()+&#'’–-]+$";
+    private static final String PLAN_NAME_MSG = "Tên giáo án phải có chữ cái (có thể kèm số), VD: Full body 3 buổi/tuần";
+    private static final String EXERCISE_NAME_MSG = "Tên bài tập phải có chữ cái (có thể kèm số), VD: Squat thanh đòn";
+    /** Để trống hoặc có ít nhất một chữ cái (dụng cụ, cơ phụ trợ, tên gọi khác). */
+    private static final String TEXT_RULE = "^$|(?s).*\\p{L}.*";
+    private static final String NAME_EN_RULE = "^$|^[A-Za-z][A-Za-z0-9 ()'’/,.&+-]*$";
+    /** Số lần: 10, 10-12, 45s (giây). Trùng PlanEditor.tsx. */
+    private static final String REPS_RULE = "^\\d{1,3}(\\s*-\\s*\\d{1,3})?\\s*[sS]?$";
 
     // ===================== Auth =====================
     public record LoginRequest(
@@ -233,18 +242,19 @@ public final class Dtos {
 
     // ===================== Exercise =====================
     public record ExerciseRequest(
-            @NotBlank(message = "Vui lòng nhập tên bài tập") @Size(max = 120) String name,
+            @NotBlank(message = "Vui lòng nhập tên bài tập") @Size(min = 2, max = 120, message = "Tên bài tập từ 2 đến 120 ký tự")
+            @Pattern(regexp = TITLE_RULE, message = EXERCISE_NAME_MSG) String name,
             @NotNull(message = "Vui lòng chọn nhóm cơ") MuscleGroup muscleGroup,
-            @Size(max = 60) String equipment,
+            @Size(max = 60, message = "Dụng cụ tối đa 60 ký tự") @Pattern(regexp = TEXT_RULE, message = "Dụng cụ phải có chữ, VD: Tạ đơn") String equipment,
             @NotNull(message = "Vui lòng chọn cấp độ") Level level,
-            @Size(max = 1000) String description,
-            @Size(max = 2000) String instructions,
-            @Pattern(regexp = "^$|^https?://.+", message = "Link video phải bắt đầu bằng http(s)://") @Size(max = 255) String videoUrl,
-            @Size(max = 120) String nameEn,
-            @Size(max = 255) String aliases,
-            @Size(max = 255) String secondaryMuscles,
+            @Size(max = 1000, message = "Mô tả tối đa 1000 ký tự") String description,
+            @Size(max = 2000, message = "Hướng dẫn tối đa 2000 ký tự") String instructions,
+            @Pattern(regexp = "^$|^https?://[^\\s]+\\.[^\\s]+$", message = "Link video phải là địa chỉ web đầy đủ, bắt đầu bằng http(s)://") @Size(max = 255) String videoUrl,
+            @Size(max = 120) @Pattern(regexp = NAME_EN_RULE, message = "Tên tiếng Anh chỉ gồm chữ không dấu, số và khoảng trắng") String nameEn,
+            @Size(max = 255) @Pattern(regexp = TEXT_RULE, message = "Tên gọi khác phải có chữ") String aliases,
+            @Size(max = 255) @Pattern(regexp = TEXT_RULE, message = "Cơ phụ trợ phải có chữ, VD: Mông, lưng dưới") String secondaryMuscles,
             ExerciseLocation location,
-            List<ExerciseGoal> goals,
+            @Size(max = 5) List<ExerciseGoal> goals,
             @Size(max = 500) String breathing,
             @Size(max = 2000) String commonMistakes,
             @Size(max = 2000) String safetyNotes,
@@ -252,10 +262,18 @@ public final class Dtos {
             @Size(max = 255) String suggestedDose,
             ContentOrigin contentOrigin,
             /** null = giữ nguyên nguồn đang gắn; danh sách rỗng = bỏ hết nguồn */
-            List<Long> sourceIds) {
+            @Size(max = 20, message = "Tối đa 20 nguồn") List<Long> sourceIds) {
     }
 
     public record HiddenRequest(@NotNull Boolean hidden) {
+    }
+
+    /** Duyệt loạt: chỉ bài đạt đủ checklist được duyệt, bài thiếu được trả về kèm lý do. */
+    public record BulkApproveRequest(@NotEmpty(message = "Chọn ít nhất một bài") @Size(max = 100, message = "Tối đa 100 bài mỗi lần") List<Long> ids,
+                                     @Size(max = 500, message = "Ghi chú tối đa 500 ký tự") String note) {
+    }
+
+    public record BulkApproveResponse(int approved, List<String> skipped) {
     }
 
     /** Chỉ ADMIN. NEEDS_REVIEW bắt buộc kèm ghi chú để người biên soạn biết cần sửa gì. */
@@ -318,8 +336,9 @@ public final class Dtos {
             @NotNull @Min(value = 1, message = "Thứ từ 1 đến 7") @Max(value = 7, message = "Thứ từ 1 đến 7") Integer dayOfWeek,
             Integer sortOrder,
             @NotNull(message = "Nhập số hiệp") @Min(value = 1, message = "Tối thiểu 1 hiệp") @Max(value = 20, message = "Tối đa 20 hiệp") Integer sets,
-            @NotBlank(message = "Nhập số lần (VD: 10-12)") @Size(max = 20) String reps,
-            @DecimalMin(value = "0", message = "Mức tạ không âm") Double weightKg,
+            @NotBlank(message = "Nhập số lần (VD: 10-12)") @Size(max = 20)
+            @Pattern(regexp = REPS_RULE, message = "Số lần ghi dạng 10, 10-12 hoặc 45s") String reps,
+            @DecimalMin(value = "0", message = "Mức tạ không âm") @DecimalMax(value = "500", message = "Mức tạ tối đa 500 kg") Double weightKg,
             @Min(value = 0, message = "Nghỉ không âm") @Max(value = 900, message = "Nghỉ tối đa 900 giây") Integer restSeconds,
             @Min(value = 1, message = "Tối thiểu 1 phút") @Max(value = 300, message = "Tối đa 300 phút") Integer durationMinutes,
             @Size(max = 255) String note) {
@@ -327,7 +346,8 @@ public final class Dtos {
 
     public record WorkoutPlanRequest(
             @NotNull(message = "Vui lòng chọn hội viên") Long memberId,
-            @NotBlank(message = "Vui lòng nhập tên giáo án") @Size(max = 120) String name,
+            @NotBlank(message = "Vui lòng nhập tên giáo án") @Size(min = 3, max = 120, message = "Tên giáo án từ 3 đến 120 ký tự")
+            @Pattern(regexp = TITLE_RULE, message = PLAN_NAME_MSG) String name,
             @Size(max = 255) String goal,
             @NotNull(message = "Chọn ngày bắt đầu") LocalDate startDate,
             @NotNull(message = "Chọn ngày kết thúc") LocalDate endDate,

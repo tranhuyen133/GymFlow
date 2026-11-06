@@ -57,6 +57,7 @@ const actionLabel_VI: Record<string, string> = {
   USER_UNLOCK: 'Mở khoá tài khoản', USER_RESET_PASSWORD: 'Cấp mật khẩu tạm', MEMBER_CREATE: 'Thêm hội viên', MEMBER_UPDATE: 'Sửa hội viên',
   MEMBER_SELF_UPDATE: 'Hội viên sửa hồ sơ', MEMBER_STATUS: 'Đổi trạng thái hội viên', MEMBER_ASSIGN_TRAINER: 'Phân công HLV',
   TRAINER_CREATE: 'Thêm HLV', TRAINER_UPDATE: 'Sửa HLV', TRAINER_ACTIVATE: 'Kích hoạt HLV', TRAINER_DEACTIVATE: 'Ngừng HLV', TRAINER_SHIFTS: 'Cập nhật ca làm',
+  MEMBER_TIME_PREFS: 'Hội viên cập nhật giờ tập', EXERCISE_REVIEW_BULK: 'Duyệt loạt bài tập',
   PLAN_CREATE: 'Thêm gói tập', PLAN_UPDATE: 'Sửa gói tập', PLAN_ACTIVATE: 'Mở bán gói', PLAN_DEACTIVATE: 'Ngừng bán gói', PLAN_DELETE: 'Xoá gói tập',
   SUBSCRIPTION_CREATE: 'Đăng ký gói', SUBSCRIPTION_RENEW: 'Gia hạn gói', SUBSCRIPTION_CANCEL: 'Huỷ gói',
   PACKAGE_REQUEST_CREATE: 'Hội viên gửi đơn đăng ký gói', PACKAGE_REQUEST_CANCEL: 'Hội viên huỷ đơn đăng ký gói',

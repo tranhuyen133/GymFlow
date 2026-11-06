@@ -65,8 +65,39 @@ Không dùng `.display` trong khu ứng dụng; không dùng bảng/thẻ số l
 - Chỉ đổi **token** trong `:root[data-theme='light']` (`styles.css`). Thành phần mới phải dùng `var(--…)`, không viết mã màu cứng. Màu nhấn của biểu đồ, nhóm cơ, trạng thái giữ nguyên ở cả hai chế độ để người dùng nhận ra.
 - Ở chế độ sáng, màu xanh hành động đậm hơn (`#008a3a`) để chữ xanh trên nền trắng vẫn đủ tương phản.
 <!-- history SCRUM-170 -->
-<<<<<<< HEAD
 <!-- history SCRUM-193 -->
-=======
 <!-- history SCRUM-192 -->
->>>>>>> origin/develop
+
+## 9. Gói tập, ca làm, nhập liệu (PR #79)
+
+### Màu theo trạng thái
+- Xanh lá `--primary` = làm được / đạt; vàng `--warning` = cần chú ý nhưng vẫn lưu được; đỏ `--bad` = chặn lưu.
+- Xanh dương `--secondary` = thông tin, "Bạn đang dùng" (gói hiện tại của hội viên).
+- Không dùng màu làm tín hiệu duy nhất – luôn kèm icon hoặc chữ.
+- Số tiền, số ngày, giờ: `font-variant-numeric: tabular-nums` để cột số không nhảy.
+
+### Thẻ gói tập (`components/PlanCard.tsx`, `packages.css`)
+- Một thẻ dùng chung cho Quản lý › Gói tập, bảng giá trang chủ và Gói tập của hội viên; `compact` cho cột bên (xem trước khi sửa gói).
+- Giá lớn + giá quy đổi theo ngày/tháng + nhãn "Tiết kiệm x%" + quyền lợi có dấu tick.
+- `best` ("Phổ biến nhất", chọn tự động: tiết kiệm nhất trừ gói dài nhất) = viền sáng `.beam` + nhãn nền `--grad-go`.
+- `.beam` chỉ cho **một** thứ nổi bật nhất trên màn; `.beam-hover` khi chỉ muốn hiện lúc rê chuột.
+- Vạch nghiêng `--slant` mờ ở góc phải thẻ, đậm lên nhẹ khi rê chuột.
+
+### Chuyển động
+- Nhấc thẻ khi rê chuột: `translateY(-3px)` (thẻ thường) / `-6px` (thẻ gói), dùng `--ease-spring`.
+- Mờ dần, trượt vào: `--ease-out` `cubic-bezier(0.16, 1, 0.3, 1)`.
+- Số thay đổi (giá gói, số ngày còn lại): đổi `key` theo giá trị để chạy lại keyframe `priceIn` (trượt từ dưới lên).
+- Tất cả là CSS thuần, không thêm thư viện, tắt khi `prefers-reduced-motion: reduce`.
+
+### Hộp xác nhận
+- Dùng `Confirm` trong `components/ui.tsx` thay cho `window.confirm` – không dùng hộp thoại của trình duyệt trong ứng dụng.
+- Riêng đóng tab / tải lại trang thì trình duyệt tự hỏi qua `beforeunload` (chỉ khi thật sự có thay đổi so với bản đã lưu).
+
+### Khung giờ (`components/WeekSlots.tsx`)
+- Chọn khung giờ theo tuần cho ca HLV và giờ tập mong muốn của hội viên.
+- Giờ là ô chọn 24h bước 30 phút trong **05:00–22:00** (không dùng `input type="time"` vì một số máy hiện 12h).
+
+### Nhập liệu
+- Kiểm tra ở giao diện trùng với backend (`lib/validation.ts` ↔ `Dtos.java`, `lib/hours.ts` ↔ `GymHours.java`); backend vẫn kiểm tra lại.
+- Báo lỗi cạnh ô, nói rõ cách sửa kèm ví dụ ("Tên giáo án phải có chữ cái (có thể kèm số), VD: Full body 3 buổi/tuần").
+- Tên (giáo án, bài tập, gói) phải có ít nhất một chữ cái; được kèm số.

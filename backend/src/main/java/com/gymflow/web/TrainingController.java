@@ -53,6 +53,12 @@ public class TrainingController {
         return exerciseService.review(CurrentUser.get(), id, req);
     }
 
+    @PostMapping("/api/exercises/review/approve-many")
+    @PreAuthorize("hasRole('ADMIN')")
+    public BulkApproveResponse approveExercises(@Valid @RequestBody BulkApproveRequest req) {
+        return exerciseService.approveMany(CurrentUser.get(), req);
+    }
+
     @PostMapping("/api/exercises")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")

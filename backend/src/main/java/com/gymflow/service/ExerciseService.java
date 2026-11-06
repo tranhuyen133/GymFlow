@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -103,18 +104,49 @@ public class ExerciseService {
     public ExerciseResponse review(AuthUser user, Long id, ReviewRequest req) {
         Exercise e = load(id);
         String note = Mappers.blankToNull(req.note());
-        if (req.status() == ReviewStatus.APPROVED && e.getSources().isEmpty()) {
-            throw ApiException.badRequest("Bài tập cần ít nhất một nguồn tham khảo trước khi duyệt");
+        if (req.status() == ReviewStatus.APPROVED) {
+            if (e.getSources().isEmpty()) throw ApiException.badRequest("Bài tập cần ít nhất một nguồn tham khảo trước khi duyệt");
+            List<String> missing = ExerciseChecklist.missing(e);
+            if (!missing.isEmpty()) throw ApiException.badRequest("Chưa đủ điều kiện duyệt: " + String.join("; ", missing));
         }
         if (req.status() == ReviewStatus.NEEDS_REVIEW && note == null) {
             throw ApiException.badRequest("Vui lòng ghi rõ nội dung cần chỉnh sửa");
         }
-        e.setReviewStatus(req.status());
+        markReviewed(user, e, req.status(), note);
+        auditService.log("EXERCISE_REVIEW", "EXERCISE", e.getId(), e.getName() + " → " + req.status());
+        return mappers.exercise(e);
+    }
+
+    /** Duyệt nhiều bài một lần; bài chưa đủ checklist hoặc đã duyệt thì bỏ qua và báo lý do. */
+    @Transactional
+    public BulkApproveResponse approveMany(AuthUser user, BulkApproveRequest req) {
+        String note = Mappers.blankToNull(req.note());
+        int approved = 0;
+        List<String> skipped = new ArrayList<>();
+        for (Long id : req.ids().stream().distinct().toList()) {
+            Exercise e = exerciseRepository.findById(id).orElse(null);
+            if (e == null) {
+                skipped.add("#" + id + ": không tồn tại");
+                continue;
+            }
+            if (e.getReviewStatus() == ReviewStatus.APPROVED) continue;
+            List<String> missing = ExerciseChecklist.missing(e);
+            if (!missing.isEmpty()) {
+                skipped.add(e.getName() + ": " + String.join("; ", missing));
+                continue;
+            }
+            markReviewed(user, e, ReviewStatus.APPROVED, note);
+            approved++;
+        }
+        auditService.log("EXERCISE_REVIEW_BULK", "EXERCISE", null, approved + " bài được duyệt, bỏ qua " + skipped.size());
+        return new BulkApproveResponse(approved, skipped);
+    }
+
+    private void markReviewed(AuthUser user, Exercise e, ReviewStatus status, String note) {
+        e.setReviewStatus(status);
         e.setReviewNote(note);
         e.setReviewedBy(userRepository.getReferenceById(user.id()));
         e.setReviewedAt(LocalDateTime.now());
-        auditService.log("EXERCISE_REVIEW", "EXERCISE", e.getId(), e.getName() + " → " + req.status());
-        return mappers.exercise(e);
     }
 
     @Transactional
