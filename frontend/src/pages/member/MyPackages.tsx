@@ -8,8 +8,9 @@ import { useState } from 'react';
 import { api } from '../../api/client';
 import type { MembershipPlan, PackageRequest, Subscription } from '../../api/types';
 import { Icon } from '../../components/Icon';
+import { benefitsOf, PlanCard, pickBest, savings } from '../../components/PlanCard';
 import { useToast } from '../../components/Toast';
-import { Alert, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Meter, Modal, PageHead, Segmented, StatusBadge, Table, Textarea } from '../../components/ui';
+import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Meter, Modal, PageHead, Segmented, StatusBadge, Table, Textarea } from '../../components/ui';
 import { t, tn } from '../../i18n';
 import { addDays, durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus, parseDate, subState, toIsoDate, todayIso } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
@@ -17,7 +18,6 @@ import { errMsg, useAsync } from '../../lib/hooks';
 /** Khớp PackageRequestService.MAX_DESIRED_START_DAYS. */
 const MAX_START_DAYS = 60;
 
-const benefitsOf = (p: MembershipPlan) => (p.benefits ?? '').split(/[,\n]/).map((b) => b.trim()).filter(Boolean);
 
 /** Ngày cuối cùng còn gói (không tính gói đã huỷ / đã hết hạn) – gói mới nối tiếp sau ngày này. */
 function lastEndDate(subs: Subscription[]) {
@@ -48,7 +48,9 @@ export default function MyPackages() {
   const current = subs.data.find((s) => s.state === 'ACTIVE' || s.state === 'EXPIRING');
   const upcoming = subs.data.filter((s) => s.state === 'UPCOMING');
   const pending = reqs.data?.find((r) => r.status === 'PENDING') ?? null;
-  const onSale = plans.data?.filter((p) => p.active) ?? [];
+  const onSale = [...(plans.data?.filter((p) => p.active) ?? [])].sort((a, b) => a.durationDays - b.durationDays || a.price - b.price);
+  const save = savings(onSale);
+  const best = pickBest(onSale);
   const total = current
     ? (parseDate(current.endDate).getTime() - parseDate(current.startDate).getTime()) / 86400000 + 1
     : 1;
@@ -96,16 +98,24 @@ export default function MyPackages() {
         <div className="stack" style={{ gap: 18 }}>
 
           {current && (
-            <div className="hero">
+            <div className="hero pkg-hero">
               <div style={{ position: 'relative' }}>
                 <div className="row between">
                   <span className="chip on"><Icon name="ticket" size={14} /> {t('Gói hiện tại')}</span>
                   <StatusBadge map={subState} value={current.state} />
                 </div>
-                <h2 className="mt-16">{current.planName}</h2>
-                <div className="row" style={{ alignItems: 'baseline', gap: 8, marginTop: 6 }}>
-                  <span className="num" style={{ fontSize: 44 }}>{current.daysLeft}</span>
-                  <span className="muted">{t('ngày còn lại')}</span>
+                <div className="row row-wrap mt-16" style={{ gap: 20, alignItems: 'center' }}>
+                  <div className="pkg-ring" style={{ ['--p' as string]: Math.round((current.daysLeft / total) * 100), ['--c' as string]: current.state === 'EXPIRING' ? 'var(--warning)' : undefined }}
+                    role="img" aria-label={t('Còn {n}% thời hạn', { n: Math.round((current.daysLeft / total) * 100) })}>
+                    <span>{Math.round((current.daysLeft / total) * 100)}%</span>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <h2 style={{ margin: 0 }}>{current.planName}</h2>
+                    <div className="row" style={{ alignItems: 'baseline', gap: 8, marginTop: 6 }}>
+                      <span className="pkg-days" key={current.daysLeft}>{current.daysLeft}</span>
+                      <span className="muted">{t('ngày còn lại')}</span>
+                    </div>
+                  </div>
                 </div>
                 <div className="mt-16">
                   <Meter value={total - current.daysLeft} max={total} color={current.state === 'EXPIRING' ? 'var(--warning)' : undefined} />
@@ -196,31 +206,23 @@ export default function MyPackages() {
         </div>
 
         <Card title={t('Các gói đang mở bán')} icon="sparkle">
-          <div className="stack-sm">
+          <div className="plan-stack">
             {plans.error && <ErrorState message={plans.error} onRetry={plans.reload} />}
             {plans.loading && !plans.data && <LoadingBlock rows={3} />}
             {plans.data && onSale.length === 0 && <Empty icon="ticket" title="Chưa có gói nào đang mở bán" />}
-            {onSale.map((p) => (
-              <div key={p.id} className="plan-pick">
-                <div className="row between" style={{ alignItems: 'flex-start', gap: 10 }}>
-                  <div>
-                    <b>{t(p.name)}</b>
-                    <div className="tiny faint">{durationLabel(p.durationDays)}</div>
-                  </div>
-                  <span className="num nowrap">{fmtMoney(p.price)}</span>
-                </div>
-                {p.description && <p className="tiny muted" style={{ margin: '6px 0 0' }}>{t(p.description)}</p>}
-                {benefitsOf(p).length > 0 && (
-                  <ul className="plan-benefits">
-                    {benefitsOf(p).map((b) => <li key={b}><Icon name="check" size={13} className="ok" />{t(b)}</li>)}
-                  </ul>
-                )}
-                <Button size="sm" variant="primary" block icon="plus" disabled={!!pending}
-                  title={pending ? t('Bạn đang có một đơn chờ xác nhận') : undefined} onClick={() => setPicked(p)}>
-                  {t('Đăng ký gói này')}
-                </Button>
-              </div>
-            ))}
+            {onSale.map((p) => {
+              const mine = current?.planId === p.id;
+              return (
+                <PlanCard key={p.id} plan={p} compact best={p.id === best} saving={save.get(p.id)} className={mine ? 'current' : ''}
+                  badge={mine ? <Badge tone="blue">{t('Bạn đang dùng')}</Badge> : undefined}
+                  footer={
+                    <Button size="sm" variant={p.id === best ? 'primary' : 'secondary'} block icon={mine ? 'repeat' : 'plus'} disabled={!!pending}
+                      title={pending ? t('Bạn đang có một đơn chờ xác nhận') : undefined} onClick={() => setPicked(p)}>
+                      {mine ? t('Gia hạn gói này') : t('Đăng ký gói này')}
+                    </Button>
+                  } />
+              );
+            })}
             <p className="tiny faint mt-8">
               <Icon name="info" size={13} style={{ display: 'inline', verticalAlign: -2 }} /> {t('Thanh toán tại quầy lễ tân. Mỗi lần chỉ gửi được một đơn; muốn đổi gói hãy huỷ đơn đang chờ.')}
             </p>

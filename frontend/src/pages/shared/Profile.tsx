@@ -7,15 +7,17 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
-import type { Gender, Me, Member, Shift, Trainer } from '../../api/types';
+import type { Gender, Me, Member, MemberTimeSlot, TimeSlot, Trainer } from '../../api/types';
 import { useAuth, useMe } from '../../auth/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { AvatarEditor, MyAvatar } from '../../components/AvatarEditor';
 import { Icon, type IconName } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
+import { WeekSlots } from '../../components/WeekSlots';
 import { Alert, Badge, Button, Card, Confirm, ErrorState, Field, Input, LoadingBlock, PasswordInput, Select, StatusBadge, Textarea } from '../../components/ui';
 import { t } from '../../i18n';
 import { DAY_NAMES, fmtDate, fmtDateTime, genderLabel, memberStatus, roleLabel, subState, todayIso } from '../../lib/format';
+import { covered, GYM_CLOSE, GYM_OPEN, hm, mergeSlots, slotError, type WeekSlot } from '../../lib/hours';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { checkDateOfBirth, checkFullName, checkHeight, checkPhone, HAS_DIGIT, NOT_NUMBER, NOT_PHONE, toNumber, useLiveErrors } from '../../lib/validation';
 
@@ -101,7 +103,7 @@ export default function Profile() {
             </Card>
           </div>
         )}
-        {section === 'training' && me.role === 'MEMBER' && (m ? <MemberSelfCard data={m} onSaved={member.reload} /> : member.error ? <Alert kind="error">{member.error}</Alert> : <Card><LoadingBlock /></Card>)}
+        {section === 'training' && me.role === 'MEMBER' && (m ? <div className="stack" style={{ gap: 18 }}><MemberSelfCard data={m} onSaved={member.reload} /><TimePreferenceCard /></div> : member.error ? <Alert kind="error">{member.error}</Alert> : <Card><LoadingBlock /></Card>)}
         {section === 'training' && me.role === 'TRAINER' && me.trainerId && <div className="stack" style={{ gap: 18 }}><TrainerSelfCard trainerId={me.trainerId} /></div>}
         {section === 'security' && (
           <div className="grid grid-main" style={{ alignItems: 'start' }}>
@@ -275,51 +277,101 @@ function TrainerSelfCard({ trainerId }: { trainerId: number }) {
   );
 }
 
-/** Sửa ca làm theo tuần; dùng ở hồ sơ HLV và trang quản lý HLV. */
+/** Sửa ca làm theo tuần; dùng ở hồ sơ HLV và trang quản lý HLV. HLV xếp ca theo giờ tập mong muốn của hội viên mình phụ trách. */
 export function ShiftEditor({ trainer, onSaved }: { trainer: Trainer; onSaved: () => void }) {
   const toast = useToast();
-  const [shifts, setShifts] = useState<Shift[]>(trainer.shifts);
+  const [shifts, setShifts] = useState<WeekSlot[]>(trainer.shifts);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const prefs = useAsync(() => api.get<MemberTimeSlot[]>(`/trainers/${trainer.id}/member-preferences`), [trainer.id]);
   useEffect(() => setShifts(trainer.shifts), [trainer]);
-  const hm = (v: string) => v.slice(0, 5);
+  const dirty = JSON.stringify(shifts.map((s) => [s.dayOfWeek, hm(s.startTime), hm(s.endTime)]).sort())
+    !== JSON.stringify(trainer.shifts.map((s) => [s.dayOfWeek, hm(s.startTime), hm(s.endTime)]).sort());
+  const wanted = prefs.data ?? [];
+  const uncovered = wanted.filter((p) => !covered(shifts, p));
+  const memberCount = new Set(wanted.map((p) => p.memberId)).size;
+
   const save = async () => {
     setError(null);
-    const bad = shifts.find((s) => hm(s.endTime) <= hm(s.startTime));
-    if (bad) { setError(t('{day}: giờ kết thúc phải sau giờ bắt đầu', { day: DAY_NAMES[bad.dayOfWeek - 1] })); return; }
+    const bad = slotError(shifts, (d) => DAY_NAMES[d - 1], 'Ca');
+    if (bad) { setError(bad); return; }
     setBusy(true);
     try {
       await api.put(`/trainers/${trainer.id}/shifts`, { shifts: shifts.map((s) => ({ dayOfWeek: s.dayOfWeek, startTime: hm(s.startTime), endTime: hm(s.endTime) })) });
       toast.success(t('Đã lưu ca làm việc')); onSaved();
     } catch (e) { setError(errMsg(e)); } finally { setBusy(false); }
   };
-  const set = (i: number, patch: Partial<Shift>) => setShifts((xs) => xs.map((x, k) => (k === i ? { ...x, ...patch } : x)));
+  // Thêm ca phủ các khung giờ hội viên chưa có ca, gộp với ca đang có; HLV xem lại rồi bấm Lưu
+  const fromMembers = () => {
+    const next = mergeSlots([...shifts, ...uncovered]);
+    const over = slotError(next, (d) => DAY_NAMES[d - 1], 'Ca');
+    setShifts(next);
+    toast.info(over ? t('Đã thêm ca theo giờ hội viên – còn lỗi cần sửa trước khi lưu') : t('Đã thêm ca theo giờ hội viên, kiểm tra rồi bấm Lưu ca'));
+    if (over) setError(over); else setError(null);
+  };
+
   return (
-    <Card title={t('Ca làm việc trong tuần')} icon="clock" actions={<Button size="sm" variant="primary" loading={busy} onClick={save}>{t('Lưu ca')}</Button>}>
-      {error && <div style={{ marginBottom: 12 }}><Alert kind="error">{error}</Alert></div>}
-      <div className="stack-sm">
-        {[1, 2, 3, 4, 5, 6, 7].map((d) => {
-          const list = shifts.map((s, i) => ({ s, i })).filter((x) => x.s.dayOfWeek === d);
-          return (
-            <div key={d} className="row row-wrap" style={{ padding: '8px 0', borderBottom: '1px solid var(--hairline-soft)' }}>
-              <b style={{ width: 80 }} className="small">{DAY_NAMES[d - 1]}</b>
-              <div className="row row-wrap grow" style={{ gap: 8 }}>
-                {list.length === 0 && <span className="tiny faint">{t('Nghỉ')}</span>}
-                {list.map(({ s, i }) => (
-                  <div key={i} className="row" style={{ gap: 4, background: 'var(--rail)', borderRadius: 10, padding: 4 }}>
-                    <input className="input" type="time" style={{ height: 30, width: 104 }} value={hm(s.startTime)} onChange={(e) => set(i, { startTime: e.target.value })} aria-label={t('Bắt đầu')} />
-                    <span className="faint">–</span>
-                    <input className="input" type="time" style={{ height: 30, width: 104 }} value={hm(s.endTime)} onChange={(e) => set(i, { endTime: e.target.value })} aria-label={t('Kết thúc')} />
-                    <Button size="sm" variant="ghost" icon="x" aria-label={t('Bỏ ca')} onClick={() => setShifts((xs) => xs.filter((_, k) => k !== i))} />
-                  </div>
-                ))}
-              </div>
-              <Button size="sm" variant="ghost" icon="plus" aria-label={t('Thêm ca')} onClick={() => setShifts((xs) => [...xs, { dayOfWeek: d, startTime: list.length ? '16:00' : '06:00', endTime: list.length ? '21:00' : '11:00' }])} />
-            </div>
-          );
-        })}
+    <Card title={t('Ca làm việc trong tuần')} icon="clock" actions={<>
+      {uncovered.length > 0 && <Button size="sm" icon="sparkle" onClick={fromMembers}>{t('Xếp ca theo giờ hội viên')}</Button>}
+      <Button size="sm" variant="primary" loading={busy} disabled={!dirty} onClick={save}>{t('Lưu ca')}</Button>
+    </>}>
+      <div className="hours-note">
+        <Icon name="info" size={15} />
+        <span>{t('Phòng tập mở cửa {open}–{close}. Ca dài từ 30 phút, mỗi ngày tối đa 3 ca, không chồng giờ nhau.', { open: GYM_OPEN, close: GYM_CLOSE })}</span>
+        {prefs.data && (memberCount > 0
+          ? (uncovered.length === 0
+            ? <Badge tone="green">{t('Đã phủ hết giờ tập của {n} hội viên', { n: memberCount })}</Badge>
+            : <Badge tone="amber">{t('{n} khung giờ hội viên chưa có ca', { n: uncovered.length })}</Badge>)
+          : <Badge tone="muted">{t('Hội viên phụ trách chưa khai giờ tập')}</Badge>)}
       </div>
-      <p className="tiny faint mt-8"><Icon name="info" size={12} style={{ display: 'inline', verticalAlign: -2 }} /> {t('Ca trong cùng một ngày không được chồng giờ nhau.')}</p>
+      {error && <div className="mt-8"><Alert kind="error">{error}</Alert></div>}
+      {prefs.error && <div className="mt-8"><Alert kind="warning">{t('Không tải được giờ tập của hội viên:')} {prefs.error}</Alert></div>}
+      <div className="mt-8">
+        <WeekSlots idPrefix={`shift-${trainer.id}`} slots={shifts} onChange={(x) => { setShifts(x); setError(null); }} defaultLength={240}
+          extra={(d) => wanted.filter((p) => p.dayOfWeek === d).map((p, k) => {
+            const ok = covered(shifts, p);
+            return (
+              <span key={`${p.memberId}-${k}`} className={`pref-chip ${ok ? 'ok' : 'miss'}`} title={ok ? t('Đã nằm trong ca') : t('Chưa có ca phủ khung giờ này')}>
+                <Icon name={ok ? 'check' : 'alert'} size={12} />{p.memberName} · {hm(p.startTime)}–{hm(p.endTime)}
+              </span>
+            );
+          })} />
+      </div>
+    </Card>
+  );
+}
+
+/** Hội viên khai giờ muốn đến tập theo tuần để HLV xếp ca và lịch tập theo. */
+function TimePreferenceCard() {
+  const toast = useToast();
+  const saved = useAsync(() => api.get<TimeSlot[]>('/members/me/time-preferences'), []);
+  const [slots, setSlots] = useState<WeekSlot[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => { if (saved.data) setSlots(saved.data); }, [saved.data]);
+  const key = (xs: WeekSlot[]) => JSON.stringify(xs.map((s) => [s.dayOfWeek, hm(s.startTime), hm(s.endTime)]).sort());
+  const dirty = !!saved.data && key(slots) !== key(saved.data);
+  const save = async () => {
+    setError(null);
+    const bad = slotError(slots, (d) => DAY_NAMES[d - 1], 'Giờ tập');
+    if (bad) { setError(bad); return; }
+    setBusy(true);
+    try {
+      const res = await api.put<TimeSlot[]>('/members/me/time-preferences', { slots: slots.map((s) => ({ dayOfWeek: s.dayOfWeek, startTime: hm(s.startTime), endTime: hm(s.endTime) })) });
+      toast.success(t('Đã lưu giờ tập – huấn luyện viên sẽ xếp lịch theo giờ này'));
+      void saved.reload();
+      setSlots(res);
+    } catch (e) { setError(errMsg(e)); } finally { setBusy(false); }
+  };
+  if (saved.error) return <Card><ErrorState message={saved.error} onRetry={saved.reload} /></Card>;
+  return (
+    <Card title={t('Giờ tập mong muốn')} icon="clock" actions={<Button size="sm" variant="primary" loading={busy} disabled={!dirty} onClick={save}>{t('Lưu')}</Button>}>
+      <div className="hours-note">
+        <Icon name="info" size={15} />
+        <span>{t('Chọn những khung giờ bạn thường đến được. Huấn luyện viên dựa vào đây để xếp ca và lịch tập. Phòng tập mở cửa {open}–{close}.', { open: GYM_OPEN, close: GYM_CLOSE })}</span>
+      </div>
+      {error && <div className="mt-8"><Alert kind="error">{error}</Alert></div>}
+      <div className="mt-8">{saved.data ? <WeekSlots idPrefix="pref" slots={slots} onChange={(x) => { setSlots(x); setError(null); }} emptyLabel="Không tập" /> : <LoadingBlock />}</div>
     </Card>
   );
 }

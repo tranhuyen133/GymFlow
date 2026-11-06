@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { FORUM_CATEGORY_VI, type ForumPage, type TopicSummary } from '../api/forum';
@@ -6,8 +6,9 @@ import type { MembershipPlan } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { Brand } from '../components/Brand';
 import { Icon, type IconName } from '../components/Icon';
+import { PlanCard, pickBest, savings } from '../components/PlanCard';
 import { Button } from '../components/ui';
-import { durationLabel, fmtMoney, relativeTime } from '../lib/format';
+import { relativeTime } from '../lib/format';
 import { useAsync } from '../lib/hooks';
 import { SITE } from '../site';
 import { ThemeToggle } from '../theme/ThemeToggle';
@@ -64,7 +65,9 @@ export default function Landing() {
   const planAction = publicPlanAction(user?.role);
   const topics = useAsync(() => api.get<ForumPage<TopicSummary>>('/forum/topics', { page: 0, size: 3 }), []);
   const latest = topics.data?.content ?? [];
-  const best = plans.data && plans.data.length > 2 ? plans.data[1].id : null;
+  const pricing = useMemo(() => [...(plans.data ?? [])].sort((a, b) => a.durationDays - b.durationDays || a.price - b.price), [plans.data]);
+  const save = useMemo(() => savings(pricing), [pricing]);
+  const best = useMemo(() => pickBest(pricing), [pricing]);
   const [menu, setMenu] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -249,25 +252,13 @@ export default function Landing() {
             <Button icon="refresh" loading={plans.loading} onClick={() => void plans.reload()}>Thử lại</Button>
           </div>}
           {!plans.loading && !plans.error && plans.data?.length === 0 && <p className="muted" role="status">{t('Bảng giá đang được cập nhật.')}</p>}
-          {!plans.loading && !plans.error && plans.data?.map((p) => (
-            <article key={p.id} className={`card price-card hoverable spot reveal ${p.id === best ? 'best beam' : ''}`}>
-              {p.id === best && <span className="ribbon">{t('PHỔ BIẾN')}</span>}
-              <div className="kicker" style={{ marginBottom: 0 }}>{durationLabel(p.durationDays)}</div>
-              <h3 style={{ fontSize: 20 }}>{t(p.name)}</h3>
-              <div className="price">{fmtMoney(p.price)}</div>
-              {p.description && <p className="muted small">{t(p.description)}</p>}
-              {p.benefits && (
-                <div className="stack-sm small">
-                  {p.benefits.split(/[,\n]/).map((b) => b.trim()).filter(Boolean).map((b) => (
-                    <div key={b} className="row" style={{ gap: 8 }}><Icon name="check" size={15} className="ok" />{t(b)}</div>
-                  ))}
-                </div>
-              )}
-              <div style={{ flex: 1 }} />
-              <Link className={`btn ${p.id === best ? 'btn-primary' : 'btn-secondary'} btn-block`} to={planAction.to}>
-                <span>{t(planAction.label)}</span>
-              </Link>
-            </article>
+          {!plans.loading && !plans.error && pricing.map((p) => (
+            <PlanCard key={p.id} plan={p} best={p.id === best} saving={save.get(p.id)} className="spot reveal"
+              footer={
+                <Link className={`btn ${p.id === best ? 'btn-primary' : 'btn-secondary'} btn-block`} to={planAction.to}>
+                  <span>{t(planAction.label)}</span><Icon name="arrowRight" size={16} />
+                </Link>
+              } />
           ))}
         </div>
       </section>

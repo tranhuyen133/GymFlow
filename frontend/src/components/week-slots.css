@@ -1,0 +1,43 @@
+/* Khung giờ theo tuần (ca HLV, giờ tập hội viên) */
+.week-slots { display: flex; flex-direction: column; }
+.ws-day { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 6px 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--hairline-soft); }
+.ws-day:last-child { border-bottom: none; }
+.ws-head { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.ws-day.has .ws-head b { color: var(--ink); }
+.ws-day:not(.has) .ws-head b { color: var(--muted); }
+.ws-copy { max-width: 110px; height: 26px; font-size: 12px; }
+.ws-slots { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ws-slot {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px;
+  border-radius: 10px; background: var(--rail); border: 1px solid var(--hairline);
+  animation: wsIn 0.35s var(--ease-spring) both;
+}
+.ws-slot > svg { color: var(--primary-bright); flex: none; }
+.ws-slot .select.select-sm { height: 30px; padding: 0 24px 0 8px; background-position: right 8px center; font-variant-numeric: tabular-nums; }
+.ws-len { min-width: 34px; text-align: right; }
+.ws-extra { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; }
+@keyframes wsIn { from { opacity: 0; transform: scale(0.94); } }
+
+/* Giờ hội viên muốn tập, hiện dưới mỗi ngày ở màn ca HLV */
+.pref-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; border: 1px dashed var(--c, var(--line-strong)); color: var(--c, var(--muted));
+  background: color-mix(in srgb, var(--c, transparent) 10%, transparent);
+}
+.pref-chip.ok { --c: var(--primary-bright); border-style: solid; }
+.pref-chip.miss { --c: var(--warning); }
+.pref-chip svg { flex: none; }
+button.pref-chip { cursor: pointer; transition: transform 0.2s var(--ease-spring); }
+button.pref-chip:hover { transform: translateY(-1px); }
+
+.hours-note { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-radius: var(--r-sm); background: var(--rail); border: 1px solid var(--hairline-soft); font-size: 13px; }
+.hours-note .badge { height: 22px; }
+
+@media (max-width: 720px) {
+  .ws-day { grid-template-columns: minmax(0, 1fr); }
+  .ws-head { flex-direction: row; align-items: center; justify-content: space-between; }
+  .ws-extra { grid-column: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ws-slot { animation: none; }
+}

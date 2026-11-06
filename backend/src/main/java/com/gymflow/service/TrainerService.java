@@ -11,8 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -77,25 +75,12 @@ public class TrainerService {
         return mappers.trainer(t);
     }
 
-    /** Thay toàn bộ ca làm; chặn ca chồng nhau trong cùng một ngày. */
+    /** Thay toàn bộ ca làm; ca phải trong giờ mở cửa 05:00–22:00, dài từ 30 phút, không chồng nhau trong ngày. */
     @Transactional
     public TrainerResponse replaceShifts(AuthUser user, Long id, List<ShiftRequest> shifts) {
         Trainer t = load(id);
         access.requireTrainerSelfOrAdmin(user, t);
-        List<ShiftRequest> sorted = new ArrayList<>(shifts);
-        sorted.sort(Comparator.comparing(ShiftRequest::dayOfWeek).thenComparing(ShiftRequest::startTime));
-        for (int i = 0; i < sorted.size(); i++) {
-            ShiftRequest s = sorted.get(i);
-            if (!s.endTime().isAfter(s.startTime())) {
-                throw ApiException.badRequest("Ca " + dayName(s.dayOfWeek()) + ": giờ kết thúc phải sau giờ bắt đầu");
-            }
-            if (i > 0) {
-                ShiftRequest prev = sorted.get(i - 1);
-                if (prev.dayOfWeek().equals(s.dayOfWeek()) && s.startTime().isBefore(prev.endTime())) {
-                    throw ApiException.badRequest("Các ca " + dayName(s.dayOfWeek()) + " bị chồng giờ nhau");
-                }
-            }
-        }
+        List<ShiftRequest> sorted = WeeklySlots.validate(shifts, "Ca");
         t.getShifts().clear();
         for (ShiftRequest s : sorted) {
             TrainerShift shift = new TrainerShift();

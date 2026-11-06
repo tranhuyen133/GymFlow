@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api } from '../../api/client';
-import type { ContentOrigin, Exercise, ExerciseGoal, ExerciseLocation, Level, MuscleGroup, ReviewStatus, Source } from '../../api/types';
+import type { BulkApproveResult, ContentOrigin, Exercise, ExerciseGoal, ExerciseLocation, Level, MuscleGroup, ReviewStatus, Source } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { HealthDisclaimer, InfoRow, Missing, SourceList } from '../../components/Content';
 import { Icon } from '../../components/Icon';
@@ -9,6 +9,8 @@ import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, L
 import { fmtDateTime, goalLabel, levelLabel, locationLabel, muscleColor, muscleLabel, reviewLabel } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync, useDebounced, usePaged } from '../../lib/hooks';
 import { t } from '../../i18n';
+import './exercises.css';
+import { autoChecks, countSteps, exerciseFieldErrors, MANUAL_CHECKS, MIN_DESCRIPTION, MIN_STEPS } from '../../lib/validation';
 
 const GROUPS = Object.keys(muscleLabel) as MuscleGroup[];
 const LOCATIONS = Object.keys(locationLabel) as ExerciseLocation[];
@@ -62,6 +64,23 @@ export default function Exercises() {
   const viewing = data?.find((e) => e.id === viewingId) ?? null;
   const filtered = !!(q || group || level || location || goal || review || showHidden);
   const clearFilters = () => { setQ(''); setGroup(''); setLevel(''); setLocation(''); setGoal(''); setReview(''); setShowHidden(false); };
+  const isAdmin = me.role === 'ADMIN';
+
+  // Hàng chờ duyệt: danh sách id cố định lúc mở, duyệt xong bài nào tự sang bài kế tiếp
+  const [queue, setQueue] = useState<number[] | null>(null);
+  const [bulk, setBulk] = useState(false);
+  const [skipped, setSkipped] = useState<string[]>([]);
+  const waiting = useMemo(() => [...(data ?? [])].filter((e) => e.reviewStatus !== 'APPROVED').sort(SORTERS.review), [data]);
+  const ready = useMemo(() => waiting.filter((e) => e.reviewStatus !== 'DRAFT' && autoChecks(reviewable(e)).every((c) => c.ok)), [waiting]);
+  const openQueue = () => { const ids = waiting.map((e) => e.id); if (!ids.length) return; setQueue(ids); setViewingId(ids[0]); };
+  const qIndex = queue && viewingId != null ? queue.indexOf(viewingId) : -1;
+  const step = (dir: 1 | -1) => {
+    if (!queue) return;
+    const next = queue[qIndex + dir];
+    if (next != null) setViewingId(next);
+    else if (dir === 1) { toast.success('Đã xem hết hàng chờ duyệt'); setQueue(null); setViewingId(null); }
+  };
+  const closeDetail = () => { setViewingId(null); setQueue(null); };
 
   const toggleHidden = async (e: Exercise) => {
     try { await api.put(`/exercises/${e.id}/hidden`, { hidden: !e.hidden }); toast.success(e.hidden ? 'Đã hiện bài tập' : 'Đã ẩn bài tập'); void reload(); }
@@ -74,9 +93,37 @@ export default function Exercises() {
         desc="Mỗi bài có nguồn tham khảo, giấy phép và trạng thái duyệt. Bài đã nằm trong giáo án chỉ được ẩn, không xoá để giữ nguyên lịch sử."
         actions={staff && <Button variant="primary" icon="plus" onClick={() => setEditing({})}>Thêm bài tập</Button>} />
 
-      {data && pendingCount > 0 && (
+      {data && pendingCount > 0 && !isAdmin && (
         <Alert kind="warning" action={staff && sort !== 'review' && <Button size="sm" onClick={() => setSort('review')}>Xem bài cần duyệt</Button>}>
           {t('{n} bài đang chờ quản lý duyệt. Nội dung chỉ mang tính tham khảo, chưa được chuyên gia y tế xác minh.', { n: pendingCount })}
+        </Alert>
+      )}
+
+      {data && isAdmin && waiting.length > 0 && (
+        <Card className="review-bar">
+          <div className="review-bar-in">
+            <div className="review-bar-ic"><Icon name="shield" /></div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <b>{t('{n} bài đang chờ bạn duyệt', { n: waiting.length })}</b>
+              <div className="tiny muted">
+                {t('Cách duyệt: mở hàng chờ → xem từng bài → tick checklist (máy tự kiểm tra phần thiếu, bạn đối chiếu với trang nguồn) → Duyệt hoặc Trả về chỉnh sửa kèm ghi chú.')}
+              </div>
+              <div className="row row-wrap mt-8" style={{ gap: 6 }}>
+                <Badge tone="green">{t('{n} bài đủ thông tin', { n: ready.length })}</Badge>
+                {waiting.length - ready.length > 0 && <Badge tone="amber">{t('{n} bài còn thiếu', { n: waiting.length - ready.length })}</Badge>}
+              </div>
+            </div>
+            <div className="row row-wrap" style={{ gap: 8 }}>
+              <Button variant="primary" icon="play" onClick={openQueue}>Mở hàng chờ duyệt</Button>
+              {ready.length > 0 && <Button icon="checkCircle" onClick={() => setBulk(true)}>{t('Duyệt nhanh {n} bài đủ điều kiện', { n: ready.length })}</Button>}
+            </div>
+          </div>
+        </Card>
+      )}
+      {skipped.length > 0 && (
+        <Alert kind="warning" action={<Button size="sm" variant="ghost" icon="x" aria-label="Đóng" onClick={() => setSkipped([])} />}>
+          <b>{t('Bỏ qua {n} bài chưa đủ điều kiện:', { n: skipped.length })}</b>
+          <ul className="tiny" style={{ margin: '6px 0 0', paddingLeft: 18 }}>{skipped.map((s) => <li key={s}>{s}</li>)}</ul>
         </Alert>
       )}
 
@@ -156,7 +203,24 @@ export default function Exercises() {
         </>
       )}
 
-      {viewing && <ExerciseDetail exercise={viewing} canReview={me.role === 'ADMIN'} onClose={() => setViewingId(null)} onReviewed={() => void reload()} />}
+      {viewing && <ExerciseDetail key={viewing.id} exercise={viewing} canReview={isAdmin} onClose={closeDetail}
+        queue={queue && qIndex >= 0 ? { index: qIndex, total: queue.length, prev: () => step(-1), next: () => step(1) } : undefined}
+        onEdit={staff ? () => { setEditing({ exercise: viewing }); closeDetail(); } : undefined}
+        onReviewed={() => { void reload(); if (queue) step(1); }} />}
+      {bulk && <Confirm title={t('Duyệt {n} bài?', { n: ready.length })} confirmText="Duyệt tất cả"
+        message={<div className="stack-sm">
+          <p className="small" style={{ margin: 0 }}>{t('Các bài dưới đây đã đủ phần máy kiểm tra (nguồn, mô tả, các bước, lưu ý an toàn, nơi tập, mục tiêu). Chỉ duyệt nhanh khi bạn đã đối chiếu chúng với trang nguồn.')}</p>
+          <ul className="tiny muted" style={{ margin: 0, paddingLeft: 18, maxHeight: 200, overflow: 'auto' }}>{ready.map((e) => <li key={e.id}>{e.name}</li>)}</ul>
+        </div>}
+        onClose={() => setBulk(false)}
+        onConfirm={async () => {
+          try {
+            const r = await api.post<BulkApproveResult>('/exercises/review/approve-many', { ids: ready.map((e) => e.id).slice(0, 100) });
+            toast.success(t('Đã duyệt {n} bài', { n: r.approved }));
+            setSkipped(r.skipped);
+            void reload();
+          } catch (e) { toast.error(errMsg(e)); throw e; }
+        }} />}
       {editing && <ExerciseForm exercise={editing.exercise} copyOf={editing.copyOf} isAdmin={me.role === 'ADMIN'} onClose={() => setEditing(null)}
         onSaved={() => { setEditing(null); void reload(); }} />}
       {removing && <Confirm danger title="Xoá bài tập?" message={t('"{name}" sẽ bị xoá vĩnh viễn.', { name: removing.name })} confirmText="Xoá" onClose={() => setRemoving(null)}
@@ -174,11 +238,22 @@ function TextBlock({ title, text }: { title: string; text: string | null }) {
   );
 }
 
-function ExerciseDetail({ exercise: e, canReview, onClose, onReviewed }: { exercise: Exercise; canReview: boolean; onClose: () => void; onReviewed: () => void }) {
+const reviewable = (e: Exercise) => ({ ...e, sourceCount: e.sources.length });
+
+type Queue = { index: number; total: number; prev: () => void; next: () => void };
+
+function ExerciseDetail({ exercise: e, canReview, queue, onClose, onEdit, onReviewed }: {
+  exercise: Exercise; canReview: boolean; queue?: Queue; onClose: () => void; onEdit?: () => void; onReviewed: () => void;
+}) {
   const toast = useToast();
   const [note, setNote] = useState(e.reviewNote ?? '');
   const [busy, setBusy] = useState<ReviewStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ticked, setTicked] = useState<Record<string, boolean>>({});
+  const auto = autoChecks(reviewable(e));
+  const autoOk = auto.every((c) => c.ok);
+  const manualOk = MANUAL_CHECKS.every((c) => ticked[c.id]);
+  const missing = auto.filter((c) => !c.ok);
 
   const decide = async (status: ReviewStatus) => {
     setError(null);
@@ -186,13 +261,19 @@ function ExerciseDetail({ exercise: e, canReview, onClose, onReviewed }: { exerc
     setBusy(status);
     try {
       await api.put(`/exercises/${e.id}/review`, { status, note });
-      toast.success(status === 'APPROVED' ? 'Đã duyệt bài tập' : 'Đã cập nhật trạng thái duyệt');
+      toast.success(status === 'APPROVED' ? 'Đã duyệt bài tập' : status === 'NEEDS_REVIEW' ? 'Đã trả về cho người soạn' : 'Đã cập nhật trạng thái duyệt');
       onReviewed();
     } catch (err) { setError(errMsg(err)); } finally { setBusy(null); }
   };
+  // Gợi ý ghi chú trả về từ các mục máy kiểm tra chưa đạt
+  const suggestNote = () => setNote(missing.map((c) => `- ${t(c.label)}`).join('\n'));
 
   return (
-    <Modal title={e.name} size="medium" onClose={onClose}>
+    <Modal title={e.name} size="medium" onClose={onClose} footer={queue && <>
+      <span className="tiny faint modal-foot-hint">{t('Hàng chờ: bài {i}/{n}', { i: queue.index + 1, n: queue.total })}</span>
+      <Button variant="ghost" icon="chevronLeft" disabled={queue.index === 0} onClick={queue.prev}>Bài trước</Button>
+      <Button icon="chevronRight" onClick={queue.next}>{queue.index === queue.total - 1 ? 'Kết thúc' : 'Bỏ qua, bài sau'}</Button>
+    </>}>
       <div className="stack">
         <div className="row row-wrap">
           <StatusBadge map={reviewLabel} value={e.reviewStatus} />
@@ -236,13 +317,43 @@ function ExerciseDetail({ exercise: e, canReview, onClose, onReviewed }: { exerc
           <Card title="Duyệt nội dung" icon="shield">
             <div className="stack-sm">
               {error && <Alert kind="error">{error}</Alert>}
-              <p className="tiny muted">{t('Đối chiếu nội dung với trang nguồn trước khi duyệt. Duyệt nghĩa là quản lý phòng tập chấp nhận hiển thị cho hội viên, không phải chuyên gia y tế xác minh.')}</p>
+              <p className="tiny muted" style={{ margin: 0 }}>{t('Duyệt nghĩa là quản lý phòng tập chấp nhận hiển thị bài này cho hội viên và cho HLV đưa vào giáo án; không phải chuyên gia y tế xác minh.')}</p>
+
+              <div className="review-checks">
+                <div className="review-checks-head"><b className="small">{t('1. Máy kiểm tra')}</b><Badge tone={autoOk ? 'green' : 'amber'}>{autoOk ? 'Đạt' : t('Thiếu {n} mục', { n: missing.length })}</Badge></div>
+                {auto.map((c) => (
+                  <div key={c.id} className={`review-check ${c.ok ? 'ok' : 'miss'}`}>
+                    <Icon name={c.ok ? 'check' : 'alert'} size={14} /><span>{t(c.label)}</span>
+                    {!c.ok && c.hint && <span className="tiny faint">· {t(c.hint)}</span>}
+                  </div>
+                ))}
+              </div>
+
+              <div className="review-checks">
+                <div className="review-checks-head"><b className="small">{t('2. Bạn tự đối chiếu với trang nguồn')}</b><Badge tone={manualOk ? 'green' : 'muted'}>{t('{a}/{b}', { a: MANUAL_CHECKS.filter((c) => ticked[c.id]).length, b: MANUAL_CHECKS.length })}</Badge></div>
+                {MANUAL_CHECKS.map((c) => (
+                  <label key={c.id} className="check review-check">
+                    <input type="checkbox" checked={!!ticked[c.id]} disabled={!autoOk} onChange={(ev) => setTicked((x) => ({ ...x, [c.id]: ev.target.checked }))} />
+                    <span>{t(c.label)}</span>
+                  </label>
+                ))}
+                {e.sources.length > 0 && (
+                  <div className="row row-wrap" style={{ gap: 6 }}>
+                    {e.sources.map((s) => <a key={s.id} className="chip" href={s.url} target="_blank" rel="noreferrer noopener"><Icon name="arrowRight" size={12} />{s.publisher}</a>)}
+                  </div>
+                )}
+              </div>
+
               <Field label="Ghi chú (bắt buộc khi trả về chỉnh sửa)">
-                <Textarea maxLength={500} rows={2} value={note} onChange={(ev) => setNote(ev.target.value)} />
+                <Textarea maxLength={500} rows={2} value={note} onChange={(ev) => setNote(ev.target.value)} placeholder={t('VD: Bước 3 chưa khớp nguồn NHS, bổ sung lưu ý cho người đau lưng')} />
               </Field>
+              {!autoOk && !note.trim() && <button type="button" className="link tiny" style={{ alignSelf: 'flex-start', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }} onClick={suggestNote}>{t('Điền ghi chú từ các mục còn thiếu')}</button>}
               <div className="row row-wrap">
-                <Button variant="primary" icon="check" loading={busy === 'APPROVED'} disabled={e.reviewStatus === 'APPROVED'} onClick={() => void decide('APPROVED')}>Duyệt</Button>
+                <Button variant="primary" icon="check" loading={busy === 'APPROVED'} disabled={e.reviewStatus === 'APPROVED' || !autoOk || !manualOk}
+                  title={!autoOk ? 'Bài còn thiếu thông tin, hãy trả về chỉnh sửa' : !manualOk ? 'Tick đủ 3 mục đối chiếu trước khi duyệt' : undefined}
+                  onClick={() => void decide('APPROVED')}>Duyệt</Button>
                 <Button icon="edit" loading={busy === 'NEEDS_REVIEW'} onClick={() => void decide('NEEDS_REVIEW')}>Trả về chỉnh sửa</Button>
+                {onEdit && !autoOk && <Button variant="ghost" icon="edit" onClick={onEdit}>Tự sửa bài</Button>}
                 {e.reviewStatus !== 'PENDING' && <Button variant="ghost" icon="refresh" loading={busy === 'PENDING'} onClick={() => void decide('PENDING')}>Đưa về chờ duyệt</Button>}
               </div>
             </div>
@@ -312,7 +423,19 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
   const [sourceQ, setSourceQ] = useState('');
   const [tab, setTab] = useState<Tab>('basic');
   const bodyRef = useRef<HTMLDivElement>(null);
-  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
+  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => {
+    setF((x) => ({ ...x, [k]: v }));
+    // Ô đang báo lỗi: sửa đúng là lỗi tự mất
+    if (errors[k as string] && typeof v === 'string') {
+      const msg = exerciseFieldErrors({ ...f, [k]: v })[k as string];
+      setErrors((x) => ({ ...x, [k]: msg ?? '' }));
+    }
+  };
+  const blurCheck = (k: keyof typeof f) => {
+    const msg = exerciseFieldErrors(f)[k as string];
+    if (msg || errors[k as string]) setErrors((x) => ({ ...x, [k]: msg ?? '' }));
+  };
+  const readiness = autoChecks({ ...f, location: f.location || null, sourceCount: f.sourceIds.length });
   const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   // Bản sao luôn coi là "có thay đổi" vì chưa được lưu
   const dirty = !!copyOf || JSON.stringify(f) !== JSON.stringify(initial);
@@ -336,15 +459,13 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
 
   const submit = async () => {
     if (busy || !dirty) return;
-    const v: Record<string, string> = {};
-    if (!f.name.trim()) v.name = 'Nhập tên bài tập';
-    if (f.videoUrl.trim() && !/^https?:\/\/.+/.test(f.videoUrl.trim())) v.videoUrl = 'Link phải bắt đầu bằng http(s)://';
+    const v = exerciseFieldErrors(f);
     setErrors(v); setError(null);
     if (Object.keys(v).length) { showFirstError(v); return; }
     setBusy(true);
     try {
       const body = {
-        ...f, name: blank(f.name), nameEn: blank(f.nameEn), aliases: blank(f.aliases), secondaryMuscles: blank(f.secondaryMuscles),
+        ...f, name: blank(f.name).replace(/\s+/g, " "), nameEn: blank(f.nameEn), aliases: blank(f.aliases), secondaryMuscles: blank(f.secondaryMuscles),
         equipment: blank(f.equipment), breathing: blank(f.breathing), suggestedDose: blank(f.suggestedDose), videoUrl: blank(f.videoUrl),
         location: f.location || null,
       };
@@ -365,7 +486,7 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
 
   const noSource = f.sourceIds.length === 0;
   const title = exercise ? t('Sửa bài tập: {name}', { name: exercise.name }) : copyOf ? t('Nhân bản bài tập') : t('Thêm bài tập');
-  const tabHasError = (id: Tab) => Object.keys(errors).some((k) => FIELD_TAB[k] === id);
+  const tabHasError = (id: Tab) => Object.entries(errors).some(([k, m]) => !!m && FIELD_TAB[k] === id);
   const tabIndex = TABS.findIndex((x) => x.id === tab);
 
   return (
@@ -392,14 +513,25 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
           {!isAdmin && exercise?.reviewStatus === 'APPROVED' && <Alert kind="info">Sau khi lưu, bài sẽ quay về trạng thái "Chờ duyệt".</Alert>}
           {exercise?.reviewStatus === 'NEEDS_REVIEW' && exercise.reviewNote && <Alert kind="warning">{t('Quản lý yêu cầu chỉnh sửa:')} {exercise.reviewNote}</Alert>}
           {copyOf && <Alert kind="info">{t('Đang tạo bài mới từ "{name}". Hãy đổi tên – tên bài tập không được trùng.', { name: copyOf.name })}</Alert>}
+          <details className="ready-box" open={readiness.some((c) => !c.ok)}>
+            <summary>
+              <Icon name={readiness.every((c) => c.ok) ? 'checkCircle' : 'clipboard'} size={15} />
+              <b className="small">{readiness.every((c) => c.ok) ? t('Đủ thông tin để quản lý duyệt') : t('Cần bổ sung để được duyệt ({a}/{b})', { a: readiness.filter((c) => c.ok).length, b: readiness.length })}</b>
+            </summary>
+            <div className="ready-list">
+              {readiness.map((c) => (
+                <span key={c.id} className={`review-check ${c.ok ? 'ok' : 'miss'}`}><Icon name={c.ok ? 'check' : 'alert'} size={13} />{t(c.label)}</span>
+              ))}
+            </div>
+          </details>
 
           <FormSection id="basic" active={tab}>
             <Field label="Tên bài tập" error={errors.name} required>
-              <Input maxLength={120} value={f.name} invalid={!!errors.name} onChange={(e) => set('name', e.target.value)} placeholder="VD: Squat thanh đòn sau" />
+              <Input maxLength={120} value={f.name} invalid={!!errors.name} onChange={(e) => set('name', e.target.value)} onBlur={() => blurCheck('name')} placeholder="VD: Squat thanh đòn sau" />
             </Field>
-            <Field label="Tên tiếng Anh"><Input maxLength={120} value={f.nameEn} onChange={(e) => set('nameEn', e.target.value)} placeholder="VD: Back squat" /></Field>
-            <Field label="Tên gọi khác" hint="Cách nhau bởi dấu phẩy – giúp tìm kiếm" className="span-2"><Input maxLength={255} value={f.aliases} onChange={(e) => set('aliases', e.target.value)} /></Field>
-            <Field label="Mô tả ngắn" className="span-2">
+            <Field label="Tên tiếng Anh" error={errors.nameEn}><Input maxLength={120} value={f.nameEn} invalid={!!errors.nameEn} onChange={(e) => set('nameEn', e.target.value)} onBlur={() => blurCheck('nameEn')} placeholder="VD: Back squat" /></Field>
+            <Field label="Tên gọi khác" error={errors.aliases} hint="Cách nhau bởi dấu phẩy – giúp tìm kiếm" className="span-2"><Input maxLength={255} value={f.aliases} invalid={!!errors.aliases} onChange={(e) => set('aliases', e.target.value)} onBlur={() => blurCheck('aliases')} /></Field>
+            <Field label="Mô tả ngắn" className="span-2" hint={t('Tối thiểu {n} ký tự để được duyệt', { n: MIN_DESCRIPTION })}>
               <Textarea maxLength={1000} rows={2} value={f.description} onChange={(e) => set('description', e.target.value)} />
               <Count value={f.description} max={1000} />
             </Field>
@@ -409,7 +541,7 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
             <Field label="Nhóm cơ chính" required>
               <Select value={f.muscleGroup} onChange={(e) => set('muscleGroup', e.target.value as MuscleGroup)}>{GROUPS.map((g) => <option key={g} value={g}>{muscleLabel[g]}</option>)}</Select>
             </Field>
-            <Field label="Cơ phụ trợ"><Input maxLength={255} value={f.secondaryMuscles} onChange={(e) => set('secondaryMuscles', e.target.value)} placeholder="VD: Mông, lưng dưới" /></Field>
+            <Field label="Cơ phụ trợ" error={errors.secondaryMuscles}><Input maxLength={255} value={f.secondaryMuscles} invalid={!!errors.secondaryMuscles} onBlur={() => blurCheck('secondaryMuscles')} onChange={(e) => set('secondaryMuscles', e.target.value)} placeholder="VD: Mông, lưng dưới" /></Field>
             <Field label="Cấp độ" required>
               <Select value={f.level} onChange={(e) => set('level', e.target.value as Level)}>{(Object.keys(levelLabel) as Level[]).map((l) => <option key={l} value={l}>{levelLabel[l][0]}</option>)}</Select>
             </Field>
@@ -419,7 +551,7 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
                 {LOCATIONS.map((l) => <option key={l} value={l}>{locationLabel[l]}</option>)}
               </Select>
             </Field>
-            <Field label="Dụng cụ" className="span-2"><Input maxLength={60} value={f.equipment} onChange={(e) => set('equipment', e.target.value)} placeholder="Thanh đòn, tạ đơn…" /></Field>
+            <Field label="Dụng cụ" error={errors.equipment} className="span-2"><Input maxLength={60} value={f.equipment} invalid={!!errors.equipment} onBlur={() => blurCheck('equipment')} onChange={(e) => set('equipment', e.target.value)} placeholder="Thanh đòn, tạ đơn…" /></Field>
             <div className="span-2">
               <span className="tiny muted">{t('Mục tiêu')} · {t('chọn một hoặc nhiều')}</span>
               <div className="chips mt-8" role="group" aria-label={t('Mục tiêu')}>
@@ -436,7 +568,7 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
           </FormSection>
 
           <FormSection id="guide" active={tab}>
-            <Field label="Hướng dẫn thực hiện" className="span-2" hint="Mỗi bước một dòng, VD: 1. Đứng thẳng…">
+            <Field label="Hướng dẫn thực hiện" className="span-2" hint={t('Mỗi bước một dòng, cần ít nhất {n} bước · hiện có {k} bước', { n: MIN_STEPS, k: countSteps(f.instructions) })}>
               <Textarea maxLength={2000} rows={5} value={f.instructions} onChange={(e) => set('instructions', e.target.value)} />
               <Count value={f.instructions} max={2000} />
             </Field>
@@ -450,7 +582,7 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
               <Count value={f.variations} max={2000} />
             </Field>
             <Field label="Link video" error={errors.videoUrl} className="span-2">
-              <Input maxLength={255} value={f.videoUrl} invalid={!!errors.videoUrl} onChange={(e) => set('videoUrl', e.target.value)} placeholder="https://…" />
+              <Input maxLength={255} value={f.videoUrl} invalid={!!errors.videoUrl} onBlur={() => blurCheck('videoUrl')} onChange={(e) => set('videoUrl', e.target.value)} placeholder="https://…" />
             </Field>
           </FormSection>
 

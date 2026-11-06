@@ -58,6 +58,10 @@ export interface Trainer {
   accountStatus: UserStatus; memberCount: number; shifts: Shift[];
 }
 export interface TrainerCreated { trainer: Trainer; temporaryPassword: string | null }
+/** Giờ tập mong muốn của hội viên theo tuần (1 = T2 … 7 = CN). */
+export interface TimeSlot { dayOfWeek: number; startTime: string; endTime: string }
+export interface MemberTimeSlot extends TimeSlot { memberId: number; memberName: string; memberCode: string }
+export interface BulkApproveResult { approved: number; skipped: string[] }
 
 // ---------- Plans & subscriptions ----------
 export interface MembershipPlan {

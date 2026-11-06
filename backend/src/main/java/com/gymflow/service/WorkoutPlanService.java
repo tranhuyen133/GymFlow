@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -111,9 +113,20 @@ public class WorkoutPlanService {
         if (req.endDate().isBefore(req.startDate())) throw ApiException.badRequest("Ngày kết thúc phải sau ngày bắt đầu");
         if (req.startDate().plusYears(1).isBefore(req.endDate())) throw ApiException.badRequest("Giáo án dài tối đa 1 năm");
         if (req.items().isEmpty()) throw ApiException.badRequest("Giáo án cần ít nhất một bài tập");
+        for (PlanItemRequest r : req.items()) {
+            String reps = r.reps().replace(" ", "").replaceAll("[sS]$", "");
+            if (!reps.matches("\\d{1,3}(-\\d{1,3})?")) continue;
+            String[] range = reps.split("-");
+            if (Integer.parseInt(range[0]) == 0) throw ApiException.badRequest("Số lần phải lớn hơn 0");
+            if (range.length == 2 && Integer.parseInt(range[0]) > Integer.parseInt(range[1])) {
+                throw ApiException.badRequest("Số lần \"" + r.reps().trim() + "\": số đầu phải nhỏ hơn số sau, VD 8-12");
+            }
+        }
     }
 
     private void apply(WorkoutPlan p, WorkoutPlanRequest req) {
+        // Bài đã có trong giáo án được giữ dù sau đó bị ẩn hoặc trả về chỉnh sửa; bài thêm mới phải đã duyệt và đang hiện.
+        Set<Long> existing = p.getItems().stream().map(i -> i.getExercise().getId()).collect(Collectors.toSet());
         p.setName(req.name().trim());
         p.setGoal(Mappers.blankToNull(req.goal()));
         p.setStartDate(req.startDate());
@@ -122,9 +135,13 @@ public class WorkoutPlanService {
         p.getItems().clear();
         int order = 0;
         for (PlanItemRequest r : req.items()) {
+            Exercise ex = exerciseService.load(r.exerciseId());
+            if (!existing.contains(ex.getId()) && (ex.getReviewStatus() != ReviewStatus.APPROVED || ex.isHidden())) {
+                throw ApiException.badRequest("Bài \"" + ex.getName() + "\" chưa được quản lý duyệt hoặc đang ẩn, chưa thêm được vào giáo án");
+            }
             WorkoutPlanItem i = new WorkoutPlanItem();
             i.setPlan(p);
-            i.setExercise(exerciseService.load(r.exerciseId()));
+            i.setExercise(ex);
             i.setDayOfWeek(r.dayOfWeek());
             i.setSortOrder(r.sortOrder() == null ? order : r.sortOrder());
             i.setSets(r.sets());

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Member, Schedule, ScheduleCreated, ScheduleStatus, Trainer, WorkoutPlanSummary } from '../../api/types';
+import type { Member, Schedule, ScheduleCreated, ScheduleStatus, TimeSlot, Trainer, WorkoutPlanSummary } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
 import { MemberSelect } from '../../components/MemberSelect';
@@ -9,7 +9,9 @@ import { useToast } from '../../components/Toast';
 import { WeekCalendar } from '../../components/WeekCalendar';
 import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
 import { t } from '../../i18n';
-import { addDays, fmtDateTime, fmtTime, fmtWeekday, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
+import { addDays, DAY_NAMES, fmtDateTime, fmtTime, fmtWeekday, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
+import { covered, fromMin, GYM_CLOSE, GYM_OPEN, hm, timeOptions, toMin, type WeekSlot } from '../../lib/hours';
+import '../../components/week-slots.css';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 
 type Filter = 'ALL' | ScheduleStatus;
@@ -203,6 +205,9 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
 }
 
 // ================= Form xếp / dời lịch =================
+// Giờ bắt đầu: bước 15 phút trong giờ mở cửa, muộn nhất 21:30 để còn 30 phút tập
+const START_TIMES = timeOptions(15, GYM_OPEN, fromMin(toMin(GYM_CLOSE) - 30));
+const withCurrent = (list: string[], v: string) => (list.includes(v) ? list : [...list, v].sort((a, b) => toMin(a) - toMin(b)));
 export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?: Schedule; presetMemberId?: number; onClose: () => void; onSaved: (firstDay?: Date) => void }) {
   const me = useMe();
   const toast = useToast();
@@ -249,6 +254,24 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
     }
   }, [plans.data, plans.loading, memberId, selected?.trainerId, edit, me.role]);
 
+  // Giờ hội viên muốn tập và ca của HLV phụ trách, để chọn giờ cho khớp cả hai bên
+  const prefs = useAsync(() => (memberId ? api.get<TimeSlot[]>(`/members/${memberId}/time-preferences`) : Promise.resolve([] as TimeSlot[])), [memberId]);
+  const tid = trainerId || (selected?.trainerId ? String(selected.trainerId) : '') || (edit?.trainerId ? String(edit.trainerId) : '') || (me.trainerId ? String(me.trainerId) : '');
+  const trainer = useAsync(() => (tid ? api.get<Trainer>(`/trainers/${tid}`).catch(() => null) : Promise.resolve(null)), [tid]);
+  const dow = date ? ((new Date(`${date}T00:00:00`).getDay() + 6) % 7) + 1 : 0;
+  const dayPrefs = (prefs.data ?? []).filter((p) => p.dayOfWeek === dow).sort((a, b) => toMin(a.startTime) - toMin(b.startTime));
+  const slot: WeekSlot = { dayOfWeek: dow, startTime: time, endTime: fromMin(toMin(time) + (Number(duration) || 0)) };
+  const fitsMember = dayPrefs.length === 0 || covered(dayPrefs, slot);
+  const shifts = trainer.data?.shifts ?? [];
+  const fitsTrainer = !trainer.data || shifts.length === 0 || covered(shifts, slot);
+  const outsideHours = toMin(time) < toMin(GYM_OPEN) || toMin(slot.endTime) > toMin(GYM_CLOSE);
+  const pickPref = (p: TimeSlot) => {
+    setTime(hm(p.startTime));
+    const len = toMin(p.endTime) - toMin(p.startTime);
+    // Giữ thời lượng đang chọn nếu vừa trong khung; khung ngắn hơn thì rút lại cho vừa
+    if (len < (Number(duration) || 0)) setDuration(String(Math.max(15, Math.min(240, len))));
+  };
+
   const submit = async () => {
     const v: Record<string, string> = {};
     if (!memberId) v.memberId = 'Chọn hội viên';
@@ -260,6 +283,7 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
     else if (start < new Date()) v.date = 'Không xếp vào thời điểm đã qua';
     const end = new Date(start.getTime() + d * 60000);
     if (!v.duration && end.getDate() !== start.getDate()) v.duration = 'Buổi tập phải kết thúc trong ngày';
+    if (!v.duration && outsideHours) v.time = t('Phòng tập mở cửa {open}–{close}, buổi tập phải nằm trong giờ này', { open: GYM_OPEN, close: GYM_CLOSE });
     setErrors(v); setError(null);
     if (Object.keys(v).length) return;
     setBusy(true);
@@ -332,13 +356,44 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
           </Field>
           <Field label="Tiêu đề" error={errors.title} required className="span-2"><Input maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
           <Field label="Ngày" error={errors.date} required><Input type="date" value={date} min={toIsoDate(new Date())} onChange={(e) => setDate(e.target.value)} /></Field>
-          <Field label="Giờ bắt đầu" required><Input type="time" step={900} value={time} onChange={(e) => setTime(e.target.value)} /></Field>
-          <Field label="Thời lượng (phút)" error={errors.duration} required>
+          <Field label="Giờ bắt đầu" error={errors.time} required hint={t('Mở cửa {open}–{close}', { open: GYM_OPEN, close: GYM_CLOSE })}>
+            <Select value={time} invalid={!!errors.time} onChange={(e) => { setTime(e.target.value); setErrors((x) => ({ ...x, time: '' })); }}>
+              {withCurrent(START_TIMES, time).map((v) => <option key={v} value={v}>{v}</option>)}
+            </Select>
+          </Field>
+          <Field label="Thời lượng (phút)" error={errors.duration} required hint={toMin(time) ? t('Kết thúc lúc {t}', { t: slot.endTime }) : undefined}>
             <Select value={duration} onChange={(e) => setDuration(e.target.value)}>
-              {[30, 45, 60, 75, 90, 120].map((m) => <option key={m} value={m}>{t('{n} phút', { n: m })}</option>)}
+              {[30, 45, 60, 75, 90, 120].map((m) => <option key={m} value={m} disabled={toMin(time) + m > toMin(GYM_CLOSE)}>{t('{n} phút', { n: m })}</option>)}
               {![30, 45, 60, 75, 90, 120].includes(Number(duration)) && <option value={duration}>{t('{n} phút', { n: duration })}</option>}
             </Select>
           </Field>
+          {memberId && dow > 0 && (
+            <div className="span-2 hours-note">
+              <Icon name="clock" size={15} />
+              <span className="small">{t('Hội viên muốn tập {day}:', { day: DAY_NAMES[dow - 1] })}</span>
+              {prefs.loading && !prefs.data ? <span className="tiny faint">…</span>
+                : dayPrefs.length === 0 ? <span className="tiny faint">{(prefs.data?.length ?? 0) > 0 ? t('không đăng ký ngày này') : t('chưa đăng ký giờ tập')}</span>
+                : dayPrefs.map((p) => {
+                  const on = covered([p], slot);
+                  return (
+                    <button key={p.startTime} type="button" className={`pref-chip ${on ? 'ok' : ''}`} onClick={() => pickPref(p)} title={t('Chọn khung giờ này')}>
+                      {on && <Icon name="check" size={12} />}{hm(p.startTime)}–{hm(p.endTime)}
+                    </button>
+                  );
+                })}
+            </div>
+          )}
+          {!outsideHours && (!fitsMember || !fitsTrainer) && (
+            <div className="span-2">
+              <Alert kind="warning">
+                {!fitsMember && <div>{t('Giờ này nằm ngoài khung hội viên đã đăng ký. Nên chọn một khung ở trên hoặc hỏi lại hội viên.')}</div>}
+                {!fitsTrainer && <div>{t('Giờ này nằm ngoài ca làm của HLV {name} ({shifts}). Cập nhật ca ở Hồ sơ › Ca làm nếu cần.', {
+                  name: trainer.data?.fullName ?? '',
+                  shifts: shifts.filter((s) => s.dayOfWeek === dow).map((s) => `${hm(s.startTime)}–${hm(s.endTime)}`).join(', ') || t('nghỉ ngày này'),
+                })}</div>}
+              </Alert>
+            </div>
+          )}
           {!edit && (
             <Field label="Lặp lại hằng tuần" hint="Tuần nào trùng giờ / hết gói sẽ được bỏ qua">
               <Select value={repeat} onChange={(e) => setRepeat(e.target.value)}>
