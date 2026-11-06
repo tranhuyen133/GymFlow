@@ -1,0 +1,55 @@
+/* ---------- Phong cách thẻ gói tập dùng cho các màn khác ----------
+   Lấy từ packages.css (PlanCard): vạch nghiêng tốc độ ở góc phải đậm dần khi rê chuột, nhấc thẻ kiểu lò xo,
+   số lớn đậm, thẻ nổi bật có nền xanh loang + viền sáng (.beam). Áp cho: thẻ số liệu (Stat) ở Tổng quan quản lý,
+   Tiến độ hội viên, và thẻ huấn luyện viên. Tắt chuyển động khi bật "giảm chuyển động". */
+
+/* ----- Thẻ số liệu (Stat) -----
+   Dùng thuộc tính translate (không phải transform) để không bị animation statIn giữ lại transform. */
+.stat { transition: translate 0.45s var(--ease-spring), border-color 0.25s, box-shadow 0.35s var(--ease-out); }
+.stat::after { transition: opacity 0.3s, transform 0.6s var(--ease-spring); }
+.stat:hover { translate: 0 -4px; border-color: var(--line-strong); box-shadow: var(--shadow-float); }
+.stat:hover::after { opacity: 0.18; transform: skewX(var(--slant)) translateX(-10px); }
+.stat .label { text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; font-weight: 700; }
+.stat .value { font-weight: 900; letter-spacing: -0.035em; }
+
+.stat.stat-hot {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--hairline));
+  background-image: radial-gradient(120% 90% at 100% 0%, rgba(0, 217, 91, 0.16), transparent 60%);
+  box-shadow: 0 24px 60px -34px rgba(0, 178, 75, 0.7);
+}
+.stat.stat-hot .value { background: var(--grad-go); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.stat.stat-hot .value small { -webkit-text-fill-color: var(--muted); }
+
+/* ----- Thẻ huấn luyện viên ----- */
+.trainer-card { position: relative; overflow: hidden; transition: translate 0.45s var(--ease-spring), border-color 0.25s, box-shadow 0.35s var(--ease-out); }
+.trainer-card::after {
+  content: ''; position: absolute; top: -30%; bottom: -30%; right: 26px; width: 22px; pointer-events: none;
+  background: var(--primary); opacity: 0.06; transform: skewX(var(--slant));
+  box-shadow: 34px 0 0 -4px color-mix(in srgb, var(--primary) 60%, transparent);
+  transition: opacity 0.3s, transform 0.6s var(--ease-spring);
+}
+.trainer-card > * { position: relative; z-index: 1; }
+.card.trainer-card.hoverable:hover { transform: none; translate: 0 -6px; border-color: var(--line-strong); box-shadow: var(--shadow-float); }
+.trainer-card:hover::after { opacity: 0.14; transform: skewX(var(--slant)) translateX(-10px); }
+.trainer-card.off { opacity: 0.72; }
+
+.tc-count { display: flex; align-items: baseline; gap: 6px; }
+.tc-count b { font-size: 34px; line-height: 1; font-weight: 900; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.trainer-card.top .tc-count b { background: var(--grad-go); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tc-count span { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.tc-flag {
+  position: absolute; top: 0; right: 22px; z-index: 3; display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px 6px; border-radius: 0 0 10px 10px; background: var(--grad-go); color: var(--on-primary);
+  font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.trainer-card.top {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--hairline));
+  background-image: radial-gradient(120% 90% at 100% 0%, rgba(0, 217, 91, 0.14), transparent 60%);
+}
+.trainer-card.top .tc-head { padding-right: 120px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stat, .stat::after, .trainer-card, .trainer-card::after { transition: none; }
+  .stat:hover, .card.trainer-card.hoverable:hover { translate: none; }
+  .stat:hover::after, .trainer-card:hover::after { transform: skewX(var(--slant)); }
+}

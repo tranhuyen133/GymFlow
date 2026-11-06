@@ -26,7 +26,7 @@ docker compose ps           # đợi backend hiện healthy
 | API backend | http://localhost:8080 |
 | MySQL | localhost:3307 |
 
-Tài khoản demo nằm trong `backend/src/main/java/com/gymflow/config/DemoAccounts.java` (bật bằng `SEED_DEMO_DATA=true`).
+Tài khoản demo: email trong `backend/src/main/java/com/gymflow/config/DemoAccounts.java`, mật khẩu đặt bằng `DEMO_PASSWORD` trong `.env` (để trống thì sinh ngẫu nhiên). Bật bằng `SEED_DEMO_DATA=true` và `DEMO_QUICK_LOGIN=true` – mặc định đều tắt.
 
 ## Chạy chế độ dev (sửa code, tự tải lại)
 ```bash

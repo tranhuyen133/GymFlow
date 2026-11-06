@@ -68,9 +68,9 @@ public class DataSeeder implements ApplicationRunner {
         Trainer[] trainers = {
                 trainer(user(DemoAccounts.TRAINER.email(), DemoAccounts.TRAINER.password(), "Lê Hoàng Phúc", "0902000001", Role.TRAINER),
                         "Thể hình, giảm mỡ", 6, "NASM-CPT, Sơ cứu cơ bản", "6 năm huấn luyện, chuyên giáo án giảm mỡ cho người đi làm."),
-                trainer(user("trainer2@gymflow.vn", "Trainer@123", "Nguyễn Thảo Vy", "0902000002", Role.TRAINER),
+                trainer(user("trainer2@gymflow.vn", DemoAccounts.TRAINER.password(), "Nguyễn Thảo Vy", "0902000002", Role.TRAINER),
                         "Yoga, phục hồi chức năng", 4, "RYT-200", "Chuyên các bài mobility và phục hồi chấn thương nhẹ."),
-                trainer(user("trainer3@gymflow.vn", "Trainer@123", "Trần Đức Mạnh", "0902000003", Role.TRAINER),
+                trainer(user("trainer3@gymflow.vn", DemoAccounts.TRAINER.password(), "Trần Đức Mạnh", "0902000003", Role.TRAINER),
                         "Sức mạnh, powerlifting", 8, "ISSA, VN Powerlifting L2", "Từng thi đấu powerlifting, tập trung kỹ thuật squat – deadlift.")};
         for (Trainer t : trainers) {
             for (int d = 1; d <= 6; d++) {

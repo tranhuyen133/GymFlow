@@ -33,11 +33,14 @@ export default function Trainers() {
           {data.map((tr) => {
             const hours = tr.shifts.reduce((a, s) => a + (Number(s.endTime.slice(0, 2)) * 60 + Number(s.endTime.slice(3, 5)) - Number(s.startTime.slice(0, 2)) * 60 - Number(s.startTime.slice(3, 5))) / 60, 0);
             const days = new Set(tr.shifts.map((s) => s.dayOfWeek));
+            // HLV đang phụ trách nhiều hội viên nhất được làm nổi bật như gói "Phổ biến nhất" (chỉ khi có từ 2 HLV)
+            const top = data.length > 1 && tr.active && tr.memberCount > 0 && tr.memberCount === Math.max(...data.map((x) => x.memberCount));
             return (
-              <Card key={tr.id} className="hoverable">
-                <div className="row between" style={{ alignItems: 'flex-start' }}>
+              <Card key={tr.id} className={`hoverable trainer-card ${top ? 'top beam beam-slow' : ''} ${tr.active ? '' : 'off'}`}>
+                {top && <span className="tc-flag"><Icon name="star" size={12} />{t('Nhiều hội viên nhất')}</span>}
+                <div className="row between tc-head" style={{ alignItems: 'flex-start' }}>
                   <Person name={tr.fullName} sub={tr.email} />
-                  {tr.active ? <Badge tone="green">Đang nhận HV</Badge> : <Badge tone="muted">Tạm ngừng</Badge>}
+                  {!top && (tr.active ? <Badge tone="green">Đang nhận HV</Badge> : <Badge tone="muted">Tạm ngừng</Badge>)}
                 </div>
                 <div className="stack-sm mt-16 small">
                   <div className="row"><Icon name="target" size={15} className="ok" />{tr.specialty ?? t('Chưa cập nhật chuyên môn')}</div>
@@ -47,8 +50,11 @@ export default function Trainers() {
                 <div className="row mt-16" style={{ gap: 4 }}>
                   {DAYS.map((d, i) => <span key={d} className={`chip ${days.has(i + 1) ? 'on' : ''}`} style={{ padding: '0 7px' }}>{d}</span>)}
                 </div>
-                <div className="row between mt-16">
-                  <span className="tiny faint">{tn('{n} hội viên · {h} giờ/tuần', { n: <b className="num" style={{ color: 'var(--ink)', fontSize: 16 }}>{tr.memberCount}</b>, h: Math.round(hours) })}</span>
+                <div className="row between mt-16" style={{ alignItems: 'flex-end' }}>
+                  <div>
+                    <div className="tc-count"><b>{tr.memberCount}</b><span>{t('hội viên')}</span></div>
+                    <span className="tiny faint">{t('{h} giờ/tuần', { h: Math.round(hours) })}</span>
+                  </div>
                   <div className="row" style={{ gap: 2 }}>
                     <Button size="sm" variant="ghost" icon="clock" aria-label="Ca làm" title="Ca làm" onClick={() => setShifts(tr)} />
                     <Button size="sm" variant="ghost" icon="edit" aria-label="Sửa" onClick={() => setEditing(tr)} />
