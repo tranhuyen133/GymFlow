@@ -46,6 +46,7 @@ public class ScheduleController {
 
     @PutMapping("/api/schedules/{id}/cancel")
     @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")
+    // NOTE #1: SCRUM-178 covers the schedule cancel/missed API endpoints.
     public ScheduleResponse cancel(@PathVariable Long id) {
         return scheduleService.cancel(CurrentUser.get(), id);
     }
