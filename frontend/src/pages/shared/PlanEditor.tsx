@@ -38,6 +38,8 @@ export default function PlanEditor() {
   const [busy, setBusy] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [pendingNav, setPendingNav] = useState<string | null>(null);
+  const [copyConfirm, setCopyConfirm] = useState<{ to: number; count: number } | null>(null);
 
   useEffect(() => {
     const p = plan.data;
@@ -65,14 +67,21 @@ export default function PlanEditor() {
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
     window.addEventListener('beforeunload', warn);
     const handleClick = (e: MouseEvent) => {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const target = (e.target as HTMLElement).closest('a');
       if (target && target.getAttribute('href') && !target.getAttribute('target')) {
         const href = target.getAttribute('href');
-        if (href && !href.startsWith('blob:') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
-          if (!window.confirm(t('Thay đổi chưa lưu sẽ bị mất. Bạn có chắc muốn rời đi?'))) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
+        if (
+          href &&
+          !href.startsWith('#') &&
+          !href.startsWith('blob:') &&
+          !href.startsWith('mailto:') &&
+          !href.startsWith('tel:') &&
+          !href.startsWith('javascript:')
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          setPendingNav(href);
         }
       }
     };
@@ -116,14 +125,20 @@ export default function PlanEditor() {
     setItems((xs) => xs.map((x) => (x.dayOfWeek === day ? { ...x, sortOrder: list.indexOf(x.key) } : x)));
     touch();
   };
+  const applyCopy = (to: number) => {
+    setItems((xs) => [...xs.filter((x) => x.dayOfWeek !== to), ...xs.filter((x) => x.dayOfWeek === day).map((x) => ({ ...x, id: undefined, key: keySeq++, dayOfWeek: to }))]);
+    toast.info(t('Đã chép {from} sang {to}', { from: DAY_NAMES[day - 1], to: DAY_NAMES[to - 1] }));
+    touch();
+  };
+
   const copyDay = (to: number) => {
     if (to === day) return;
     const destCount = items.filter((x) => x.dayOfWeek === to).length;
     if (destCount > 0) {
-      if (!window.confirm(t('Ngày {day} đã có {n} bài, ghi đè?', { day: DAYS[to - 1], n: destCount }))) return;
+      setCopyConfirm({ to, count: destCount });
+      return;
     }
-    setItems((xs) => [...xs.filter((x) => x.dayOfWeek !== to), ...xs.filter((x) => x.dayOfWeek === day).map((x) => ({ ...x, id: undefined, key: keySeq++, dayOfWeek: to }))]);
-    toast.info(t('Đã chép {from} sang {to}', { from: DAY_NAMES[day - 1], to: DAY_NAMES[to - 1] })); touch();
+    applyCopy(to);
   };
 
   const save = async () => {
@@ -166,8 +181,11 @@ export default function PlanEditor() {
         className="link small row"
         style={{ gap: 6, marginBottom: 14, background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
         onClick={() => {
-          if (dirty && !window.confirm(t('Thay đổi chưa lưu sẽ bị mất. Bạn có chắc muốn rời đi?'))) return;
-          navigate('/workout-plans');
+          if (dirty) {
+            setPendingNav('/workout-plans');
+          } else {
+            navigate('/workout-plans');
+          }
         }}
       >
         <Icon name="arrowLeft" size={15} />{t('Danh sách giáo án')}
@@ -281,6 +299,41 @@ export default function PlanEditor() {
 
       {removing && <Confirm danger title="Xoá giáo án?" message="Các buổi tập đã gắn giáo án này vẫn được giữ lại, chỉ bỏ liên kết." confirmText="Xoá" onClose={() => setRemoving(false)}
         onConfirm={async () => { try { await api.del(`/workout-plans/${id}`); toast.success('Đã xoá giáo án'); setDirty(false); navigate('/workout-plans'); } catch (e) { toast.error(errMsg(e)); throw e; } }} />}
+
+      {pendingNav && (
+        <Confirm
+          danger
+          title="Rời khỏi trang?"
+          message={t('Thay đổi chưa lưu sẽ bị mất. Bạn có chắc muốn rời đi?')}
+          confirmText="Rời đi"
+          onClose={() => setPendingNav(null)}
+          onConfirm={() => {
+            const dest = pendingNav;
+            setDirty(false);
+            setPendingNav(null);
+            if (dest.startsWith('http://') || dest.startsWith('https://')) {
+              window.location.href = dest;
+            } else {
+              navigate(dest);
+            }
+          }}
+        />
+      )}
+
+      {copyConfirm && (
+        <Confirm
+          danger
+          title={t('Ghi đè bài tập ngày {day}?', { day: DAYS[copyConfirm.to - 1] })}
+          message={t('Ngày {day} đã có {n} bài tập. Việc chép đè sẽ thay thế các bài tập hiện có của ngày này.', { day: DAYS[copyConfirm.to - 1], n: copyConfirm.count })}
+          confirmText="Ghi đè"
+          onClose={() => setCopyConfirm(null)}
+          onConfirm={() => {
+            const { to } = copyConfirm;
+            setCopyConfirm(null);
+            applyCopy(to);
+          }}
+        />
+      )}
     </div>
   );
 }
