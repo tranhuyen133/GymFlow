@@ -133,6 +133,9 @@ public class ScheduleService {
         WorkoutSchedule s = load(id);
         if (!access.canCoach(user, s.getMember())) throw ApiException.forbidden();
         if (s.getStatus() != ScheduleStatus.SCHEDULED) throw ApiException.badRequest("Chỉ huỷ được buổi chưa diễn ra");
+        if (!s.getStartTime().isAfter(LocalDateTime.now(clock))) {
+            throw ApiException.badRequest("Chỉ huỷ được buổi chưa diễn ra");
+        }
         s.setStatus(ScheduleStatus.CANCELLED);
         auditService.log("SCHEDULE_CANCEL", "SCHEDULE", s.getId(), s.getMember().getCode() + " · " + s.getStartTime().format(FMT));
         return mappers.schedule(s);
