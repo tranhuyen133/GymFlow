@@ -12,6 +12,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -170,5 +172,101 @@ class ContentReviewTest {
         article(ArticleStatus.PUBLISHED, 2L, true);
         assertThatThrownBy(() -> articles.delete(20L)).isInstanceOf(ApiException.class);
         verify(articleRepository, never()).delete(any());
+    }
+
+    @Test
+    void trainerEditOfPublishedArticleGoesBackToPendingAndClearsMetadata() {
+        Article a = article(ArticleStatus.PUBLISHED, 2L, true);
+        a.setPublishedAt(LocalDateTime.now());
+        a.setReviewedBy(new User());
+        a.setReviewedAt(LocalDateTime.now());
+        a.setReviewNote("Đạt chuẩn");
+        when(articleRepository.existsBySlugAndIdNot(any(), eq(20L))).thenReturn(false);
+
+        ArticleRequest req = new ArticleRequest("uong-du-nuoc", "Uống đủ nước mỗi ngày", ArticleCategory.HYDRATION,
+                "Tóm tắt mới", "Nội dung mới", null, null);
+        articles.update(TRAINER, 20L, req);
+
+        assertThat(a.getStatus()).isEqualTo(ArticleStatus.PENDING);
+        assertThat(a.getPublishedAt()).isNull();
+        assertThat(a.getReviewedBy()).isNull();
+        assertThat(a.getReviewedAt()).isNull();
+        assertThat(a.getReviewNote()).isNull();
+    }
+
+    @Test
+    void trainerSubmitResetsReviewMetadataFromPreviousRejection() {
+        Article a = article(ArticleStatus.DRAFT, 2L, true);
+        a.setReviewedBy(new User());
+        a.setReviewedAt(LocalDateTime.now());
+        a.setReviewNote("Cần bổ sung nguồn tin cậy");
+
+        articles.act(TRAINER, 20L, new ArticleActionRequest(ArticleAction.SUBMIT, null));
+
+        assertThat(a.getStatus()).isEqualTo(ArticleStatus.PENDING);
+        assertThat(a.getReviewNote()).isNull();
+        assertThat(a.getReviewedBy()).isNull();
+        assertThat(a.getReviewedAt()).isNull();
+    }
+
+    @Test
+    void trainerCannotEditArchivedArticle() {
+        article(ArticleStatus.ARCHIVED, 2L, true);
+        ArticleRequest req = new ArticleRequest("uong-du-nuoc", "Uống đủ nước", ArticleCategory.HYDRATION,
+                "Tóm tắt", "Nội dung", null, null);
+        assertThatThrownBy(() -> articles.update(TRAINER, 20L, req))
+                .isInstanceOf(ApiException.class)
+                .extracting(x -> ((ApiException) x).getStatus()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void trainerCannotEditSomeoneElsesArticle() {
+        article(ArticleStatus.DRAFT, 99L, true);
+        ArticleRequest req = new ArticleRequest("uong-du-nuoc", "Uống đủ nước", ArticleCategory.HYDRATION,
+                "Tóm tắt", "Nội dung", null, null);
+        assertThatThrownBy(() -> articles.update(TRAINER, 20L, req))
+                .isInstanceOf(ApiException.class)
+                .extracting(x -> ((ApiException) x).getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void publicEndpointOnlyReturnsPublishedArticles() {
+        Article published = new Article();
+        published.setId(1L);
+        published.setTitle("Bài 1");
+        published.setSummary("Tóm tắt 1");
+        published.setStatus(ArticleStatus.PUBLISHED);
+
+        when(articleRepository.findByStatusOrderByPublishedAtDesc(ArticleStatus.PUBLISHED))
+                .thenReturn(List.of(published));
+
+        articles.published(null, "");
+        verify(articleRepository).findByStatusOrderByPublishedAtDesc(ArticleStatus.PUBLISHED);
+    }
+
+    @Test
+    void publicArticleResponseHidesReviewedAt() {
+        Mappers realMappers = new Mappers(null, null, null, null, java.time.Clock.systemDefaultZone());
+        Article a = new Article();
+        a.setId(1L);
+        a.setTitle("Uống nước");
+        a.setSummary("Tóm tắt");
+        a.setBody("Nội dung");
+        a.setCategory(ArticleCategory.HYDRATION);
+        a.setContentOrigin(ContentOrigin.SELF_AUTHORED);
+        a.setStatus(ArticleStatus.PUBLISHED);
+        a.setReviewedAt(LocalDateTime.now());
+        a.setPublishedAt(LocalDateTime.now());
+        a.setReviewNote("Ghi chú nội bộ");
+
+        ArticleResponse pub = realMappers.article(a, false);
+        assertThat(pub.reviewedAt()).isNull();
+        assertThat(pub.reviewNote()).isNull();
+        assertThat(pub.reviewedByName()).isNull();
+        assertThat(pub.authorId()).isNull();
+
+        ArticleResponse internal = realMappers.article(a, true);
+        assertThat(internal.reviewedAt()).isNotNull();
+        assertThat(internal.reviewNote()).isEqualTo("Ghi chú nội bộ");
     }
 }

@@ -120,7 +120,7 @@ public class Mappers {
                 internal && a.getAuthor() != null ? a.getAuthor().getFullName() : null,
                 internal && a.getAuthor() != null ? a.getAuthor().getId() : null,
                 internal && a.getReviewedBy() != null ? a.getReviewedBy().getFullName() : null,
-                a.getReviewedAt(), a.getPublishedAt(),
+                internal ? a.getReviewedAt() : null, a.getPublishedAt(),
                 internal ? a.getCreatedAt() : null, a.getUpdatedAt(), sources(a.getSources()));
     }
 

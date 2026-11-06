@@ -3,6 +3,7 @@ package com.gymflow.common;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -31,7 +32,9 @@ public class GlobalExceptionHandler {
             Map.entry("uq_logs_schedule", "Buổi tập này đã được ghi nhận hoàn thành"),
             Map.entry("ck_ws_time", "Giờ kết thúc phải sau giờ bắt đầu"),
             Map.entry("ck_shift_time", "Giờ kết thúc ca phải sau giờ bắt đầu"),
-            Map.entry("ck_sub_dates", "Ngày kết thúc gói phải sau ngày bắt đầu")
+            Map.entry("ck_sub_dates", "Ngày kết thúc gói phải sau ngày bắt đầu"),
+            Map.entry("uq_article_slug", "Đường dẫn bài viết đã tồn tại"),
+            Map.entry("uq_source_code", "Mã nguồn tham khảo đã tồn tại")
     );
 
     public record ErrorBody(LocalDateTime timestamp, int status, String message, Map<String, String> fieldErrors) {
@@ -75,6 +78,11 @@ public class GlobalExceptionHandler {
         }
         log.warn("Data integrity violation: {}", raw);
         return body(HttpStatus.CONFLICT, "Dữ liệu bị trùng hoặc vi phạm ràng buộc", null);
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorBody> handleOptimisticLock(OptimisticLockingFailureException ex) {
+        return body(HttpStatus.CONFLICT, "Dữ liệu đã được người khác cập nhật, vui lòng tải lại trang", null);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

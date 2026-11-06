@@ -50,7 +50,7 @@ public class ArticleService {
     // ---------- Nội bộ (ADMIN, TRAINER) ----------
     @Transactional(readOnly = true)
     public List<ArticleResponse> all(ArticleStatus status) {
-        return articleRepository.findAllByOrderByUpdatedAtDescCreatedAtDesc().stream()
+        return articleRepository.findAllOrdered().stream()
                 .filter(a -> status == null || a.getStatus() == status)
                 .map(a -> mappers.article(a, true)).toList();
     }
@@ -77,11 +77,15 @@ public class ArticleService {
     public ArticleResponse update(AuthUser user, Long id, ArticleRequest req) {
         Article a = load(id);
         ensureCanEdit(user, a);
+        if (!user.isAdmin() && a.getStatus() == ArticleStatus.ARCHIVED) {
+            throw ApiException.conflict("Bài viết đã lưu trữ, vui lòng liên hệ Quản trị viên khôi phục trước khi chỉnh sửa");
+        }
         if (articleRepository.existsBySlugAndIdNot(req.slug(), id)) throw ApiException.conflict("Đường dẫn bài viết đã tồn tại");
         apply(a, req);
         if (!user.isAdmin() && a.getStatus() == ArticleStatus.PUBLISHED) {
             a.setStatus(ArticleStatus.PENDING);
             a.setPublishedAt(null);
+            resetReviewState(a);
         }
         auditService.log("ARTICLE_UPDATE", "ARTICLE", a.getId(), a.getTitle());
         return mappers.article(a, true);
@@ -96,6 +100,7 @@ public class ArticleService {
                 ensureCanEdit(user, a);
                 require(a, ArticleStatus.DRAFT);
                 a.setStatus(ArticleStatus.PENDING);
+                resetReviewState(a);
             }
             case APPROVE -> {
                 ensureAdmin(user);
@@ -122,6 +127,7 @@ public class ArticleService {
                 require(a, ArticleStatus.ARCHIVED);
                 a.setStatus(ArticleStatus.DRAFT);
                 a.setPublishedAt(null);
+                resetReviewState(a);
             }
         }
         auditService.log("ARTICLE_" + req.action().name(), "ARTICLE", a.getId(), a.getTitle());
@@ -151,6 +157,12 @@ public class ArticleService {
         a.setReviewNote(note);
         a.setReviewedBy(userRepository.getReferenceById(user.id()));
         a.setReviewedAt(LocalDateTime.now());
+    }
+
+    private void resetReviewState(Article a) {
+        a.setReviewNote(null);
+        a.setReviewedBy(null);
+        a.setReviewedAt(null);
     }
 
     private static void require(Article a, ArticleStatus expected) {
