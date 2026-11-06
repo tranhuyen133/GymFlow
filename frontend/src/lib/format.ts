@@ -67,6 +67,8 @@ const actionLabel_VI: Record<string, string> = {
   WORKOUT_PLAN_CREATE: 'Tạo giáo án', WORKOUT_PLAN_UPDATE: 'Sửa giáo án', WORKOUT_PLAN_STATUS: 'Đổi trạng thái giáo án', WORKOUT_PLAN_DELETE: 'Xoá giáo án',
   SCHEDULE_CREATE: 'Xếp lịch', SCHEDULE_UPDATE: 'Dời lịch', SCHEDULE_CANCEL: 'Huỷ buổi', SCHEDULE_MISSED: 'Đánh vắng', SCHEDULE_COMPLETE: 'Hoàn thành buổi',
   SCHEDULE_AUTO_MISSED: 'Tự đánh vắng', WEIGHT_CREATE: 'Ghi cân nặng', WEIGHT_UPDATE: 'Sửa cân nặng', WEIGHT_DELETE: 'Xoá cân nặng', SYSTEM_SEED: 'Khởi tạo dữ liệu',
+  FORUM_HIDE: 'Ẩn bài diễn đàn', FORUM_SHOW: 'Hiện lại bài diễn đàn', FORUM_PIN: 'Ghim chủ đề', FORUM_UNPIN: 'Bỏ ghim chủ đề', FORUM_LOCK: 'Khoá chủ đề',
+  FORUM_UNLOCK: 'Mở khoá chủ đề', FORUM_DELETE: 'Xoá bài diễn đàn', FORUM_REPORT: 'Báo cáo bài vi phạm', FORUM_REPORT_RESOLVE: 'Xử lý báo cáo vi phạm',
 };
 
 // ---------- Ngày giờ (backend trả giờ địa phương không kèm múi giờ) ----------

@@ -16,6 +16,8 @@ import { NAME_RE } from '../lib/validation';
 // Trùng quy tắc với backend (Dtos.PASSWORD_RULE / PHONE_RULE / EMAIL_RULE) để báo lỗi ngay, server vẫn kiểm tra lại.
 const PHONE_RE = /^(0|\+84)\d{9,10}$/;
 const PW_RE = /^(?=.*[A-Za-z])(?=.*\d).{8,72}$/;
+/** Bỏ dấu cách, dấu chấm, gạch nối người dùng hay gõ theo kiểu "0912 345 678" trước khi kiểm tra và gửi lên. */
+const cleanPhone = (s: string) => s.replace(/[\s.-]/g, '');
 
 const EMPTY: RegisterRequest = { fullName: '', email: '', phone: '', password: '', confirmPassword: '', acceptTerms: false };
 
@@ -27,7 +29,8 @@ function validate(f: RegisterRequest) {
   else if (!NAME_RE.test(name)) v.fullName = 'Họ tên chỉ gồm chữ cái và khoảng trắng';
   if (!f.email.trim()) v.email = 'Vui lòng nhập email';
   else if (!EMAIL_RE.test(f.email.trim())) v.email = 'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)';
-  if (f.phone.trim() && !PHONE_RE.test(f.phone.trim())) v.phone = 'Số điện thoại không hợp lệ (VD: 0912345678)';
+  const phone = cleanPhone(f.phone.trim());
+  if (phone && !PHONE_RE.test(phone)) v.phone = 'Số điện thoại không hợp lệ (VD: 0912345678)';
   if (!f.password) v.password = 'Vui lòng nhập mật khẩu';
   else if (!PW_RE.test(f.password)) v.password = 'Tối thiểu 8 ký tự, gồm cả chữ và số';
   if (!f.confirmPassword) v.confirmPassword = 'Vui lòng nhập lại mật khẩu';
@@ -85,13 +88,16 @@ export default function Register() {
     setBusy(true);
     try {
       const res = await api.post<RegisterResponse>('/auth/register', {
-        ...f, fullName: f.fullName.trim(), email: f.email.trim(), phone: f.phone.trim(),
+        ...f, fullName: f.fullName.trim(), email: f.email.trim(), phone: cleanPhone(f.phone.trim()),
       });
       navigate('/login', { replace: true, state: { registered: res.email } });
     } catch (err) {
       const is409 = err instanceof ApiError && err.status === 409;
-      setEmailTaken(is409);
-      const fields = is409 ? { email: err.message } : fieldErrs(err);
+      // Backend trả 409 cho cả email trùng lẫn số điện thoại trùng: đặt lỗi vào đúng ô theo nội dung thông báo,
+      // trước đây mọi 409 đều hiện dưới ô Email kèm dòng "Email này đã có tài khoản".
+      const phoneTaken = is409 && /điện thoại/i.test(err.message);
+      setEmailTaken(is409 && !phoneTaken);
+      const fields = is409 ? { [phoneTaken ? 'phone' : 'email']: err.message } : fieldErrs(err);
       setErrors(fields);
       requestAnimationFrame(() => focusFormError(formRef.current, fields));
       if (is409) {

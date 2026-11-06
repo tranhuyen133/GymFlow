@@ -11,14 +11,17 @@ import './styles.css';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
+      {/* Truyền hàm cho LangProvider: đổi ngôn ngữ thì render lại toàn bộ chữ mà không gỡ cây giao diện */}
       <LangProvider>
-        <BrowserRouter>
-          <ToastProvider>
-            <AuthProvider>
-              <App />
-            </AuthProvider>
-          </ToastProvider>
-        </BrowserRouter>
+        {() => (
+          <BrowserRouter>
+            <ToastProvider>
+              <AuthProvider>
+                <App />
+              </AuthProvider>
+            </ToastProvider>
+          </BrowserRouter>
+        )}
       </LangProvider>
     </ThemeProvider>
   </StrictMode>,
