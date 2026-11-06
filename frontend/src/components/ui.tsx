@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { locale, t, tx } from '../i18n';
 import { hueOf, initials, type Tone } from '../lib/format';
 import { Icon, type IconName } from './Icon';
+import './sport.css';
 
 // ---------- Button ----------
 type BtnVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'info';
@@ -62,9 +63,10 @@ export function Card({ title, icon, actions, children, flush, className = '' }: 
   );
 }
 
-export function Stat({ label, value, unit, foot, icon, accent }: { label: string; value: ReactNode; unit?: string; foot?: ReactNode; icon: IconName; accent?: string }) {
+export function Stat({ label, value, unit, foot, icon, accent, highlight }: { label: string; value: ReactNode; unit?: string; foot?: ReactNode; icon: IconName; accent?: string; highlight?: boolean }) {
+  // highlight: số liệu nổi bật nhất của màn – viền sáng chạy quanh như thẻ gói "Phổ biến nhất"
   return (
-    <div className="stat" style={accent ? { ['--accent' as string]: accent } : undefined}>
+    <div className={`stat ${highlight ? 'stat-hot beam beam-slow' : ''}`} style={accent ? { ['--accent' as string]: accent } : undefined}>
       <div className="label"><Icon name={icon} />{t(label)}</div>
       <div className="value">{value}{unit && <small>{t(unit)}</small>}</div>
       {foot && <div className="foot">{tx(foot)}</div>}

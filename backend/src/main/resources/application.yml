@@ -40,17 +40,19 @@ app:
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:720}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8081}
-  seed-demo-data: ${SEED_DEMO_DATA:true}
+  # Mặc định TẮT (an toàn cho production). Máy local bật bằng SEED_DEMO_DATA=true trong .env
+  seed-demo-data: ${SEED_DEMO_DATA:false}
   demo:
-    # Hiện nút đăng nhập nhanh bằng tài khoản demo (chỉ các tài khoản thật sự tồn tại). Tắt khi triển khai thật.
-    quick-login: ${DEMO_QUICK_LOGIN:true}
+    # Hiện nút đăng nhập nhanh bằng tài khoản demo (chỉ các tài khoản thật sự tồn tại). Mặc định tắt.
+    quick-login: ${DEMO_QUICK_LOGIN:false}
   registration:
     enabled: ${REGISTRATION_ENABLED:true}
   # Giới hạn đăng nhập / đăng ký / quên mật khẩu theo IP. Chỉ tắt khi chạy kiểm thử tải.
   rate-limit:
     enabled: ${RATE_LIMIT_ENABLED:true}
   reset:
-    expose-token: ${RESET_EXPOSE_TOKEN:true}
+    # Trả mã đặt lại mật khẩu trong API (chưa có gửi email). Mặc định tắt: bật thì ai cũng đặt lại được mật khẩu người khác.
+    expose-token: ${RESET_EXPOSE_TOKEN:false}
     valid-minutes: 30
 
 management:

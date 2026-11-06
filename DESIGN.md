@@ -101,3 +101,17 @@ Không dùng `.display` trong khu ứng dụng; không dùng bảng/thẻ số l
 - Kiểm tra ở giao diện trùng với backend (`lib/validation.ts` ↔ `Dtos.java`, `lib/hours.ts` ↔ `GymHours.java`); backend vẫn kiểm tra lại.
 - Báo lỗi cạnh ô, nói rõ cách sửa kèm ví dụ ("Tên giáo án phải có chữ cái (có thể kèm số), VD: Full body 3 buổi/tuần").
 - Tên (giáo án, bài tập, gói) phải có ít nhất một chữ cái; được kèm số.
+
+## 10. Trang chủ thể thao và thẻ số liệu
+
+Hướng tham khảo: Nike, Gymshark. Mạnh, gọn, nhiều khoảng trống, chữ làm chủ.
+
+- **Chữ cực lớn**: tiêu đề hero `.hs-title` cỡ `clamp(52px, 8.6vw, 148px)`, đậm 900, in hoa, dòng sát nhau (`line-height: 0.9`). Dòng đầu nghiêng `skewX(-6deg)`, dòng sau dùng `grad-text`. Tiêu đề khối kêu gọi `.cta-full-title` theo cùng quy tắc.
+- **Vạch nghiêng tốc độ**: `.hs-streaks` là 6 vệt sáng chạy chéo theo `--slant`; dải chữ chạy `.ticker-tilt` xoay −1.6°. Không thêm màu mới, chỉ dùng `--primary`, `--primary-bright`, `--grad-go`.
+- **Dải số liệu đếm lên** `.stats-band`: số chỉ chạy khi cuộn tới (`CountOnView` → `CountUp`). Chỉ ghi số có thật trong hệ thống: giờ mở cửa (`GYM_OPEN`–`GYM_CLOSE`), số gói đang bán, 150 phút vận động/tuần (WHO), nhắc trước 7 ngày. Không bịa số hội viên hay đánh giá.
+- **Thẻ chương trình** `.program-poster`: viền sáng `.beam .beam-slow` luôn bật, số thứ tự rỗng cỡ lớn ở góc dưới, rê chuột thì nhấc thẻ và số nghiêng lên.
+- **Khối đăng ký xanh tràn màn hình** `.cta-full`: nền `--grad-go`, chữ và nút màu `#04120a` để đủ tương phản trên nền xanh ở cả theme sáng và tối.
+- **Thẻ số liệu (`Stat`)** dùng phong cách thẻ gói: nhãn in hoa, số đậm 900, rê chuột thì nhấc lên và vạch nghiêng đậm dần. `highlight` = số nổi bật nhất của màn (doanh thu tháng ở Tổng quan, chuỗi tuần tập ở Tiến độ): nền xanh loang, số màu gradient, viền sáng. Mỗi màn tối đa một thẻ `highlight`.
+- **Thẻ HLV** `.trainer-card`: vạch nghiêng như thẻ gói, số hội viên phụ trách cỡ lớn; HLV phụ trách nhiều hội viên nhất có nhãn "Nhiều hội viên nhất" và viền sáng.
+- Nhấc thẻ dùng thuộc tính `translate` (không dùng `transform`) vì `.stat` có animation xuất hiện giữ lại `transform`.
+- Mọi chuyển động trên tắt khi bật "giảm chuyển động".

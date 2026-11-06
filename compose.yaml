@@ -36,11 +36,12 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:8081}
       JWT_SECRET: ${JWT_SECRET:-change-me-please-use-at-least-32-characters-long}
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-720}
-      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
-      DEMO_QUICK_LOGIN: ${DEMO_QUICK_LOGIN:-true}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
+      DEMO_QUICK_LOGIN: ${DEMO_QUICK_LOGIN:-false}
       REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-true}
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
-      RESET_EXPOSE_TOKEN: ${RESET_EXPOSE_TOKEN:-true}
+      RESET_EXPOSE_TOKEN: ${RESET_EXPOSE_TOKEN:-false}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
       TZ: Asia/Ho_Chi_Minh
     depends_on:
       mysql:

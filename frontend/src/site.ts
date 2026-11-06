@@ -8,5 +8,5 @@ export const SITE = {
   supportEmail: 'support@gymflow.vn',
   hotline: '',
   address: '',
-  openingHours: 'Thứ 2 – Thứ 7 · 05:30 – 21:00',
+  openingHours: 'Thứ 2 – Thứ 7 · 05:00 – 22:00',
 };

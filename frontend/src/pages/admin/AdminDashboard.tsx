@@ -36,7 +36,7 @@ export default function AdminDashboard() {
           foot={tn('{n} tháng này · {active} đang hoạt động', { n: <span className="trend-up">+{data.newMembersThisMonth}</span>, active: data.activeMembers })} />
         <Stat icon="ticket" label="Có gói hiệu lực" value={<CountUp value={data.membersWithActivePackage} />} accent="#3d97ff"
           foot={t('{n}% tổng hội viên', { n: coverage })} />
-        <Stat icon="wallet" label="Doanh thu tháng" value={<CountUp value={data.revenueThisMonth} format={fmtMoneyShort} />} accent="#8b7cff"
+        <Stat icon="wallet" label="Doanh thu tháng" value={<CountUp value={data.revenueThisMonth} format={fmtMoneyShort} />} accent="#8b7cff" highlight
           foot={tn('{pct} so với tháng trước', { pct: <span className={growth >= 0 ? 'trend-up' : 'trend-down'}><Icon name={growth >= 0 ? 'trendUp' : 'trendDown'} size={13} /> {growth >= 0 ? '+' : ''}{growth}%</span> })} />
         <Stat icon="clock" label="Sắp hết hạn (7 ngày)" value={<CountUp value={data.expiringSoon} />} accent="#ffb020"
           foot={t('{n} buổi tập hôm nay · {m} HLV', { n: data.sessionsToday, m: data.activeTrainers })} />

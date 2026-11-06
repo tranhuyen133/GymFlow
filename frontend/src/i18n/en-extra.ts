@@ -327,4 +327,15 @@ export const EN_EXTRA: Record<string, string> = {
   'Còn {n}% thời hạn': '{n}% of the term left',
   'Bạn đang dùng': 'Your package',
   'Gia hạn gói này': 'Renew this package',
+
+  // ---------- Trang chủ thể thao, thẻ số liệu, giờ mở cửa 05:00–22:00 ----------
+  'Thứ 2 – Thứ 7 · 05:00 – 22:00': 'Mon – Sat · 05:00 – 22:00',
+  'GymFlow qua các con số': 'GymFlow in numbers',
+  'Giờ mở cửa {open}–{close}': 'Opening hours {open}–{close}',
+  'Gói tập đang mở bán': 'Packages on sale',
+  'Phút vận động mỗi tuần – mức WHO khuyến nghị': 'Active minutes per week – WHO recommendation',
+  'Ngày nhắc trước khi gói hết hạn': 'Days of notice before a package expires',
+  'Nhiều hội viên nhất': 'Most members',
+  'hội viên': 'members',
+  '{h} giờ/tuần': '{h} h/week',
 };

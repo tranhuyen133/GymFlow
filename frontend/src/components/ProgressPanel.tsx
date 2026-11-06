@@ -8,7 +8,7 @@ import { checkBodyFat, checkRecordedDate, checkWeight, NOT_NUMBER, toNumber, use
 import { LineChart, Ring, StackedBars } from './charts';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
-import { Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, Stat, Table, Textarea } from './ui';
+import { Button, Card, Confirm, CountUp, Empty, ErrorState, Field, Input, LoadingBlock, Modal, Stat, Table, Textarea } from './ui';
 
 const BMI_SCALE = [
   { to: 18.5, label: 'Thiếu cân', color: '#3d97ff' },
@@ -55,7 +55,7 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
         <Stat icon="scale" label={t('Cân nặng hiện tại')} value={fmtNum(data.currentWeight, 1)} unit={data.currentWeight != null ? 'kg' : undefined}
           foot={change == null ? t('Chưa có số liệu') : <span className={change <= 0 ? 'trend-up' : 'trend-down'}>{t('{diff} kg từ lần đầu', { diff: `${change > 0 ? '+' : ''}${fmtNum(change, 1)}` })}</span>} />
         <Stat icon="heart" label="BMI" value={fmtNum(data.bmi, 1)} accent="#ffb020" foot={data.bmiCategory ? t(data.bmiCategory) : (data.heightCm ? '—' : t('Cần cập nhật chiều cao'))} />
-        <Stat icon="flame" label={t('Chuỗi tuần tập')} value={data.streakWeeks} unit={t('tuần')} accent="#ff6b61" foot={t('{n} buổi · {m} phút', { n: data.totalSessions, m: fmtNum(data.totalMinutes) })} />
+        <Stat icon="flame" label={t('Chuỗi tuần tập')} value={<CountUp value={data.streakWeeks} />} highlight={data.streakWeeks > 0} unit={t('tuần')} accent="#ff6b61" foot={t('{n} buổi · {m} phút', { n: data.totalSessions, m: fmtNum(data.totalMinutes) })} />
         <Stat icon="zap" label={t('Calo đã đốt')} value={fmtNum(data.totalCalories)} unit="kcal" accent="#8b7cff" foot={data.avgRating ? t('Cảm nhận TB {n}/5', { n: data.avgRating }) : t('Chưa có đánh giá')} />
       </div>
 

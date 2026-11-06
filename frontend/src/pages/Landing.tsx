@@ -7,13 +7,29 @@ import { useAuth } from '../auth/AuthContext';
 import { Brand } from '../components/Brand';
 import { Icon, type IconName } from '../components/Icon';
 import { PlanCard, pickBest, savings } from '../components/PlanCard';
-import { Button } from '../components/ui';
+import { Button, CountUp } from '../components/ui';
 import { relativeTime } from '../lib/format';
 import { useAsync } from '../lib/hooks';
+import { GYM_CLOSE, GYM_OPEN, toMin } from '../lib/hours';
 import { SITE } from '../site';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
 import { publicPlanAction } from './publicForm';
+import './landing-sport.css';
+
+/** Số đếm lên khi cuộn tới (CountUp chỉ chạy sau khi phần tử hiện trên màn hình). */
+function CountOnView({ value, suffix }: { value: number; suffix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !('IntersectionObserver' in window)) { setSeen(true); return; }
+    const io = new IntersectionObserver(([en]) => { if (en.isIntersecting) { setSeen(true); io.disconnect(); } }, { threshold: 0.4 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return <span ref={ref} className="sb-num">{seen ? <CountUp value={value} /> : 0}{suffix && <small>{suffix}</small>}</span>;
+}
 
 const DISCIPLINES = ['Thể hình', 'Giảm mỡ', 'Sức mạnh', 'Powerlifting', 'Yoga', 'Phục hồi', 'Cardio', 'PT 1 kèm 1'];
 
@@ -68,6 +84,15 @@ export default function Landing() {
   const pricing = useMemo(() => [...(plans.data ?? [])].sort((a, b) => a.durationDays - b.durationDays || a.price - b.price), [plans.data]);
   const save = useMemo(() => savings(pricing), [pricing]);
   const best = useMemo(() => pickBest(pricing), [pricing]);
+  // Dải số liệu: chỉ dùng con số có thật trong hệ thống (giờ mở cửa, số gói đang bán, quy tắc nhắc gia hạn)
+  // và khuyến nghị 150 phút vận động/tuần của WHO đang dùng cho vòng "Phút vận động".
+  const openHours = Math.round((toMin(GYM_CLOSE) - toMin(GYM_OPEN)) / 60);
+  const stats: { value: number; suffix?: string; label: string }[] = [
+    { value: openHours, suffix: 'h', label: t('Giờ mở cửa {open}–{close}', { open: GYM_OPEN, close: GYM_CLOSE }) },
+    ...(pricing.length ? [{ value: pricing.length, label: t('Gói tập đang mở bán') }] : []),
+    { value: 150, suffix: "'", label: t('Phút vận động mỗi tuần – mức WHO khuyến nghị') },
+    { value: 7, label: t('Ngày nhắc trước khi gói hết hạn') },
+  ];
   const [menu, setMenu] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -135,9 +160,11 @@ export default function Landing() {
         <Button className="nav-toggle" variant="ghost" icon={menu ? 'x' : 'menu'} aria-label={menu ? 'Đóng menu' : 'Mở menu'} aria-expanded={menu} onClick={() => setMenu((m) => !m)} />
       </nav>
 
-      <header className="hero-x">
+      <header className="hero-x hero-sport">
         <div className="hero-bg" aria-hidden><span>GYMFLOW</span></div>
         <div className="hero-slashes" aria-hidden><i /><i /><i /></div>
+        {/* Vạch nghiêng tốc độ: các vệt sáng chạy chéo qua hero (tắt khi giảm chuyển động) */}
+        <div className="hs-streaks" aria-hidden>{Array.from({ length: 6 }, (_, i) => <i key={i} />)}</div>
         <div className="hero-glow" aria-hidden><i /><i /></div>
         <div className="hero-speed" aria-hidden><i /><i /><i /><i /></div>
         {/* Đường điện tim chạy ngang hero: một vệt sáng di chuyển trên nền đường mờ */}
@@ -148,7 +175,10 @@ export default function Landing() {
         <div className="hero-inner">
           <div className="hero-copy">
             <div className="kicker">{t('Phòng tập · Huấn luyện viên · Tiến độ')}</div>
-            <h1 className="display">{t('Tập đúng.')}<br /><span className="grad-text">{t('Tiến bộ thật.')}</span></h1>
+            <h1 className="display hs-title">
+              <span className="hs-line">{t('Tập đúng.')}</span>
+              <span className="hs-line grad-text">{t('Tiến bộ thật.')}</span>
+            </h1>
             <p className="lead">{t('Lịch tập, giáo án và tiến độ của bạn ở cùng một nơi. Huấn luyện viên theo sát từng buổi, bạn thấy rõ mình mạnh lên mỗi tuần.')}</p>
             <div className="row row-wrap mt-24" style={{ gap: 12 }}>
               {primaryCta}
@@ -190,18 +220,29 @@ export default function Landing() {
         </div>
       </header>
 
-      <div className="ticker" aria-hidden>
+      <div className="ticker ticker-tilt" aria-hidden>
         <div className="ticker-track">
           {[0, 1].map((k) => <div key={k}>{DISCIPLINES.map((d) => <span key={d}>{t(d)}<i /></span>)}</div>)}
         </div>
       </div>
+
+      <section className="stats-band" aria-label={t('GymFlow qua các con số')}>
+        <div className="sb-inner">
+          {stats.map((s) => (
+            <div key={s.label} className="sb-item reveal">
+              <CountOnView value={s.value} suffix={s.suffix} />
+              <span className="sb-label">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="section" id="programs">
         <div className="kicker">{t('Chương trình tập')}</div>
         <h2 className="display-sm">{t('Chọn mục tiêu. Chúng tôi lo lộ trình.')}</h2>
         <div className="grid grid-4 mt-24">
           {PROGRAMS.map((p, i) => (
-            <article key={p.title} className="program spot beam beam-hover reveal">
+            <article key={p.title} className="program program-poster spot beam beam-slow reveal">
               <span className="program-no">{String(i + 1).padStart(2, '0')}</span>
               <Icon name={p.icon} size={26} className="ok" />
               <h3>{t(p.title)}</h3>
@@ -317,13 +358,14 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="section">
-        <div className="cta-band beam beam-slow">
-          <div>
-            <h2 className="display-sm">{t('Sẵn sàng cho buổi tập đầu tiên?')}</h2>
-            <p className="muted mt-8">{t('Tạo tài khoản miễn phí, chọn gói ngay trên ứng dụng và bắt đầu trong tuần này.')}</p>
-          </div>
-          {primaryCta}
+      <section className="cta-full" aria-labelledby="cta-full-title">
+        <div className="cta-full-streaks" aria-hidden><i /><i /><i /></div>
+        <div className="cta-full-inner">
+          <h2 id="cta-full-title" className="cta-full-title">{t('Sẵn sàng cho buổi tập đầu tiên?')}</h2>
+          <p className="cta-full-lead">{t('Tạo tài khoản miễn phí, chọn gói ngay trên ứng dụng và bắt đầu trong tuần này.')}</p>
+          {user
+            ? <Link className="btn btn-lg cta-full-btn" to="/dashboard"><span>{t('Vào trang của tôi')}</span><Icon name="arrowRight" /></Link>
+            : <Link className="btn btn-lg cta-full-btn" to="/register"><span>{t('Đăng ký hội viên')}</span><Icon name="arrowRight" /></Link>}
         </div>
       </section>
 

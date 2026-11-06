@@ -1,0 +1,119 @@
+/* ---------- Trang chủ phong cách thể thao (tham khảo Nike / Gymshark) ----------
+   Chữ in hoa cực lớn, vạch nghiêng tốc độ, dải số liệu đếm lên, thẻ chương trình có viền sáng,
+   khối kêu gọi đăng ký xanh tràn màn hình. Chỉ dùng biến màu của theme (sáng/tối) và CSS thuần.
+   Mọi chuyển động tắt khi bật "giảm chuyển động" (cuối file). */
+
+/* ----- Hero: chữ cực lớn ----- */
+.hero-sport .hero-inner { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); padding-top: 88px; padding-bottom: 112px; }
+.hs-title {
+  font-size: clamp(52px, 8.6vw, 148px); line-height: 0.9; letter-spacing: -0.045em; font-weight: 900;
+  margin: 0;
+}
+.hs-line { display: block; width: fit-content; }
+.hs-title .hs-line + .hs-line { margin-top: 0.06em; }
+/* Dòng đầu nghiêng nhẹ như chữ trên áo đấu */
+.hs-title .hs-line:first-child { transform: skewX(-6deg); transform-origin: left bottom; }
+.hero-sport .lead { max-width: 46ch; font-size: clamp(16px, 1.3vw, 19px); }
+
+/* ----- Vạch nghiêng tốc độ chạy qua hero ----- */
+.hs-streaks { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.hs-streaks i {
+  position: absolute; top: -20%; bottom: -20%; left: 0; width: 3px; border-radius: 2px;
+  background: linear-gradient(180deg, transparent, var(--primary-bright), transparent);
+  opacity: 0; transform: skewX(var(--slant)) translateX(-10vw);
+  animation: hsStreak 5.5s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+}
+.hs-streaks i:nth-child(1) { animation-delay: 0s; width: 3px; }
+.hs-streaks i:nth-child(2) { animation-delay: 0.9s; width: 12px; }
+.hs-streaks i:nth-child(3) { animation-delay: 1.8s; width: 2px; }
+.hs-streaks i:nth-child(4) { animation-delay: 2.7s; width: 6px; }
+.hs-streaks i:nth-child(5) { animation-delay: 3.6s; width: 2px; }
+.hs-streaks i:nth-child(6) { animation-delay: 4.5s; width: 18px; }
+@keyframes hsStreak {
+  0% { opacity: 0; transform: skewX(var(--slant)) translateX(-10vw); }
+  12% { opacity: 0.55; }
+  45% { opacity: 0; transform: skewX(var(--slant)) translateX(110vw); }
+  100% { opacity: 0; transform: skewX(var(--slant)) translateX(110vw); }
+}
+
+/* ----- Dải chữ chạy nghiêng ----- */
+.ticker-tilt { transform: rotate(-1.6deg) scale(1.03); margin: -10px 0 8px; position: relative; z-index: 2; box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.6); }
+
+/* ----- Dải số liệu đếm lên ----- */
+.stats-band { border-bottom: 1px solid var(--hairline); background: var(--canvas); }
+.sb-inner {
+  max-width: 1180px; margin: 0 auto; padding: 48px 32px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0;
+}
+.sb-item { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 6px 28px; }
+.sb-item + .sb-item::before {
+  content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 2px;
+  background: var(--primary); opacity: 0.5; transform: skewX(var(--slant));
+}
+.sb-num {
+  font-size: clamp(48px, 5.6vw, 84px); line-height: 0.95; font-weight: 900; letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums; color: var(--ink);
+}
+.sb-num small { font-size: 0.45em; margin-left: 4px; color: var(--primary-bright); letter-spacing: 0; }
+.sb-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); max-width: 26ch; }
+
+/* ----- Thẻ chương trình kiểu poster, viền sáng chạy quanh ----- */
+.program-poster { min-height: 280px; padding: 26px 24px; border-radius: var(--r-lg); }
+.program-poster .program-no {
+  top: auto; bottom: -18px; right: 10px; font-size: 128px; font-weight: 900; letter-spacing: -0.06em;
+  -webkit-text-stroke: 1.5px var(--hairline); opacity: 0.9; transition: transform 0.5s var(--ease-spring), -webkit-text-stroke-color 0.3s;
+}
+.program-poster h3 { font-size: 22px; font-weight: 900; line-height: 1.05; max-width: 12ch; }
+.program-poster::after { opacity: 0.06; }
+.program-poster:hover { transform: translateY(-8px) rotate(-0.4deg); }
+.program-poster:hover .program-no { transform: translateY(-10px) skewX(var(--slant)); -webkit-text-stroke-color: var(--primary-bright); }
+.program-poster:hover::after { opacity: 0.18; }
+
+/* ----- Khối kêu gọi đăng ký xanh tràn màn hình ----- */
+.cta-full {
+  position: relative; overflow: hidden; margin-top: 24px;
+  background: var(--grad-go); color: #04120a;
+}
+.cta-full-streaks { position: absolute; inset: 0; pointer-events: none; }
+.cta-full-streaks i { position: absolute; top: -20%; bottom: -20%; right: 14%; width: 90px; background: #04120a; opacity: 0.08; transform: skewX(var(--slant)); }
+.cta-full-streaks i:nth-child(2) { right: 7%; width: 30px; opacity: 0.12; }
+.cta-full-streaks i:nth-child(3) { right: 3%; width: 10px; opacity: 0.16; }
+.cta-full-inner { position: relative; max-width: 1180px; margin: 0 auto; padding: 96px 32px; }
+.cta-full-title {
+  margin: 0; max-width: 16ch; font-size: clamp(40px, 7vw, 112px); line-height: 0.92; font-weight: 900;
+  text-transform: uppercase; letter-spacing: -0.045em;
+}
+.cta-full-lead { margin: 20px 0 32px; max-width: 52ch; font-size: 17px; font-weight: 600; opacity: 0.85; }
+.cta-full-btn {
+  --bg: #04120a; --fg: #ffffff; background: #04120a; color: #ffffff; border-color: #04120a;
+  padding-inline: 28px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 800;
+  transition: transform 0.35s var(--ease-spring), box-shadow 0.3s;
+}
+.cta-full-btn:hover { background: #000; color: #fff; transform: translateY(-3px); box-shadow: 0 16px 32px -14px rgba(0, 0, 0, 0.7); }
+.cta-full-btn svg { transition: transform 0.3s var(--ease-spring); }
+.cta-full-btn:hover svg { transform: translateX(4px); }
+.cta-full-btn:focus-visible { outline: 3px solid #ffffff; outline-offset: 3px; }
+/* Khối xanh nằm sát chân trang: bỏ khoảng trống phía trên footer */
+.cta-full + .site-footer { border-top: 0; }
+
+/* ----- Màn hình hẹp ----- */
+@media (max-width: 960px) {
+  .hero-sport .hero-inner { grid-template-columns: minmax(0, 1fr); padding-top: 56px; padding-bottom: 72px; }
+  .hs-title { font-size: clamp(48px, 14vw, 96px); }
+}
+@media (max-width: 640px) {
+  .sb-inner { padding: 32px 20px; grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 24px; }
+  .sb-item { padding: 4px 14px; }
+  .sb-item:nth-child(odd)::before { display: none; }
+  .program-poster { min-height: 220px; }
+  .program-poster .program-no { font-size: 96px; }
+  .cta-full-inner { padding: 64px 20px; }
+  .cta-full-btn { width: 100%; justify-content: center; }
+  .ticker-tilt { transform: rotate(-1.6deg) scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-streaks i { animation: none; opacity: 0; }
+  .program-poster, .program-poster .program-no, .cta-full-btn, .cta-full-btn svg { transition: none; }
+  .program-poster:hover, .program-poster:hover .program-no, .cta-full-btn:hover, .cta-full-btn:hover svg { transform: none; }
+}
