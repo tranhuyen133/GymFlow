@@ -4,6 +4,7 @@ import type { AdminDashboard as Data } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { BarChart, Donut } from '../../components/charts';
 import { Icon } from '../../components/Icon';
+import { ActivityRings } from '../../components/motivation';
 import { Badge, Card, CountUp, Empty, ErrorState, LoadingBlock, PageHead, Person, Stat, Table } from '../../components/ui';
 import { t, tn } from '../../i18n';
 import { actionLabel, fmtDate, fmtMoney, fmtMoneyShort, pctChange, relativeTime } from '../../lib/format';
@@ -41,6 +42,16 @@ export default function AdminDashboard() {
         <Stat icon="clock" label="Sắp hết hạn (7 ngày)" value={<CountUp value={data.expiringSoon} />} accent="#ffb020"
           foot={t('{n} buổi tập hôm nay · {m} HLV', { n: data.sessionsToday, m: data.activeTrainers })} />
       </div>
+
+      {/* Sức khoẻ phòng tập: 3 vòng tính từ số liệu thật của hôm nay (không đặt chỉ tiêu tự nghĩ ra) */}
+      <Card className="mt-24" title="Sức khoẻ phòng tập" icon="activity"
+        actions={<span className="tiny faint">{t('Vòng đầy = 100%')}</span>}>
+        <ActivityRings size={150} celebrate={false} rings={[
+          { key: 'cover', label: t('Hội viên có gói'), value: data.membersWithActivePackage, max: Math.max(1, data.totalMembers), color: 'var(--ring-1)', text: `${coverage}%` },
+          { key: 'active', label: t('Đang hoạt động'), value: data.activeMembers, max: Math.max(1, data.totalMembers), color: 'var(--ring-2)', text: `${data.activeMembers}/${data.totalMembers}` },
+          { key: 'rev', label: t('Doanh thu so tháng trước'), value: data.revenueThisMonth, max: Math.max(1, data.revenuePrevMonth), color: 'var(--ring-3)', text: data.revenuePrevMonth ? `${Math.round((data.revenueThisMonth / data.revenuePrevMonth) * 100)}%` : '—' },
+        ]} />
+      </Card>
 
       <div className="grid grid-main mt-24">
         <Card title="Doanh thu 6 tháng" icon="chart" actions={<span className="tiny faint">Theo ngày thu tiền</span>}>

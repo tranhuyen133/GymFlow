@@ -7,6 +7,7 @@ import { errMsg, fieldErrs, useAsync } from '../lib/hooks';
 import { checkBodyFat, checkRecordedDate, checkWeight, NOT_NUMBER, toNumber, useLiveErrors } from '../lib/validation';
 import { LineChart, Ring, StackedBars } from './charts';
 import { Icon } from './Icon';
+import { achievements, BadgeShelf, WeekHeat } from './motivation';
 import { useToast } from './Toast';
 import { Button, Card, Confirm, CountUp, Empty, ErrorState, Field, Input, LoadingBlock, Modal, Stat, Table, Textarea } from './ui';
 
@@ -59,6 +60,10 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
         <Stat icon="zap" label={t('Calo đã đốt')} value={fmtNum(data.totalCalories)} unit="kcal" accent="#8b7cff" foot={data.avgRating ? t('Cảm nhận TB {n}/5', { n: data.avgRating }) : t('Chưa có đánh giá')} />
       </div>
 
+      <Card title={t('Huy hiệu')} icon="trophy">
+        <BadgeShelf list={achievements(data)} />
+      </Card>
+
       <div className="grid grid-main">
         <Card title={t('Cân nặng theo thời gian')} icon="trendDown" actions={canEdit && <Button size="sm" variant="primary" icon="plus" onClick={() => setAdding(true)}>{t('Ghi cân nặng')}</Button>}>
           {data.weights.length === 0 ? <Empty icon="scale" title={t('Chưa có số liệu cân nặng')} desc={t('Ghi lại mỗi tuần để thấy tiến độ.')} /> : (
@@ -94,6 +99,8 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
       </div>
 
       <Card title={t('Chuyên cần 8 tuần gần nhất')} icon="calendar">
+        <WeekHeat weeks={data.attendance} />
+        <div className="mt-16" />
         <StackedBars data={weeks} series={[{ name: t('Hoàn thành'), color: '#00d95b' }, { name: t('Vắng'), color: '#ff6b61' }, { name: t('Sắp tới'), color: '#3d97ff' }]} />
       </Card>
 

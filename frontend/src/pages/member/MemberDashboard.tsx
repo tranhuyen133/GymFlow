@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { MemberDashboard as Data, Schedule } from '../../api/types';
+import type { MemberDashboard as Data, Progress, Schedule } from '../../api/types';
+import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
+import { achievements, ActivityRings, BadgeShelf, weekRings } from '../../components/motivation';
 import { Alert, Badge, Button, Card, CountUp, Empty, ErrorState, LoadingBlock, Meter, PageHead, Stat, StatusBadge } from '../../components/ui';
 import { t, tn } from '../../i18n';
 import { DAYS, fmtDate, fmtTime, fmtWeekday, parseDate, parseDateTime, scheduleStatus, subState } from '../../lib/format';
@@ -10,7 +12,10 @@ import { useAsync } from '../../lib/hooks';
 import { SessionModal } from '../shared/Schedules';
 
 export default function MemberDashboard() {
+  const me = useMe();
   const { data, error, loading, reload } = useAsync(() => api.get<Data>('/dashboard/member'), []);
+  // Tiến độ dùng cho huy hiệu; lỗi ở đây không chặn cả trang Tổng quan
+  const progress = useAsync((): Promise<Progress | null> => (me.memberId ? api.get<Progress>(`/members/${me.memberId}/progress`) : Promise.resolve(null)), [me.memberId]);
   const [open, setOpen] = useState<Schedule | null>(null);
 
   if (error) return <ErrorState message={error} onRetry={reload} />;
@@ -66,6 +71,18 @@ export default function MemberDashboard() {
         <Stat icon="scale" label="Cân nặng gần nhất" value={data.latestWeight ? <CountUp value={data.latestWeight.weightKg} /> : '—'} unit={data.latestWeight ? 'kg' : undefined} accent="#8b7cff"
           foot={data.latestWeight ? t('Ngày {d}', { d: fmtDate(data.latestWeight.recordedDate) }) : t('Chưa có số liệu')} />
         <Stat icon="heart" label="BMI" value={data.bmi ?? '—'} accent="#ffb020" foot={data.bmiCategory ? t(data.bmiCategory) : t('Cần chiều cao & cân nặng')} />
+      </div>
+
+      <div className="grid grid-main mt-24">
+        <Card title="Vòng tuần này" icon="activity"
+          actions={<span className="tiny faint">{t('Mục tiêu {n} phút/tuần theo WHO', { n: 150 })}</span>}>
+          <ActivityRings rings={weekRings(data.weekSessions, data.streakWeeks)} />
+        </Card>
+        <Card title="Huy hiệu" icon="trophy" actions={<Link to="/me/progress" className="link small">{t('Xem tất cả')}</Link>}>
+          {progress.data ? <BadgeShelf list={achievements(progress.data)} compact />
+            : progress.error ? <p className="small muted">{t('Chưa tải được huy hiệu.')}</p>
+              : <LoadingBlock rows={3} />}
+        </Card>
       </div>
 
       <div className="grid grid-main mt-24">

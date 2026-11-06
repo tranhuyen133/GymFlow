@@ -5,6 +5,7 @@ import type { Schedule, TrainerDashboard as Data } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { BarChart, Ring } from '../../components/charts';
 import { Icon } from '../../components/Icon';
+import { DayTimeline } from '../../components/motivation';
 import { Badge, Card, CountUp, Empty, ErrorState, LoadingBlock, PageHead, Person, Stat, StatusBadge, Table } from '../../components/ui';
 import { fmtDate, fmtTime, parseDateTime, scheduleStatus } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
@@ -35,11 +36,12 @@ export default function TrainerDashboard() {
         <Stat icon="users" label="Hội viên phụ trách" value={<CountUp value={data.memberCount} />} foot={t('{n} giáo án đang áp dụng', { n: data.activePlans })} />
         <Stat icon="calendar" label="Buổi hôm nay" value={<CountUp value={data.sessionsToday} />} accent="#3d97ff" foot={t('{n} buổi trong tuần', { n: data.sessionsThisWeek })} />
         <Stat icon="checkCircle" label="Hoàn thành tuần này" value={<CountUp value={data.completedThisWeek} />} accent="#00d95b" foot={t('{n} buổi vắng', { n: data.missedThisWeek })} />
-        <Stat icon="target" label="Tỉ lệ đi tập" value={data.completionRate == null ? '—' : <CountUp value={data.completionRate} />} unit={data.completionRate == null ? undefined : '%'} accent="#8b7cff" foot="Hoàn thành / (hoàn thành + vắng)" />
+        <Stat icon="target" label="Tỉ lệ đi tập" value={data.completionRate == null ? '—' : <CountUp value={data.completionRate} />} unit={data.completionRate == null ? undefined : '%'} accent="#8b7cff" foot="Hoàn thành / (hoàn thành + vắng)" highlight={data.completionRate != null && data.completionRate >= 80} />
       </div>
 
       <div className="grid grid-main mt-24">
         <Card title="Lịch hôm nay" icon="clock" flush actions={<Link to="/schedules" className="link small">{t('Mở lịch tuần')}</Link>}>
+          {data.todaySessions.length > 0 && <div className="dl-wrap"><DayTimeline sessions={data.todaySessions} onOpen={setOpen} /></div>}
           {data.todaySessions.length === 0 ? <Empty icon="calendar" title="Hôm nay không có buổi tập" desc="Tranh thủ soạn giáo án mới nhé!" /> : (
             <Table caption="Lịch hôm nay">
               <thead><tr><th>Giờ</th><th>Hội viên</th><th>Nội dung</th><th>Trạng thái</th></tr></thead>
