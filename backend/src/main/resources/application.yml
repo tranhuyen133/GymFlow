@@ -33,6 +33,19 @@ spring:
     time-zone: Asia/Ho_Chi_Minh
     serialization:
       write-dates-as-timestamps: false
+  mail:
+    # Gmail SMTP (mặc định). Có thể đổi MAIL_HOST/MAIL_PORT để dùng nhà cung cấp khác.
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+      mail.smtp.connectiontimeout: 15000
+      mail.smtp.timeout: 20000
+      mail.smtp.writetimeout: 20000
 
 app:
   jwt:
@@ -51,15 +64,24 @@ app:
   rate-limit:
     enabled: ${RATE_LIMIT_ENABLED:true}
   reset:
-    # Trả mã đặt lại mật khẩu trong API (chưa có gửi email). Mặc định tắt: bật thì ai cũng đặt lại được mật khẩu người khác.
+    # Trả mã đặt lại mật khẩu trong API (dùng cho dev/demo khi chưa cấu hình SMTP). Mặc định tắt.
     expose-token: ${RESET_EXPOSE_TOKEN:false}
     valid-minutes: 30
+  mail:
+    # Bật/tắt gửi email. Khi tắt hoặc thiếu MAIL_USERNAME/MAIL_PASSWORD, hệ thống chỉ ghi log và không gửi.
+    enabled: ${MAIL_ENABLED:true}
+    from: ${MAIL_FROM:no-reply@gymflow.vn}
+    from-name: ${MAIL_FROM_NAME:GymFlow}
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info
+  health:
+    # SMTP là tuỳ chọn: thiếu cấu hình không được làm backend báo DOWN/unhealthy.
+    mail:
+      enabled: false
 
 springdoc:
   swagger-ui:

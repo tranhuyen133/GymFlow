@@ -22,12 +22,9 @@ public final class Secrets {
         return sb.toString();
     }
 
-    /** Mã khôi phục 8 ký tự; CSDL chỉ lưu bản băm SHA-256. */
+    /** Mã khôi phục 6 chữ số; CSDL chỉ lưu bản băm SHA-256. */
     public static String resetToken() {
-        String alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 8; i++) sb.append(alphabet.charAt(RANDOM.nextInt(alphabet.length())));
-        return sb.toString();
+        return String.format("%06d", RANDOM.nextInt(1_000_000));
     }
 
     public static String sha256(String value) {

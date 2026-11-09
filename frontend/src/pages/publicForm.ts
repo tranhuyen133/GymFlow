@@ -17,7 +17,7 @@ export function focusFormError(form: HTMLFormElement | null, errors: Record<stri
 
 export function validateReset(token: string, password: string, confirm: string) {
   const errors: Record<string, string> = {};
-  if (token.trim().length !== 8) errors.token = 'Nhập mã khôi phục gồm 8 ký tự';
+  if (!/^\d{6}$/.test(token.trim())) errors.token = 'Nhập mã khôi phục gồm 6 chữ số';
   if (!/^(?=.*[A-Za-z])(?=.*\d).{8,72}$/.test(password)) errors.newPassword = 'Tối thiểu 8 ký tự, gồm cả chữ và số';
   if (!confirm || password !== confirm) errors.confirm = 'Mật khẩu nhập lại không khớp';
   return errors;

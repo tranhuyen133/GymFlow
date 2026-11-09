@@ -314,6 +314,9 @@ export const EN: Record<string, string> = {
   'Nhập email tài khoản, hệ thống sẽ gửi mã khôi phục.': 'Enter your account email and we will send a reset code.',
   'Mã có hiệu lực trong {n} phút và chỉ dùng được một lần.': 'The code is valid for {n} minutes and can be used once.',
   'Chế độ demo (chưa gửi email thật): mã của bạn là': 'Demo mode (no real email is sent): your code is',
+  'Mã gồm 6 chữ số được gửi tới email của bạn': 'The 6-digit code was sent to your email',
+  'Nhập mã khôi phục gồm 6 chữ số': 'Enter the 6-digit reset code',
+  'VD: 123456': 'e.g. 123456',
   'Về trang tổng quan': 'Back to overview',
   'Không tìm thấy trang': 'Page not found',
 

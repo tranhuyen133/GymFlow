@@ -41,6 +41,13 @@ services:
       REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-true}
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
       RESET_EXPOSE_TOKEN: ${RESET_EXPOSE_TOKEN:-false}
+      MAIL_ENABLED: ${MAIL_ENABLED:-true}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-GymFlow}
       DEMO_PASSWORD: ${DEMO_PASSWORD:-}
       TZ: Asia/Ho_Chi_Minh
     depends_on:

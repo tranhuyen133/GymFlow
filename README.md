@@ -35,6 +35,22 @@ cd backend && gradle bootRun                  # cổng 8080
 cd frontend && npm install && npm run dev     # cổng 5173
 ```
 
+## Gửi mã khôi phục mật khẩu qua Gmail SMTP
+1. Bật xác thực 2 bước cho tài khoản Gmail.
+2. Tạo App Password: **Google Account → Security → App passwords** (16 ký tự).
+3. Điền vào `.env`:
+```env
+MAIL_ENABLED=true
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=<Gmail>
+MAIL_PASSWORD=<App Password 16 ký tự>
+MAIL_FROM=<Gmail>
+MAIL_FROM_NAME=GymFlow
+```
+Mã khôi phục gồm 6 chữ số, hết hạn sau 30 phút. Máy dev chưa có Gmail: đặt `MAIL_ENABLED=false` và `RESET_EXPOSE_TOKEN=true` để nhận mã trong response/log.
+Nếu tài khoản không tạo được App Password (chưa bật 2FA hoặc bị tổ chức chặn), có thể dùng SMTP Brevo/Resend bằng cách đổi `MAIL_HOST`/`MAIL_PORT`/`MAIL_USERNAME`/`MAIL_PASSWORD`.
+
 ## Cập nhật bản trên VPS
 Sau khi code mới đã merge vào `develop`:
 ```bash

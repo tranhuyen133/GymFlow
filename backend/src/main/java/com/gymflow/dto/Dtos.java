@@ -77,7 +77,7 @@ public final class Dtos {
             @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email) {
     }
 
-    /** resetToken chỉ trả về khi bật chế độ demo (app.reset.expose-token=true) vì chưa tích hợp gửi email. */
+    /** resetToken chỉ trả về khi bật chế độ demo (app.reset.expose-token=true); production gửi mã qua email. */
     public record ForgotPasswordResponse(String message, String resetToken, int validMinutes) {
     }
 

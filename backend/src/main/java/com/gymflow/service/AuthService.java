@@ -41,6 +41,7 @@ public class AuthService {
     private final AuditService auditService;
     private final UserService userService;
     private final MemberService memberService;
+    private final EmailService emailService;
     private final Clock clock;
 
     @Value("${app.reset.expose-token:false}")
@@ -164,6 +165,7 @@ public class AuthService {
         t.setTokenHash(Secrets.sha256(token));
         t.setExpiresAt(now.plusMinutes(resetValidMinutes));
         resetTokenRepository.save(t);
+        emailService.sendPasswordResetCode(u, token, resetValidMinutes);
         auditService.logAs(u.getId(), u.getEmail(), "PASSWORD_RESET_REQUEST", "USER", u.getId(), null, true);
         if (exposeResetToken) {
             log.info("[DEMO] Mã khôi phục cho {}: {}", u.getEmail(), token);
