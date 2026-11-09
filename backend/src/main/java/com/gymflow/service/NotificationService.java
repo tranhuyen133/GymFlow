@@ -35,6 +35,8 @@ public class NotificationService {
     private final MemberRepository memberRepository;
     private final MessageRepository messageRepository;
     private final AuditLogRepository auditRepository;
+    private final MemberServiceEntitlementRepository entitlementRepository;
+    private final PromotionRepository promotionRepository;
     private final AccessService access;
     private final Mappers mappers;
     private final Clock clock;
@@ -90,6 +92,27 @@ public class NotificationService {
             WeightRecord w = weightRepository.findFirstByMemberIdOrderByRecordedDateDesc(m.getId()).orElse(null);
             if (w == null || w.getRecordedDate().isBefore(today.minusDays(7))) {
                 out.add(n("weight", "info", "Cập nhật cân nặng", "Đã hơn 7 ngày bạn chưa ghi cân nặng.", "/me/progress", now));
+            }
+
+            // Nhắc lượt dịch vụ sắp hết hạn (còn <= 3 ngày và còn lượt)
+            List<MemberServiceEntitlement> expEnts = entitlementRepository.findExpiringBetween(m.getId(), today, today.plusDays(3));
+            for (MemberServiceEntitlement e : expEnts) {
+                int rem = e.getRemainingQty();
+                if (rem > 0) {
+                    out.add(n("ent-exp-" + e.getId(), "warning", "Lượt " + e.getServiceNameSnapshot() + " sắp hết hạn",
+                            "Còn " + rem + " lượt (hết hạn " + e.getValidUntil() + "). Hãy sử dụng trước khi hết hạn.",
+                            "/me/entitlements", now));
+                }
+            }
+
+            // Nhắc ưu đãi sắp hết hạn (còn <= 3 ngày)
+            List<Promotion> expPromos = promotionRepository.findExpiringBetween(now, now.plusDays(3));
+            for (Promotion p : expPromos) {
+                if (p.getMaxUses() == null || p.getUsedCount() < p.getMaxUses()) {
+                    out.add(n("promo-exp-" + p.getId(), "info", "Ưu đãi sắp kết thúc: " + p.getName(),
+                            "Chương trình kết thúc lúc " + p.getEndsAt().toLocalDate() + ". Đăng ký gói ngay để nhận ưu đãi.",
+                            "/packages", now));
+                }
             }
         } else if (user.isTrainer()) {
             Trainer t = access.requireTrainerOf(user);

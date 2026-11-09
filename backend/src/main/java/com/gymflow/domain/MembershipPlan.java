@@ -44,6 +44,9 @@ public class MembershipPlan {
     @Column(name = "pt_valid_days")
     private Integer ptValidDays;
 
+    @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<PlanServiceGrant> serviceGrants = new java.util.ArrayList<>();
+
     @Column(nullable = false)
     private boolean active = true;
 

@@ -2,11 +2,14 @@ package com.gymflow.service;
 
 import com.gymflow.common.ApiException;
 import com.gymflow.domain.MembershipPlan;
+import com.gymflow.domain.PlanServiceGrant;
 import com.gymflow.domain.PlanType;
+import com.gymflow.domain.ServiceItem;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.repository.MemberSubscriptionRepository;
 import com.gymflow.repository.MembershipPlanRepository;
 import com.gymflow.repository.PackageRequestRepository;
+import com.gymflow.repository.ServiceItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +23,7 @@ public class PlanService {
     private final MembershipPlanRepository planRepository;
     private final MemberSubscriptionRepository subscriptionRepository;
     private final PackageRequestRepository packageRequestRepository;
+    private final ServiceItemRepository serviceItemRepository;
     private final AuditService auditService;
     private final Mappers mappers;
 
@@ -114,6 +118,15 @@ public class PlanService {
         p.setIncludesTrainer(type == PlanType.GYM_PT);
         p.setPtSessions(type == PlanType.GYM_PT ? req.ptSessions() : null);
         p.setPtValidDays(type == PlanType.GYM_PT ? req.ptValidDays() : null);
+
+        if (req.serviceGrants() != null) {
+            p.getServiceGrants().clear();
+            for (PlanServiceGrantDto g : req.serviceGrants()) {
+                ServiceItem s = serviceItemRepository.findById(g.serviceId())
+                        .orElseThrow(() -> ApiException.badRequest("Dịch vụ quà tặng #" + g.serviceId() + " không tồn tại"));
+                p.getServiceGrants().add(new PlanServiceGrant(p, s, g.quantity(), g.validDays(), Mappers.blankToNull(g.conditions())));
+            }
+        }
     }
 
     MembershipPlan load(Long id) {

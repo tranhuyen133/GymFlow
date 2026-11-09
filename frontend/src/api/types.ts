@@ -71,6 +71,14 @@ export interface BulkApproveResult { approved: number; skipped: string[] }
 // ---------- Plans & subscriptions ----------
 export type PlanType = 'GYM' | 'GYM_PT';
 
+export interface PlanServiceGrant {
+  serviceId: number;
+  serviceName?: string;
+  quantity: number;
+  validDays: number;
+  conditions?: string | null;
+}
+
 export interface MembershipPlan {
   id: number; name: string; description: string | null; price: number; durationDays: number;
   benefits: string | null; active: boolean; currentSubscriptions: number;
@@ -79,6 +87,7 @@ export interface MembershipPlan {
   planType?: PlanType;
   ptSessions?: number | null;
   ptValidDays?: number | null;
+  serviceGrants?: PlanServiceGrant[];
 }
 export interface Subscription {
   id: number; memberId: number; memberName: string; memberCode: string; planId: number; planName: string;
@@ -113,11 +122,133 @@ export interface PackageRequest {
   includesTrainer: boolean; trainerId: number | null; trainerName: string | null;
   /** paymentCode = nội dung chuyển khoản (GF000123); memberPaidAt = lúc hội viên bấm "Tôi đã chuyển khoản" */
   paymentMethod: PaymentMethod; paymentCode: string | null; memberPaidAt: string | null;
+  promotionId?: number | null;
+  promotionCode?: string | null;
+  promotionName?: string | null;
+  originalPrice?: number;
+  discountAmount?: number;
+  finalPrice?: number;
 }
 /** Thông tin nhận chuyển khoản; ảnh QR tải riêng bằng api.blob('/payment-settings/qr'). */
 export interface PaymentSettings {
   onlineEnabled: boolean; bankName: string | null; accountNumber: string | null; accountName: string | null;
   hasQr: boolean; qrUpdatedAt: string | null; updatedAt: string;
+}
+
+// ---------- Services, Entitlements, Promotions ----------
+export type ServiceCategory = 'RELAX' | 'RECOVERY' | 'AMENITY' | 'NUTRITION' | 'OTHER';
+export type EntitlementSource = 'PLAN' | 'PURCHASE' | 'PROMOTION';
+export type EntitlementStatus = 'ACTIVE' | 'CANCELLED';
+export type DiscountType = 'PERCENT' | 'AMOUNT' | 'NONE';
+
+export interface ServiceItem {
+  id: number;
+  name: string;
+  category: ServiceCategory;
+  description: string | null;
+  unitPrice: number | null;
+  requiresBooking: boolean;
+  openingNote: string | null;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface ServiceUsage {
+  id: number;
+  entitlementId: number;
+  usedAt: string;
+  confirmedById: number | null;
+  confirmedByName: string | null;
+  note: string | null;
+}
+
+export interface MemberServiceEntitlement {
+  id: number;
+  memberId: number;
+  memberName: string;
+  memberCode: string;
+  serviceId: number;
+  serviceName: string;
+  source: EntitlementSource;
+  subscriptionId: number | null;
+  planName: string | null;
+  packageRequestId: number | null;
+  grantedQty: number;
+  usedQty: number;
+  remainingQty: number;
+  validFrom: string;
+  validUntil: string;
+  conditions: string | null;
+  status: EntitlementStatus;
+  usable: boolean;
+  createdAt: string;
+  usages?: ServiceUsage[];
+}
+
+export interface PromotionGrant {
+  serviceId: number;
+  serviceName?: string;
+  quantity: number;
+  validDays: number;
+  conditions?: string | null;
+}
+
+export interface Promotion {
+  id: number;
+  code: string | null;
+  name: string;
+  description: string | null;
+  discountType: DiscountType;
+  discountValue: number;
+  startsAt: string;
+  endsAt: string;
+  maxUses: number | null;
+  usedCount: number;
+  newMembersOnly: boolean;
+  renewalOnly: boolean;
+  stackable: boolean;
+  active: boolean;
+  createdAt: string;
+  planIds?: number[];
+  grants?: PromotionGrant[];
+}
+
+export interface PromotionValidationResponse {
+  valid: boolean;
+  reason: string | null;
+  promotionId: number | null;
+  promotionCode: string | null;
+  promotionName: string | null;
+  description: string | null;
+  discountType: DiscountType | null;
+  discountValue: number | null;
+  originalPrice: number;
+  discountAmount: number;
+  finalPrice: number;
+  gifts?: PromotionGrant[];
+}
+
+export interface ServiceRequest {
+  id: number;
+  memberId: number;
+  memberName: string;
+  memberCode: string;
+  memberPhone: string | null;
+  serviceId: number;
+  serviceName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  paymentMethod: PaymentMethod;
+  paymentCode: string | null;
+  memberPaidAt: string | null;
+  memberNote: string | null;
+  status: PackageRequestStatus;
+  decisionNote: string | null;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  entitlementId: number | null;
+  createdAt: string;
 }
 
 // ---------- Exercises & plans ----------

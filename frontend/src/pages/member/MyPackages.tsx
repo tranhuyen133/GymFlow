@@ -5,10 +5,20 @@
  * huỷ đơn đang chờ. Gói chỉ có hiệu lực sau khi quản lý xác nhận đã nhận tiền.
  * V12: trả tại quầy hoặc chuyển khoản theo mã QR (nội dung = mã đơn); gói có HLV kèm thì chọn HLV khi gửi đơn.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Member, MembershipPlan, PackageRequest, PaymentMethod, PaymentSettings, PtSessionUsage, Subscription, Trainer } from '../../api/types';
+import type {
+  Member,
+  MembershipPlan,
+  PackageRequest,
+  PaymentMethod,
+  PaymentSettings,
+  PromotionValidationResponse,
+  PtSessionUsage,
+  Subscription,
+  Trainer,
+} from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { initials, PaymentInfo, PickCard } from '../../components/PaymentQr';
 import { benefitsOf, PlanCard, pickBest, savings } from '../../components/PlanCard';
@@ -330,10 +340,71 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
   const [note, setNote] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('COUNTER');
   const [trainerId, setTrainerId] = useState(currentTrainerId ? String(currentTrainerId) : '');
+  const [promoCode, setPromoCode] = useState('');
+  const [validatingPromo, setValidatingPromo] = useState(false);
+  const [promoResult, setPromoResult] = useState<PromotionValidationResponse | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
   const [agree, setAgree] = useState(false);
   const [tried, setTried] = useState(false);
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState('');
+
+  // Tự động kiểm tra xem có ưu đãi toàn hệ thống áp dụng cho gói này không
+  useEffect(() => {
+    let unmounted = false;
+    api.post<PromotionValidationResponse>('/promotions/validate', { planId: plan.id })
+      .then((res) => {
+        if (!unmounted && res.valid) {
+          setPromoResult(res);
+        }
+      })
+      .catch(() => {});
+    return () => { unmounted = true; };
+  }, [plan.id]);
+
+  const applyPromo = async () => {
+    const code = promoCode.trim().toUpperCase();
+    setValidatingPromo(true);
+    setPromoError(null);
+    try {
+      const res = await api.post<PromotionValidationResponse>('/promotions/validate', {
+        code: code || null,
+        planId: plan.id,
+      });
+      if (res.valid) {
+        setPromoResult(res);
+        setPromoError(null);
+        if (res.promotionCode) {
+          toast.success(t('Đã áp dụng mã ưu đãi: {name}', { name: res.promotionName || res.promotionCode }));
+        }
+      } else {
+        setPromoResult(null);
+        setPromoError(res.reason || t('Mã ưu đãi không hợp lệ'));
+      }
+    } catch (e) {
+      setPromoResult(null);
+      setPromoError(errMsg(e));
+    } finally {
+      setValidatingPromo(false);
+    }
+  };
+
+  const removePromo = async () => {
+    setPromoCode('');
+    setPromoError(null);
+    setValidatingPromo(true);
+    try {
+      const res = await api.post<PromotionValidationResponse>('/promotions/validate', { planId: plan.id });
+      setPromoResult(res.valid ? res : null);
+    } catch {
+      setPromoResult(null);
+    } finally {
+      setValidatingPromo(false);
+    }
+  };
+
+  const finalAmount = promoResult?.valid ? promoResult.finalPrice : plan.price;
+  const discountAmount = promoResult?.valid ? promoResult.discountAmount : 0;
 
   const start = mode === 'asap' ? asapStart : date;
   const end = start ? toIsoDate(addDays(parseDate(start), plan.durationDays - 1)) : '';
@@ -358,6 +429,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
       const created = await api.post<PackageRequest>('/package-requests', {
         planId: plan.id, desiredStartDate: mode === 'date' ? date : null, note: note.trim() || null,
         paymentMethod: method, trainerId: pt ? Number(trainerId) : null,
+        promotionCode: promoResult?.valid && promoResult.promotionCode ? promoResult.promotionCode : (promoCode.trim().toUpperCase() || null),
       });
       toast.success(method === 'BANK_TRANSFER'
         ? t('Đã gửi đơn. Quét mã QR để chuyển khoản, nội dung {code}.', { code: created.paymentCode ?? '' })
@@ -376,7 +448,22 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
           <div><span className="tiny muted">{t('Gói')}</span><b>{t(plan.name)}</b></div>
           <div><span className="tiny muted">{t('Loại gói')}</span><b>{pt ? t('Gói Gym + PT') : t('Gói Gym')}</b></div>
           <div><span className="tiny muted">{t('Thời hạn')}</span><b>{durationLabel(plan.durationDays)}</b></div>
-          <div><span className="tiny muted">{t('Số tiền')}</span><b className="num">{fmtMoney(plan.price)}</b></div>
+          <div>
+            <span className="tiny muted">{discountAmount > 0 ? t('Giá gốc') : t('Số tiền')}</span>
+            <b className="num" style={{ textDecoration: discountAmount > 0 ? 'line-through' : undefined }}>{fmtMoney(plan.price)}</b>
+          </div>
+          {discountAmount > 0 && (
+            <div>
+              <span className="tiny muted">{t('Ưu đãi')}</span>
+              <b className="num ok">-{fmtMoney(discountAmount)}</b>
+            </div>
+          )}
+          {discountAmount > 0 && (
+            <div>
+              <span className="tiny muted">{t('Thanh toán')}</span>
+              <b className="num" style={{ color: 'var(--primary)', fontSize: 16 }}>{fmtMoney(finalAmount)}</b>
+            </div>
+          )}
           {pt && plan.ptSessions != null && (
             <div>
               <span className="tiny muted">{t('Số buổi PT')}</span>
@@ -388,6 +475,92 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
         {isLegacyPt && (
           <Alert kind="warning">{t('Gói PT này đang chờ quản trị viên cập nhật số buổi và hạn dùng. Bạn chưa thể gửi đơn đăng ký cho gói này.')}</Alert>
         )}
+
+        {/* Quà tặng kèm theo gói */}
+        {plan.serviceGrants && plan.serviceGrants.length > 0 && (
+          <div className="pc-gifts" style={{ padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 8, fontSize: 13 }}>
+            <div className="row" style={{ gap: 6, fontWeight: 600, color: 'var(--primary)', marginBottom: 4 }}>
+              <Icon name="sparkle" size={14} />
+              <span>{t('Quà tặng kèm theo gói:')}</span>
+            </div>
+            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.5 }}>
+              {plan.serviceGrants.map((g, idx) => (
+                <li key={idx}>
+                  {t('Tặng {q} lượt {s} (hạn {d} ngày)', {
+                    q: g.quantity,
+                    s: g.serviceName || t('Dịch vụ'),
+                    d: g.validDays,
+                  })}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Quà tặng kèm theo chương trình ưu đãi */}
+        {promoResult?.valid && promoResult.gifts && promoResult.gifts.length > 0 && (
+          <div className="pc-gifts" style={{ padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 8, fontSize: 13 }}>
+            <div className="row" style={{ gap: 6, fontWeight: 600, color: 'var(--primary)', marginBottom: 4 }}>
+              <Icon name="trophy" size={14} />
+              <span>{t('Quà tặng từ ưu đãi ({name}):', { name: promoResult.promotionName || promoResult.promotionCode || '' })}</span>
+            </div>
+            <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.5 }}>
+              {promoResult.gifts.map((g, idx) => (
+                <li key={idx}>
+                  {t('Tặng {q} lượt {s} (hạn {d} ngày)', {
+                    q: g.quantity,
+                    s: g.serviceName || t('Dịch vụ'),
+                    d: g.validDays,
+                  })}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Nhập mã ưu đãi */}
+        <div style={{ padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>
+            <Icon name="trophy" size={13} style={{ display: 'inline', verticalAlign: -2, marginRight: 4 }} />
+            {t('Mã ưu đãi / Giảm giá')}
+          </span>
+          <div className="row" style={{ gap: 8 }}>
+            <Input
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+              placeholder={t('Nhập mã giảm giá (nếu có)')}
+              style={{ flex: 1 }}
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={validatingPromo}
+              onClick={applyPromo}
+            >
+              {t('Áp dụng')}
+            </Button>
+            {promoResult?.promotionCode && (
+              <Button size="sm" variant="ghost" onClick={removePromo}>
+                {t('Bỏ mã')}
+              </Button>
+            )}
+          </div>
+          {promoError && (
+            <div className="tiny" style={{ color: 'var(--danger)', marginTop: 6 }}>
+              {promoError}
+            </div>
+          )}
+          {promoResult?.valid && (
+            <div className="tiny ok mt-4 row" style={{ gap: 4, alignItems: 'center' }}>
+              <Icon name="check" size={12} />
+              <span>
+                {t('Đang áp dụng: {name}', { name: promoResult.promotionName || promoResult.promotionCode || '' })}
+                {promoResult.discountAmount > 0 && ` (giảm ${fmtMoney(promoResult.discountAmount)})`}
+              </span>
+            </div>
+          )}
+        </div>
+
         {benefitsOf(plan).length > 0 && (
           <ul className="plan-benefits">{benefitsOf(plan).map((b) => <li key={b}><Icon name="check" size={13} className="ok" />{t(b)}</li>)}</ul>
         )}
@@ -447,8 +620,8 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
         <label className="check-row">
           <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
           <span className="small">{method === 'BANK_TRANSFER'
-            ? tn('Tôi hiểu gói chỉ có hiệu lực sau khi chuyển khoản {price} đúng nội dung và được quản lý xác nhận đã nhận tiền.', { price: <b>{fmtMoney(plan.price)}</b> })
-            : tn('Tôi hiểu gói chỉ có hiệu lực sau khi thanh toán {price} tại quầy lễ tân và được quản lý xác nhận.', { price: <b>{fmtMoney(plan.price)}</b> })}</span>
+            ? tn('Tôi hiểu gói chỉ có hiệu lực sau khi chuyển khoản {price} đúng nội dung và được quản lý xác nhận đã nhận tiền.', { price: <b>{fmtMoney(finalAmount)}</b> })
+            : tn('Tôi hiểu gói chỉ có hiệu lực sau khi thanh toán {price} tại quầy lễ tân và được quản lý xác nhận.', { price: <b>{fmtMoney(finalAmount)}</b> })}</span>
         </label>
         {serverError && <Alert kind="error">{serverError}</Alert>}
       </div>
@@ -469,6 +642,8 @@ export function PayModal({ req, settings, onClose, onPaid }: { req: PackageReque
     } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
   };
   const canPay = settings.onlineEnabled && !req.memberPaidAt;
+  const payAmount = req.finalPrice ?? req.price;
+
   return (
     <Modal title={t('Chuyển khoản cho đơn {code}', { code: req.paymentCode ?? `#${req.id}` })} onClose={onClose} footer={<>
       <Button variant="ghost" onClick={onClose}>{canPay ? t('Để sau') : t('Đóng')}</Button>
@@ -477,7 +652,15 @@ export function PayModal({ req, settings, onClose, onPaid }: { req: PackageReque
       <div className="stack">
         <div className="plan-summary">
           <div><span className="tiny muted">{t('Gói')}</span><b>{req.planName}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
-          <div><span className="tiny muted">{t('Số tiền')}</span><b className="num">{fmtMoney(req.price)}</b></div>
+          {req.discountAmount && req.discountAmount > 0 ? (
+            <>
+              <div><span className="tiny muted">{t('Giá gốc')}</span><b className="num" style={{ textDecoration: 'line-through' }}>{fmtMoney(req.originalPrice ?? req.price)}</b></div>
+              <div><span className="tiny muted">{t('Ưu đãi')}</span><b className="num ok">-{fmtMoney(req.discountAmount)}</b></div>
+              <div><span className="tiny muted">{t('Thanh toán')}</span><b className="num" style={{ color: 'var(--primary)', fontSize: 16 }}>{fmtMoney(payAmount)}</b></div>
+            </>
+          ) : (
+            <div><span className="tiny muted">{t('Số tiền')}</span><b className="num">{fmtMoney(payAmount)}</b></div>
+          )}
           <div><span className="tiny muted">{t('HLV')}</span><b>{req.trainerName ?? t('Tự tập')}</b></div>
         </div>
         {req.memberPaidAt && (
@@ -486,7 +669,7 @@ export function PayModal({ req, settings, onClose, onPaid }: { req: PackageReque
           </div>
         )}
         {settings.onlineEnabled
-          ? <PaymentInfo settings={settings} amount={req.price} code={req.paymentCode} />
+          ? <PaymentInfo settings={settings} amount={payAmount} code={req.paymentCode} />
           : <Alert kind="warning">{t('Phòng tập vừa tạm dừng nhận chuyển khoản. Vui lòng thanh toán tại quầy, đơn của bạn vẫn giữ nguyên.')}</Alert>}
       </div>
     </Modal>

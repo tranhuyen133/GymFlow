@@ -18,15 +18,21 @@ public final class PackageRequestDtos {
     /**
      * paymentMethod để trống = trả tại quầy (giữ tương thích với form cũ).
      * trainerId bắt buộc khi gói có HLV kèm, bị bỏ qua với gói không kèm HLV.
+     * promotionCode tuỳ chọn, backend kiểm tra lại và áp dụng nếu hợp lệ.
      */
     public record CreatePackageRequest(
             @NotNull(message = "Vui lòng chọn gói tập") Long planId,
             LocalDate desiredStartDate,
             @Size(max = 255, message = "Ghi chú tối đa 255 ký tự") String note,
             PaymentMethod paymentMethod,
-            Long trainerId) {
+            Long trainerId,
+            String promotionCode) {
         public CreatePackageRequest(Long planId, LocalDate desiredStartDate, String note) {
-            this(planId, desiredStartDate, note, null, null);
+            this(planId, desiredStartDate, note, null, null, null);
+        }
+
+        public CreatePackageRequest(Long planId, LocalDate desiredStartDate, String note, PaymentMethod paymentMethod, Long trainerId) {
+            this(planId, desiredStartDate, note, paymentMethod, trainerId, null);
         }
     }
 
@@ -48,7 +54,9 @@ public final class PackageRequestDtos {
                                          PackageRequestStatus status, String decisionNote, String decidedByName,
                                          LocalDateTime decidedAt, Long subscriptionId, LocalDateTime createdAt,
                                          boolean includesTrainer, Long trainerId, String trainerName,
-                                         PaymentMethod paymentMethod, String paymentCode, LocalDateTime memberPaidAt) {
+                                         PaymentMethod paymentMethod, String paymentCode, LocalDateTime memberPaidAt,
+                                         Long promotionId, String promotionCode, String promotionName,
+                                         long originalPrice, long discountAmount, long finalPrice) {
     }
 
     public record CountResponse(long count) {
