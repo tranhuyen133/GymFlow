@@ -29,6 +29,7 @@ import { Forbidden, NotFound } from './pages/Errors';
 import Articles from './pages/shared/Articles';
 import Exercises from './pages/shared/Exercises';
 import Equipment from './pages/shared/Equipment';
+import Help from './pages/shared/Help';
 import Programs from './pages/shared/Programs';
 import MemberDetail from './pages/shared/MemberDetail';
 import Members from './pages/shared/Members';
@@ -120,6 +121,7 @@ export default function App() {
         <Route path="/users" element={<Only roles={ADMIN}><Users /></Only>} />
         <Route path="/audit-logs" element={<Only roles={ADMIN}><AuditLog /></Only>} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/help" element={<Help />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

@@ -177,3 +177,17 @@ Thành phần chung nằm ở `components/motivation.tsx` và `motivation.css`.
 **Lịch tập mẫu.** `lib/programs.ts`: 8 lịch phổ biến (toàn thân 3 buổi, thân trên / dưới 4 buổi, đẩy – kéo – chân 6 buổi, mỗi ngày một nhóm cơ, sức mạnh 5x5, sức mạnh + tăng cơ 4 buổi, giảm mỡ, tập tại nhà). Mỗi bài ghi bằng tên trong thư viện kèm bài thay thế. Trang `/programs` hiện lịch tuần, bản đồ cơ được tập, từng bài có ảnh. "Dùng làm giáo án" mở trình soạn (`?template=<slug>`) đã điền bài, hiệp, số lần, thời gian nghỉ; **chỉ bài đã duyệt được thêm**, bài chưa duyệt được liệt kê để HLV chọn bài khác. Hội viên đang có HLV chỉ xem được lịch mẫu.
 
 **Dữ liệu V13.** Điền vùng cơ / dụng cụ / ảnh cho khoảng 75 bài đã có (chỉ khi cột còn trống), thêm 61 bài phòng gym mới do nhóm tự viết tiếng Việt, trạng thái **chờ duyệt**, nguồn NHS + WHO + Free Exercise DB. Quản lý duyệt bằng hàng chờ duyệt như cũ.
+
+## 14. Điều hướng phân cấp, hướng dẫn lần đầu, trung tâm trợ giúp
+
+**Menu.** `NAV` trong `Layout.tsx`: mục không có `group` luôn hiện (việc dùng hằng ngày: Tổng quan, Lịch tập, Giáo án, Gói tập); mục cùng `group` đứng liền nhau gom thành nhóm gập/mở (Sức khoẻ & tiến độ, Huấn luyện, Kiến thức, Kinh doanh, Hệ thống, Tài khoản). Lần đầu chỉ mở sẵn nhóm chứa trang đang xem; người dùng bấm gập/mở thì nhớ ở `localStorage['gf.nav.groups']`. Nhóm đang gập mà chứa trang hiện tại có chấm xanh. Không thêm cấp thứ ba.
+
+**Thu gọn sidebar.** Nút ‹ / › cạnh logo (chỉ màn rộng hơn 900px) thu sidebar còn 76px chỉ có biểu tượng; tên mục hiện bằng `title` và vẫn đọc được bằng trình đọc màn hình. Nhớ ở `gf.side.mini`. Điện thoại giữ drawer đầy đủ.
+
+**Hướng dẫn lần đầu.** `lib/tour.ts` (bước theo từng vai trò, chỉ giới thiệu chức năng vai trò đó có) + `components/Tour.tsx`. Phần tử được giới thiệu gắn `data-tour="…"` (`nav`, `nav:/đường-dẫn`, `content`, `bell`, `account`, `help`). Lớp phủ làm mờ, vùng sáng có viền nhịp nhẹ, hộp thoại có mũi tên, tiến độ "Bước n/N", phím ← → và Esc, giữ Tab trong hộp thoại. Bước chỉ vào menu tự mở nhóm chứa mục đó, trên điện thoại tự mở drawer rồi đóng lại khi xong.
+- Tự hiện một lần ở trang Tổng quan khi tài khoản chưa xem. "Để sau" chỉ ẩn trong phiên; "Bỏ qua" nhớ bước đang dừng; "Hoàn thành" không hiện lại.
+- Tiến độ lưu ở `localStorage['gf.tour.<userId>.<ROLE>']` – theo tài khoản + vai trò nhưng **trên từng trình duyệt** (đổi máy sẽ hỏi lại). Không thêm API / bảng mới.
+
+**Trợ giúp `/help`.** Câu hỏi thường gặp lọc theo vai trò, tìm không dấu ("doi mat khau"), giải thích trạng thái đơn đăng ký gói / gói tập / buổi tập (dùng đúng nhãn ở `lib/format.ts`), nút "Xem hướng dẫn lại" / "Tiếp tục từ bước n". Câu trả lời mô tả đúng màn hình hiện có – đổi luồng nghiệp vụ thì sửa `FAQ` trong `pages/shared/Help.tsx`.
+
+**Thông báo đã xem** nhớ theo tài khoản ở `localStorage['gf.seen.<userId>']` (trước đây `sessionStorage`, mở tab mới là báo đỏ lại).

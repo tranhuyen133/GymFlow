@@ -1,0 +1,17 @@
+/* Trung tâm trợ giúp (Help.tsx). Dùng lại .faq của trang chủ cho phần câu hỏi. */
+.help-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 18px; align-items: start; }
+.help-status { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+.help-status h3 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px; }
+.help-status dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; margin: 0; align-items: start; }
+.help-status dt { margin: 0; white-space: nowrap; }
+.help-status dd { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.help-search { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+.help-search h2 { font-size: 22px; margin: 0; }
+.help-search .input-icon { min-width: min(360px, 100%); }
+.help-topic { margin-top: 18px; }
+.help-topic-title { font-size: 13px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 10px; }
+.help-topic .faq { max-width: none; }
+.faq details .help-go { padding-top: 0; }
+.help-go a { display: inline-flex; align-items: center; gap: 4px; color: var(--primary-bright); font-weight: 600; }
+@media (max-width: 1180px) { .help-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .help-status dl { grid-template-columns: minmax(0, 1fr); } .help-search h2 { font-size: 19px; } }
