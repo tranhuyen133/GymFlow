@@ -1,6 +1,7 @@
 package com.gymflow.service;
 
 import com.gymflow.common.ApiException;
+import com.gymflow.common.PageResponse;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.repository.ContentSourceRepository;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -19,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -31,9 +34,45 @@ public class ExerciseService {
     private final AuditService auditService;
     private final Mappers mappers;
 
+    private static final Pattern YT_PATTERN = Pattern.compile(
+            "^(?:https?:)?//(?:www\\.|m\\.)?(?:youtube\\.com/(?:watch\\?.*?v=|embed/)|youtu\\.be/|youtube-nocookie\\.com/embed/)([a-zA-Z0-9_-]{11})(?:[?&].*)?$"
+    );
+    private static final Pattern VIMEO_PATTERN = Pattern.compile(
+            "^(?:https?:)?//(?:www\\.)?(?:vimeo\\.com/|player\\.vimeo\\.com/video/)([0-9]+)(?:[?&].*)?$"
+    );
+
+    public static String sanitizeVideoUrl(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String s = raw.trim();
+        var ytMatcher = YT_PATTERN.matcher(s);
+        if (ytMatcher.find()) {
+            return "https://www.youtube-nocookie.com/embed/" + ytMatcher.group(1);
+        }
+        var vimeoMatcher = VIMEO_PATTERN.matcher(s);
+        if (vimeoMatcher.find()) {
+            return "https://player.vimeo.com/video/" + vimeoMatcher.group(1);
+        }
+        throw ApiException.badRequest("Chỉ chấp nhận link video từ YouTube hoặc Vimeo");
+    }
+
+    public static String stripAccents(String s) {
+        if (s == null) return "";
+        String nfd = Normalizer.normalize(s, Normalizer.Form.NFD);
+        return nfd.replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                .replace('đ', 'd')
+                .replace('Đ', 'd')
+                .toLowerCase(Locale.ROOT);
+    }
+
     /** Bộ lọc danh sách; mọi trường đều tuỳ chọn. */
-    public record Filter(String q, MuscleGroup group, Level level, ExerciseLocation location, ExerciseGoal goal,
-                         ReviewStatus reviewStatus, boolean includeHidden) {
+    public record Filter(String q, MuscleGroup group, String muscle, String equipment, Level level,
+                         ExerciseLocation location, ExerciseGoal goal, ReviewStatus reviewStatus, boolean includeHidden) {
+
+        /** Giữ chữ ký cũ cho các bài test và controller cũ. */
+        public Filter(String q, MuscleGroup group, Level level, ExerciseLocation location, ExerciseGoal goal,
+                      ReviewStatus reviewStatus, boolean includeHidden) {
+            this(q, group, null, null, level, location, goal, reviewStatus, includeHidden);
+        }
     }
 
     /**
@@ -42,23 +81,66 @@ public class ExerciseService {
      */
     @Transactional(readOnly = true)
     public List<ExerciseResponse> list(AuthUser user, Filter f) {
-        String needle = f.q() == null ? "" : f.q().trim().toLowerCase(Locale.ROOT);
-        boolean showHidden = f.includeHidden() && !user.isMember();
+        String needle = f.q() == null ? "" : stripAccents(f.q().trim());
+        boolean showHidden = f.includeHidden() && (user == null || !user.isMember());
         return exerciseRepository.findAllByOrderByNameAsc().stream()
                 .filter(e -> showHidden || !e.isHidden())
                 .filter(e -> f.group() == null || e.getMuscleGroup() == f.group())
+                .filter(e -> matchesMuscle(e, f.muscle()))
+                .filter(e -> matchesEquipment(e, f.equipment()))
                 .filter(e -> f.level() == null || e.getLevel() == f.level())
                 .filter(e -> f.location() == null || e.getLocation() == f.location()
                         || (e.getLocation() == ExerciseLocation.ANY && f.location() != ExerciseLocation.ANY))
-                .filter(e -> f.goal() == null || Mappers.parseGoals(e.getGoals()).contains(f.goal()))
+                .filter(e -> f.goal() == null || (e.getPrimaryGoal() != null && e.getPrimaryGoal() == f.goal())
+                        || Mappers.parseGoals(e.getGoals()).contains(f.goal()))
                 .filter(e -> f.reviewStatus() == null || e.getReviewStatus() == f.reviewStatus())
                 .filter(e -> needle.isEmpty() || matches(e, needle))
                 .map(mappers::exercise).toList();
     }
 
+    @Transactional(readOnly = true)
+    public PageResponse<ExerciseResponse> listPaged(AuthUser user, Filter f, int page, int size) {
+        List<ExerciseResponse> all = list(user, f);
+        int totalElements = all.size();
+        int pageSize = size <= 0 ? 12 : size;
+        int totalPages = (int) Math.ceil((double) totalElements / pageSize);
+        int p = Math.max(0, page);
+        int fromIndex = Math.min(p * pageSize, totalElements);
+        int toIndex = Math.min(fromIndex + pageSize, totalElements);
+        List<ExerciseResponse> content = all.subList(fromIndex, toIndex);
+        return new PageResponse<>(content, p, pageSize, totalElements, totalPages);
+    }
+
+    private static boolean matchesMuscle(Exercise e, String muscle) {
+        if (muscle == null || muscle.isBlank()) return true;
+        String m = muscle.trim();
+        if (e.getTargetMuscles() != null) {
+            for (String k : e.getTargetMuscles().split(",")) {
+                if (k.trim().equalsIgnoreCase(m)) return true;
+            }
+        }
+        if (e.getSecondaryMuscleKeys() != null) {
+            for (String k : e.getSecondaryMuscleKeys().split(",")) {
+                if (k.trim().equalsIgnoreCase(m)) return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean matchesEquipment(Exercise e, String equipment) {
+        if (equipment == null || equipment.isBlank()) return true;
+        String eq = equipment.trim();
+        if (e.getEquipmentKeys() != null) {
+            for (String k : e.getEquipmentKeys().split(",")) {
+                if (k.trim().equalsIgnoreCase(eq)) return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean matches(Exercise e, String needle) {
         for (String field : new String[]{e.getName(), e.getNameEn(), e.getAliases(), e.getEquipment(), e.getSecondaryMuscles()}) {
-            if (field != null && field.toLowerCase(Locale.ROOT).contains(needle)) return true;
+            if (field != null && stripAccents(field).contains(needle)) return true;
         }
         return false;
     }
@@ -77,6 +159,9 @@ public class ExerciseService {
 
     @Transactional
     public ExerciseResponse create(AuthUser user, ExerciseRequest req) {
+        if (user == null || user.isMember()) {
+            throw ApiException.forbidden("Chỉ quản lý hoặc huấn luyện viên mới có quyền tạo bài tập");
+        }
         if (exerciseRepository.existsByNameIgnoreCase(req.name().trim())) throw ApiException.conflict("Tên bài tập đã tồn tại");
         Exercise e = new Exercise();
         apply(e, req);
@@ -90,6 +175,9 @@ public class ExerciseService {
     /** HLV sửa nội dung → bài quay về "Chờ duyệt"; quản lý sửa thì giữ nguyên trạng thái. */
     @Transactional
     public ExerciseResponse update(AuthUser user, Long id, ExerciseRequest req) {
+        if (user == null || user.isMember()) {
+            throw ApiException.forbidden("Chỉ quản lý hoặc huấn luyện viên mới có quyền sửa bài tập");
+        }
         Exercise e = load(id);
         if (exerciseRepository.existsByNameIgnoreCaseAndIdNot(req.name().trim(), id)) throw ApiException.conflict("Tên bài tập đã tồn tại");
         apply(e, req);
@@ -177,7 +265,11 @@ public class ExerciseService {
         e.setLevel(req.level());
         e.setDescription(Mappers.blankToNull(req.description()));
         e.setInstructions(Mappers.blankToNull(req.instructions()));
-        e.setVideoUrl(Mappers.blankToNull(req.videoUrl()));
+        e.setVideoUrl(sanitizeVideoUrl(req.videoUrl()));
+        e.setSetupPosition(Mappers.blankToNull(req.setupPosition()));
+        e.setSteps(Mappers.blankToNull(req.steps() != null ? req.steps() : req.instructions()));
+        e.setSetsRepsHint(Mappers.blankToNull(req.setsRepsHint()));
+        e.setPrimaryGoal(req.primaryGoal() != null ? req.primaryGoal() : (req.goals() != null && !req.goals().isEmpty() ? req.goals().get(0) : null));
         e.setNameEn(Mappers.blankToNull(req.nameEn()));
         e.setAliases(Mappers.blankToNull(req.aliases()));
         e.setSecondaryMuscles(Mappers.blankToNull(req.secondaryMuscles()));
@@ -194,14 +286,23 @@ public class ExerciseService {
         if (req.secondaryMuscleKeys() != null) e.setSecondaryMuscleKeys(joinKeys(req.secondaryMuscleKeys(), MUSCLE_KEYS, "vùng cơ"));
         if (req.equipmentKeys() != null) e.setEquipmentKeys(joinKeys(req.equipmentKeys(), EQUIPMENT_KEYS, "dụng cụ"));
         if (req.imageKey() != null) e.setImageKey(Mappers.blankToNull(req.imageKey()));
+        if (req.alternativeIds() != null) {
+            List<Long> distinctIds = req.alternativeIds().stream()
+                    .filter(Objects::nonNull)
+                    .filter(altId -> e.getId() == null || !e.getId().equals(altId))
+                    .distinct().toList();
+            List<Exercise> alts = distinctIds.isEmpty() ? List.of() : exerciseRepository.findAllById(distinctIds);
+            e.setAlternatives(new LinkedHashSet<>(alts));
+        }
     }
 
-    /** V13 · khớp lib/anatomy.ts ở frontend. */
+    /** V13 & V18 · khớp lib/anatomy.ts ở frontend. */
     static final Set<String> MUSCLE_KEYS = Set.of("chest", "front-deltoids", "back-deltoids", "biceps", "triceps", "forearm",
             "abs", "obliques", "trapezius", "upper-back", "lower-back", "gluteal", "quadriceps", "hamstring", "adductor",
             "abductors", "calves", "neck");
     static final Set<String> EQUIPMENT_KEYS = Set.of("barbell", "dumbbell", "kettlebell", "machine", "cable", "bench",
-            "pullup-bar", "bodyweight", "band", "ball", "cardio-machine", "other");
+            "pullup-bar", "bodyweight", "band", "ball", "cardio-machine", "other",
+            "dip-bars", "ez-bar", "plate", "smith-machine", "foam-roller");
 
     static String joinKeys(List<String> keys, Set<String> allowed, String what) {
         List<String> clean = keys.stream().filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).distinct().toList();

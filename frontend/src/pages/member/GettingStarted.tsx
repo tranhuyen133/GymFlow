@@ -147,11 +147,11 @@ export default function GettingStarted() {
                 <div className="tiny muted">{t('Xem quy định & lưu ý')}</div>
               </div>
             </Link>
-            <Link to="/exercises?level=BEGINNER" className="gs-shortcut-card">
+            <Link to="/exercises/beginner" className="gs-shortcut-card">
               <Icon name="dumbbell" size={20} className="ok" />
               <div>
-                <b>{t('Bài tập cho người mới')}</b>
-                <div className="tiny muted">{t('Luyện tập từ cơ bản')}</div>
+                <b>{t('Bắt đầu tập gym')}</b>
+                <div className="tiny muted">{t('Cẩm nang & bài tập cho người mới')}</div>
               </div>
             </Link>
             <Link to="/me/schedule" className="gs-shortcut-card">
