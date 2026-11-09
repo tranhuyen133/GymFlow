@@ -21,10 +21,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -97,6 +100,12 @@ public class ScheduleService {
                 skipped.add(start.format(FMT) + ": " + problem);
                 continue;
             }
+            String sameDayProblem = checkSameDayDuplicate(member, start, null, req.confirmDuplicateDay());
+            if (sameDayProblem != null) {
+                if (w == 0) throw ApiException.badRequest(sameDayProblem);
+                skipped.add(start.format(FMT) + ": " + sameDayProblem);
+                continue;
+            }
             WorkoutSchedule s = new WorkoutSchedule();
             s.setMember(member);
             s.setTrainer(trainer);
@@ -124,6 +133,8 @@ public class ScheduleService {
         lockForConflictCheck(s.getMember(), trainer);
         String problem = conflict(s.getMember(), trainer, req.startTime(), req.endTime(), s.getId());
         if (problem != null) throw ApiException.conflict(problem);
+        String sameDayProblem = checkSameDayDuplicate(s.getMember(), req.startTime(), s.getId(), req.confirmDuplicateDay());
+        if (sameDayProblem != null) throw ApiException.badRequest(sameDayProblem);
         String before = s.getStartTime().format(FMT);
         s.setTrainer(trainer);
         s.setPlan(resolvePlan(s.getMember(), req.planId()));
@@ -288,6 +299,119 @@ public class ScheduleService {
         WorkoutPlan p = planRepository.findById(planId).orElseThrow(() -> ApiException.notFound("giáo án"));
         if (!p.getMember().getId().equals(member.getId())) throw ApiException.badRequest("Giáo án không thuộc hội viên này");
         return p;
+    }
+
+    private static final String[] DOW_NAMES = {"Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"};
+
+    /**
+     * Tự sinh lịch tập theo các thứ trong tuần của giáo án mẫu.
+     * Người dùng giữ nguyên cấu trúc thứ và bài tập của giáo án, chỉ được sửa giờ tập và dời buổi cụ thể.
+     */
+    @Transactional
+    public ScheduleCreatedResponse generateFromPlan(AuthUser user, GenerateScheduleFromPlanRequest req) {
+        Member member = user.isMember() ? access.requireSelfCoach(user, req.memberId()) : access.requireCoach(user, req.memberId());
+        if (member.getStatus() != MemberStatus.ACTIVE) throw ApiException.badRequest("Hội viên không ở trạng thái hoạt động");
+        WorkoutPlan plan = resolvePlan(member, req.planId());
+        if (plan == null) throw ApiException.badRequest("Vui lòng chọn giáo án hợp lệ");
+        if (plan.getItems().isEmpty()) throw ApiException.badRequest("Giáo án chưa có bài tập nào");
+
+        Trainer trainer = resolveTrainer(user, member, req.trainerId());
+        lockForConflictCheck(member, trainer);
+
+        int weeks = req.weeks() == null ? 1 : req.weeks();
+        int duration = req.durationMinutes() == null ? 60 : req.durationMinutes();
+        LocalTime startTime = req.defaultStartTime();
+
+        // Gom các bài tập của giáo án theo từng thứ trong tuần (1 = T2 ... 7 = CN)
+        java.util.Map<Integer, List<WorkoutPlanItem>> itemsByDay = plan.getItems().stream()
+                .collect(java.util.stream.Collectors.groupingBy(WorkoutPlanItem::getDayOfWeek));
+
+        List<WorkoutSchedule> created = new ArrayList<>();
+        List<String> skipped = new ArrayList<>();
+
+        LocalDate startMonday = req.startDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+        for (int w = 0; w < weeks; w++) {
+            LocalDate weekMonday = startMonday.plusWeeks(w);
+            for (int dow = 1; dow <= 7; dow++) {
+                if (!itemsByDay.containsKey(dow)) continue;
+                LocalDate sessionDate = weekMonday.plusDays(dow - 1L);
+                if (sessionDate.isBefore(req.startDate())) continue;
+
+                LocalDateTime start = sessionDate.atTime(startTime);
+                LocalDateTime end = start.plusMinutes(duration);
+
+                if (!GymHours.contains(start.toLocalTime(), end.toLocalTime())) {
+                    skipped.add(start.format(FMT) + ": ngoài giờ mở cửa " + GymHours.LABEL);
+                    continue;
+                }
+                if (start.isBefore(LocalDateTime.now(clock))) {
+                    skipped.add(start.format(FMT) + ": thời điểm đã qua");
+                    continue;
+                }
+
+                String problem = conflict(member, trainer, start, end, null);
+                if (problem != null) {
+                    skipped.add(start.format(FMT) + ": " + problem);
+                    continue;
+                }
+
+                String sameDay = checkSameDayDuplicate(member, start, null, req.confirmDuplicateDay());
+                if (sameDay != null) {
+                    skipped.add(start.format(FMT) + ": " + sameDay);
+                    continue;
+                }
+
+                List<WorkoutPlanItem> dayItems = itemsByDay.get(dow);
+                String dayTitle = plan.getName() + " (" + DOW_NAMES[dow - 1] + ")";
+                String notes = dayItems.stream()
+                        .map(it -> it.getExercise().getName() + " (" + it.getSets() + " hiệp)")
+                        .collect(java.util.stream.Collectors.joining(", "));
+                if (notes.length() > 255) notes = notes.substring(0, 252) + "...";
+
+                WorkoutSchedule s = new WorkoutSchedule();
+                s.setMember(member);
+                s.setTrainer(trainer);
+                s.setPlan(plan);
+                s.setTitle(dayTitle.length() > 120 ? dayTitle.substring(0, 120) : dayTitle);
+                s.setStartTime(start);
+                s.setEndTime(end);
+                s.setNote(notes);
+                s.setStatus(ScheduleStatus.SCHEDULED);
+                created.add(scheduleRepository.saveAndFlush(s));
+            }
+        }
+
+        if (created.isEmpty() && !skipped.isEmpty()) {
+            throw ApiException.badRequest("Không thể sinh lịch tập: " + String.join("; ", skipped));
+        }
+
+        if (!created.isEmpty()) {
+            auditService.log("SCHEDULE_GENERATE_PLAN", "SCHEDULE", created.get(0).getId(),
+                    member.getCode() + " · sinh " + created.size() + " buổi từ giáo án " + plan.getName()
+                            + (skipped.isEmpty() ? "" : " · bỏ qua " + skipped.size()));
+        }
+        return new ScheduleCreatedResponse(mappers.schedules(created), skipped);
+    }
+
+    /**
+     * Cảnh báo trùng buổi tập trong cùng một ngày:
+     * Nếu trong ngày đã có buổi tập khác (chưa huỷ) và chưa được người dùng xác nhận cho phép trùng ngày,
+     * trả về thông báo cảnh báo để người dùng chọn "Vẫn thêm" hoặc "Hủy".
+     */
+    String checkSameDayDuplicate(Member member, LocalDateTime start, Long excludeId, Boolean confirmDuplicateDay) {
+        if (Boolean.TRUE.equals(confirmDuplicateDay)) return null;
+        LocalDate day = start.toLocalDate();
+        LocalDateTime dayStart = day.atStartOfDay();
+        LocalDateTime dayEnd = day.plusDays(1).atStartOfDay();
+        List<WorkoutSchedule> onDay = scheduleRepository.findMemberSchedulesOnDay(member.getId(), dayStart, dayEnd, excludeId, ScheduleStatus.CANCELLED);
+        if (!onDay.isEmpty()) {
+            WorkoutSchedule first = onDay.get(0);
+            String dateStr = start.format(DateTimeFormatter.ofPattern("dd/MM"));
+            String timeStr = first.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+            return "Ngày " + dateStr + " bạn đã có buổi tập lúc " + timeStr + ". Bạn có chắc muốn thêm buổi thứ hai?";
+        }
+        return null;
     }
 
     private WorkoutSchedule load(Long id) {

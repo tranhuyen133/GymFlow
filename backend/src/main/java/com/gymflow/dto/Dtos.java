@@ -581,7 +581,11 @@ public final class Dtos {
             @NotNull(message = "Chọn giờ bắt đầu") LocalDateTime startTime,
             @NotNull(message = "Chọn giờ kết thúc") LocalDateTime endTime,
             @Size(max = 255) String note,
-            @Min(value = 0, message = "Số tuần lặp không âm") @Max(value = 12, message = "Lặp tối đa 12 tuần") Integer repeatWeeks) {
+            @Min(value = 0, message = "Số tuần lặp không âm") @Max(value = 12, message = "Lặp tối đa 12 tuần") Integer repeatWeeks,
+            Boolean confirmDuplicateDay) {
+        public ScheduleRequest(Long memberId, Long trainerId, Long planId, String title, LocalDateTime startTime, LocalDateTime endTime, String note, Integer repeatWeeks) {
+            this(memberId, trainerId, planId, title, startTime, endTime, note, repeatWeeks, false);
+        }
     }
 
     public record ScheduleUpdateRequest(
@@ -590,7 +594,22 @@ public final class Dtos {
             @NotBlank(message = "Vui lòng nhập tiêu đề") @Size(max = 120, message = "Tiêu đề tối đa 120 ký tự") String title,
             @NotNull(message = "Chọn giờ bắt đầu") LocalDateTime startTime,
             @NotNull(message = "Chọn giờ kết thúc") LocalDateTime endTime,
-            @Size(max = 255) String note) {
+            @Size(max = 255) String note,
+            Boolean confirmDuplicateDay) {
+        public ScheduleUpdateRequest(Long trainerId, Long planId, String title, LocalDateTime startTime, LocalDateTime endTime, String note) {
+            this(trainerId, planId, title, startTime, endTime, note, false);
+        }
+    }
+
+    public record GenerateScheduleFromPlanRequest(
+            @NotNull(message = "Vui lòng chọn hội viên") Long memberId,
+            @NotNull(message = "Vui lòng chọn giáo án") Long planId,
+            Long trainerId,
+            @NotNull(message = "Chọn ngày bắt đầu") LocalDate startDate,
+            @Min(value = 1, message = "Số tuần tối thiểu là 1") @Max(value = 12, message = "Tối đa 12 tuần") Integer weeks,
+            @NotNull(message = "Chọn giờ bắt đầu tập") LocalTime defaultStartTime,
+            @Min(value = 15, message = "Tối thiểu 15 phút") @Max(value = 240, message = "Tối đa 240 phút") Integer durationMinutes,
+            Boolean confirmDuplicateDay) {
     }
 
     public record CompleteRequest(

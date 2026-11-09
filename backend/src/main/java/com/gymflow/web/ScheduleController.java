@@ -38,6 +38,13 @@ public class ScheduleController {
         return scheduleService.create(CurrentUser.get(), req);
     }
 
+    @PostMapping("/api/schedules/generate-from-plan")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('ADMIN','TRAINER','MEMBER')")
+    public ScheduleCreatedResponse generateFromPlan(@Valid @RequestBody GenerateScheduleFromPlanRequest req) {
+        return scheduleService.generateFromPlan(CurrentUser.get(), req);
+    }
+
     @PutMapping("/api/schedules/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TRAINER','MEMBER')")
     public ScheduleResponse update(@PathVariable Long id, @Valid @RequestBody ScheduleUpdateRequest req) {
