@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api } from '../../api/client';
 import type { BulkApproveResult, ContentOrigin, Exercise, ExerciseGoal, ExerciseLocation, Level, MuscleGroup, ReviewStatus, Source } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { HealthDisclaimer, InfoRow, Missing, SourceList } from '../../components/Content';
 import { ExerciseMedia, mediaCredit } from '../../components/ExerciseMedia';
 import { MuscleMap } from '../../components/MuscleMap';
@@ -47,13 +47,14 @@ export default function Exercises() {
   const me = useMe();
   const staff = me.role !== 'MEMBER';
   const toast = useToast();
-  const [q, setQ] = useState('');
-  const [group, setGroup] = useState<'' | MuscleGroup>('');
-  const [level, setLevel] = useState<'' | Level>('');
-  const [location, setLocation] = useState<'' | ExerciseLocation>('');
-  const [goal, setGoal] = useState<'' | ExerciseGoal>('');
-  const [review, setReview] = useState<'' | ReviewStatus>('');
-  const [showHidden, setShowHidden] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const [q, setQ] = useState(() => params.get('q') ?? '');
+  const [group, setGroup] = useState<'' | MuscleGroup>(() => (params.get('group') as MuscleGroup) || '');
+  const [level, setLevel] = useState<'' | Level>(() => (params.get('level') as Level) || '');
+  const [location, setLocation] = useState<'' | ExerciseLocation>(() => (params.get('location') as ExerciseLocation) || '');
+  const [goal, setGoal] = useState<'' | ExerciseGoal>(() => (params.get('goal') as ExerciseGoal) || '');
+  const [review, setReview] = useState<'' | ReviewStatus>(() => (params.get('review') as ReviewStatus) || '');
+  const [showHidden, setShowHidden] = useState(() => params.get('hidden') === 'true');
   const [sort, setSort] = useState<Sort>('name');
   const [editing, setEditing] = useState<{ exercise?: Exercise; copyOf?: Exercise } | null>(null);
   const [viewingId, setViewingId] = useState<number | null>(null);
@@ -69,11 +70,25 @@ export default function Exercises() {
   }, [data]);
 
   // Bản đồ cơ + dụng cụ lọc ngay trên dữ liệu đã tải (link từ trang Dụng cụ: ?equipment=dumbbell, ?muscle=chest)
-  const [params] = useSearchParams();
   const [muscle, setMuscle] = useState<MuscleKey | null>(() => { const m = params.get('muscle'); return m && isMuscleKey(m) ? m : null; });
   const [equip, setEquip] = useState<'' | EquipmentKey>(() => { const k = params.get('equipment'); return k && EQUIPMENT_BY_KEY.has(k as EquipmentKey) ? k as EquipmentKey : ''; });
   const [withSecondary, setWithSecondary] = useState(false);
   const [mapOpen, setMapOpen] = useState(true);
+
+  // Đồng bộ bộ lọc vào URL để có thể chia sẻ link
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (dq) next.set('q', dq);
+    if (group) next.set('group', group);
+    if (level) next.set('level', level);
+    if (location) next.set('location', location);
+    if (goal) next.set('goal', goal);
+    if (review) next.set('review', review);
+    if (showHidden) next.set('hidden', 'true');
+    if (muscle) next.set('muscle', muscle);
+    if (equip) next.set('equipment', equip);
+    setParams(next, { replace: true });
+  }, [dq, group, level, location, goal, review, showHidden, muscle, equip, setParams]);
   const byEquip = useMemo(() => (data ?? []).filter((e) => !equip || equipOf(e).includes(equip)), [data, equip]);
   const muscleCounts = useMemo(() => {
     const c: Partial<Record<MuscleKey, number>> = {};
@@ -123,7 +138,13 @@ export default function Exercises() {
     <div className="page">
       <PageHead eyebrow="Huấn luyện" title="Thư viện bài tập"
         desc="Mỗi bài có nguồn tham khảo, giấy phép và trạng thái duyệt. Bài đã nằm trong giáo án chỉ được ẩn, không xoá để giữ nguyên lịch sử."
-        actions={staff && <Button variant="primary" icon="plus" onClick={() => setEditing({})}>Thêm bài tập</Button>} />
+        actions={<>
+          <Link to="/exercises/beginner" className="btn btn-secondary btn-sm" style={{ marginRight: 8 }}>
+            <Icon name="sparkle" size={14} className="mr-4" />
+            <span>{t('Dành cho người mới')}</span>
+          </Link>
+          {staff && <Button variant="primary" icon="plus" onClick={() => setEditing({})}>Thêm bài tập</Button>}
+        </>} />
 
       {data && pendingCount > 0 && !isAdmin && (
         <Alert kind="warning" action={staff && sort !== 'review' && <Button size="sm" onClick={() => setSort('review')}>Xem bài cần duyệt</Button>}>
@@ -275,7 +296,10 @@ export default function Exercises() {
                 <div className="row between">
                   <span className="tiny faint">{e.usageCount > 0 ? t('Dùng trong {n} giáo án', { n: e.usageCount }) : t('Chưa dùng')}{e.hidden && ' · '}{e.hidden && <Badge tone="muted">Đã ẩn</Badge>}</span>
                   <div className="row" style={{ gap: 2 }}>
-                    <Button size="sm" variant="ghost" icon="eye" aria-label="Xem" title="Xem" onClick={() => setViewingId(e.id)} />
+                    <Link to={`/exercises/${e.id}`} className="btn btn-sm btn-ghost" title={t('Xem trang chi tiết')} aria-label={t('Trang chi tiết')}>
+                      <Icon name="arrowRight" size={13} />
+                    </Link>
+                    <Button size="sm" variant="ghost" icon="eye" aria-label="Xem nhanh" title="Xem nhanh" onClick={() => setViewingId(e.id)} />
                     {staff && <Button size="sm" variant="ghost" icon="edit" aria-label="Sửa" title="Sửa" onClick={() => setEditing({ exercise: e })} />}
                     {staff && <Button size="sm" variant="ghost" icon="copy" aria-label="Nhân bản" title="Nhân bản" onClick={() => setEditing({ copyOf: e })} />}
                     {staff && <Button size="sm" variant="ghost" icon={e.hidden ? 'eye' : 'eyeOff'} aria-label={e.hidden ? 'Hiện' : 'Ẩn'} title={e.hidden ? 'Hiện' : 'Ẩn'} onClick={() => void toggleHidden(e)} />}
@@ -504,9 +528,20 @@ function FormSection({ id, active, children }: { id: Tab; active: Tab; children:
 
 const blank = (s: string) => s.trim();
 
+function getEmbedUrl(raw: string): string | null {
+  if (!raw) return null;
+  const s = raw.trim();
+  const yt = s.match(/(?:youtube\.com\/(?:watch\?.*?v=|embed\/)|youtu\.be\/|youtube-nocookie\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}`;
+  const vimeo = s.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/);
+  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
+  return null;
+}
+
 function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercise?: Exercise; copyOf?: Exercise; isAdmin: boolean; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const sources = useAsync(() => api.get<Source[]>('/content-sources'), []);
+  const allExercises = useAsync(() => api.get<Exercise[]>('/exercises'), []);
   const base = exercise ?? copyOf;
   const initial = useMemo(() => ({
     name: copyOf ? `${copyOf.name} (bản sao)`.slice(0, 120) : exercise?.name ?? '',
@@ -514,9 +549,13 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
     muscleGroup: base?.muscleGroup ?? ('CHEST' as MuscleGroup), secondaryMuscles: base?.secondaryMuscles ?? '',
     equipment: base?.equipment ?? '', level: base?.level ?? ('BEGINNER' as Level),
     location: (base?.location ?? '') as ExerciseLocation | '', goals: base?.goals ?? ([] as ExerciseGoal[]),
-    description: base?.description ?? '', instructions: base?.instructions ?? '', breathing: base?.breathing ?? '',
-    commonMistakes: base?.commonMistakes ?? '', safetyNotes: base?.safetyNotes ?? '', variations: base?.variations ?? '',
-    suggestedDose: base?.suggestedDose ?? '', videoUrl: base?.videoUrl ?? '',
+    primaryGoal: (base?.primaryGoal ?? (base?.goals?.[0] ?? '')) as ExerciseGoal | '',
+    description: base?.description ?? '', instructions: base?.instructions ?? '',
+    setupPosition: base?.setupPosition ?? '', steps: base?.steps ?? base?.instructions ?? '',
+    breathing: base?.breathing ?? '', commonMistakes: base?.commonMistakes ?? '',
+    safetyNotes: base?.safetyNotes ?? '', variations: base?.variations ?? '',
+    suggestedDose: base?.suggestedDose ?? '', setsRepsHint: base?.setsRepsHint ?? '',
+    videoUrl: base?.videoUrl ?? '', alternativeIds: base?.alternatives?.map((a) => a.id) ?? ([] as number[]),
     contentOrigin: base?.contentOrigin ?? ('SELF_AUTHORED' as ContentOrigin), sourceIds: base?.sources.map((s) => s.id) ?? ([] as number[]),
     targetMuscles: base ? targetOf(base) : ([] as MuscleKey[]), secondaryMuscleKeys: base ? secondaryOf(base) : ([] as MuscleKey[]),
     equipmentKeys: base ? equipOf(base) : ([] as EquipmentKey[]), imageKey: base?.imageKey ?? '',
@@ -591,6 +630,8 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
       const body = {
         ...f, name: blank(f.name).replace(/\s+/g, " "), nameEn: blank(f.nameEn), aliases: blank(f.aliases), secondaryMuscles: blank(f.secondaryMuscles),
         equipment: blank(f.equipment), breathing: blank(f.breathing), suggestedDose: blank(f.suggestedDose), videoUrl: blank(f.videoUrl),
+        setupPosition: blank(f.setupPosition), steps: blank(f.steps), setsRepsHint: blank(f.setsRepsHint),
+        primaryGoal: f.primaryGoal || null, alternativeIds: f.alternativeIds,
         location: f.location || null, imageKey: blank(f.imageKey),
       };
       if (exercise) await api.put(`/exercises/${exercise.id}`, body); else await api.post('/exercises', body);
@@ -690,6 +731,13 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
               </div>
             </div>
 
+            <Field label="Mục tiêu chính" className="span-2">
+              <Select value={f.primaryGoal} onChange={(e) => set('primaryGoal', e.target.value as ExerciseGoal | '')}>
+                <option value="">{t('-- Chọn mục tiêu chính --')}</option>
+                {GOALS.map((g) => <option key={g} value={g}>{goalLabel[g]}</option>)}
+              </Select>
+            </Field>
+
             <div className="span-2 ex-pick">
               <div className="row between row-wrap" style={{ gap: 8 }}>
                 <div>
@@ -741,12 +789,36 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
                   fallback={<div className="ex-img-preview ex-media-empty"><Icon name="camera" size={20} /></div>} />
               </div>
             </Field>
+
+            <div className="span-2">
+              <span className="tiny muted">{t('Bài tập thay thế tương đương')}</span>
+              <div className="chips mt-8" style={{ maxHeight: 140, overflowY: 'auto' }}>
+                {(allExercises.data ?? []).filter((ex) => ex.id !== exercise?.id).slice(0, 40).map((ex) => {
+                  const on = f.alternativeIds.includes(ex.id);
+                  return (
+                    <button
+                      type="button"
+                      key={ex.id}
+                      className={`chip chip-toggle ${on ? 'on' : ''}`}
+                      onClick={() => set('alternativeIds', toggle(f.alternativeIds, ex.id))}
+                    >
+                      <Icon name={on ? 'check' : 'plus'} size={12} />
+                      {ex.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </FormSection>
 
           <FormSection id="guide" active={tab}>
-            <Field label="Hướng dẫn thực hiện" className="span-2" hint={t('Mỗi bước một dòng, cần ít nhất {n} bước · hiện có {k} bước', { n: MIN_STEPS, k: countSteps(f.instructions) })}>
-              <Textarea maxLength={2000} rows={5} value={f.instructions} onChange={(e) => set('instructions', e.target.value)} />
-              <Count value={f.instructions} max={2000} />
+            <Field label="Tư thế chuẩn bị" className="span-2" hint="Tư thế đứng/ngồi, vị trí đặt tay chân trước khi nhấc tạ">
+              <Textarea maxLength={1000} rows={2} value={f.setupPosition} onChange={(e) => set('setupPosition', e.target.value)} placeholder="Đứng thẳng, chân mở rộng bằng vai..." />
+              <Count value={f.setupPosition} max={1000} />
+            </Field>
+            <Field label="Các bước thực hiện (đánh số)" className="span-2" hint={t('Mỗi bước một dòng, cần ít nhất {n} bước · hiện có {k} bước', { n: MIN_STEPS, k: countSteps(f.steps || f.instructions) })}>
+              <Textarea maxLength={2000} rows={5} value={f.steps} onChange={(e) => set('steps', e.target.value)} placeholder="1. Hạ tạ xuống...&#10;2. Đẩy mạnh lên..." />
+              <Count value={f.steps} max={2000} />
             </Field>
             <Field label="Hơi thở" className="span-2"><Input maxLength={500} value={f.breathing} onChange={(e) => set('breathing', e.target.value)} placeholder="VD: Hít vào khi hạ người, thở ra khi đứng lên" /></Field>
             <Field label="Lỗi thường gặp">
@@ -757,8 +829,16 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
               <Textarea maxLength={2000} rows={3} value={f.variations} onChange={(e) => set('variations', e.target.value)} />
               <Count value={f.variations} max={2000} />
             </Field>
-            <Field label="Link video" error={errors.videoUrl} className="span-2">
-              <Input maxLength={255} value={f.videoUrl} invalid={!!errors.videoUrl} onBlur={() => blurCheck('videoUrl')} onChange={(e) => set('videoUrl', e.target.value)} placeholder="https://…" />
+            <Field label="Link video (YouTube / Vimeo)" error={errors.videoUrl} className="span-2" hint="Chấp nhận link youtube.com, youtu.be, vimeo.com">
+              <Input maxLength={255} value={f.videoUrl} invalid={!!errors.videoUrl} onBlur={() => blurCheck('videoUrl')} onChange={(e) => set('videoUrl', e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
+              {getEmbedUrl(f.videoUrl) && (
+                <div className="mt-8" style={{ maxWidth: 360 }}>
+                  <div className="video-embed-container" style={{ borderRadius: 'var(--r-sm)' }}>
+                    <iframe src={getEmbedUrl(f.videoUrl)!} title="Xem trước video" allowFullScreen />
+                  </div>
+                  <div className="tiny faint mt-4">✓ Xem trước video nhúng</div>
+                </div>
+              )}
             </Field>
           </FormSection>
 
@@ -766,6 +846,9 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
             <Field label="Lưu ý an toàn" className="span-2">
               <Textarea maxLength={2000} rows={3} value={f.safetyNotes} onChange={(e) => set('safetyNotes', e.target.value)} />
               <Count value={f.safetyNotes} max={2000} />
+            </Field>
+            <Field label="Gợi ý số hiệp & số lần (Sets & Reps)" className="span-2" hint="VD: 3 hiệp x 10–12 lần">
+              <Input maxLength={100} value={f.setsRepsHint} onChange={(e) => set('setsRepsHint', e.target.value)} placeholder="VD: 3 hiệp x 10–12 lần" />
             </Field>
             <Field label="Liều gợi ý" hint="Chỉ ghi khi có nguồn; để trống sẽ hiện “Chưa có dữ liệu”" className="span-2"><Input maxLength={255} value={f.suggestedDose} onChange={(e) => set('suggestedDose', e.target.value)} /></Field>
           </FormSection>

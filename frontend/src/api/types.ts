@@ -129,6 +129,11 @@ export interface Source {
   id: number; code: string; publisher: string; title: string; url: string; license: string | null; licenseUrl: string | null;
   licenseVerified: boolean; attribution: string | null; publisherReviewed: string | null; accessedAt: string;
 }
+export interface ExerciseSummary {
+  id: number; name: string; nameEn?: string | null; level: Level;
+  targetMuscles?: string[]; imageKey?: string | null;
+}
+
 export interface Exercise {
   id: number; name: string; muscleGroup: MuscleGroup; equipment: string | null; level: Level;
   description: string | null; instructions: string | null; videoUrl: string | null; hidden: boolean;
@@ -138,8 +143,30 @@ export interface Exercise {
   variations: string | null; suggestedDose: string | null; contentOrigin: ContentOrigin;
   reviewStatus: ReviewStatus; reviewNote: string | null; reviewedByName: string | null; reviewedAt: string | null;
   updatedAt: string | null; sources: Source[];
-  /** V13 · khoá vùng cơ / dụng cụ (lib/anatomy.ts) và thư mục ảnh minh hoạ. Bản backend cũ không trả thì là undefined. */
+  /** V13 · khoá vùng cơ / dụng cụ (lib/anatomy.ts) và thư mục ảnh minh hoạ. */
   targetMuscles?: string[]; secondaryMuscleKeys?: string[]; equipmentKeys?: string[]; imageKey?: string | null;
+  /** V18 · tư thế chuẩn bị, các bước đánh số, số hiệp/lần gợi ý, mục tiêu chính, bài thay thế. */
+  setupPosition?: string | null; steps?: string | null; setsRepsHint?: string | null;
+  primaryGoal?: ExerciseGoal | null; alternatives?: ExerciseSummary[];
+}
+
+export type EquipmentCategory = 'FREE_WEIGHT' | 'MACHINE' | 'CABLE' | 'BODYWEIGHT' | 'CARDIO' | 'ACCESSORY' | 'RECOVERY';
+
+export interface Equipment {
+  key: string;
+  name: string;
+  category: EquipmentCategory;
+  shortDesc?: string | null;
+  usageGuide?: string | null;
+  safetyNotes?: string | null;
+  targetMuscleKeys: string[];
+  imageKey?: string | null;
+  sortOrder: number;
+  hidden: boolean;
+  reviewStatus: ReviewStatus;
+  origin: ContentOrigin;
+  exerciseCount?: number;
+  relatedExercises?: Exercise[];
 }
 
 // ---------- Knowledge base ----------

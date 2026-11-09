@@ -31,7 +31,10 @@ import Register from './pages/Register';
 import { Forbidden, NotFound } from './pages/Errors';
 import Articles from './pages/shared/Articles';
 import Exercises from './pages/shared/Exercises';
+import ExerciseDetail from './pages/shared/ExerciseDetail';
+import BeginnerExercises from './pages/shared/BeginnerExercises';
 import Equipment from './pages/shared/Equipment';
+import EquipmentDetail from './pages/shared/EquipmentDetail';
 import Help from './pages/shared/Help';
 import Programs from './pages/shared/Programs';
 import MemberDetail from './pages/shared/MemberDetail';
@@ -123,7 +126,10 @@ export default function App() {
         <Route path="/workout-plans/new" element={<Only roles={STAFF}><PlanEditor /></Only>} />
         <Route path="/workout-plans/:id" element={<Only roles={STAFF}><PlanEditor /></Only>} />
         <Route path="/exercises" element={<Exercises />} />
+        <Route path="/exercises/beginner" element={<BeginnerExercises />} />
+        <Route path="/exercises/:id" element={<ExerciseDetail />} />
         <Route path="/equipment" element={<Equipment />} />
+        <Route path="/equipment/:key" element={<EquipmentDetail />} />
         <Route path="/programs" element={<Programs />} />
         <Route path="/articles" element={<Only roles={STAFF}><Articles /></Only>} />
         <Route path="/trainers" element={<Only roles={ADMIN}><Trainers /></Only>} />

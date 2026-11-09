@@ -59,9 +59,19 @@ public class Exercise {
     /** Danh sách {@link ExerciseGoal} cách nhau bởi dấu phẩy. */
     private String goals;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "primary_goal", length = 20)
+    private ExerciseGoal primaryGoal;
+
     private String description;
 
     private String instructions;
+
+    @Column(name = "setup_position", columnDefinition = "TEXT")
+    private String setupPosition;
+
+    @Column(columnDefinition = "TEXT")
+    private String steps;
 
     private String breathing;
 
@@ -75,6 +85,9 @@ public class Exercise {
 
     @Column(name = "suggested_dose")
     private String suggestedDose;
+
+    @Column(name = "sets_reps_hint", length = 100)
+    private String setsRepsHint;
 
     @Column(name = "video_url")
     private String videoUrl;
@@ -106,6 +119,12 @@ public class Exercise {
             joinColumns = @JoinColumn(name = "exercise_id"),
             inverseJoinColumns = @JoinColumn(name = "source_id"))
     private Set<ContentSource> sources = new LinkedHashSet<>();
+
+    @ManyToMany
+    @JoinTable(name = "exercise_alternatives",
+            joinColumns = @JoinColumn(name = "exercise_id"),
+            inverseJoinColumns = @JoinColumn(name = "alternative_id"))
+    private Set<Exercise> alternatives = new LinkedHashSet<>();
 
     /** Bài tập đã nằm trong kế hoạch thì chỉ ẩn, không xoá cứng. */
     @Column(nullable = false)

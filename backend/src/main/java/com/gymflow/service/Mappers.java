@@ -128,6 +128,8 @@ public class Mappers {
 
     // ---------- Exercise ----------
     public ExerciseResponse exercise(Exercise e) {
+        List<ExerciseSummary> alts = e.getAlternatives() == null ? List.of() :
+                e.getAlternatives().stream().map(this::exerciseSummary).toList();
         return new ExerciseResponse(e.getId(), e.getName(), e.getMuscleGroup(), e.getEquipment(), e.getLevel(),
                 e.getDescription(), e.getInstructions(), e.getVideoUrl(), e.isHidden(),
                 planItemRepository.countByExerciseId(e.getId()),
@@ -138,7 +140,30 @@ public class Mappers {
                 e.getReviewedBy() == null ? null : e.getReviewedBy().getFullName(), e.getReviewedAt(), e.getUpdatedAt(),
                 sources(e.getSources()),
                 splitKeys(e.getTargetMuscles()), splitKeys(e.getSecondaryMuscleKeys()), splitKeys(e.getEquipmentKeys()),
-                e.getImageKey());
+                e.getImageKey(),
+                e.getSetupPosition(),
+                e.getSteps() != null ? e.getSteps() : e.getInstructions(),
+                e.getSetsRepsHint(),
+                e.getPrimaryGoal(),
+                alts);
+    }
+
+    public ExerciseSummary exerciseSummary(Exercise e) {
+        return new ExerciseSummary(e.getId(), e.getName(), e.getNameEn(), e.getLevel(),
+                splitKeys(e.getTargetMuscles()), e.getImageKey());
+    }
+
+    // ---------- Equipment ----------
+    public EquipmentResponse equipmentResponse(Equipment eq, long count) {
+        return new EquipmentResponse(eq.getKey(), eq.getName(), eq.getCategory(), eq.getShortDesc(),
+                splitKeys(eq.getTargetMuscleKeys()), eq.getImageKey(), eq.getSortOrder(), count,
+                eq.getReviewStatus(), eq.isHidden(), eq.getOrigin());
+    }
+
+    public EquipmentDetailResponse equipmentDetail(Equipment eq, long count, List<ExerciseResponse> related) {
+        return new EquipmentDetailResponse(eq.getKey(), eq.getName(), eq.getCategory(), eq.getShortDesc(),
+                eq.getUsageGuide(), eq.getSafetyNotes(), splitKeys(eq.getTargetMuscleKeys()), eq.getImageKey(),
+                eq.getSortOrder(), count, eq.getReviewStatus(), eq.isHidden(), eq.getOrigin(), related);
     }
 
     /** V13 · "chest,triceps" -> [chest, triceps]; null/rỗng -> []. */
