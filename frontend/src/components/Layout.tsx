@@ -29,6 +29,8 @@ export const NAV: NavItem[] = [
   { to: '/members', label: 'Hội viên', icon: 'users', roles: ['ADMIN', 'TRAINER'], group: 'Huấn luyện', tab: true },
   { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['ADMIN', 'TRAINER'], group: 'Huấn luyện', tab: true },
   { to: '/exercises', label: 'Thư viện bài tập', icon: 'dumbbell', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Huấn luyện' },
+  { to: '/equipment', label: 'Dụng cụ tập', icon: 'zap', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Huấn luyện' },
+  { to: '/programs', label: 'Lịch tập mẫu', icon: 'layers', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Huấn luyện' },
   { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Huấn luyện' },
   { to: '/trainers', label: 'Huấn luyện viên', icon: 'badge', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/plans', label: 'Gói tập', icon: 'ticket', roles: ['ADMIN'], group: 'Kinh doanh' },

@@ -111,6 +111,8 @@ export interface Exercise {
   variations: string | null; suggestedDose: string | null; contentOrigin: ContentOrigin;
   reviewStatus: ReviewStatus; reviewNote: string | null; reviewedByName: string | null; reviewedAt: string | null;
   updatedAt: string | null; sources: Source[];
+  /** V13 · khoá vùng cơ / dụng cụ (lib/anatomy.ts) và thư mục ảnh minh hoạ. Bản backend cũ không trả thì là undefined. */
+  targetMuscles?: string[]; secondaryMuscleKeys?: string[]; equipmentKeys?: string[]; imageKey?: string | null;
 }
 
 // ---------- Knowledge base ----------

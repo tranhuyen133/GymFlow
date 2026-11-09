@@ -163,3 +163,17 @@ Thành phần chung nằm ở `components/motivation.tsx` và `motivation.css`.
 - **Thông tin nhận tiền:** nằm ở bảng một dòng `payment_settings` (id = 1). Ảnh QR lưu trong CSDL (`MEDIUMBLOB`, ≤ 512 KB, chỉ JPG/PNG/WebP, kiểm tra theo nội dung file như ảnh đại diện) để không phải thêm volume trên VPS. Ảnh tải qua `GET /api/payment-settings/qr` có kèm token, phản hồi đặt `no-store` và `nosniff`. Không xoá được QR khi đang bật chuyển khoản.
 
 **Sau khi deploy:** mọi gói cũ đều là gói tự tập. Quản lý cần đánh dấu lại các gói PT ở Quản lý › Gói tập, và muốn nhận chuyển khoản thì vào Quản lý › Thanh toán để nhập tài khoản, tải QR rồi bật. Hội viên đang có HLV vẫn giữ HLV đó.
+
+## 13. Kho kiến thức: bản đồ cơ, ảnh minh hoạ, dụng cụ, lịch tập mẫu
+
+**Bản đồ cơ (V13).** 18 vùng cơ (`lib/anatomy.ts`) vẽ trên hình người mặt trước / mặt sau (`components/MuscleMap.tsx`, toạ độ đa giác lấy từ react-body-highlighter, giấy phép MIT – ghi chú giấy phép nằm đầu `components/bodyShapes.ts`). Mỗi bài có `target_muscles` (tối đa 6 vùng chính) và `secondary_muscle_keys` (tối đa 10 vùng phụ), lưu dạng khoá cách nhau dấu phẩy; backend chỉ nhận khoá có trong danh sách. Cột `muscle_group` cũ giữ nguyên để bộ lọc, báo cáo cũ vẫn chạy; khi chọn vùng chính đầu tiên trong form, nhóm cơ cũ tự đặt cho khớp.
+- **Thư viện bài tập:** bấm vào vùng cơ trên bản đồ để lọc (vùng càng đậm càng nhiều bài, vùng 0 bài không bấm được), lọc thêm theo dụng cụ; thẻ bài có ảnh minh hoạ, rê chuột để xem động tác.
+- **Soạn giáo án:** khung thêm bài có bản đồ cơ thu gọn, ô tìm, danh sách có ảnh, bấm một lần là thêm; thẻ "Nhóm cơ cả tuần" tô theo số hiệp mỗi vùng và nhắc vùng lớn chưa có bài.
+
+**Ảnh minh hoạ.** `image_key` trỏ tới `frontend/public/exercise-img/<key>/0.jpg` (tư thế đầu) và `1.jpg` (tư thế cuối), chạy luân phiên như ảnh động. Ảnh lấy từ Free Exercise DB (github.com/yuhonas/free-exercise-db, The Unlicense – phát hành công cộng), tải một lần lúc tạo nhánh và lưu trong repo, không gọi trang ngoài khi người dùng xem. Bài không có ảnh hiện bản đồ cơ thay thế. Nguồn `FREE_EXERCISE_DB` được gắn vào mọi bài có ảnh. Không lấy nội dung, video hay ảnh của GymATLAS (điều khoản trang đó không cho dùng lại).
+
+**Dụng cụ.** `equipment_keys` (12 loại: thanh đòn, tạ đơn, tạ ấm, máy, cáp, ghế, xà, không dụng cụ, dây kháng lực, bóng, máy tim mạch, khác). Trang `/equipment` liệt kê từng loại kèm ảnh, mô tả, lưu ý an toàn, nhóm cơ hay tập và lối tắt sang thư viện đã lọc (`/exercises?equipment=…&muscle=…`).
+
+**Lịch tập mẫu.** `lib/programs.ts`: 8 lịch phổ biến (toàn thân 3 buổi, thân trên / dưới 4 buổi, đẩy – kéo – chân 6 buổi, mỗi ngày một nhóm cơ, sức mạnh 5x5, sức mạnh + tăng cơ 4 buổi, giảm mỡ, tập tại nhà). Mỗi bài ghi bằng tên trong thư viện kèm bài thay thế. Trang `/programs` hiện lịch tuần, bản đồ cơ được tập, từng bài có ảnh. "Dùng làm giáo án" mở trình soạn (`?template=<slug>`) đã điền bài, hiệp, số lần, thời gian nghỉ; **chỉ bài đã duyệt được thêm**, bài chưa duyệt được liệt kê để HLV chọn bài khác. Hội viên đang có HLV chỉ xem được lịch mẫu.
+
+**Dữ liệu V13.** Điền vùng cơ / dụng cụ / ảnh cho khoảng 75 bài đã có (chỉ khi cột còn trống), thêm 61 bài phòng gym mới do nhóm tự viết tiếng Việt, trạng thái **chờ duyệt**, nguồn NHS + WHO + Free Exercise DB. Quản lý duyệt bằng hàng chờ duyệt như cũ.

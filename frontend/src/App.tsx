@@ -28,6 +28,8 @@ import Register from './pages/Register';
 import { Forbidden, NotFound } from './pages/Errors';
 import Articles from './pages/shared/Articles';
 import Exercises from './pages/shared/Exercises';
+import Equipment from './pages/shared/Equipment';
+import Programs from './pages/shared/Programs';
 import MemberDetail from './pages/shared/MemberDetail';
 import Members from './pages/shared/Members';
 import Profile from './pages/shared/Profile';
@@ -106,6 +108,8 @@ export default function App() {
         <Route path="/workout-plans/new" element={<Only roles={STAFF}><PlanEditor /></Only>} />
         <Route path="/workout-plans/:id" element={<Only roles={STAFF}><PlanEditor /></Only>} />
         <Route path="/exercises" element={<Exercises />} />
+        <Route path="/equipment" element={<Equipment />} />
+        <Route path="/programs" element={<Programs />} />
         <Route path="/articles" element={<Only roles={STAFF}><Articles /></Only>} />
         <Route path="/trainers" element={<Only roles={ADMIN}><Trainers /></Only>} />
         <Route path="/plans" element={<Only roles={ADMIN}><Plans /></Only>} />
