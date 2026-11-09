@@ -75,5 +75,18 @@ public interface WorkoutScheduleRepository extends JpaRepository<WorkoutSchedule
 
     List<WorkoutSchedule> findByMemberIdAndStartTimeBetweenOrderByStartTimeAsc(Long memberId, LocalDateTime from, LocalDateTime to);
 
+    @Query("""
+            select s from WorkoutSchedule s
+            where s.member.id = :memberId and s.status <> :cancelled
+              and s.startTime >= :dayStart and s.startTime < :dayEnd
+              and (:excludeId is null or s.id <> :excludeId)
+            order by s.startTime asc
+            """)
+    List<WorkoutSchedule> findMemberSchedulesOnDay(@Param("memberId") Long memberId,
+                                                   @Param("dayStart") LocalDateTime dayStart,
+                                                   @Param("dayEnd") LocalDateTime dayEnd,
+                                                   @Param("excludeId") Long excludeId,
+                                                   @Param("cancelled") ScheduleStatus cancelled);
+
     List<WorkoutSchedule> findByStartTimeBetweenOrderByStartTimeAsc(LocalDateTime from, LocalDateTime to);
 }

@@ -270,9 +270,11 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
   const [time, setTime] = useState(`${String(start0.getHours()).padStart(2, '0')}:${String(start0.getMinutes()).padStart(2, '0')}`);
   const [duration, setDuration] = useState(edit ? String(Math.round((parseDateTime(edit.endTime).getTime() - start0.getTime()) / 60000)) : '60');
   const [repeat, setRepeat] = useState('0');
+  const [autoFromPlan, setAutoFromPlan] = useState(false);
   const [note, setNote] = useState(edit?.note ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [sameDayWarning, setSameDayWarning] = useState<string | null>(null);
   const [skipped, setSkipped] = useState<{ created: number; reasons: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<Member | null>(null);
@@ -322,7 +324,7 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
     if (len < (Number(duration) || 0)) setDuration(String(Math.max(15, Math.min(240, len))));
   };
 
-  const submit = async () => {
+  const submit = async (forceDuplicate = false) => {
     const v: Record<string, string> = {};
     if (!memberId) v.memberId = 'Chọn hội viên';
     if (!title.trim()) v.title = 'Nhập tiêu đề';
@@ -337,14 +339,31 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
     setErrors(v); setError(null);
     if (Object.keys(v).length) return;
     setBusy(true);
+    setSameDayWarning(null);
+
     const body = {
       trainerId: trainerId ? Number(trainerId) : null, planId: planId ? Number(planId) : null, title: title.trim(),
       startTime: toIsoDateTime(start), endTime: toIsoDateTime(end), note: note.trim() || null,
+      confirmDuplicateDay: forceDuplicate,
     };
     try {
       if (edit) {
         await api.put(`/schedules/${edit.id}`, body);
         toast.success('Đã dời lịch');
+        onSaved(start);
+      } else if (autoFromPlan && planId) {
+        const res = await api.post<ScheduleCreated>('/schedules/generate-from-plan', {
+          memberId: Number(memberId),
+          planId: Number(planId),
+          trainerId: trainerId ? Number(trainerId) : null,
+          startDate: date,
+          weeks: Math.max(1, (Number(repeat) || 0) + 1),
+          defaultStartTime: time,
+          durationMinutes: d,
+          confirmDuplicateDay: forceDuplicate,
+        });
+        toast.success(t('Đã tự sinh {n} buổi tập theo giáo án', { n: res.created.length }));
+        if (res.skipped.length) { setSkipped({ created: res.created.length, reasons: res.skipped }); setBusy(false); return; }
         onSaved(start);
       } else {
         const res = await api.post<ScheduleCreated>('/schedules', { ...body, memberId: Number(memberId), repeatWeeks: Number(repeat) });
@@ -352,7 +371,15 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
         if (res.skipped.length) { setSkipped({ created: res.created.length, reasons: res.skipped }); setBusy(false); return; }
         onSaved(start);
       }
-    } catch (e) { setError(errMsg(e)); setErrors(fieldErrs(e)); }
+    } catch (e) {
+      const msg = errMsg(e);
+      if (msg.includes('thêm buổi thứ hai') || msg.includes('bạn đã có buổi tập')) {
+        setSameDayWarning(msg);
+      } else {
+        setError(msg);
+        setErrors(fieldErrs(e));
+      }
+    }
     setBusy(false);
   };
 
@@ -367,13 +394,14 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
   }
 
   return (
-    <Modal title={edit ? 'Dời lịch buổi tập' : self ? 'Tự xếp buổi tập' : 'Xếp lịch tập'} onClose={onClose} footer={<>
-      <Button variant="ghost" onClick={onClose}>Huỷ</Button>
-      <Button variant="primary" icon="check" loading={busy} onClick={submit}>{edit ? 'Lưu thay đổi' : 'Xếp lịch'}</Button>
-    </>}>
-      <div className="stack">
-        {error && <Alert kind="error">{error}</Alert>}
-        <div className="form-grid">
+    <>
+      <Modal title={edit ? 'Dời lịch buổi tập' : self ? 'Tự xếp buổi tập' : 'Xếp lịch tập'} onClose={onClose} footer={<>
+        <Button variant="ghost" onClick={onClose}>Huỷ</Button>
+        <Button variant="primary" icon="check" loading={busy} onClick={() => submit(false)}>{edit ? 'Lưu thay đổi' : 'Xếp lịch'}</Button>
+      </>}>
+        <div className="stack">
+          {error && <Alert kind="error">{error}</Alert>}
+          <div className="form-grid">
           {self ? null : edit ? (
             <Field label="Hội viên" className="span-2"><Person name={edit.memberName} size="sm" /></Field>
           ) : (
@@ -405,6 +433,23 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
               {(plans.data?.memberId === memberId ? plans.data.list : []).map((p) => <option key={p.id} value={p.id}>{p.name}{p.status !== 'ACTIVE' ? ' (lưu trữ)' : ''}</option>)}
             </Select>
           </Field>
+          {planId && !edit && (
+            <div className="span-2" style={{ background: 'var(--rail)', padding: '10px 14px', borderRadius: 'var(--radius)' }}>
+              <label className="row" style={{ gap: 8, cursor: 'pointer', fontWeight: 500 }}>
+                <input
+                  type="checkbox"
+                  checked={autoFromPlan}
+                  onChange={(e) => setAutoFromPlan(e.target.checked)}
+                />
+                <span>{t('Tự sinh lịch theo các thứ trong tuần của giáo án')}</span>
+              </label>
+              {autoFromPlan && (
+                <p className="tiny muted mt-4" style={{ margin: '4px 0 0 24px' }}>
+                  {t('Hệ thống sẽ tự sinh các buổi tập vào đúng các thứ mà giáo án quy định. Bạn có thể dời từng buổi cụ thể sau khi sinh.')}
+                </p>
+              )}
+            </div>
+          )}
           <Field label="Tiêu đề" error={errors.title} required className="span-2"><Input maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
           <Field label="Ngày" error={errors.date} required><Input type="date" value={date} min={toIsoDate(new Date())} onChange={(e) => setDate(e.target.value)} /></Field>
           <Field label="Giờ bắt đầu" error={errors.time} required hint={t('Mở cửa {open}–{close}', { open: GYM_OPEN, close: GYM_CLOSE })}>
@@ -458,5 +503,18 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
         {!edit && Number(repeat) > 0 && <Badge tone="blue">{t('Sẽ tạo tối đa {n} buổi vào {day} hằng tuần', { n: Number(repeat) + 1, day: fmtWeekday(`${date}T${time}:00`).split(',')[0] })}</Badge>}
       </div>
     </Modal>
+    {sameDayWarning && (
+      <Confirm
+        title={t('Cảnh báo trùng buổi tập')}
+        message={sameDayWarning}
+        confirmText={t('Vẫn thêm')}
+        onConfirm={() => {
+          setSameDayWarning(null);
+          void submit(true);
+        }}
+        onClose={() => setSameDayWarning(null)}
+      />
+    )}
+  </>
   );
 }

@@ -52,6 +52,7 @@ export default function PlanEditor() {
   const [note, setNote] = useState('');
   const [items, setItems] = useState<Draft[]>([]);
   const [day, setDay] = useState(1);
+  const [selectedDays, setSelectedDays] = useState<Set<number>>(() => new Set([1, 3, 5]));
   const [groupFilter, setGroupFilter] = useState<'' | MuscleGroup>('');
   const [muscleFilter, setMuscleFilter] = useState<MuscleKey | null>(null);
   const [libQ, setLibQ] = useState('');
@@ -77,8 +78,30 @@ export default function PlanEditor() {
     setStart(p.summary.startDate); setEnd(p.summary.endDate); setNote(p.note ?? '');
     setItems(p.items.map((i) => ({ ...i, key: keySeq++ })));
     setDay(p.items[0]?.dayOfWeek ?? 1);
+    const dows = new Set(p.items.map((i) => i.dayOfWeek));
+    if (dows.size > 0) setSelectedDays(dows);
     setBaseline(snapshot({ memberId: String(p.summary.memberId), name: p.summary.name, goal: p.summary.goal ?? '', start: p.summary.startDate, end: p.summary.endDate, note: p.note ?? '', items: p.items }));
   }, [plan.data]);
+
+  const toggleDay = (d: number) => {
+    setSelectedDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(d)) {
+        if (next.size > 1) next.delete(d);
+      } else {
+        next.add(d);
+      }
+      return next;
+    });
+    setDay(d);
+  };
+
+  const applyDaysPreset = (days: number[]) => {
+    setSelectedDays(new Set(days));
+    if (!days.includes(day)) {
+      setDay(days[0]);
+    }
+  };
 
   const current = snapshot({ memberId, name, goal, start, end, note, items });
   // Tạo mới: chỉ tính là "có thay đổi" khi đã tự nhập tên, ghi chú hoặc thêm bài (hội viên, mục tiêu, ngày được điền sẵn)
@@ -314,10 +337,55 @@ export default function PlanEditor() {
 
       <div className="grid grid-main" style={{ alignItems: 'start' }}>
         <Card title="Bài tập theo ngày" icon="calendar">
+          <div className="quick-days-selector mb-16" style={{ background: 'var(--rail)', padding: '10px 12px', borderRadius: 'var(--radius)' }}>
+            <div className="row between row-wrap" style={{ gap: 8, alignItems: 'center' }}>
+              <div className="row" style={{ gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span className="tiny faint" style={{ fontWeight: 600 }}>{t('Chọn nhanh thứ:')}</span>
+                <button type="button" className="btn btn-sm btn-ghost" onClick={() => applyDaysPreset([1, 3, 5])}>T2-T4-T6</button>
+                <button type="button" className="btn btn-sm btn-ghost" onClick={() => applyDaysPreset([2, 4, 6])}>T3-T5-T7</button>
+                <button type="button" className="btn btn-sm btn-ghost" onClick={() => applyDaysPreset([1, 2, 3, 4, 5])}>T2–T6</button>
+                <button type="button" className="btn btn-sm btn-ghost" onClick={() => applyDaysPreset([1, 2, 3, 4, 5, 6, 7])}>{t('Cả tuần')}</button>
+              </div>
+              <div className="row" style={{ gap: 4 }}>
+                {[1, 2, 3, 4, 5, 6, 7].map((d) => {
+                  const on = selectedDays.has(d);
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      className={`btn btn-sm ${on ? 'btn-primary' : 'btn-ghost'}`}
+                      style={{ padding: '2px 8px', minWidth: 32, fontSize: 12, fontWeight: on ? 600 : 400 }}
+                      title={on ? t('Bỏ chọn {day}', { day: DAY_NAMES[d - 1] }) : t('Chọn {day}', { day: DAY_NAMES[d - 1] })}
+                      onClick={() => toggleDay(d)}
+                    >
+                      {DAYS[d - 1]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
           <div className="days-tabs">
             {[1, 2, 3, 4, 5, 6, 7].map((d) => {
               const n = items.filter((i) => i.dayOfWeek === d).length;
-              return <button key={d} className={`${d === day ? 'on' : ''} ${n ? 'has' : ''}`} onClick={() => setDay(d)}>{DAYS[d - 1]}<small>{n ? t('{n} bài', { n }) : t('Nghỉ')}</small></button>;
+              const isSelected = selectedDays.has(d);
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  className={`${d === day ? 'on' : ''} ${n ? 'has' : ''}`}
+                  style={{ opacity: isSelected ? 1 : 0.65 }}
+                  onClick={() => {
+                    setDay(d);
+                    if (!selectedDays.has(d)) {
+                      setSelectedDays((prev) => new Set([...prev, d]));
+                    }
+                  }}
+                >
+                  {DAYS[d - 1]}
+                  <small>{n ? t('{n} bài', { n }) : isSelected ? t('Chưa có bài') : t('Nghỉ')}</small>
+                </button>
+              );
             })}
           </div>
           <div className="row between mt-16 row-wrap">

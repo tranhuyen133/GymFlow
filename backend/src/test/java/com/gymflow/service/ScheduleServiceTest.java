@@ -6,8 +6,10 @@ package com.gymflow.service;
 import com.gymflow.common.ApiException;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.CompleteRequest;
+import com.gymflow.dto.Dtos.GenerateScheduleFromPlanRequest;
 import com.gymflow.dto.Dtos.ScheduleCreatedResponse;
 import com.gymflow.dto.Dtos.ScheduleRequest;
+import com.gymflow.dto.Dtos.ScheduleUpdateRequest;
 import com.gymflow.repository.TrainerRepository;
 import com.gymflow.repository.WorkoutLogRepository;
 import com.gymflow.repository.WorkoutPlanRepository;
@@ -538,5 +540,129 @@ class ScheduleServiceTest {
         assertThat(s.getStatus()).isEqualTo(ScheduleStatus.COMPLETED);
         verify(logRepository).save(any(WorkoutLog.class));
         verify(auditService).log(eq("SCHEDULE_COMPLETE"), eq("SCHEDULE"), eq(19L), eq("HV00001"));
+    }
+
+    // ==========================================
+    // PHẦN 1: Cảnh báo trùng ngày & Sinh lịch theo giáo án
+    // ==========================================
+
+    @Test
+    @DisplayName("Chặn cứng khi hai buổi trùng cả khung giờ (409 Conflict)")
+    void exactTimeOverlap_blocksHardWithConflict() {
+        LocalDateTime start = NOW.plusDays(1).withHour(18).withMinute(0);
+        when(subscriptionService.hasEffective(eq(1L), any())).thenReturn(true);
+        when(scheduleRepository.memberBusy(eq(1L), any(), any(), isNull(), eq(ScheduleStatus.CANCELLED))).thenReturn(true);
+
+        ScheduleRequest req = new ScheduleRequest(1L, null, null, "Buổi 1", start, start.plusMinutes(60), null, 0, false);
+        assertThatThrownBy(() -> service.create(trainerUser, req))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("trùng giờ");
+    }
+
+    @Test
+    @DisplayName("Cảnh báo trùng buổi tập trong cùng một ngày khi chưa xác nhận")
+    void sameDayDuplicate_warnsWhenNotConfirmed() {
+        LocalDateTime start = NOW.plusDays(2).withHour(8).withMinute(0);
+        LocalDateTime existingStart = NOW.plusDays(2).withHour(18).withMinute(0);
+        WorkoutSchedule existing = createSchedule(50L, ScheduleStatus.SCHEDULED, existingStart, existingStart.plusMinutes(60));
+
+        when(subscriptionService.hasEffective(eq(1L), any())).thenReturn(true);
+        when(scheduleRepository.memberBusy(any(), any(), any(), any(), any())).thenReturn(false);
+        when(scheduleRepository.trainerBusy(any(), any(), any(), any(), any())).thenReturn(false);
+        when(scheduleRepository.findMemberSchedulesOnDay(eq(1L), any(), any(), isNull(), eq(ScheduleStatus.CANCELLED)))
+                .thenReturn(List.of(existing));
+
+        ScheduleRequest req = new ScheduleRequest(1L, null, null, "Buổi sáng", start, start.plusMinutes(60), null, 0, false);
+        assertThatThrownBy(() -> service.create(trainerUser, req))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("bạn đã có buổi tập lúc 18:00")
+                .hasMessageContaining("Bạn có chắc muốn thêm buổi thứ hai?");
+    }
+
+    @Test
+    @DisplayName("Cho phép thêm buổi thứ hai trong cùng ngày khi đã xác nhận (confirmDuplicateDay = true)")
+    void sameDayDuplicate_allowsWhenConfirmed() {
+        LocalDateTime start = NOW.plusDays(2).withHour(8).withMinute(0);
+        when(subscriptionService.hasEffective(eq(1L), any())).thenReturn(true);
+        when(scheduleRepository.memberBusy(any(), any(), any(), any(), any())).thenReturn(false);
+        when(scheduleRepository.trainerBusy(any(), any(), any(), any(), any())).thenReturn(false);
+
+        ScheduleRequest req = new ScheduleRequest(1L, null, null, "Buổi sáng", start, start.plusMinutes(60), null, 0, true);
+        ScheduleCreatedResponse res = service.create(trainerUser, req);
+
+        verify(scheduleRepository).saveAndFlush(any());
+        assertThat(res.skipped()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Cảnh báo khi dời buổi sang ngày đã có buổi khác nếu chưa xác nhận")
+    void update_sameDayDuplicate_warnsWhenNotConfirmed() {
+        LocalDateTime newStart = NOW.plusDays(3).withHour(9).withMinute(0);
+        WorkoutSchedule current = createSchedule(10L, ScheduleStatus.SCHEDULED, NOW.plusDays(1).withHour(18), NOW.plusDays(1).withHour(19));
+        WorkoutSchedule onTargetDay = createSchedule(20L, ScheduleStatus.SCHEDULED, NOW.plusDays(3).withHour(17), NOW.plusDays(3).withHour(18));
+
+        when(scheduleRepository.findById(10L)).thenReturn(Optional.of(current));
+        when(access.canCoach(trainerUser, member)).thenReturn(true);
+        when(subscriptionService.hasEffective(eq(1L), any())).thenReturn(true);
+        when(scheduleRepository.memberBusy(any(), any(), any(), eq(10L), any())).thenReturn(false);
+        when(scheduleRepository.trainerBusy(any(), any(), any(), eq(10L), any())).thenReturn(false);
+        when(scheduleRepository.findMemberSchedulesOnDay(eq(1L), any(), any(), eq(10L), eq(ScheduleStatus.CANCELLED)))
+                .thenReturn(List.of(onTargetDay));
+
+        ScheduleUpdateRequest updateReq = new ScheduleUpdateRequest(null, null, "Dời lịch", newStart, newStart.plusMinutes(60), null, false);
+        assertThatThrownBy(() -> service.update(trainerUser, 10L, updateReq))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("bạn đã có buổi tập lúc 17:00")
+                .hasMessageContaining("Bạn có chắc muốn thêm buổi thứ hai?");
+    }
+
+    @Test
+    @DisplayName("Tự sinh lịch tập theo các thứ trong tuần của giáo án mẫu")
+    void generateFromPlan_createsSchedulesForPlanDays() {
+        LocalDate startDate = NOW.plusDays(7).toLocalDate().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        WorkoutPlan plan = new WorkoutPlan();
+        plan.setId(99L);
+        plan.setName("Giáo án T2-T4-T6");
+        plan.setMember(member);
+
+        Exercise ex1 = new Exercise();
+        ex1.setId(1L);
+        ex1.setName("Squat");
+
+        WorkoutPlanItem it1 = new WorkoutPlanItem();
+        it1.setDayOfWeek(1); // Thứ 2
+        it1.setExercise(ex1);
+        it1.setSets(3);
+        it1.setReps("10");
+
+        WorkoutPlanItem it2 = new WorkoutPlanItem();
+        it2.setDayOfWeek(3); // Thứ 4
+        it2.setExercise(ex1);
+        it2.setSets(4);
+        it2.setReps("8");
+
+        WorkoutPlanItem it3 = new WorkoutPlanItem();
+        it3.setDayOfWeek(5); // Thứ 6
+        it3.setExercise(ex1);
+        it3.setSets(3);
+        it3.setReps("12");
+
+        plan.getItems().addAll(List.of(it1, it2, it3));
+
+        when(planRepository.findById(99L)).thenReturn(Optional.of(plan));
+        when(subscriptionService.hasEffective(eq(1L), any())).thenReturn(true);
+        when(scheduleRepository.memberBusy(any(), any(), any(), any(), any())).thenReturn(false);
+        when(scheduleRepository.trainerBusy(any(), any(), any(), any(), any())).thenReturn(false);
+        when(scheduleRepository.findMemberSchedulesOnDay(any(), any(), any(), any(), any())).thenReturn(List.of());
+
+        GenerateScheduleFromPlanRequest req = new GenerateScheduleFromPlanRequest(
+                1L, 99L, null, startDate, 2, LocalTime.of(18, 0), 60, false
+        );
+
+        ScheduleCreatedResponse res = service.generateFromPlan(trainerUser, req);
+
+        // 3 ngày/tuần * 2 tuần = 6 buổi
+        verify(scheduleRepository, times(6)).saveAndFlush(any());
+        assertThat(res.skipped()).isEmpty();
     }
 }
