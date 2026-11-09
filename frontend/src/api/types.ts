@@ -53,6 +53,10 @@ export interface MemberDetail {
 
 // ---------- Trainer ----------
 export interface Shift { id?: number; dayOfWeek: number; startTime: string; endTime: string }
+export interface TrainerPublic {
+  id: number; fullName: string; avatar: string | null; specialty: string | null;
+  experienceYears: number; certificates: string | null; bio: string | null; shifts: Shift[];
+}
 export interface Trainer {
   id: number; userId: number; fullName: string; email: string; phone: string | null; specialty: string | null;
   experienceYears: number; certificates: string | null; bio: string | null; active: boolean;
@@ -193,3 +197,35 @@ export interface Notification { id: string; level: 'info' | 'warning' | 'danger'
 export interface ApiErrorBody { status: number; message: string; fieldErrors?: Record<string, string> | null }
 
 export interface UserCreated { user: UserAccount; temporaryPassword: string | null }
+
+// ---------- Member - Trainer Conversations ----------
+export type ConversationRelation = 'ASSIGNED' | 'CONSULTING';
+
+export interface ChatMessageItem {
+  id: number;
+  conversationId: number;
+  senderUserId: number;
+  senderName: string;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface Conversation {
+  id: number;
+  memberId: number;
+  memberName: string;
+  memberAvatar: string | null;
+  trainerId: number;
+  trainerName: string;
+  trainerAvatar: string | null;
+  createdAt: string;
+  lastMessageAt: string | null;
+  lastMessage: ChatMessageItem | null;
+  unreadCount: number;
+  relation: ConversationRelation;
+}
+
+export interface UnreadCount {
+  unreadCount: number;
+}

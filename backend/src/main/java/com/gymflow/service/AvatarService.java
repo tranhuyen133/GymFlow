@@ -73,7 +73,12 @@ public class AvatarService {
 
     @Transactional(readOnly = true)
     public AvatarFile get(AuthUser principal) {
-        UserAvatar a = avatarRepository.findById(principal.id()).orElseThrow(() -> ApiException.notFound("ảnh đại diện"));
+        return getByUserId(principal.id());
+    }
+
+    @Transactional(readOnly = true)
+    public AvatarFile getByUserId(Long userId) {
+        UserAvatar a = avatarRepository.findById(userId).orElseThrow(() -> ApiException.notFound("ảnh đại diện"));
         return new AvatarFile(a.getData(), a.getContentType());
     }
 

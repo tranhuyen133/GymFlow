@@ -27,9 +27,11 @@ interface NavItem { to: string; label: string; icon: IconName; roles: Role[]; gr
  */
 export const NAV: NavItem[] = [
   { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard', roles: ['ADMIN', 'TRAINER', 'MEMBER'], tab: true },
+  { to: '/messages', label: 'Tin nhắn', icon: 'message', roles: ['TRAINER', 'MEMBER'] },
   { to: '/me/schedule', label: 'Lịch tập của tôi', icon: 'calendar', roles: ['MEMBER'], tab: true },
   { to: '/me/plan', label: 'Giáo án của tôi', icon: 'clipboard', roles: ['MEMBER'], tab: true },
-  { to: '/me/packages', label: 'Gói tập của tôi', icon: 'ticket', roles: ['MEMBER'] },
+  { to: '/me/packages', label: 'Gói tập của tôi', icon: 'ticket', roles: ['MEMBER'], group: 'Dịch vụ' },
+  { to: '/coaches', label: 'Huấn luyện viên', icon: 'badge', roles: ['MEMBER'], group: 'Dịch vụ' },
   { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['ADMIN', 'TRAINER'], tab: true },
   { to: '/me/progress', label: 'Tiến độ', icon: 'chart', roles: ['MEMBER'], group: 'Sức khoẻ & tiến độ', tab: true },
   { to: '/me/journey', label: 'Hành trình của tôi', icon: 'trophy', roles: ['MEMBER'], group: 'Sức khoẻ & tiến độ' },
@@ -192,9 +194,31 @@ export function Layout() {
   const [groups, setGroups] = useState<Record<string, boolean>>(() => readJson<Record<string, boolean>>(GROUPS_KEY, {}));
   /** Nhóm đang được hướng dẫn mở tạm (không ghi đè lựa chọn gập/mở của người dùng) */
   const [reveal, setReveal] = useState<string | null>(null);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const tourDrawer = useRef(false);
   const closeBtn = useRef<HTMLButtonElement>(null);
   useEffect(() => { setOpen(false); window.scrollTo({ top: 0 }); }, [pathname]);
+
+  // Polling số tin nhắn chưa đọc (60s), dừng khi tab bị ẩn
+  useEffect(() => {
+    if (user.role !== 'MEMBER' && user.role !== 'TRAINER') return;
+    let alive = true;
+    const loadUnread = () => {
+      if (document.hidden) return;
+      api.get<{ unreadCount: number }>('/conversations/unread-count')
+        .then((res) => { if (alive) setUnreadMessages(res.unreadCount); })
+        .catch(() => {});
+    };
+    loadUnread();
+    const timer = setInterval(loadUnread, 60_000);
+    const onVisibility = () => { if (!document.hidden) loadUnread(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [user.role, pathname]);
 
   // Drawer mở trên tablet/điện thoại: khoá cuộn trang phía sau, Esc để đóng, đưa focus vào nút đóng
   useEffect(() => {
@@ -240,6 +264,7 @@ export function Layout() {
     <NavLink key={n.to} to={n.to} className={({ isActive }) => (isActive ? 'active' : '')}
       title={mini ? t(n.label) : undefined} data-tour={`nav:${n.to}`}>
       <Icon name={n.icon} /><span>{t(n.label)}</span>
+      {n.to === '/messages' && unreadMessages > 0 && <span className="nav-badge">{unreadMessages}</span>}
     </NavLink>
   );
 
@@ -305,8 +330,9 @@ export function Layout() {
 
       <nav className="tabbar" aria-label={t('Điều hướng nhanh')}>
         {tabs.map((n) => (
-          <NavLink key={n.to} to={n.to} className={({ isActive }) => (isActive ? 'active' : '')}>
+          <NavLink key={n.to} to={n.to} className={({ isActive }) => (isActive ? 'active' : '')} data-tour={`nav:${n.to}`}>
             <Icon name={n.icon} /><span>{t(n.label.replace(' của tôi', ''))}</span>
+            {n.to === '/messages' && unreadMessages > 0 && <span className="nav-badge">{unreadMessages}</span>}
           </NavLink>
         ))}
         <a href="#menu" aria-controls="app-sidebar" aria-expanded={open} onClick={(e) => { e.preventDefault(); setOpen(true); }}><Icon name="more" /><span>{t('Thêm')}</span></a>

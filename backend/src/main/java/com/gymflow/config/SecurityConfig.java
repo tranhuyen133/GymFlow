@@ -74,7 +74,8 @@ public class SecurityConfig {
                                 "/api/auth/forgot-password", "/api/auth/reset-password",
                                 "/api/auth/verify-email", "/api/auth/resend-verification").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/options", "/api/plans/public",
-                                "/api/articles/public", "/api/articles/public/*", "/api/forum/topics", "/api/forum/topics/*").permitAll()
+                                "/api/articles/public", "/api/articles/public/*", "/api/forum/topics", "/api/forum/topics/*",
+                                "/api/users/*/avatar").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/**").authenticated()

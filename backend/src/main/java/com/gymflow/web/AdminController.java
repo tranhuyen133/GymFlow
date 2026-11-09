@@ -5,6 +5,7 @@ import com.gymflow.domain.Role;
 import com.gymflow.domain.UserStatus;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.security.CurrentUser;
+import com.gymflow.service.AvatarService;
 import com.gymflow.service.DashboardService;
 import com.gymflow.service.NotificationService;
 import com.gymflow.service.ReportService;
@@ -13,10 +14,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -30,6 +35,7 @@ public class AdminController {
     private final ReportService reportService;
     private final NotificationService notificationService;
     private final UserService userService;
+    private final AvatarService avatarService;
 
     // ---------- Dashboard ----------
     @GetMapping("/api/dashboard/admin")
@@ -109,5 +115,14 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     public List<String> auditActions() {
         return notificationService.auditActions();
+    }
+
+    @GetMapping("/api/users/{id}/avatar")
+    public ResponseEntity<byte[]> userAvatar(@PathVariable Long id) {
+        AvatarService.AvatarFile f = avatarService.getByUserId(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(f.contentType()))
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(7)).cachePublic())
+                .body(f.data());
     }
 }

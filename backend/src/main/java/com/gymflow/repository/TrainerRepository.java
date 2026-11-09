@@ -11,5 +11,9 @@ public interface TrainerRepository extends JpaRepository<Trainer, Long> {
 
     List<Trainer> findAllByOrderByIdAsc();
 
+    List<Trainer> findByActiveTrueOrderByIdAsc();
+
+    Optional<Trainer> findByIdAndActiveTrue(Long id);
+
     long countByActiveTrue();
 }

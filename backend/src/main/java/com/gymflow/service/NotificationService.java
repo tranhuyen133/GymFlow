@@ -33,6 +33,7 @@ public class NotificationService {
     private final WorkoutScheduleRepository scheduleRepository;
     private final WeightRecordRepository weightRepository;
     private final MemberRepository memberRepository;
+    private final MessageRepository messageRepository;
     private final AuditLogRepository auditRepository;
     private final AccessService access;
     private final Mappers mappers;
@@ -109,6 +110,25 @@ public class NotificationService {
             long failed = auditRepository.search("", "LOGIN_FAILED", now.minusDays(1), now.plusMinutes(1), PageRequest.of(0, 1)).getTotalElements();
             if (failed >= 5) out.add(n("login-failed", "danger", failed + " lần đăng nhập thất bại trong 24 giờ", "Kiểm tra nhật ký hệ thống.", "/audit-logs?action=LOGIN_FAILED", now));
         }
+
+        if (user.isMember() || user.isTrainer()) {
+            List<Message> unreadMsgs = messageRepository.findUnreadMessagesForUser(user.id());
+            java.util.Map<Long, Message> latestPerConv = new java.util.LinkedHashMap<>();
+            for (Message msg : unreadMsgs) {
+                latestPerConv.putIfAbsent(msg.getConversation().getId(), msg);
+            }
+            for (java.util.Map.Entry<Long, Message> entry : latestPerConv.entrySet()) {
+                Long convId = entry.getKey();
+                Message msg = entry.getValue();
+                String senderName = msg.getSenderUser().getFullName();
+                out.add(n("msg-conv-" + convId + "-" + msg.getId(), "info",
+                        "Bạn có tin nhắn mới từ " + senderName,
+                        "Nhấn để xem cuộc trò chuyện.",
+                        "/messages/" + convId,
+                        msg.getCreatedAt()));
+            }
+        }
+
         return out;
     }
 

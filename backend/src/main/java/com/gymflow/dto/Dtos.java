@@ -577,4 +577,32 @@ public final class Dtos {
 
     public record MessageResponse(String message) {
     }
+
+    // ===================== Member - Trainer Chat & Public Trainers =====================
+    public record TrainerPublicResponse(Long id, String fullName, String avatar, String specialty,
+                                        Integer experienceYears, String certificates, String bio,
+                                        List<ShiftResponse> shifts) {
+    }
+
+    public record CreateConversationRequest(@NotNull(message = "Vui lòng chọn huấn luyện viên") Long trainerId) {
+    }
+
+    public record SendMessageRequest(
+            @NotBlank(message = "Nội dung tin nhắn không được để trống")
+            @Size(max = 2000, message = "Tin nhắn tối đa 2000 ký tự")
+            String body) {
+    }
+
+    public record MessageResponseDto(Long id, Long conversationId, Long senderUserId, String senderName,
+                                     String body, LocalDateTime createdAt, LocalDateTime readAt) {
+    }
+
+    public record ConversationResponse(Long id, Long memberId, String memberName, String memberAvatar,
+                                       Long trainerId, String trainerName, String trainerAvatar,
+                                       LocalDateTime createdAt, LocalDateTime lastMessageAt,
+                                       MessageResponseDto lastMessage, long unreadCount, String relation) {
+    }
+
+    public record UnreadCountResponse(long unreadCount) {
+    }
 }

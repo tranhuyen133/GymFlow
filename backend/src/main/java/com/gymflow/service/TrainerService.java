@@ -29,6 +29,18 @@ public class TrainerService {
     }
 
     @Transactional(readOnly = true)
+    public List<TrainerPublicResponse> listPublic() {
+        return trainerRepository.findByActiveTrueOrderByIdAsc().stream().map(mappers::trainerPublic).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public TrainerPublicResponse getPublic(Long id) {
+        Trainer t = trainerRepository.findByIdAndActiveTrue(id)
+                .orElseThrow(() -> ApiException.notFound("huấn luyện viên"));
+        return mappers.trainerPublic(t);
+    }
+
+    @Transactional(readOnly = true)
     public TrainerResponse get(Long id) {
         return mappers.trainer(load(id));
     }

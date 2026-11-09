@@ -39,6 +39,9 @@ import Schedules from './pages/shared/Schedules';
 import PlanEditor from './pages/shared/PlanEditor';
 import WorkoutPlans from './pages/shared/WorkoutPlans';
 import TrainerDashboard from './pages/trainer/TrainerDashboard';
+import Coaches from './pages/member/Coaches';
+import CoachDetail from './pages/member/CoachDetail';
+import Messages from './pages/shared/Messages';
 
 function Splash() {
   return (
@@ -75,6 +78,7 @@ function Dashboard() {
 const STAFF: Role[] = ['ADMIN', 'TRAINER'];
 const ADMIN: Role[] = ['ADMIN'];
 const MEMBER: Role[] = ['MEMBER'];
+const CHAT_ROLES: Role[] = ['MEMBER', 'TRAINER'];
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -101,6 +105,10 @@ export default function App() {
         <Route path="/me/progress" element={<Only roles={MEMBER}><MyProgress /></Only>} />
         <Route path="/me/journey" element={<Only roles={MEMBER}><MyJourney /></Only>} />
         <Route path="/me/packages" element={<Only roles={MEMBER}><MyPackages /></Only>} />
+        <Route path="/coaches" element={<Only roles={MEMBER}><Coaches /></Only>} />
+        <Route path="/coaches/:id" element={<Only roles={MEMBER}><CoachDetail /></Only>} />
+        <Route path="/messages" element={<Only roles={CHAT_ROLES}><Messages /></Only>} />
+        <Route path="/messages/:id" element={<Only roles={CHAT_ROLES}><Messages /></Only>} />
         <Route path="/community" element={<ForumList embedded />} />
         <Route path="/community/:id" element={<ForumTopicPage embedded />} />
         <Route path="/me/knowledge/*" element={<Navigate to="/community" replace />} />

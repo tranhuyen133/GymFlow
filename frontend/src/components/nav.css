@@ -23,6 +23,21 @@
 .side-mini-btn { display: inline-flex; margin-top: -22px; }
 .top-help { display: inline-flex; }
 
+.nav-badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--error, #e53935);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-grid;
+  place-items: center;
+  line-height: 1;
+}
+
 /* ---------- Sidebar thu gọn (chỉ màn rộng; điện thoại luôn dùng drawer đầy đủ) ---------- */
 @media (min-width: 901px) {
   .shell.side-mini { --sidebar-w: 76px; }

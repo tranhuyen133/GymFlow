@@ -25,6 +25,16 @@ public class TrainerController {
         return trainerService.list();
     }
 
+    @GetMapping("/public")
+    public List<TrainerPublicResponse> listPublic() {
+        return trainerService.listPublic();
+    }
+
+    @GetMapping("/public/{id}")
+    public TrainerPublicResponse getPublic(@PathVariable Long id) {
+        return trainerService.getPublic(id);
+    }
+
     @GetMapping("/me")
     @PreAuthorize("hasRole('TRAINER')")
     public TrainerResponse me() {

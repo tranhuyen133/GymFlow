@@ -69,6 +69,17 @@ public class Mappers {
                 memberRepository.countByTrainerId(t.getId()), shifts);
     }
 
+    public TrainerPublicResponse trainerPublic(Trainer t) {
+        User u = t.getUser();
+        String avatar = u.getAvatarUpdatedAt() != null ? "/api/users/" + u.getId() + "/avatar?v=" + u.getAvatarUpdatedAt() : null;
+        List<ShiftResponse> shifts = t.getShifts().stream()
+                .sorted(Comparator.comparing(TrainerShift::getDayOfWeek).thenComparing(TrainerShift::getStartTime))
+                .map(s -> new ShiftResponse(s.getId(), s.getDayOfWeek(), s.getStartTime(), s.getEndTime()))
+                .toList();
+        return new TrainerPublicResponse(t.getId(), u.getFullName(), avatar, t.getSpecialty(),
+                t.getExperienceYears(), t.getCertificates(), t.getBio(), shifts);
+    }
+
     // ---------- Plan ----------
     public PlanResponse plan(MembershipPlan p) {
         return new PlanResponse(p.getId(), p.getName(), p.getDescription(), p.getPrice(), p.getDurationDays(),
