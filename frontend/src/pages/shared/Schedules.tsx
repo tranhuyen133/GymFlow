@@ -1,3 +1,7 @@
+/**
+ * CHỦ FILE: Tùng (Lê Thanh Tùng) — SCRUM-188
+ * ĐÓNG GÓP: Hồ Khánh Linh — SCRUM-196 · Form hoàn thành buổi
+ */
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
