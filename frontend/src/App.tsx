@@ -10,7 +10,9 @@ import AuditLog from './pages/admin/AuditLog';
 import PackageRequests from './pages/admin/PackageRequests';
 import PaymentSettings from './pages/admin/PaymentSettings';
 import Plans from './pages/admin/Plans';
+import Promotions from './pages/admin/Promotions';
 import Reports from './pages/admin/Reports';
+import Services from './pages/admin/Services';
 import Subscriptions from './pages/admin/Subscriptions';
 import Trainers from './pages/admin/Trainers';
 import Users from './pages/admin/Users';
@@ -21,6 +23,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import GettingStarted from './pages/member/GettingStarted';
 import MemberDashboard from './pages/member/MemberDashboard';
+import MyEntitlements from './pages/member/MyEntitlements';
 import MyPackages from './pages/member/MyPackages';
 import PackagesCatalog from './pages/member/PackagesCatalog';
 import MyPlan from './pages/member/MyPlan';
@@ -112,6 +115,7 @@ export default function App() {
         <Route path="/me/journey" element={<Only roles={MEMBER}><MyJourney /></Only>} />
         <Route path="/me/packages" element={<Only roles={MEMBER}><MyPackages /></Only>} />
         <Route path="/packages" element={<Only roles={MEMBER}><PackagesCatalog /></Only>} />
+        <Route path="/me/entitlements" element={<Only roles={MEMBER}><MyEntitlements /></Only>} />
         <Route path="/coaches" element={<Only roles={MEMBER}><Coaches /></Only>} />
         <Route path="/coaches/:id" element={<Only roles={MEMBER}><CoachDetail /></Only>} />
         <Route path="/messages" element={<Only roles={CHAT_ROLES}><Messages /></Only>} />
@@ -134,6 +138,8 @@ export default function App() {
         <Route path="/articles" element={<Only roles={STAFF}><Articles /></Only>} />
         <Route path="/trainers" element={<Only roles={ADMIN}><Trainers /></Only>} />
         <Route path="/plans" element={<Only roles={ADMIN}><Plans /></Only>} />
+        <Route path="/services" element={<Only roles={ADMIN}><Services /></Only>} />
+        <Route path="/promotions" element={<Only roles={ADMIN}><Promotions /></Only>} />
         <Route path="/subscriptions" element={<Only roles={ADMIN}><Subscriptions /></Only>} />
         <Route path="/package-requests" element={<Only roles={ADMIN}><PackageRequests /></Only>} />
         <Route path="/payment-settings" element={<Only roles={ADMIN}><PaymentSettings /></Only>} />

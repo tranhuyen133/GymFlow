@@ -6,7 +6,7 @@ import { Icon } from './Icon';
 import './packages.css';
 
 type PlanLike = Pick<MembershipPlan, 'name' | 'price' | 'durationDays' | 'description' | 'benefits' | 'includesTrainer'> &
-  Partial<Pick<MembershipPlan, 'planType' | 'ptSessions' | 'ptValidDays'>> & { id?: number };
+  Partial<Pick<MembershipPlan, 'planType' | 'ptSessions' | 'ptValidDays' | 'serviceGrants'>> & { id?: number };
 
 export const benefitsOf = (p: Pick<MembershipPlan, 'benefits'>) => (p.benefits ?? '').split(/[,\n]/).map((b) => b.trim()).filter(Boolean);
 
@@ -91,6 +91,25 @@ export function PlanCard({ plan, best, saving, badge, compact, className = '', f
         <ul className="pc-perks">
           {perks.map((b) => <li key={b}><span className="pc-tick"><Icon name="check" size={12} /></span>{t(b)}</li>)}
         </ul>
+      )}
+      {plan.serviceGrants && plan.serviceGrants.length > 0 && (
+        <div className="pc-gifts" style={{ marginTop: 8, padding: '8px 10px', background: 'var(--surface-2)', borderRadius: 8, fontSize: 12 }}>
+          <div className="row" style={{ gap: 6, fontWeight: 600, color: 'var(--primary)', marginBottom: 4 }}>
+            <Icon name="sparkle" size={13} />
+            <span>{t('Quà tặng kèm theo gói:')}</span>
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 16, lineHeight: 1.4 }}>
+            {plan.serviceGrants.map((g, idx) => (
+              <li key={idx}>
+                {t('Tặng {q} lượt {s} (hạn {d} ngày)', {
+                  q: g.quantity,
+                  s: g.serviceName || t('Dịch vụ'),
+                  d: g.validDays,
+                })}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       {children}
       {footer && <><div className="pc-grow" /><div className="pc-foot">{footer}</div></>}

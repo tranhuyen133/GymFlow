@@ -83,9 +83,69 @@ public class Mappers {
 
     // ---------- Plan ----------
     public PlanResponse plan(MembershipPlan p) {
+        List<PlanServiceGrantDto> grants = p.getServiceGrants() == null ? List.of()
+                : p.getServiceGrants().stream().map(this::planServiceGrant).toList();
         return new PlanResponse(p.getId(), p.getName(), p.getDescription(), p.getPrice(), p.getDurationDays(),
                 p.getBenefits(), p.isActive(), subscriptionRepository.countCurrentByPlan(p.getId(), today()),
-                p.isIncludesTrainer(), p.getPlanType(), p.getPtSessions(), p.getPtValidDays());
+                p.isIncludesTrainer(), p.getPlanType(), p.getPtSessions(), p.getPtValidDays(), grants);
+    }
+
+    public PlanServiceGrantDto planServiceGrant(PlanServiceGrant g) {
+        return new PlanServiceGrantDto(g.getService().getId(), g.getService().getName(), g.getQuantity(), g.getValidDays(), g.getConditions());
+    }
+
+    // ---------- Services & Entitlements ----------
+    public ServiceItemResponse serviceItem(ServiceItem s) {
+        return new ServiceItemResponse(s.getId(), s.getName(), s.getCategory(), s.getDescription(),
+                s.getUnitPrice(), s.isRequiresBooking(), s.getOpeningNote(), s.isActive(), s.getCreatedAt());
+    }
+
+    public ServiceUsageResponse serviceUsage(ServiceUsage u) {
+        return new ServiceUsageResponse(u.getId(), u.getEntitlement().getId(), u.getUsedAt(),
+                u.getConfirmedBy().getId(), u.getConfirmedBy().getFullName(), u.getNote());
+    }
+
+    public MemberServiceEntitlementResponse entitlement(MemberServiceEntitlement e, List<ServiceUsage> usages) {
+        Member m = e.getMember();
+        ServiceItem s = e.getService();
+        MemberSubscription sub = e.getSubscription();
+        List<ServiceUsageResponse> list = usages == null ? List.of() : usages.stream().map(this::serviceUsage).toList();
+        return new MemberServiceEntitlementResponse(
+                e.getId(), m.getId(), m.getUser().getFullName(), m.getCode(),
+                s.getId(), e.getServiceNameSnapshot(), e.getSource(),
+                sub == null ? null : sub.getId(), sub == null ? null : sub.getPlan().getName(),
+                e.getPackageRequest() == null ? null : e.getPackageRequest().getId(),
+                e.getGrantedQty(), e.getUsedQty(), e.getRemainingQty(),
+                e.getValidFrom(), e.getValidUntil(), e.getConditionsSnapshot(),
+                e.getStatus(), e.isUsableOn(today()), e.getCreatedAt(), list
+        );
+    }
+
+    // ---------- Promotion ----------
+    public PromotionGrantDto promotionGrant(PromotionGrant g) {
+        return new PromotionGrantDto(g.getService().getId(), g.getService().getName(), g.getQuantity(), g.getValidDays(), g.getConditions());
+    }
+
+    public PromotionResponse promotion(Promotion p) {
+        List<Long> planIds = p.getPlans() == null ? List.of() : p.getPlans().stream().map(MembershipPlan::getId).toList();
+        List<PromotionGrantDto> grants = p.getGrants() == null ? List.of() : p.getGrants().stream().map(this::promotionGrant).toList();
+        return new PromotionResponse(p.getId(), p.getCode(), p.getName(), p.getDescription(),
+                p.getDiscountType(), p.getDiscountValue(), p.getStartsAt(), p.getEndsAt(),
+                p.getMaxUses(), p.getUsedCount(), p.isNewMembersOnly(), p.isRenewalOnly(),
+                p.isStackable(), p.isActive(), p.getCreatedAt(), planIds, grants);
+    }
+
+    // ---------- Service Request ----------
+    public ServiceRequestResponse serviceRequest(ServiceRequest r) {
+        Member m = r.getMember();
+        User dec = r.getDecidedBy();
+        return new ServiceRequestResponse(
+                r.getId(), m.getId(), m.getUser().getFullName(), m.getCode(), m.getUser().getPhone(),
+                r.getService().getId(), r.getServiceName(), r.getQuantity(), r.getUnitPrice(), r.getTotalPrice(),
+                r.getPaymentMethod(), r.getPaymentCode(), r.getMemberPaidAt(), r.getMemberNote(),
+                r.getStatus(), r.getDecisionNote(), dec == null ? null : dec.getFullName(),
+                r.getDecidedAt(), r.getEntitlement() == null ? null : r.getEntitlement().getId(), r.getCreatedAt()
+        );
     }
 
     // ---------- Subscription ----------

@@ -25,6 +25,8 @@ public interface MemberSubscriptionRepository extends JpaRepository<MemberSubscr
 
     List<MemberSubscription> findByMemberIdOrderByStartDateDesc(Long memberId);
 
+    long countByMemberId(Long memberId);
+
     List<MemberSubscription> findAllByOrderByCreatedAtDesc();
 
     boolean existsByPlanId(Long planId);

@@ -38,6 +38,7 @@ class SubscriptionCancelTest {
     @Mock AuditService auditService;
     @Mock Mappers mappers;
     @Mock com.gymflow.repository.PtSessionUsageRepository ptSessionUsageRepository;
+    @Mock com.gymflow.repository.MemberServiceEntitlementRepository entitlementRepository;
 
     SubscriptionService service;
     Member member;
@@ -46,7 +47,7 @@ class SubscriptionCancelTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(TODAY.atTime(10, 0).atZone(ZONE).toInstant(), ZONE);
-        service = new SubscriptionService(subscriptionRepository, userRepository, planService, access, auditService, mappers, clock, ptSessionUsageRepository);
+        service = new SubscriptionService(subscriptionRepository, userRepository, planService, access, auditService, mappers, clock, ptSessionUsageRepository, entitlementRepository);
         member = new Member();
         member.setId(1L);
         member.setCode("HV00001");

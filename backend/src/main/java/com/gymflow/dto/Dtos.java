@@ -238,6 +238,14 @@ public final class Dtos {
     }
 
     // ===================== Membership plan =====================
+    public record PlanServiceGrantDto(
+            @NotNull(message = "Chọn dịch vụ") Long serviceId,
+            String serviceName,
+            @Min(value = 1, message = "Số lượt tối thiểu là 1") int quantity,
+            @Min(value = 1, message = "Số ngày hiệu lực tối thiểu là 1") int validDays,
+            @Size(max = 255) String conditions) {
+    }
+
     public record PlanRequest(
             @NotBlank(message = "Vui lòng nhập tên gói") @Size(max = 100) String name,
             @Size(max = 500) String description,
@@ -248,19 +256,26 @@ public final class Dtos {
             boolean includesTrainer,
             PlanType planType,
             Integer ptSessions,
-            Integer ptValidDays) {
+            Integer ptValidDays,
+            List<PlanServiceGrantDto> serviceGrants) {
         public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits) {
-            this(name, description, price, durationDays, benefits, false, PlanType.GYM, null, null);
+            this(name, description, price, durationDays, benefits, false, PlanType.GYM, null, null, null);
         }
 
         public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits, boolean includesTrainer) {
-            this(name, description, price, durationDays, benefits, includesTrainer, includesTrainer ? PlanType.GYM_PT : PlanType.GYM, null, null);
+            this(name, description, price, durationDays, benefits, includesTrainer, includesTrainer ? PlanType.GYM_PT : PlanType.GYM, null, null, null);
+        }
+
+        public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits,
+                           boolean includesTrainer, PlanType planType, Integer ptSessions, Integer ptValidDays) {
+            this(name, description, price, durationDays, benefits, includesTrainer, planType, ptSessions, ptValidDays, null);
         }
     }
 
     public record PlanResponse(Long id, String name, String description, Long price, Integer durationDays,
                                String benefits, boolean active, long currentSubscriptions, boolean includesTrainer,
-                               PlanType planType, Integer ptSessions, Integer ptValidDays) {
+                               PlanType planType, Integer ptSessions, Integer ptValidDays,
+                               List<PlanServiceGrantDto> serviceGrants) {
     }
 
     // ===================== Subscription =====================
@@ -722,6 +737,113 @@ public final class Dtos {
     }
 
     public record UnreadCountResponse(long unreadCount) {
+    }
+
+    // ===================== Services & Entitlements =====================
+    public record ServiceItemRequest(
+            @NotBlank(message = "Vui lòng nhập tên dịch vụ") @Size(max = 100) String name,
+            @NotNull(message = "Vui lòng chọn danh mục") ServiceCategory category,
+            @Size(max = 1000) String description,
+            @Min(value = 0, message = "Giá không âm") Long unitPrice,
+            boolean requiresBooking,
+            @Size(max = 255) String openingNote,
+            Boolean active) {
+    }
+
+    public record ServiceItemResponse(
+            Long id, String name, ServiceCategory category, String description,
+            Long unitPrice, boolean requiresBooking, String openingNote, boolean active,
+            LocalDateTime createdAt) {
+    }
+
+    public record ServiceUsageResponse(
+            Long id, Long entitlementId, LocalDateTime usedAt,
+            Long confirmedById, String confirmedByName, String note) {
+    }
+
+    public record MemberServiceEntitlementResponse(
+            Long id, Long memberId, String memberName, String memberCode,
+            Long serviceId, String serviceName,
+            EntitlementSource source, Long subscriptionId, String planName, Long packageRequestId,
+            int grantedQty, int usedQty, int remainingQty,
+            LocalDate validFrom, LocalDate validUntil, String conditions,
+            EntitlementStatus status, boolean usable, LocalDateTime createdAt,
+            List<ServiceUsageResponse> usages) {
+    }
+
+    public record UseEntitlementRequest(@Size(max = 255, message = "Ghi chú tối đa 255 ký tự") String note) {
+    }
+
+    // ===================== Promotions =====================
+    public record PromotionGrantDto(
+            @NotNull(message = "Chọn dịch vụ") Long serviceId,
+            String serviceName,
+            @Min(value = 1, message = "Số lượt tối thiểu là 1") int quantity,
+            @Min(value = 1, message = "Số ngày hiệu lực tối thiểu là 1") int validDays,
+            @Size(max = 255) String conditions) {
+    }
+
+    public record PromotionRequest(
+            @Size(max = 50, message = "Mã ưu đãi tối đa 50 ký tự") String code,
+            @NotBlank(message = "Vui lòng nhập tên chương trình ưu đãi") @Size(max = 100) String name,
+            @Size(max = 1000) String description,
+            @NotNull(message = "Vui lòng chọn loại giảm giá") DiscountType discountType,
+            @Min(value = 0, message = "Mức giảm không âm") Long discountValue,
+            @NotNull(message = "Thiếu thời gian bắt đầu") LocalDateTime startsAt,
+            @NotNull(message = "Thiếu thời gian kết thúc") LocalDateTime endsAt,
+            @Min(value = 1, message = "Số lượt sử dụng tối đa phải từ 1") Integer maxUses,
+            boolean newMembersOnly,
+            boolean renewalOnly,
+            boolean stackable,
+            Boolean active,
+            List<Long> planIds,
+            List<PromotionGrantDto> grants) {
+    }
+
+    public record PromotionResponse(
+            Long id, String code, String name, String description,
+            DiscountType discountType, Long discountValue,
+            LocalDateTime startsAt, LocalDateTime endsAt,
+            Integer maxUses, int usedCount,
+            boolean newMembersOnly, boolean renewalOnly, boolean stackable, boolean active,
+            LocalDateTime createdAt, List<Long> planIds, List<PromotionGrantDto> grants) {
+    }
+
+    public record PromotionValidateRequest(
+            String code,
+            @NotNull(message = "Vui lòng chọn gói tập để áp dụng ưu đãi") Long planId) {
+    }
+
+    public record PromotionValidationResponse(
+            boolean valid, String reason,
+            Long promotionId, String promotionCode, String promotionName, String description,
+            DiscountType discountType, Long discountValue,
+            long originalPrice, long discountAmount, long finalPrice,
+            List<PromotionGrantDto> gifts) {
+    }
+
+    // ===================== Service Requests (Mua lẻ) =====================
+    public record ServiceRequestInput(
+            @NotNull(message = "Vui lòng chọn dịch vụ") Long serviceId,
+            @Min(value = 1, message = "Số lượng tối thiểu là 1") @Max(value = 100, message = "Số lượng tối đa là 100") int quantity,
+            PaymentMethod paymentMethod,
+            @Size(max = 255, message = "Ghi chú tối đa 255 ký tự") String note) {
+    }
+
+    public record ServiceRequestResponse(
+            Long id, Long memberId, String memberName, String memberCode, String memberPhone,
+            Long serviceId, String serviceName, int quantity, long unitPrice, long totalPrice,
+            PaymentMethod paymentMethod, String paymentCode, LocalDateTime memberPaidAt,
+            String memberNote, PackageRequestStatus status, String decisionNote, String decidedByName,
+            LocalDateTime decidedAt, Long entitlementId, LocalDateTime createdAt) {
+    }
+
+    public record ApproveServiceRequest(@Size(max = 255, message = "Ghi chú tối đa 255 ký tự") String note) {
+    }
+
+    public record RejectServiceRequest(
+            @NotBlank(message = "Vui lòng nhập lý do từ chối")
+            @Size(min = 5, max = 255, message = "Lý do từ 5 đến 255 ký tự") String reason) {
     }
 
     // ===================== Member Onboarding & Tours =====================

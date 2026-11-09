@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,6 +47,9 @@ class PackageRequestServiceTest {
     @Mock Mappers mappers;
     @Mock TrainerRepository trainerRepository;
     @Mock PaymentSettingsService paymentSettings;
+    @Mock com.gymflow.repository.MemberServiceEntitlementRepository entitlementRepository;
+    @Mock com.gymflow.repository.PromotionRepository promotionRepository;
+    @Mock PromotionService promotionService;
 
     PackageRequestService service;
     AuthUser memberUser = new AuthUser(20L, "hv@example.com", Role.MEMBER, "Hội Viên");
@@ -56,7 +60,8 @@ class PackageRequestServiceTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(TODAY.atTime(10, 0).atZone(ZONE).toInstant(), ZONE);
-        service = new PackageRequestService(requestRepository, subscriptionRepository, userRepository, subscriptionService,
+        service = new PackageRequestService(requestRepository, subscriptionRepository, entitlementRepository,
+                promotionRepository, promotionService, userRepository, subscriptionService,
                 planService, access, auditService, mappers, clock, trainerRepository, paymentSettings);
         User u = new User();
         u.setId(20L);
@@ -73,6 +78,9 @@ class PackageRequestServiceTest {
         plan.setPrice(500_000L);
         plan.setActive(true);
         lenient().when(mappers.today()).thenReturn(TODAY);
+        lenient().when(promotionService.validate(any(), any()))
+                .thenReturn(new com.gymflow.dto.Dtos.PromotionValidationResponse(true, null, null, null, null, null,
+                        DiscountType.NONE, 0L, 500_000L, 0L, 500_000L, List.of()));
         lenient().when(access.requireMemberOf(memberUser)).thenReturn(member);
         lenient().when(planService.load(2L)).thenReturn(plan);
         lenient().when(requestRepository.saveAndFlush(any())).thenAnswer(inv -> {

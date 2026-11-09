@@ -4,6 +4,7 @@ import com.gymflow.common.ApiException;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.repository.MemberSubscriptionRepository;
+import com.gymflow.repository.MemberServiceEntitlementRepository;
 import com.gymflow.repository.PtSessionUsageRepository;
 import com.gymflow.repository.UserRepository;
 import com.gymflow.security.AuthUser;
@@ -29,6 +30,7 @@ public class SubscriptionService {
     private final Mappers mappers;
     private final Clock clock;
     private final PtSessionUsageRepository ptSessionUsageRepository;
+    private final MemberServiceEntitlementRepository entitlementRepository;
 
     @Transactional(readOnly = true)
     public List<SubscriptionResponse> list(SubscriptionState state, Long memberId) {
@@ -118,6 +120,15 @@ public class SubscriptionService {
         if (s.stateOn(mappers.today()) == SubscriptionState.EXPIRED) throw ApiException.badRequest("Không thể huỷ gói đã hết hạn");
         s.setCancelled(true);
         s.setCancelledAt(LocalDateTime.now(clock));
+
+        // Huỷ các quyền lợi dịch vụ nguồn PLAN đi kèm gói này
+        List<MemberServiceEntitlement> entitlements = entitlementRepository.findBySubscriptionIdAndSource(id, EntitlementSource.PLAN);
+        for (MemberServiceEntitlement e : entitlements) {
+            if (e.getStatus() == EntitlementStatus.ACTIVE) {
+                e.setStatus(EntitlementStatus.CANCELLED);
+            }
+        }
+
         String r = Mappers.blankToNull(reason);
         if (r != null) {
             String merged = s.getNote() == null ? "Huỷ: " + r : s.getNote() + " | Huỷ: " + r;

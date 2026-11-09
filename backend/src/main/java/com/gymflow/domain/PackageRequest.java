@@ -32,11 +32,24 @@ public class PackageRequest {
     @JoinColumn(name = "trainer_id")
     private Trainer trainer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_id")
+    private Promotion promotion;
+
     @Column(name = "plan_name", nullable = false, length = 100)
     private String planName;
 
     @Column(nullable = false)
     private Long price;
+
+    @Column(name = "original_price", nullable = false)
+    private long originalPrice = 0L;
+
+    @Column(name = "discount_amount", nullable = false)
+    private long discountAmount = 0L;
+
+    @Column(name = "final_price", nullable = false)
+    private long finalPrice = 0L;
 
     @Column(name = "duration_days", nullable = false)
     private Integer durationDays;

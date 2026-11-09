@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { api } from '../../api/client';
-import type { MembershipPlan } from '../../api/types';
+import type { MembershipPlan, PlanServiceGrant, ServiceItem } from '../../api/types';
+import { Icon } from '../../components/Icon';
 import { PlanCard, pickBest, savings } from '../../components/PlanCard';
 import { useToast } from '../../components/Toast';
 import { PickCard } from '../../components/PaymentQr';
@@ -109,10 +110,14 @@ const DURATIONS = [30, 90, 180, 365];
 
 function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; others: MembershipPlan[]; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
+  const services = useAsync(() => api.get<ServiceItem[]>('/admin/services'), []);
   const [f, setF] = useState({ name: plan?.name ?? '', description: plan?.description ?? '', price: String(plan?.price ?? ''), durationDays: String(plan?.durationDays ?? 30), benefits: plan?.benefits ?? '' });
   const [pt, setPt] = useState(plan?.planType === 'GYM_PT' || (plan?.includesTrainer ?? false));
   const [ptSessions, setPtSessions] = useState(plan?.ptSessions != null ? String(plan.ptSessions) : '12');
   const [ptValidDays, setPtValidDays] = useState(plan?.ptValidDays != null ? String(plan.ptValidDays) : String(plan?.durationDays ?? 30));
+  const [serviceGrants, setServiceGrants] = useState<PlanServiceGrant[]>(
+    plan?.serviceGrants ? plan.serviceGrants.map((g) => ({ ...g })) : []
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -128,8 +133,42 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
     planType: pt ? ('GYM_PT' as const) : ('GYM' as const),
     ptSessions: pt ? Number(ptSessions) : null,
     ptValidDays: pt ? Number(ptValidDays) : null,
+    serviceGrants,
   };
   const previewSave = savings([...others.filter((p) => p.active), preview]).get(undefined);
+
+  const addGrant = () => {
+    const list = services.data ?? [];
+    if (list.length === 0) return;
+    setServiceGrants((prev) => [
+      ...prev,
+      {
+        serviceId: list[0].id,
+        serviceName: list[0].name,
+        quantity: 1,
+        validDays: days > 0 ? days : 30,
+        conditions: '',
+      },
+    ]);
+  };
+
+  const removeGrant = (idx: number) => {
+    setServiceGrants((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateGrant = (idx: number, patch: Partial<PlanServiceGrant>) => {
+    setServiceGrants((prev) =>
+      prev.map((g, i) => {
+        if (i !== idx) return g;
+        const next = { ...g, ...patch };
+        if (patch.serviceId != null) {
+          const found = (services.data ?? []).find((s) => s.id === patch.serviceId);
+          if (found) next.serviceName = found.name;
+        }
+        return next;
+      })
+    );
+  };
 
   const submit = async () => {
     const v: Record<string, string> = {};
@@ -159,6 +198,12 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
       includesTrainer: pt,
       ptSessions: pt ? Number(ptSessions) : null,
       ptValidDays: pt ? Number(ptValidDays) : null,
+      serviceGrants: serviceGrants.map((g) => ({
+        serviceId: g.serviceId,
+        quantity: g.quantity,
+        validDays: g.validDays,
+        conditions: g.conditions?.trim() || null,
+      })),
     };
     try {
       if (plan) await api.put(`/plans/${plan.id}`, body); else await api.post('/plans', body);
@@ -208,6 +253,48 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
               <div className="span-2"><Alert kind="warning">{t('Hội viên đang dùng gói này vẫn giữ HLV hiện tại. Đổi HLV ở hồ sơ từng hội viên nếu cần.')}</Alert></div>
             )}
             <Field label="Quyền lợi" hint="Mỗi dòng hoặc dấu phẩy là một quyền lợi" className="span-2"><Textarea maxLength={1000} rows={4} value={f.benefits} onChange={(e) => set('benefits', e.target.value)} placeholder={'Tủ đồ cá nhân\nNước uống miễn phí\n1 buổi PT'} /></Field>
+
+            {/* Quà tặng dịch vụ kèm theo */}
+            <div className="span-2">
+              <div className="row between row-wrap" style={{ alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>
+                  <Icon name="sparkle" size={14} style={{ display: 'inline', verticalAlign: -2, marginRight: 6 }} />
+                  {t('Quà tặng kèm theo gói')}
+                </span>
+                <Button size="sm" variant="secondary" icon="plus" onClick={addGrant}>
+                  {t('Thêm quà tặng')}
+                </Button>
+              </div>
+              {serviceGrants.length === 0 ? (
+                <div className="tiny muted" style={{ padding: 10, background: 'var(--surface-2)', borderRadius: 8 }}>
+                  {t('Chưa có dịch vụ tặng kèm theo gói này. Bấm "Thêm quà tặng" để tặng kèm lượt xông hơi, massage, tủ đồ…')}
+                </div>
+              ) : (
+                <div className="stack" style={{ gap: 8 }}>
+                  {serviceGrants.map((g, idx) => (
+                    <div key={idx} className="row row-wrap" style={{ gap: 8, alignItems: 'center', background: 'var(--surface-2)', padding: 8, borderRadius: 8 }}>
+                      <div style={{ flex: 2, minWidth: 140 }}>
+                        <select className="input" value={g.serviceId} onChange={(e) => updateGrant(idx, { serviceId: Number(e.target.value) })}>
+                          {(services.data ?? []).map((s) => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div style={{ width: 75 }}>
+                        <Input type="number" min={1} value={g.quantity} onChange={(e) => updateGrant(idx, { quantity: Math.max(1, Number(e.target.value)) })} title={t('Số lượt')} placeholder={t('Lượt')} />
+                      </div>
+                      <div style={{ width: 95 }}>
+                        <Input type="number" min={1} value={g.validDays} onChange={(e) => updateGrant(idx, { validDays: Math.max(1, Number(e.target.value)) })} title={t('Hạn dùng (ngày)')} placeholder={t('Số ngày')} />
+                      </div>
+                      <div style={{ flex: 2, minWidth: 130 }}>
+                        <Input value={g.conditions ?? ''} onChange={(e) => updateGrant(idx, { conditions: e.target.value })} placeholder={t('Điều kiện sử dụng')} />
+                      </div>
+                      <Button size="sm" variant="ghost" icon="trash" title={t('Xoá')} onClick={() => removeGrant(idx)} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className="plan-preview">

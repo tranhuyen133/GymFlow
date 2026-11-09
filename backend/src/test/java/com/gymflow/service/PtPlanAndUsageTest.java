@@ -48,6 +48,10 @@ class PtPlanAndUsageTest {
     @Mock TrainerRepository trainerRepository;
     @Mock UserRepository userRepository;
     @Mock PtSessionUsageRepository ptSessionUsageRepository;
+    @Mock ServiceItemRepository serviceItemRepository;
+    @Mock MemberServiceEntitlementRepository entitlementRepository;
+    @Mock PromotionRepository promotionRepository;
+    @Mock PromotionService promotionService;
     @Mock AccessService access;
     @Mock AuditService auditService;
     @Mock Mappers mappers;
@@ -66,10 +70,13 @@ class PtPlanAndUsageTest {
     void setUp() {
         clock = Clock.fixed(NOW.atZone(ZONE).toInstant(), ZONE);
 
-        planService = new PlanService(planRepository, subscriptionRepository, packageRequestRepository, auditService, mappers);
-        subscriptionService = new SubscriptionService(subscriptionRepository, userRepository, planService, access, auditService, mappers, clock, ptSessionUsageRepository);
-        packageRequestService = new PackageRequestService(packageRequestRepository, subscriptionRepository, userRepository, subscriptionService, planService, access, auditService, mappers, clock, trainerRepository, paymentSettings);
+        planService = new PlanService(planRepository, subscriptionRepository, packageRequestRepository, serviceItemRepository, auditService, mappers);
+        subscriptionService = new SubscriptionService(subscriptionRepository, userRepository, planService, access, auditService, mappers, clock, ptSessionUsageRepository, entitlementRepository);
+        packageRequestService = new PackageRequestService(packageRequestRepository, subscriptionRepository, entitlementRepository, promotionRepository, promotionService, userRepository, subscriptionService, planService, access, auditService, mappers, clock, trainerRepository, paymentSettings);
         scheduleService = new ScheduleService(scheduleRepository, logRepository, workoutPlanRepository, trainerRepository, subscriptionService, access, auditService, mappers, clock, userRepository, ptSessionUsageRepository, subscriptionRepository);
+
+        lenient().when(promotionService.validate(any(), any()))
+                .thenReturn(new PromotionValidationResponse(true, null, null, null, null, null, DiscountType.NONE, 0L, 500_000L, 0L, 500_000L, List.of()));
 
         User memberUser = new User();
         memberUser.setId(10L);
