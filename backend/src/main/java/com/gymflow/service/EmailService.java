@@ -15,10 +15,10 @@ import org.springframework.stereotype.Service;
 public class EmailService {
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
 
-    @Value("${app.mail.from}")
+    @Value("${app.mail.from:no-reply@gymflow.local}")
     private String from;
 
-    @Value("${app.app-base-url}")
+    @Value("${app.app-base-url:http://localhost:5173}")
     private String appBaseUrl;
 
     public void sendVerificationCode(String email, String code, int validMinutes) {

@@ -238,7 +238,7 @@ class AuthServiceRegisterTest {
 
         assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest(user.getEmail(), "123456", "NewPass123")))
                 .isInstanceOf(ApiException.class)
-                .hasMessageContaining("chưa được xác thực");
+                .hasMessageContaining("không đúng hoặc đã hết hạn");
         verifyNoInteractions(resetTokenRepository);
     }
 

@@ -20,9 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -35,6 +35,10 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -58,7 +62,7 @@ class AuthRegisterIntegrationTest {
     @Autowired AuditLogRepository auditLogRepository;
     @Autowired EmailVerificationTokenRepository verificationTokenRepository;
     @Autowired JdbcTemplate jdbcTemplate;
-    @MockBean EmailService emailService;
+    @MockitoBean EmailService emailService;
 
     private String testEmail;
 
@@ -109,8 +113,8 @@ class AuthRegisterIntegrationTest {
         assertThat(verificationTokenRepository.findFirstByUser_IdAndUsedAtIsNullOrderByCreatedAtDesc(user.getId()))
                 .isPresent()
                 .get()
-                .extracting(token -> token.getCodeHash())
-                .isNotEqualTo(req.email());
+                .satisfies(token -> assertThat(token.getCodeHash()).startsWith("$2"));
+        verify(emailService).sendVerificationCode(eq(user.getEmail()), anyString(), anyInt());
 
         // 2. Kiểm tra bản ghi members
         Optional<Member> memberOpt = memberRepository.findByUserId(user.getId());

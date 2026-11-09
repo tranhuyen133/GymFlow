@@ -218,7 +218,7 @@ public class AuthService {
         User u = userRepository.findByEmailIgnoreCase(req.email().trim())
                 .orElseThrow(() -> ApiException.badRequest("Mã OTP không đúng hoặc đã hết hạn"));
         if (u.getEmailVerifiedAt() == null) {
-            throw ApiException.badRequest("Email chưa được xác thực, không thể đặt lại mật khẩu");
+            throw ApiException.badRequest("Mã OTP không đúng hoặc đã hết hạn");
         }
         PasswordResetToken t = resetTokenRepository
                 .findFirstByUser_IdAndUsedAtIsNullOrderByCreatedAtDesc(u.getId())

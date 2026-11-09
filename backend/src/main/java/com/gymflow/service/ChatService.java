@@ -62,8 +62,8 @@ public class ChatService {
                        UserRepository userRepository,
                        RestClient.Builder builder,
                        Clock clock,
-                       @Value("${app.ai.base-url}") String baseUrl,
-                       @Value("${app.ai.model}") String model,
+                       @Value("${app.ai.base-url:https://api.openai.com/v1}") String baseUrl,
+                       @Value("${app.ai.model:gpt-4o-mini}") String model,
                        @Value("${app.ai.api-key:}") String apiKey,
                        @Value("${app.ai.timeout-seconds:20}") int timeoutSeconds) {
         this.conversationRepository = conversationRepository;
