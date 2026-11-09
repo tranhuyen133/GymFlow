@@ -33,6 +33,20 @@ spring:
     time-zone: Asia/Ho_Chi_Minh
     serialization:
       write-dates-as-timestamps: false
+  mail:
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:true}
+          starttls:
+            enable: ${SMTP_STARTTLS_ENABLE:true}
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 app:
   jwt:
@@ -47,12 +61,23 @@ app:
     quick-login: ${DEMO_QUICK_LOGIN:false}
   registration:
     enabled: ${REGISTRATION_ENABLED:true}
+  app-base-url: ${APP_BASE_URL:http://localhost:5173}
+  mail:
+    from: ${MAIL_FROM:no-reply@gymflow.local}
+  ai:
+    base-url: ${AI_BASE_URL:https://api.openai.com/v1}
+    model: ${AI_MODEL:gpt-4o-mini}
+    api-key: ${AI_API_KEY:}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:20}
+  email-otp:
+    valid-minutes: ${EMAIL_OTP_VALID_MINUTES:10}
+    max-attempts: ${EMAIL_OTP_MAX_ATTEMPTS:5}
+    resend-cooldown-seconds: ${EMAIL_OTP_RESEND_COOLDOWN_SECONDS:60}
+    max-sends-per-hour: ${EMAIL_OTP_MAX_SENDS_PER_HOUR:5}
   # Giới hạn đăng nhập / đăng ký / quên mật khẩu theo IP. Chỉ tắt khi chạy kiểm thử tải.
   rate-limit:
     enabled: ${RATE_LIMIT_ENABLED:true}
   reset:
-    # Trả mã đặt lại mật khẩu trong API (chưa có gửi email). Mặc định tắt: bật thì ai cũng đặt lại được mật khẩu người khác.
-    expose-token: ${RESET_EXPOSE_TOKEN:false}
     valid-minutes: 30
 
 management:

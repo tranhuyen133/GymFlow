@@ -90,7 +90,7 @@ export default function Register() {
       const res = await api.post<RegisterResponse>('/auth/register', {
         ...f, fullName: f.fullName.trim(), email: f.email.trim(), phone: cleanPhone(f.phone.trim()),
       });
-      navigate('/login', { replace: true, state: { registered: res.email } });
+      navigate(`/verify-email?email=${encodeURIComponent(res.email)}`, { replace: true });
     } catch (err) {
       const is409 = err instanceof ApiError && err.status === 409;
       // Backend trả 409 cho cả email trùng lẫn số điện thoại trùng: đặt lỗi vào đúng ô theo nội dung thông báo,

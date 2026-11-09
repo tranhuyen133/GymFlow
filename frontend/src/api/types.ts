@@ -23,7 +23,8 @@ export interface Me {
   avatarUpdatedAt: string | null;
 }
 export interface LoginResponse { token: string; expiresInMinutes: number; user: Me }
-export interface ForgotPasswordResponse { message: string; resetToken: string | null; validMinutes: number }
+export interface ForgotPasswordResponse { message: string; validMinutes: number }
+export interface AuthMessageResponse { message: string }
 export interface RegisterRequest {
   fullName: string; email: string; phone: string; password: string; confirmPassword: string; acceptTerms: boolean;
 }

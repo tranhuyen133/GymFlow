@@ -41,6 +41,18 @@ public class AuthController {
         return authService.register(req);
     }
 
+    @PostMapping("/verify-email")
+    public AuthMessageResponse verifyEmail(@Valid @RequestBody VerifyEmailRequest req) {
+        authService.verifyEmail(req);
+        return new AuthMessageResponse("Email đã được xác thực. Bạn có thể đăng nhập.");
+    }
+
+    @PostMapping("/resend-verification")
+    public AuthMessageResponse resendVerification(@Valid @RequestBody ResendVerificationRequest req) {
+        authService.resendVerification(req);
+        return new AuthMessageResponse("Nếu email cần xác thực, mã OTP sẽ được gửi đến hộp thư.");
+    }
+
     @GetMapping("/me")
     public MeResponse me() {
         return authService.me(CurrentUser.get());

@@ -10,6 +10,7 @@ import com.gymflow.domain.Role;
 import com.gymflow.domain.User;
 import com.gymflow.dto.Dtos.RegisterRequest;
 import com.gymflow.repository.AuditLogRepository;
+import com.gymflow.repository.EmailVerificationTokenRepository;
 import com.gymflow.repository.MemberRepository;
 import com.gymflow.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
@@ -54,7 +56,9 @@ class AuthRegisterIntegrationTest {
     @Autowired UserRepository userRepository;
     @Autowired MemberRepository memberRepository;
     @Autowired AuditLogRepository auditLogRepository;
+    @Autowired EmailVerificationTokenRepository verificationTokenRepository;
     @Autowired JdbcTemplate jdbcTemplate;
+    @MockBean EmailService emailService;
 
     private String testEmail;
 
@@ -101,6 +105,12 @@ class AuthRegisterIntegrationTest {
         User user = userOpt.get();
         assertThat(user.getRole()).isEqualTo(Role.MEMBER);
         assertThat(user.getFullName()).isEqualTo("Nguyễn Văn Test");
+        assertThat(user.getEmailVerifiedAt()).isNull();
+        assertThat(verificationTokenRepository.findFirstByUser_IdAndUsedAtIsNullOrderByCreatedAtDesc(user.getId()))
+                .isPresent()
+                .get()
+                .extracting(token -> token.getCodeHash())
+                .isNotEqualTo(req.email());
 
         // 2. Kiểm tra bản ghi members
         Optional<Member> memberOpt = memberRepository.findByUserId(user.getId());

@@ -1,9 +1,9 @@
 package com.gymflow.service;
 
 import com.gymflow.common.ApiException;
-import com.gymflow.common.Secrets;
 import com.gymflow.config.DemoAccounts;
 import com.gymflow.domain.Member;
+import com.gymflow.domain.EmailVerificationToken;
 import com.gymflow.domain.PasswordResetToken;
 import com.gymflow.domain.Role;
 import com.gymflow.domain.User;
@@ -14,6 +14,8 @@ import com.gymflow.dto.Dtos.ForgotPasswordResponse;
 import com.gymflow.dto.Dtos.RegisterRequest;
 import com.gymflow.dto.Dtos.RegisterResponse;
 import com.gymflow.dto.Dtos.ResetPasswordRequest;
+import com.gymflow.dto.Dtos.VerifyEmailRequest;
+import com.gymflow.repository.EmailVerificationTokenRepository;
 import com.gymflow.repository.MemberRepository;
 import com.gymflow.repository.PasswordResetTokenRepository;
 import com.gymflow.repository.TrainerRepository;
@@ -37,7 +39,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,20 +48,28 @@ class AuthServiceRegisterTest {
     @Mock MemberRepository memberRepository;
     @Mock TrainerRepository trainerRepository;
     @Mock PasswordResetTokenRepository resetTokenRepository;
+    @Mock EmailVerificationTokenRepository verificationTokenRepository;
     @Mock PasswordEncoder passwordEncoder;
     @Mock JwtService jwtService;
     @Mock AuditService auditService;
     @Mock UserService userService;
     @Mock MemberService memberService;
+    @Mock EmailService emailService;
 
     AuthService service;
 
     @BeforeEach
     void setUp() {
         service = new AuthService(userRepository, memberRepository, trainerRepository, resetTokenRepository,
-                passwordEncoder, jwtService, auditService, userService, memberService, Clock.systemDefaultZone());
+                verificationTokenRepository, passwordEncoder, jwtService, auditService, userService, memberService,
+                emailService, Clock.systemDefaultZone());
         ReflectionTestUtils.setField(service, "registrationEnabled", true);
         ReflectionTestUtils.setField(service, "demoQuickLogin", true);
+        ReflectionTestUtils.setField(service, "otpMaxAttempts", 5);
+        ReflectionTestUtils.setField(service, "otpMaxSendsPerHour", 5);
+        ReflectionTestUtils.setField(service, "otpResendCooldownSeconds", 60);
+        ReflectionTestUtils.setField(service, "resetValidMinutes", 30);
+        ReflectionTestUtils.setField(service, "emailOtpValidMinutes", 10);
     }
 
     private static RegisterRequest req(String pw, String confirm, boolean terms) {
@@ -76,11 +85,14 @@ class AuthServiceRegisterTest {
         when(userService.createAccount(anyString(), anyString(), anyString(), anyString(), any()))
                 .thenReturn(new UserService.Created(u, null));
         when(memberService.createSelfRegistered(u)).thenReturn(new Member());
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed");
 
         RegisterResponse res = service.register(req("Strong123", "Strong123", true));
 
         verify(userService).createAccount("New.Member@Example.com", "Nguyễn Văn A", "0912345678", "Strong123", Role.MEMBER);
         verify(memberService).createSelfRegistered(u);
+        assertThat(u.getEmailVerifiedAt()).isNull();
+        verify(emailService).sendVerificationCode(eq(u.getEmail()), anyString(), anyInt());
         assertThat(res.email()).isEqualTo("new.member@example.com");
     }
 
@@ -141,108 +153,168 @@ class AuthServiceRegisterTest {
     // ---------- Forgot password & Reset password (SCRUM-135) ----------
 
     @Test
-    void forgotPasswordCalledTwiceInvalidatesFirstToken() {
-        User u = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
-        u.setId(10L);
-        when(userRepository.findByEmailIgnoreCase("member@example.com")).thenReturn(Optional.of(u));
+    void forgotPasswordSendsOtpOnlyForVerifiedAccountAndNeverReturnsIt() {
+        User user = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
+        user.setId(10L);
+        when(userRepository.findByEmailIgnoreCase("member@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed-otp");
 
-        // Lần 1: gọi forgotPassword
+        ForgotPasswordResponse response = service.forgotPassword(new ForgotPasswordRequest("member@example.com"));
+
+        assertThat(response.message()).isEqualTo("Nếu email tồn tại trong hệ thống, mã khôi phục đã được gửi.");
+        verify(resetTokenRepository).save(argThat(token -> token.getTokenHash().equals("hashed-otp")
+                && token.getExpiresAt().isAfter(LocalDateTime.now())));
+        verify(emailService).sendPasswordResetCode(eq(user.getEmail()), argThat(code -> code.matches("\\d{6}")), anyInt());
+        verify(userRepository).findByEmailIgnoreCase("member@example.com");
+    }
+
+    @Test
+    void forgotPasswordDoesNotSendForUnverifiedAccount() {
+        User user = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
+        user.setId(10L);
+        user.setEmailVerifiedAt(null);
+        when(userRepository.findByEmailIgnoreCase("member@example.com")).thenReturn(Optional.of(user));
+
         service.forgotPassword(new ForgotPasswordRequest("member@example.com"));
-        verify(resetTokenRepository, times(1)).invalidateActiveTokens(eq(u), any(LocalDateTime.class));
-        verify(resetTokenRepository, times(1)).save(any(PasswordResetToken.class));
 
-        // Lần 2: gọi lại forgotPassword -> huỷ token cũ
-        service.forgotPassword(new ForgotPasswordRequest("member@example.com"));
-        verify(resetTokenRepository, times(2)).invalidateActiveTokens(eq(u), any(LocalDateTime.class));
-        verify(resetTokenRepository, times(2)).save(any(PasswordResetToken.class));
-
-        // Thử dùng mã lần 1 đã bị đánh dấu used_at -> bị báo lỗi "đã được sử dụng"
-        PasswordResetToken token1 = new PasswordResetToken();
-        token1.setUser(u);
-        token1.setUsedAt(LocalDateTime.now());
-        token1.setExpiresAt(LocalDateTime.now().plusMinutes(30));
-        when(resetTokenRepository.findByTokenHash(Secrets.sha256("TOKEN111"))).thenReturn(Optional.of(token1));
-
-        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest("TOKEN111", "NewPass123")))
-                .isInstanceOf(ApiException.class)
-                .hasMessageContaining("đã được sử dụng");
-    }
-
-    @Test
-    void resetPasswordSuccessAndReuseFails() {
-        User u = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
-        u.setId(10L);
-        PasswordResetToken t = new PasswordResetToken();
-        t.setUser(u);
-        t.setExpiresAt(LocalDateTime.now().plusMinutes(30));
-
-        when(resetTokenRepository.findByTokenHash(Secrets.sha256("VALIDTOK"))).thenReturn(Optional.of(t));
-        when(passwordEncoder.encode("NewPass123")).thenReturn("hashedNewPass");
-
-        // Khi invalidateActiveTokens được gọi, mô phỏng đánh dấu used_at cho token trong CSDL
-        doAnswer(inv -> {
-            t.setUsedAt(inv.getArgument(1));
-            return 1;
-        }).when(resetTokenRepository).invalidateActiveTokens(eq(u), any(LocalDateTime.class));
-
-        // Đặt lại mật khẩu lần đầu: thành công
-        service.resetPassword(new ResetPasswordRequest("VALIDTOK", "NewPass123"));
-        assertThat(u.getPasswordHash()).isEqualTo("hashedNewPass");
-        verify(resetTokenRepository).invalidateActiveTokens(eq(u), any(LocalDateTime.class));
-        verify(auditService).logAs(eq(u.getId()), eq(u.getEmail()), eq("PASSWORD_RESET"), eq("USER"), eq(u.getId()), isNull(), eq(true));
-
-        // Dùng lại đúng mã đó: báo lỗi "đã được sử dụng"
-        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest("VALIDTOK", "NewPass123")))
-                .isInstanceOf(ApiException.class)
-                .hasMessageContaining("đã được sử dụng");
-    }
-
-    @Test
-    void resetPasswordWithExpiredTokenThrowsException() {
-        User u = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
-        PasswordResetToken t = new PasswordResetToken();
-        t.setUser(u);
-        t.setExpiresAt(LocalDateTime.now().minusMinutes(1)); // hết hạn
-
-        when(resetTokenRepository.findByTokenHash(Secrets.sha256("EXPIRED1"))).thenReturn(Optional.of(t));
-
-        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest("EXPIRED1", "NewPass123")))
-                .isInstanceOf(ApiException.class)
-                .hasMessageContaining("hết hạn");
-        verify(passwordEncoder, never()).encode(any());
-        verify(resetTokenRepository, never()).invalidateActiveTokens(any(), any());
-    }
-
-    @Test
-    void forgotPasswordWithNonExistentEmailReturnsGenericMessageAndNullToken() {
-        when(userRepository.findByEmailIgnoreCase("nobody@example.com")).thenReturn(Optional.empty());
-
-        ForgotPasswordResponse res = service.forgotPassword(new ForgotPasswordRequest("nobody@example.com"));
-
-        assertThat(res.message()).isEqualTo("Nếu email tồn tại trong hệ thống, mã khôi phục đã được gửi.");
-        assertThat(res.resetToken()).isNull();
+        verifyNoInteractions(emailService);
         verifyNoInteractions(resetTokenRepository);
     }
 
     @Test
-    void resetPasswordWithLockedUserRejectedWithForbidden() {
+    void resetPasswordAcceptsHashedOtpAndRejectsReuse() {
+        User user = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
+        user.setId(10L);
+        PasswordResetToken token = new PasswordResetToken();
+        token.setUser(user);
+        token.setTokenHash("hashed-otp");
+        token.setExpiresAt(LocalDateTime.now().plusMinutes(30));
+        when(userRepository.findByEmailIgnoreCase(user.getEmail())).thenReturn(Optional.of(user));
+        when(resetTokenRepository.findFirstByUser_IdAndUsedAtIsNullOrderByCreatedAtDesc(10L)).thenReturn(Optional.of(token));
+        when(passwordEncoder.matches("123456", "hashed-otp")).thenReturn(true);
+        when(passwordEncoder.encode("NewPass123")).thenReturn("hashed-password");
+        doAnswer(invocation -> {
+            token.setUsedAt(invocation.getArgument(1));
+            return 1;
+        }).when(resetTokenRepository).invalidateActiveTokens(eq(user), any(LocalDateTime.class));
+
+        service.resetPassword(new ResetPasswordRequest(user.getEmail(), "123456", "NewPass123"));
+
+        assertThat(user.getPasswordHash()).isEqualTo("hashed-password");
+        assertThat(token.getUsedAt()).isNotNull();
+        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest(user.getEmail(), "123456", "NewPass123")))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("không đúng hoặc đã hết hạn");
+    }
+
+    @Test
+    void wrongResetOtpIncrementsAttemptsAndLocksChallengeAfterLimit() {
+        User user = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
+        user.setId(10L);
+        PasswordResetToken token = new PasswordResetToken();
+        token.setUser(user);
+        token.setTokenHash("hashed-otp");
+        token.setExpiresAt(LocalDateTime.now().plusMinutes(30));
+        when(userRepository.findByEmailIgnoreCase(user.getEmail())).thenReturn(Optional.of(user));
+        when(resetTokenRepository.findFirstByUser_IdAndUsedAtIsNullOrderByCreatedAtDesc(10L)).thenReturn(Optional.of(token));
+        when(passwordEncoder.matches("111111", "hashed-otp")).thenReturn(false);
+
+        for (int i = 0; i < 5; i++) {
+            assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest(user.getEmail(), "111111", "NewPass123")))
+                    .isInstanceOf(ApiException.class);
+        }
+
+        assertThat(token.getFailedAttempts()).isEqualTo(5);
+        assertThat(token.getUsedAt()).isNotNull();
+        verify(passwordEncoder, never()).encode(anyString());
+    }
+
+    @Test
+    void resetPasswordRejectsUnverifiedEmail() {
+        User user = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
+        user.setId(10L);
+        user.setEmailVerifiedAt(null);
+        when(userRepository.findByEmailIgnoreCase(user.getEmail())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest(user.getEmail(), "123456", "NewPass123")))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("chưa được xác thực");
+        verifyNoInteractions(resetTokenRepository);
+    }
+
+    @Test
+    void verifyEmailAcceptsValidOtpOnce() {
+        User user = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
+        user.setId(10L);
+        user.setEmailVerifiedAt(null);
+        EmailVerificationToken token = new EmailVerificationToken();
+        token.setUser(user);
+        token.setCodeHash("hashed-otp");
+        token.setExpiresAt(LocalDateTime.now().plusMinutes(10));
+        when(userRepository.findByEmailIgnoreCase(user.getEmail())).thenReturn(Optional.of(user));
+        when(verificationTokenRepository.findFirstByUser_IdAndUsedAtIsNullOrderByCreatedAtDesc(10L))
+                .thenReturn(Optional.of(token));
+        when(passwordEncoder.matches("123456", "hashed-otp")).thenReturn(true);
+
+        service.verifyEmail(new VerifyEmailRequest(user.getEmail(), "123456"));
+
+        assertThat(user.getEmailVerifiedAt()).isNotNull();
+        assertThat(token.getUsedAt()).isNotNull();
+        verify(auditService).logAs(eq(10L), eq(user.getEmail()), eq("EMAIL_VERIFY"),
+                eq("USER"), eq(10L), isNull(), eq(true));
+    }
+
+    @Test
+    void failedEmailOtpConsumesAttempts() {
+        User user = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
+        user.setId(10L);
+        user.setEmailVerifiedAt(null);
+        EmailVerificationToken token = new EmailVerificationToken();
+        token.setUser(user);
+        token.setCodeHash("hashed-otp");
+        token.setExpiresAt(LocalDateTime.now().plusMinutes(10));
+        when(userRepository.findByEmailIgnoreCase(user.getEmail())).thenReturn(Optional.of(user));
+        when(verificationTokenRepository.findFirstByUser_IdAndUsedAtIsNullOrderByCreatedAtDesc(10L))
+                .thenReturn(Optional.of(token));
+        when(passwordEncoder.matches("111111", "hashed-otp")).thenReturn(false);
+
+        for (int i = 0; i < 5; i++) {
+            assertThatThrownBy(() -> service.verifyEmail(new VerifyEmailRequest(user.getEmail(), "111111")))
+                    .isInstanceOf(ApiException.class);
+        }
+
+        assertThat(token.getFailedAttempts()).isEqualTo(5);
+        assertThat(token.getUsedAt()).isNotNull();
+        assertThat(user.getEmailVerifiedAt()).isNull();
+    }
+
+    @Test
+    void forgotPasswordWithNonExistentEmailReturnsGenericMessage() {
+        when(userRepository.findByEmailIgnoreCase("nobody@example.com")).thenReturn(Optional.empty());
+
+        ForgotPasswordResponse response = service.forgotPassword(new ForgotPasswordRequest("nobody@example.com"));
+
+        assertThat(response.message()).isEqualTo("Nếu email tồn tại trong hệ thống, mã khôi phục đã được gửi.");
+        verifyNoInteractions(resetTokenRepository, emailService);
+    }
+
+    @Test
+    void resetPasswordWithLockedUserIsRejected() {
         User locked = user("locked@example.com", Role.MEMBER, UserStatus.LOCKED);
         locked.setId(99L);
-        PasswordResetToken t = new PasswordResetToken();
-        t.setUser(locked);
-        t.setExpiresAt(LocalDateTime.now().plusMinutes(30));
+        PasswordResetToken token = new PasswordResetToken();
+        token.setUser(locked);
+        token.setTokenHash("hash");
+        token.setExpiresAt(LocalDateTime.now().plusMinutes(30));
+        when(userRepository.findByEmailIgnoreCase(locked.getEmail())).thenReturn(Optional.of(locked));
+        when(resetTokenRepository.findFirstByUser_IdAndUsedAtIsNullOrderByCreatedAtDesc(99L)).thenReturn(Optional.of(token));
 
-        when(resetTokenRepository.findByTokenHash(Secrets.sha256("LOCKED11"))).thenReturn(Optional.of(t));
-
-        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest("LOCKED11", "NewPass123")))
-                .isInstanceOfSatisfying(ApiException.class, e -> {
-                    assertThat(e.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
-                    assertThat(e.getMessage()).contains("Tài khoản đã bị khoá");
+        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest(locked.getEmail(), "123456", "NewPass123")))
+                .isInstanceOfSatisfying(ApiException.class, exception -> {
+                    assertThat(exception.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
+                    assertThat(exception.getMessage()).contains("Tài khoản đã bị khoá");
                 });
-
-        verify(passwordEncoder, never()).encode(any());
-        verify(resetTokenRepository, never()).invalidateActiveTokens(any(), any());
-        verify(auditService).logAs(eq(99L), eq("locked@example.com"), eq("PASSWORD_RESET_FAILED"), eq("USER"), eq(99L), anyString(), eq(false));
+        verify(passwordEncoder, never()).encode(anyString());
     }
 
     private static User user(String email, Role role, UserStatus status) {
@@ -250,6 +322,7 @@ class AuthServiceRegisterTest {
         u.setEmail(email);
         u.setRole(role);
         u.setStatus(status);
+        u.setEmailVerifiedAt(LocalDateTime.now());
         return u;
     }
 }

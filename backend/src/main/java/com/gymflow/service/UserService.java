@@ -15,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -44,6 +46,7 @@ public class UserService {
         u.setPhone(Mappers.blankToNull(phone));
         u.setRole(role);
         u.setStatus(UserStatus.ACTIVE);
+        u.setEmailVerifiedAt(LocalDateTime.now());
         u.setPasswordHash(passwordEncoder.encode(raw == null ? temp : raw));
         return new Created(userRepository.save(u), temp);
     }

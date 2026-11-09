@@ -53,6 +53,14 @@ class AuthRateLimitFilterTest {
     }
 
     @Test
+    void chatbotMessagesAreRateLimited() throws Exception {
+        for (int i = 0; i < 15; i++) {
+            assertThat(call("POST", "/api/chat/messages", "6.6.6.6").getStatus()).isEqualTo(200);
+        }
+        assertThat(call("POST", "/api/chat/messages", "6.6.6.6").getStatus()).isEqualTo(429);
+    }
+
+    @Test
     void otherEndpointsAndMethodsAreNotLimited() throws Exception {
         for (int i = 0; i < 30; i++) {
             assertThat(call("GET", "/api/auth/options", "5.5.5.5").getStatus()).isEqualTo(200);

@@ -10,6 +10,9 @@ erDiagram
     users ||--o| trainers : "là"
     users ||--o| members : "là"
     users ||--o{ password_reset_tokens : "yêu cầu"
+    users ||--o{ email_verification_tokens : "xác thực"
+    users ||--o{ chat_conversations : "trò chuyện"
+    chat_conversations ||--o{ chat_messages : "gồm"
     users ||--o{ audit_logs : "thực hiện"
     trainers ||--o{ trainer_shifts : "có ca"
     trainers |o--o{ members : "phụ trách"
@@ -33,14 +36,38 @@ erDiagram
         varchar full_name
         varchar role "ADMIN | TRAINER | MEMBER"
         varchar status "ACTIVE | LOCKED"
+        timestamp email_verified_at
         timestamp last_login_at
     }
     password_reset_tokens {
         bigint id PK
         bigint user_id FK
-        varchar token_hash UK "SHA-256, không lưu mã gốc"
+        varchar token_hash "BCrypt OTP, không lưu mã gốc"
+        int failed_attempts "tối đa 5"
         timestamp expires_at "30 phút"
         timestamp used_at "dùng 1 lần"
+    }
+    email_verification_tokens {
+        bigint id PK
+        bigint user_id FK
+        varchar code_hash "BCrypt OTP"
+        int failed_attempts "tối đa 5"
+        timestamp expires_at "10 phút"
+        timestamp used_at "dùng 1 lần"
+    }
+    chat_conversations {
+        bigint id PK
+        bigint user_id FK "chủ sở hữu"
+        varchar title
+        timestamp created_at
+        timestamp updated_at
+    }
+    chat_messages {
+        bigint id PK
+        bigint conversation_id FK
+        varchar sender "USER | ASSISTANT"
+        text content
+        timestamp created_at
     }
     trainers {
         bigint id PK

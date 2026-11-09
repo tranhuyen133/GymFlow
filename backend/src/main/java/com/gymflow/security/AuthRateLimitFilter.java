@@ -32,8 +32,12 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     private static final Map<String, Rule> RULES = Map.of(
             "/api/auth/login", new Rule("login", 10, 60_000),
             "/api/auth/register", new Rule("register", 5, 600_000),
+            "/api/auth/resend-verification", new Rule("verification", 5, 600_000),
+            "/api/auth/verify-email", new Rule("verification-attempt", 10, 600_000),
             "/api/auth/forgot-password", new Rule("reset", 5, 600_000),
-            "/api/auth/reset-password", new Rule("reset", 5, 600_000));
+            "/api/auth/reset-password", new Rule("reset", 5, 600_000),
+            "/api/chat/conversations", new Rule("chat-create", 20, 3_600_000),
+            "/api/chat/messages", new Rule("chat-message", 15, 60_000));
 
     private static final int MAX_KEYS = 10_000;
 
