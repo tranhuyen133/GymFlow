@@ -19,6 +19,8 @@ export interface LabelValue { label: string; value: number }
 export interface Me {
   id: number; email: string; fullName: string; phone: string | null; role: Role;
   memberId: number | null; trainerId: number | null; lastLoginAt: string | null;
+  /** null = chưa có ảnh đại diện; đổi giá trị mỗi lần đổi ảnh */
+  avatarUpdatedAt: string | null;
 }
 export interface LoginResponse { token: string; expiresInMinutes: number; user: Me }
 export interface ForgotPasswordResponse { message: string; resetToken: string | null; validMinutes: number }
@@ -56,11 +58,17 @@ export interface Trainer {
   accountStatus: UserStatus; memberCount: number; shifts: Shift[];
 }
 export interface TrainerCreated { trainer: Trainer; temporaryPassword: string | null }
+/** Giờ tập mong muốn của hội viên theo tuần (1 = T2 … 7 = CN). */
+export interface TimeSlot { dayOfWeek: number; startTime: string; endTime: string }
+export interface MemberTimeSlot extends TimeSlot { memberId: number; memberName: string; memberCode: string }
+export interface BulkApproveResult { approved: number; skipped: string[] }
 
 // ---------- Plans & subscriptions ----------
 export interface MembershipPlan {
   id: number; name: string; description: string | null; price: number; durationDays: number;
   benefits: string | null; active: boolean; currentSubscriptions: number;
+  /** Gói có HLV kèm (PT): hội viên chọn HLV khi đăng ký. false = tự tập, tự soạn giáo án. Backend luôn trả về. */
+  includesTrainer?: boolean;
 }
 export interface Subscription {
   id: number; memberId: number; memberName: string; memberCode: string; planId: number; planName: string;
@@ -68,6 +76,22 @@ export interface Subscription {
   cancelled: boolean; cancelledAt: string | null; note: string | null; createdAt: string; createdByName: string | null;
 }
 export interface SubscriptionPreview { startDate: string; endDate: string; price: number; chained: boolean }
+export type PackageRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type PaymentMethod = 'COUNTER' | 'BANK_TRANSFER';
+export interface PackageRequest {
+  id: number; memberId: number; memberName: string; memberCode: string; memberPhone: string | null;
+  planId: number; planName: string; price: number; durationDays: number; planStillOnSale: boolean;
+  desiredStartDate: string | null; note: string | null; status: PackageRequestStatus; decisionNote: string | null;
+  decidedByName: string | null; decidedAt: string | null; subscriptionId: number | null; createdAt: string;
+  includesTrainer: boolean; trainerId: number | null; trainerName: string | null;
+  /** paymentCode = nội dung chuyển khoản (GF000123); memberPaidAt = lúc hội viên bấm "Tôi đã chuyển khoản" */
+  paymentMethod: PaymentMethod; paymentCode: string | null; memberPaidAt: string | null;
+}
+/** Thông tin nhận chuyển khoản; ảnh QR tải riêng bằng api.blob('/payment-settings/qr'). */
+export interface PaymentSettings {
+  onlineEnabled: boolean; bankName: string | null; accountNumber: string | null; accountName: string | null;
+  hasQr: boolean; qrUpdatedAt: string | null; updatedAt: string;
+}
 
 // ---------- Exercises & plans ----------
 export type ReviewStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'NEEDS_REVIEW';
@@ -87,6 +111,8 @@ export interface Exercise {
   variations: string | null; suggestedDose: string | null; contentOrigin: ContentOrigin;
   reviewStatus: ReviewStatus; reviewNote: string | null; reviewedByName: string | null; reviewedAt: string | null;
   updatedAt: string | null; sources: Source[];
+  /** V13 · khoá vùng cơ / dụng cụ (lib/anatomy.ts) và thư mục ảnh minh hoạ. Bản backend cũ không trả thì là undefined. */
+  targetMuscles?: string[]; secondaryMuscleKeys?: string[]; equipmentKeys?: string[]; imageKey?: string | null;
 }
 
 // ---------- Knowledge base ----------
@@ -121,7 +147,10 @@ export interface Schedule {
 export interface ScheduleCreated { created: Schedule[]; skipped: string[] }
 
 // ---------- Progress ----------
-export interface Weight { id: number; recordedDate: string; weightKg: number; bodyFat: number | null; note: string | null }
+export interface Weight {
+  id: number; recordedDate: string; weightKg: number; bodyFat: number | null;
+  waistCm: number | null; chestCm: number | null; armCm: number | null; thighCm: number | null; note: string | null;
+}
 export interface WeekAttendance { weekStart: string; scheduled: number; completed: number; missed: number }
 export interface Progress {
   memberId: number; heightCm: number | null; currentWeight: number | null; startWeight: number | null;

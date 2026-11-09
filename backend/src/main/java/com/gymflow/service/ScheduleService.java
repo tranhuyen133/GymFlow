@@ -1,6 +1,7 @@
 package com.gymflow.service;
 
 import com.gymflow.common.ApiException;
+import com.gymflow.common.GymHours;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.repository.TrainerRepository;
@@ -70,7 +71,7 @@ public class ScheduleService {
      */
     @Transactional
     public ScheduleCreatedResponse create(AuthUser user, ScheduleRequest req) {
-        Member member = access.requireCoach(user, req.memberId());
+        Member member = user.isMember() ? access.requireSelfCoach(user, req.memberId()) : access.requireCoach(user, req.memberId());
         if (member.getStatus() != MemberStatus.ACTIVE) throw ApiException.badRequest("Hội viên không ở trạng thái hoạt động");
         Trainer trainer = resolveTrainer(user, member, req.trainerId());
         WorkoutPlan plan = resolvePlan(member, req.planId());
@@ -109,7 +110,7 @@ public class ScheduleService {
     @Transactional
     public ScheduleResponse update(AuthUser user, Long id, ScheduleUpdateRequest req) {
         WorkoutSchedule s = load(id);
-        if (!access.canCoach(user, s.getMember())) throw ApiException.forbidden();
+        requireManage(user, s);
         if (s.getStatus() != ScheduleStatus.SCHEDULED) throw ApiException.badRequest("Chỉ dời được buổi đang ở trạng thái \"Đã lên lịch\"");
         Trainer trainer = resolveTrainer(user, s.getMember(), req.trainerId());
         validateTime(req.startTime(), req.endTime(), !req.startTime().equals(s.getStartTime()));
@@ -131,7 +132,7 @@ public class ScheduleService {
     @Transactional
     public ScheduleResponse cancel(AuthUser user, Long id) {
         WorkoutSchedule s = load(id);
-        if (!access.canCoach(user, s.getMember())) throw ApiException.forbidden();
+        requireManage(user, s);
         if (s.getStatus() != ScheduleStatus.SCHEDULED) throw ApiException.badRequest("Chỉ huỷ được buổi chưa diễn ra");
         s.setStatus(ScheduleStatus.CANCELLED);
         auditService.log("SCHEDULE_CANCEL", "SCHEDULE", s.getId(), s.getMember().getCode() + " · " + s.getStartTime().format(FMT));
@@ -198,6 +199,9 @@ public class ScheduleService {
         if (minutes < MIN_MINUTES || minutes > MAX_MINUTES) {
             throw ApiException.badRequest("Buổi tập dài từ " + MIN_MINUTES + " đến " + MAX_MINUTES + " phút");
         }
+        if (!GymHours.contains(start.toLocalTime(), end.toLocalTime())) {
+            throw ApiException.badRequest("Phòng tập mở cửa " + GymHours.LABEL + ", buổi tập phải nằm trong giờ này");
+        }
         if (mustBeFuture && start.isBefore(LocalDateTime.now(clock))) throw ApiException.badRequest("Không xếp lịch vào thời điểm đã qua");
     }
 
@@ -222,7 +226,16 @@ public class ScheduleService {
         return null;
     }
 
+    /** Dời / huỷ buổi: admin, HLV phụ trách, hoặc hội viên tự tập với buổi tự xếp (không có HLV). Đánh vắng vẫn chỉ nhân viên. */
+    private void requireManage(AuthUser user, WorkoutSchedule s) {
+        if (access.canCoach(user, s.getMember())) return;
+        if (s.getTrainer() == null && access.canSelfCoach(user, s.getMember())) return;
+        throw ApiException.forbidden();
+    }
+
     private Trainer resolveTrainer(AuthUser user, Member member, Long trainerId) {
+        // Hội viên tự xếp lịch: buổi tự tập, không gắn HLV (bỏ qua trainerId gửi lên).
+        if (user.isMember()) return null;
         if (user.isTrainer()) return access.requireTrainerOf(user);
         if (trainerId == null) return member.getTrainer();
         Trainer t = trainerRepository.findById(trainerId).orElseThrow(() -> ApiException.notFound("huấn luyện viên"));

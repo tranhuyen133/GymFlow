@@ -1,0 +1,99 @@
+/* Thanh toán (V12): thẻ chọn cách trả, thẻ chọn HLV, khung QR, trình cắt ảnh QR. Dùng biến màu chung của styles.css. */
+
+/* ---------- Thẻ lựa chọn (cách trả tiền / HLV) ---------- */
+.pick-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pick-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pick {
+  position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 14px; min-width: 0;
+  border-radius: var(--r-md); border: 1px solid var(--hairline); background: var(--surface);
+  color: var(--ink); text-align: left; cursor: pointer; font: inherit;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s var(--ease-out);
+}
+.pick:hover:not(:disabled) { border-color: var(--line-strong); background: var(--hover-tint); }
+.pick:active:not(:disabled) { transform: scale(0.99); }
+.pick:focus-visible { outline: 2px solid var(--primary-bright); outline-offset: 2px; }
+.pick.on { border-color: var(--primary-bright); background: rgba(0, 178, 75, 0.08); box-shadow: inset 0 0 0 1px var(--primary-bright); }
+.pick:disabled { opacity: 0.45; cursor: not-allowed; }
+.pick-ico {
+  flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
+  background: var(--rail); color: var(--muted); transition: background 0.2s, color 0.2s;
+}
+.pick.on .pick-ico { background: var(--primary); color: var(--on-primary); }
+.pick-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pick-title { font-weight: 800; font-size: 14px; }
+.pick-sub { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.pick-dot {
+  position: absolute; top: 12px; right: 12px; width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--hairline); transition: all 0.2s;
+}
+.pick.on .pick-dot { border-color: var(--primary-bright); background: var(--primary-bright); box-shadow: inset 0 0 0 3px var(--surface); }
+.pick-avatar {
+  flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%;
+  background: var(--grad-go); color: #fff; font-weight: 800; font-size: 13px; letter-spacing: 0.02em;
+}
+.pick-empty { padding: 14px; border-radius: var(--r-md); border: 1px dashed var(--hairline); color: var(--muted); font-size: 13px; text-align: center; }
+.pick-note { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-md); background: var(--surface); color: var(--muted); font-size: 13px; line-height: 1.5; }
+.pick-note .pick-ico { width: 30px; height: 30px; border-radius: 10px; }
+
+/* ---------- Khối chuyển khoản ---------- */
+.pay-box { display: grid; grid-template-columns: 216px minmax(0, 1fr); gap: 20px; align-items: start; }
+.qr-frame {
+  position: relative; aspect-ratio: 1 / 1; padding: 12px; border-radius: 18px; background: #fff;
+  display: grid; place-items: center; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+.qr-frame img { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; }
+.qr-frame .qr-empty { color: #6b7280; font-size: 12px; text-align: center; padding: 16px; line-height: 1.5; }
+.qr-frame::before, .qr-frame::after {
+  content: ''; position: absolute; width: 26px; height: 26px; border: 3px solid var(--primary-bright); pointer-events: none;
+}
+.qr-frame::before { top: -6px; left: -6px; border-right: 0; border-bottom: 0; border-radius: 12px 0 0 0; }
+.qr-frame::after { bottom: -6px; right: -6px; border-left: 0; border-top: 0; border-radius: 0 0 12px 0; }
+.qr-cap { margin-top: 10px; text-align: center; font-size: 12px; color: var(--faint); }
+.pay-rows { display: flex; flex-direction: column; border-radius: var(--r-md); background: var(--surface); overflow: hidden; }
+.pay-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 6px 8px 6px 14px; }
+.pay-row + .pay-row { border-top: 1px solid var(--hairline-soft); }
+.pay-row .k { font-size: 12px; color: var(--muted); flex: none; }
+.pay-row .v { display: flex; align-items: center; gap: 4px; min-width: 0; text-align: right; }
+.pay-row .v b { overflow-wrap: anywhere; }
+.pay-row .v b.mono { font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+.pay-row.hl { background: rgba(0, 178, 75, 0.08); }
+.pay-row.hl .v b { color: var(--primary-bright); font-size: 15px; }
+.pay-row .sub { display: block; font-size: 11px; color: var(--faint); font-weight: 500; }
+.pay-tip { display: flex; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.pay-tip svg { flex: none; margin-top: 2px; color: var(--info); }
+.pay-status { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--r-md); background: rgba(0, 178, 75, 0.1); color: var(--primary-bright); font-size: 13px; font-weight: 700; }
+
+/* ---------- Trang cài đặt QR ---------- */
+.qr-drop {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 180px; padding: 20px;
+  border-radius: var(--r-md); border: 1.5px dashed var(--hairline); background: var(--rail); color: var(--muted);
+  text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; font: inherit;
+}
+.qr-drop:hover, .qr-drop.drag { border-color: var(--primary-bright); background: var(--hover-tint); color: var(--ink); }
+.qr-drop .pick-ico { width: 46px; height: 46px; border-radius: 14px; }
+.qr-current { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 16px; align-items: center; }
+.qr-current .qr-frame { padding: 8px; border-radius: 14px; }
+.qr-current .qr-frame::before, .qr-current .qr-frame::after { display: none; }
+
+/* ---------- Trình cắt ảnh QR ---------- */
+.crop-stage {
+  position: relative; width: 100%; max-width: 380px; margin: 0 auto; aspect-ratio: 1 / 1; overflow: hidden;
+  border-radius: var(--r-md); background: repeating-conic-gradient(var(--rail) 0 25%, var(--surface) 0 50%) 0 0 / 20px 20px;
+  touch-action: none; user-select: none; cursor: grab;
+}
+.crop-stage.dragging { cursor: grabbing; }
+.crop-stage img { position: absolute; top: 0; left: 0; transform-origin: 0 0; max-width: none; pointer-events: none; }
+.crop-box { position: absolute; pointer-events: none; border: 2px solid #fff; border-radius: 6px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); }
+.crop-box::before, .crop-box::after { content: ''; position: absolute; inset: 0; pointer-events: none; }
+.crop-box::before { border-left: 1px solid rgba(255, 255, 255, 0.35); border-right: 1px solid rgba(255, 255, 255, 0.35); left: 33.33%; right: 33.33%; }
+.crop-box::after { border-top: 1px solid rgba(255, 255, 255, 0.35); border-bottom: 1px solid rgba(255, 255, 255, 0.35); top: 33.33%; bottom: 33.33%; }
+.crop-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.crop-zoom { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px; max-width: 380px; }
+.crop-zoom input[type='range'] { flex: 1; accent-color: var(--primary-bright); }
+
+@media (max-width: 640px) {
+  .pick-grid, .pick-grid.cols-3 { grid-template-columns: 1fr; }
+  .pay-box { grid-template-columns: 1fr; }
+  .pay-box .qr-frame { max-width: 240px; margin: 0 auto; }
+  .qr-current { grid-template-columns: 96px minmax(0, 1fr); }
+}

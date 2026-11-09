@@ -4,26 +4,33 @@ import type { Role } from './api/types';
 import { useAuth } from './auth/AuthContext';
 import { BrandMark } from './components/Brand';
 import { Layout } from './components/Layout';
+import { t } from './i18n';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AuditLog from './pages/admin/AuditLog';
+import PackageRequests from './pages/admin/PackageRequests';
+import PaymentSettings from './pages/admin/PaymentSettings';
 import Plans from './pages/admin/Plans';
 import Reports from './pages/admin/Reports';
 import Subscriptions from './pages/admin/Subscriptions';
 import Trainers from './pages/admin/Trainers';
 import Users from './pages/admin/Users';
 import ForgotPassword from './pages/ForgotPassword';
-import { KnowledgeArticle, KnowledgeList } from './pages/Knowledge';
+import { ForumList, ForumTopicPage } from './pages/Forum';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import MemberDashboard from './pages/member/MemberDashboard';
 import MyPackages from './pages/member/MyPackages';
 import MyPlan from './pages/member/MyPlan';
+import MyJourney from './pages/member/MyJourney';
 import MyProgress from './pages/member/MyProgress';
 import Policies from './pages/Policies';
 import Register from './pages/Register';
 import { Forbidden, NotFound } from './pages/Errors';
 import Articles from './pages/shared/Articles';
 import Exercises from './pages/shared/Exercises';
+import Equipment from './pages/shared/Equipment';
+import Help from './pages/shared/Help';
+import Programs from './pages/shared/Programs';
 import MemberDetail from './pages/shared/MemberDetail';
 import Members from './pages/shared/Members';
 import Profile from './pages/shared/Profile';
@@ -37,7 +44,7 @@ function Splash() {
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
       <div className="stack" style={{ alignItems: 'center' }}>
         <div style={{ animation: 'floaty 1.6s ease-in-out infinite' }}><BrandMark size={52} /></div>
-        <span className="muted small">Đang tải GymFlow…</span>
+        <span className="muted small">{t('Đang tải GymFlow…')}</span>
       </div>
     </div>
   );
@@ -77,14 +84,24 @@ export default function App() {
       <Route path="/register" element={loading ? <Splash /> : user ? <Navigate to="/dashboard" replace /> : <Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/policies" element={<Policies />} />
-      <Route path="/knowledge" element={<KnowledgeList />} />
-      <Route path="/knowledge/:slug" element={<KnowledgeArticle />} />
+      <Route path="/forum" element={<ForumList />} />
+      <Route path="/forum/:id" element={<ForumTopicPage />} />
+      {/* Kho kiến thức đã thay bằng Diễn đàn: giữ đường dẫn cũ để link / bookmark cũ không ra 404 */}
+      <Route path="/knowledge/*" element={<Navigate to="/forum" replace />} />
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
         <Route path="/dashboard" element={<Dashboard />} />
+        {/* Gõ nhầm kiểu /dashboard/login thì về trang tổng quan (chưa đăng nhập sẽ được chuyển sang đăng nhập trước) */}
+        <Route path="/dashboard/*" element={<Navigate to="/dashboard" replace />} />
         <Route path="/me/schedule" element={<Only roles={MEMBER}><Schedules /></Only>} />
         <Route path="/me/plan" element={<Only roles={MEMBER}><MyPlan /></Only>} />
+        <Route path="/me/plan/new" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
+        <Route path="/me/plan/:id" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
         <Route path="/me/progress" element={<Only roles={MEMBER}><MyProgress /></Only>} />
+        <Route path="/me/journey" element={<Only roles={MEMBER}><MyJourney /></Only>} />
         <Route path="/me/packages" element={<Only roles={MEMBER}><MyPackages /></Only>} />
+        <Route path="/community" element={<ForumList embedded />} />
+        <Route path="/community/:id" element={<ForumTopicPage embedded />} />
+        <Route path="/me/knowledge/*" element={<Navigate to="/community" replace />} />
         <Route path="/schedules" element={<Only roles={STAFF}><Schedules /></Only>} />
         <Route path="/members" element={<Only roles={STAFF}><Members /></Only>} />
         <Route path="/members/:id" element={<Only roles={STAFF}><MemberDetail /></Only>} />
@@ -92,14 +109,19 @@ export default function App() {
         <Route path="/workout-plans/new" element={<Only roles={STAFF}><PlanEditor /></Only>} />
         <Route path="/workout-plans/:id" element={<Only roles={STAFF}><PlanEditor /></Only>} />
         <Route path="/exercises" element={<Exercises />} />
+        <Route path="/equipment" element={<Equipment />} />
+        <Route path="/programs" element={<Programs />} />
         <Route path="/articles" element={<Only roles={STAFF}><Articles /></Only>} />
         <Route path="/trainers" element={<Only roles={ADMIN}><Trainers /></Only>} />
         <Route path="/plans" element={<Only roles={ADMIN}><Plans /></Only>} />
         <Route path="/subscriptions" element={<Only roles={ADMIN}><Subscriptions /></Only>} />
+        <Route path="/package-requests" element={<Only roles={ADMIN}><PackageRequests /></Only>} />
+        <Route path="/payment-settings" element={<Only roles={ADMIN}><PaymentSettings /></Only>} />
         <Route path="/reports" element={<Only roles={ADMIN}><Reports /></Only>} />
         <Route path="/users" element={<Only roles={ADMIN}><Users /></Only>} />
         <Route path="/audit-logs" element={<Only roles={ADMIN}><AuditLog /></Only>} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/help" element={<Help />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

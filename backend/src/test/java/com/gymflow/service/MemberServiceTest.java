@@ -507,7 +507,7 @@ class MemberServiceTest {
         );
         var violationsCreate = validator.validate(invalidCreate);
         assertThat(violationsCreate).anyMatch(v -> v.getMessage().contains("Ngày sinh phải sau ngày 01/01/1900"));
-        assertThat(violationsCreate).anyMatch(v -> v.getMessage().contains("Chiều cao từ 80 cm"));
+        assertThat(violationsCreate).anyMatch(v -> v.getMessage().contains("Chiều cao phải từ 80 cm trở lên"));
 
         // MemberUpdateRequest với height > 250
         MemberUpdateRequest invalidUpdate = new MemberUpdateRequest(
@@ -516,7 +516,7 @@ class MemberServiceTest {
                 null, null, null, null
         );
         var violationsUpdate = validator.validate(invalidUpdate);
-        assertThat(violationsUpdate).anyMatch(v -> v.getMessage().contains("Chiều cao tối đa 250 cm"));
+        assertThat(violationsUpdate).anyMatch(v -> v.getMessage().contains("Chiều cao không được vượt quá 250 cm"));
 
         // MemberSelfUpdateRequest hợp lệ
         MemberSelfUpdateRequest validSelf = new MemberSelfUpdateRequest(

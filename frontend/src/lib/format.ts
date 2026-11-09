@@ -1,4 +1,4 @@
-import type { ArticleCategory, ArticleStatus, ExerciseGoal, ExerciseLocation, Gender, Level, MemberStatus, MuscleGroup, PlanStatus, ReviewStatus, Role, ScheduleStatus, SubscriptionState, UserStatus } from '../api/types';
+import type { ArticleCategory, ArticleStatus, ExerciseGoal, ExerciseLocation, Gender, Level, MemberStatus, MuscleGroup, PackageRequestStatus, PlanStatus, ReviewStatus, Role, ScheduleStatus, SubscriptionState, UserStatus } from '../api/types';
 import { getLang, locale, t } from '../i18n';
 import { ACTION_EN } from '../i18n/en';
 
@@ -16,6 +16,9 @@ const userStatus_VI: Record<UserStatus, [string, Tone]> = { ACTIVE: ['Đang mở
 const subState_VI: Record<SubscriptionState, [string, Tone]> = {
   UPCOMING: ['Sắp bắt đầu', 'blue'], ACTIVE: ['Còn hiệu lực', 'green'], EXPIRING: ['Sắp hết hạn', 'amber'],
   EXPIRED: ['Hết hạn', 'red'], CANCELLED: ['Đã huỷ', 'muted'],
+};
+const packageRequestStatus_VI: Record<PackageRequestStatus, [string, Tone]> = {
+  PENDING: ['Chờ xác nhận', 'amber'], APPROVED: ['Đã duyệt', 'green'], REJECTED: ['Bị từ chối', 'red'], CANCELLED: ['Đã huỷ', 'muted'],
 };
 const scheduleStatus_VI: Record<ScheduleStatus, [string, Tone]> = {
   SCHEDULED: ['Đã lên lịch', 'blue'], COMPLETED: ['Hoàn thành', 'green'], MISSED: ['Vắng', 'red'], CANCELLED: ['Đã huỷ', 'muted'],
@@ -50,18 +53,25 @@ const DAY_NAMES_VI = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ
 
 const actionLabel_VI: Record<string, string> = {
   LOGIN: 'Đăng nhập', LOGIN_FAILED: 'Đăng nhập thất bại', PASSWORD_CHANGE: 'Đổi mật khẩu', PASSWORD_RESET_REQUEST: 'Yêu cầu khôi phục',
-  PASSWORD_RESET: 'Đặt lại mật khẩu', PROFILE_UPDATE: 'Sửa hồ sơ', USER_CREATE: 'Tạo tài khoản', USER_LOCK: 'Khoá tài khoản',
+  PASSWORD_RESET: 'Đặt lại mật khẩu', PROFILE_UPDATE: 'Sửa hồ sơ', AVATAR_UPDATE: 'Đổi ảnh đại diện', AVATAR_DELETE: 'Xoá ảnh đại diện', USER_CREATE: 'Tạo tài khoản', USER_LOCK: 'Khoá tài khoản',
   USER_UNLOCK: 'Mở khoá tài khoản', USER_RESET_PASSWORD: 'Cấp mật khẩu tạm', MEMBER_CREATE: 'Thêm hội viên', MEMBER_UPDATE: 'Sửa hội viên',
   MEMBER_SELF_UPDATE: 'Hội viên sửa hồ sơ', MEMBER_STATUS: 'Đổi trạng thái hội viên', MEMBER_ASSIGN_TRAINER: 'Phân công HLV',
   TRAINER_CREATE: 'Thêm HLV', TRAINER_UPDATE: 'Sửa HLV', TRAINER_ACTIVATE: 'Kích hoạt HLV', TRAINER_DEACTIVATE: 'Ngừng HLV', TRAINER_SHIFTS: 'Cập nhật ca làm',
+  MEMBER_TIME_PREFS: 'Hội viên cập nhật giờ tập', EXERCISE_REVIEW_BULK: 'Duyệt loạt bài tập',
   PLAN_CREATE: 'Thêm gói tập', PLAN_UPDATE: 'Sửa gói tập', PLAN_ACTIVATE: 'Mở bán gói', PLAN_DEACTIVATE: 'Ngừng bán gói', PLAN_DELETE: 'Xoá gói tập',
   SUBSCRIPTION_CREATE: 'Đăng ký gói', SUBSCRIPTION_RENEW: 'Gia hạn gói', SUBSCRIPTION_CANCEL: 'Huỷ gói',
+  PACKAGE_REQUEST_CREATE: 'Hội viên gửi đơn đăng ký gói', PACKAGE_REQUEST_CANCEL: 'Hội viên huỷ đơn đăng ký gói',
+  PACKAGE_REQUEST_APPROVE: 'Duyệt đơn đăng ký gói', PACKAGE_REQUEST_REJECT: 'Từ chối đơn đăng ký gói',
+  PACKAGE_REQUEST_PAID: 'Hội viên báo đã chuyển khoản', PAYMENT_SETTINGS_UPDATE: 'Cập nhật tài khoản nhận tiền',
+  PAYMENT_QR_UPDATE: 'Cập nhật mã QR ngân hàng', PAYMENT_QR_DELETE: 'Xoá mã QR ngân hàng',
   EXERCISE_CREATE: 'Thêm bài tập', EXERCISE_UPDATE: 'Sửa bài tập', EXERCISE_HIDE: 'Ẩn bài tập', EXERCISE_SHOW: 'Hiện bài tập', EXERCISE_DELETE: 'Xoá bài tập', EXERCISE_REVIEW: 'Duyệt bài tập',
   ARTICLE_CREATE: 'Soạn bài viết', ARTICLE_UPDATE: 'Sửa bài viết', ARTICLE_SUBMIT: 'Gửi duyệt bài viết', ARTICLE_APPROVE: 'Xuất bản bài viết',
   ARTICLE_REJECT: 'Trả bài viết về nháp', ARTICLE_ARCHIVE: 'Gỡ bài viết', ARTICLE_RESTORE: 'Khôi phục bài viết', ARTICLE_DELETE: 'Xoá bài viết',
   WORKOUT_PLAN_CREATE: 'Tạo giáo án', WORKOUT_PLAN_UPDATE: 'Sửa giáo án', WORKOUT_PLAN_STATUS: 'Đổi trạng thái giáo án', WORKOUT_PLAN_DELETE: 'Xoá giáo án',
   SCHEDULE_CREATE: 'Xếp lịch', SCHEDULE_UPDATE: 'Dời lịch', SCHEDULE_CANCEL: 'Huỷ buổi', SCHEDULE_MISSED: 'Đánh vắng', SCHEDULE_COMPLETE: 'Hoàn thành buổi',
   SCHEDULE_AUTO_MISSED: 'Tự đánh vắng', WEIGHT_CREATE: 'Ghi cân nặng', WEIGHT_UPDATE: 'Sửa cân nặng', WEIGHT_DELETE: 'Xoá cân nặng', SYSTEM_SEED: 'Khởi tạo dữ liệu',
+  FORUM_HIDE: 'Ẩn bài diễn đàn', FORUM_SHOW: 'Hiện lại bài diễn đàn', FORUM_PIN: 'Ghim chủ đề', FORUM_UNPIN: 'Bỏ ghim chủ đề', FORUM_LOCK: 'Khoá chủ đề',
+  FORUM_UNLOCK: 'Mở khoá chủ đề', FORUM_DELETE: 'Xoá bài diễn đàn', FORUM_REPORT: 'Báo cáo bài vi phạm', FORUM_REPORT_RESOLVE: 'Xử lý báo cáo vi phạm',
 };
 
 // ---------- Ngày giờ (backend trả giờ địa phương không kèm múi giờ) ----------
@@ -146,6 +156,7 @@ export const genderLabel = translated(genderLabel_VI);
 export const memberStatus = translated(memberStatus_VI);
 export const userStatus = translated(userStatus_VI);
 export const subState = translated(subState_VI);
+export const packageRequestStatus = translated(packageRequestStatus_VI);
 export const scheduleStatus = translated(scheduleStatus_VI);
 export const planStatus = translated(planStatus_VI);
 export const muscleLabel = translated(muscleLabel_VI);

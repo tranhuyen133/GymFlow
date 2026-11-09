@@ -64,6 +64,14 @@ public class AccessService {
                 && Objects.equals(member.getTrainer().getUser().getId(), user.id());
     }
 
+    /**
+     * Hội viên chưa có HLV phụ trách (mua gói không kèm HLV) tự soạn giáo án và tự xếp lịch cho chính mình.
+     * Khi đã có HLV thì HLV làm việc này, hội viên chỉ xem – tránh hai người cùng sửa một giáo án.
+     */
+    public boolean canSelfCoach(AuthUser user, Member member) {
+        return user.isMember() && member.getTrainer() == null && Objects.equals(member.getUser().getId(), user.id());
+    }
+
     public Member requireView(AuthUser user, Long memberId) {
         Member m = loadMember(memberId);
         if (!canView(user, m)) throw ApiException.forbidden();
@@ -73,6 +81,16 @@ public class AccessService {
     public Member requireCoach(AuthUser user, Long memberId) {
         Member m = loadMember(memberId);
         if (!canCoach(user, m)) throw ApiException.forbidden();
+        return m;
+    }
+
+    public Member requireSelfCoach(AuthUser user, Long memberId) {
+        Member m = loadMember(memberId);
+        if (!canSelfCoach(user, m)) {
+            throw m.getTrainer() != null && Objects.equals(m.getUser().getId(), user.id())
+                    ? ApiException.badRequest("Bạn đang có HLV phụ trách, HLV sẽ soạn giáo án và xếp lịch cho bạn")
+                    : ApiException.forbidden();
+        }
         return m;
     }
 

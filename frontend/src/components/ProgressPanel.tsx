@@ -4,10 +4,12 @@ import type { Progress, Weight } from '../api/types';
 import { t } from '../i18n';
 import { fmtDate, fmtDateShort, fmtNum, todayIso } from '../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../lib/hooks';
+import { checkBodyFat, checkRecordedDate, checkWeight, NOT_NUMBER, toNumber, useLiveErrors } from '../lib/validation';
 import { LineChart, Ring, StackedBars } from './charts';
 import { Icon } from './Icon';
+import { achievements, BadgeShelf, WeekHeat } from './motivation';
 import { useToast } from './Toast';
-import { Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, Stat, Textarea } from './ui';
+import { Button, Card, Confirm, CountUp, Empty, ErrorState, Field, Input, LoadingBlock, Modal, Stat, Table, Textarea } from './ui';
 
 const BMI_SCALE = [
   { to: 18.5, label: 'Thiếu cân', color: '#3d97ff' },
@@ -44,6 +46,8 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
   if (error) return <ErrorState message={error} onRetry={reload} />;
   if (loading || !data) return <LoadingBlock rows={5} />;
   const change = data.weightChange;
+  const hasCm = data.weights.some((w) => w.waistCm != null || w.chestCm != null || w.armCm != null || w.thighCm != null);
+  const waist = data.weights.filter((w) => w.waistCm != null);
   const weeks = data.attendance.map((w) => ({ label: fmtDateShort(w.weekStart), values: [w.completed, w.missed, Math.max(0, w.scheduled - w.completed - w.missed)] }));
 
   return (
@@ -52,9 +56,13 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
         <Stat icon="scale" label={t('Cân nặng hiện tại')} value={fmtNum(data.currentWeight, 1)} unit={data.currentWeight != null ? 'kg' : undefined}
           foot={change == null ? t('Chưa có số liệu') : <span className={change <= 0 ? 'trend-up' : 'trend-down'}>{t('{diff} kg từ lần đầu', { diff: `${change > 0 ? '+' : ''}${fmtNum(change, 1)}` })}</span>} />
         <Stat icon="heart" label="BMI" value={fmtNum(data.bmi, 1)} accent="#ffb020" foot={data.bmiCategory ? t(data.bmiCategory) : (data.heightCm ? '—' : t('Cần cập nhật chiều cao'))} />
-        <Stat icon="flame" label={t('Chuỗi tuần tập')} value={data.streakWeeks} unit={t('tuần')} accent="#ff6b61" foot={t('{n} buổi · {m} phút', { n: data.totalSessions, m: fmtNum(data.totalMinutes) })} />
+        <Stat icon="flame" label={t('Chuỗi tuần tập')} value={<CountUp value={data.streakWeeks} />} highlight={data.streakWeeks > 0} unit={t('tuần')} accent="#ff6b61" foot={t('{n} buổi · {m} phút', { n: data.totalSessions, m: fmtNum(data.totalMinutes) })} />
         <Stat icon="zap" label={t('Calo đã đốt')} value={fmtNum(data.totalCalories)} unit="kcal" accent="#8b7cff" foot={data.avgRating ? t('Cảm nhận TB {n}/5', { n: data.avgRating }) : t('Chưa có đánh giá')} />
       </div>
+
+      <Card title={t('Huy hiệu')} icon="trophy">
+        <BadgeShelf list={achievements(data)} />
+      </Card>
 
       <div className="grid grid-main">
         <Card title={t('Cân nặng theo thời gian')} icon="trendDown" actions={canEdit && <Button size="sm" variant="primary" icon="plus" onClick={() => setAdding(true)}>{t('Ghi cân nặng')}</Button>}>
@@ -65,6 +73,12 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
             <div className="mt-16">
               <div className="tiny faint" style={{ marginBottom: 6 }}>{t('Tỉ lệ mỡ (%)')}</div>
               <LineChart height={140} color="#ffb020" points={data.weights.filter((w) => w.bodyFat != null).map((w) => ({ label: fmtDateShort(w.recordedDate), value: w.bodyFat as number }))} />
+            </div>
+          )}
+          {waist.length > 1 && (
+            <div className="mt-16">
+              <div className="tiny faint" style={{ marginBottom: 6 }}>{t('Vòng eo (cm)')}</div>
+              <LineChart height={140} color="#3d97ff" points={waist.map((w) => ({ label: fmtDateShort(w.recordedDate), value: w.waistCm as number }))} />
             </div>
           )}
         </Card>
@@ -85,27 +99,28 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
       </div>
 
       <Card title={t('Chuyên cần 8 tuần gần nhất')} icon="calendar">
+        <WeekHeat weeks={data.attendance} />
+        <div className="mt-16" />
         <StackedBars data={weeks} series={[{ name: t('Hoàn thành'), color: '#00d95b' }, { name: t('Vắng'), color: '#ff6b61' }, { name: t('Sắp tới'), color: '#3d97ff' }]} />
       </Card>
 
       {data.weights.length > 0 && (
         <Card title={t('Nhật ký cân nặng')} icon="scroll" flush>
-          <div className="table-wrap">
-            <table className="table">
-              <thead><tr><th>{t('Ngày')}</th><th>{t('Cân nặng')}</th><th>{t('% mỡ')}</th><th>{t('Ghi chú')}</th>{canEdit && <th />}</tr></thead>
-              <tbody>
-                {[...data.weights].reverse().map((w) => (
-                  <tr key={w.id}>
-                    <td>{fmtDate(w.recordedDate)}</td>
-                    <td className="num">{w.weightKg} kg</td>
-                    <td>{w.bodyFat != null ? `${w.bodyFat}%` : '—'}</td>
-                    <td className="muted">{w.note ?? ''}</td>
-                    {canEdit && <td className="actions"><Button size="sm" variant="ghost" icon="trash" aria-label={t('Xoá')} onClick={() => setRemoving(w)} /></td>}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table caption={t('Nhật ký cân nặng')}>
+            <thead><tr><th>{t('Ngày')}</th><th>{t('Cân nặng')}</th><th>{t('% mỡ')}</th>{hasCm && <th>{t('Eo / Ngực / Tay / Đùi (cm)')}</th>}<th>{t('Ghi chú')}</th>{canEdit && <th />}</tr></thead>
+            <tbody>
+              {[...data.weights].reverse().map((w) => (
+                <tr key={w.id}>
+                  <td>{fmtDate(w.recordedDate)}</td>
+                  <td className="num">{w.weightKg} kg</td>
+                  <td>{w.bodyFat != null ? `${w.bodyFat}%` : '—'}</td>
+                  {hasCm && <td className="num">{[w.waistCm, w.chestCm, w.armCm, w.thighCm].map((v) => v ?? '–').join(' / ')}</td>}
+                  <td className="muted">{w.note ?? ''}</td>
+                  {canEdit && <td className="actions"><Button size="sm" variant="ghost" icon="trash" aria-label={t('Xoá')} onClick={() => setRemoving(w)} /></td>}
+                </tr>
+              ))}
+            </tbody>
+          </Table>
         </Card>
       )}
 
@@ -118,43 +133,90 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
   );
 }
 
+// Số đo vòng (cm): khoảng chỉ để chặn lỗi gõ, khớp Dtos.WeightRequest và CHECK trong V7
+const MEASURES: { key: 'waistCm' | 'chestCm' | 'armCm' | 'thighCm'; label: string; min: number; max: number }[] = [
+  { key: 'waistCm', label: 'Vòng eo', min: 40, max: 200 },
+  { key: 'chestCm', label: 'Vòng ngực', min: 50, max: 200 },
+  { key: 'armCm', label: 'Vòng tay', min: 15, max: 80 },
+  { key: 'thighCm', label: 'Vòng đùi', min: 25, max: 120 },
+];
+const num = (s: string) => (s.trim() === '' ? null : Number(s.replace(',', '.')));
+
 function WeightForm({ memberId, last, onClose, onSaved }: { memberId: number; last?: Weight; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const [date, setDate] = useState(todayIso());
   const [weight, setWeight] = useState(last ? String(last.weightKg) : '');
   const [fat, setFat] = useState(last?.bodyFat != null ? String(last.bodyFat) : '');
+  const [cm, setCm] = useState<Record<string, string>>({});
+  const [showCm, setShowCm] = useState(!!last && MEASURES.some((m) => last[m.key] != null));
   const [note, setNote] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const live = useLiveErrors({ recordedDate: checkRecordedDate, weightKg: checkWeight, bodyFat: checkBodyFat }, { weightKg: NOT_NUMBER, bodyFat: NOT_NUMBER });
+  const errors = live.errors;
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    const v: Record<string, string> = {};
-    const w = Number(weight.replace(',', '.')); const f = fat === '' ? null : Number(fat.replace(',', '.'));
-    if (!weight || Number.isNaN(w) || w < 20 || w > 300) v.weightKg = t('Cân nặng từ 20 đến 300 kg');
-    if (f != null && (Number.isNaN(f) || f < 2 || f > 70)) v.bodyFat = t('% mỡ từ 2 đến 70');
-    if (date > todayIso()) v.recordedDate = t('Không ghi cho ngày tương lai');
-    setErrors(v);
-    if (Object.keys(v).length) return;
+    const ok = live.validateAll({ recordedDate: date, weightKg: weight, bodyFat: fat });
+    const cmErr: Record<string, string> = {};
+    const measures: Record<string, number | null> = {};
+    MEASURES.forEach((m) => {
+      const n = num(cm[m.key] ?? '');
+      if (n != null && (Number.isNaN(n) || n < m.min || n > m.max)) cmErr[m.key] = t('{label} từ {a} đến {b} cm', { label: t(m.label), a: m.min, b: m.max });
+      measures[m.key] = n;
+    });
+    if (Object.keys(cmErr).length) { live.setErrors((p) => ({ ...p, ...cmErr })); setShowCm(true); }
+    if (!ok || Object.keys(cmErr).length) return;
     setBusy(true);
     try {
-      await api.post(`/members/${memberId}/weights`, { recordedDate: date, weightKg: w, bodyFat: f, note: note || null });
+      await api.post(`/members/${memberId}/weights`, { recordedDate: date, weightKg: toNumber(weight), bodyFat: toNumber(fat), ...measures, note: note.trim() || null });
       toast.success(t('Đã lưu cân nặng'));
       onSaved();
-    } catch (e) { toast.error(errMsg(e)); setErrors(fieldErrs(e)); } finally { setBusy(false); }
+    } catch (e) { toast.error(errMsg(e)); live.setErrors(fieldErrs(e)); } finally { setBusy(false); }
   };
 
   return (
-    <Modal title={t('Ghi cân nặng')} onClose={onClose} size="narrow" footer={<>
+    <Modal title={t('Ghi chỉ số cơ thể')} onClose={onClose} size="narrow" footer={<>
       <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
-      <Button variant="primary" icon="check" loading={busy} onClick={submit}>{t('Lưu')}</Button>
+      <Button variant="primary" icon="check" loading={busy} disabled={Object.keys(errors).length > 0} onClick={submit}>{t('Lưu')}</Button>
     </>}>
       <div className="stack">
         <p className="small muted"><Icon name="info" size={14} style={{ display: 'inline', verticalAlign: -2 }} /> {t('Mỗi ngày một bản ghi, ghi lại cùng ngày sẽ cập nhật số cũ.')}</p>
-        <Field label={t('Ngày')} error={errors.recordedDate} required><Input type="date" max={todayIso()} value={date} onChange={(e) => setDate(e.target.value)} /></Field>
+        <Field label={t('Ngày')} error={errors.recordedDate} required>
+          <Input type="date" max={todayIso()} value={date} invalid={!!errors.recordedDate}
+            onChange={(e) => { setDate(e.target.value); live.blur('recordedDate', e.target.value); }} />
+        </Field>
         <div className="form-grid">
-          <Field label={t('Cân nặng (kg)')} error={errors.weightKg} required><Input inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="VD: 62.5" /></Field>
-          <Field label={t('% mỡ cơ thể')} error={errors.bodyFat} hint={t('Không bắt buộc')}><Input inputMode="decimal" value={fat} onChange={(e) => setFat(e.target.value)} placeholder="VD: 22" /></Field>
+          <Field htmlFor="weight-kg" label={t('Cân nặng (kg)')} error={errors.weightKg} required>
+            <div className="input-suffix" id="weight-kg-wrap">
+              <Input id="weight-kg" inputMode="decimal" autoComplete="off" value={weight} invalid={!!errors.weightKg} placeholder="VD: 65.5"
+                onChange={(e) => { setWeight(e.target.value); live.change('weightKg', e.target.value); }} onBlur={(e) => live.blur('weightKg', e.target.value)} />
+              <span className="unit">kg</span>
+            </div>
+          </Field>
+          <Field htmlFor="weight-fat" label={t('% mỡ cơ thể')} error={errors.bodyFat} hint={t('Không bắt buộc')}>
+            <div className="input-suffix" id="weight-fat-wrap">
+              <Input id="weight-fat" inputMode="decimal" autoComplete="off" value={fat} invalid={!!errors.bodyFat} placeholder="VD: 22"
+                onChange={(e) => { setFat(e.target.value); live.change('bodyFat', e.target.value); }} onBlur={(e) => live.blur('bodyFat', e.target.value)} />
+              <span className="unit">%</span>
+            </div>
+          </Field>
         </div>
+        <button type="button" className="link-btn small" aria-expanded={showCm} onClick={() => setShowCm((s) => !s)}>
+          <Icon name={showCm ? 'chevronDown' : 'chevronRight'} size={14} />{t('Số đo vòng (cm) – không bắt buộc')}
+        </button>
+        {showCm && (
+          <div className="form-grid">
+            {MEASURES.map((m) => (
+              <Field key={m.key} htmlFor={`weight-${m.key}`} label={`${t(m.label)} (cm)`} error={errors[m.key]}>
+                <Input id={`weight-${m.key}`} inputMode="decimal" autoComplete="off" value={cm[m.key] ?? ''} invalid={!!errors[m.key]}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCm((c) => ({ ...c, [m.key]: v }));
+                    live.setErrors((p) => { if (!p[m.key]) return p; const n = { ...p }; delete n[m.key]; return n; });
+                  }} />
+              </Field>
+            ))}
+          </div>
+        )}
         <Field label={t('Ghi chú')}><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('VD: đo buổi sáng, trước ăn')} /></Field>
       </div>
     </Modal>

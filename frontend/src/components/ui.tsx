@@ -1,8 +1,9 @@
-import { cloneElement, isValidElement, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TableHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { cloneElement, isValidElement, useEffect, useId, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TableHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import { locale, t, tx } from '../i18n';
 import { hueOf, initials, type Tone } from '../lib/format';
 import { Icon, type IconName } from './Icon';
+import './sport.css';
 
 // ---------- Button ----------
 type BtnVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'info';
@@ -31,7 +32,8 @@ export function StatusBadge({ map, value }: { map: Record<string, [string, Tone]
 }
 
 // ---------- Avatar / Person ----------
-export function Avatar({ name, size }: { name: string; size?: 'sm' | 'lg' }) {
+export function Avatar({ name, size, src }: { name: string; size?: 'sm' | 'lg' | 'xl'; src?: string | null }) {
+  if (src) return <img className={`avatar avatar-img ${size ?? ''}`} src={src} alt="" aria-hidden decoding="async" />;
   return <div className={`avatar ${size ?? ''}`} style={{ ['--h' as string]: hueOf(name) }} aria-hidden>{initials(name)}</div>;
 }
 export function Person({ name, sub, size }: { name: string; sub?: ReactNode; size?: 'sm' | 'lg' }) {
@@ -61,9 +63,10 @@ export function Card({ title, icon, actions, children, flush, className = '' }: 
   );
 }
 
-export function Stat({ label, value, unit, foot, icon, accent }: { label: string; value: ReactNode; unit?: string; foot?: ReactNode; icon: IconName; accent?: string }) {
+export function Stat({ label, value, unit, foot, icon, accent, highlight }: { label: string; value: ReactNode; unit?: string; foot?: ReactNode; icon: IconName; accent?: string; highlight?: boolean }) {
+  // highlight: số liệu nổi bật nhất của màn – viền sáng chạy quanh như thẻ gói "Phổ biến nhất"
   return (
-    <div className="stat" style={accent ? { ['--accent' as string]: accent } : undefined}>
+    <div className={`stat ${highlight ? 'stat-hot beam beam-slow' : ''}`} style={accent ? { ['--accent' as string]: accent } : undefined}>
       <div className="label"><Icon name={icon} />{t(label)}</div>
       <div className="value">{value}{unit && <small>{t(unit)}</small>}</div>
       {foot && <div className="foot">{tx(foot)}</div>}
@@ -105,9 +108,24 @@ export function PageHead({ eyebrow, title, desc, actions }: { eyebrow?: string; 
 // ---------- Table ----------
 export function Table({ caption, children, className = '', 'aria-label': ariaLabel, ...rest }:
   TableHTMLAttributes<HTMLTableElement> & { caption?: string }) {
+  const ref = useRef<HTMLTableElement>(null);
+
+  // Gắn nhãn cột vào từng ô để CSS chuyển bảng thành dạng card trên màn hình hẹp.
+  useLayoutEffect(() => {
+    const table = ref.current;
+    if (!table) return;
+    const headers = Array.from(table.querySelectorAll('thead th')).map((cell) => cell.textContent?.trim() ?? '');
+    table.querySelectorAll('tbody tr').forEach((row) => {
+      Array.from((row as HTMLTableRowElement).cells).forEach((cell, index) => {
+        if (cell.colSpan > 1) return;
+        cell.dataset.label = headers[index] ?? '';
+      });
+    });
+  });
+
   return (
-    <div className="table-wrap" role="region" aria-label={t(caption ?? ariaLabel ?? 'Bảng dữ liệu')} tabIndex={0}>
-      <table className={`table ${className}`} {...rest}>
+    <div className="table-wrap table-responsive" role="region" aria-label={t(caption ?? ariaLabel ?? 'Bảng dữ liệu')} tabIndex={0}>
+      <table ref={ref} className={`table ${className}`} {...rest}>
         {caption && <caption className="sr-only">{t(caption)}</caption>}
         {tx(children)}
       </table>
@@ -277,7 +295,7 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
 // ---------- Modal ----------
 const FOCUSABLE_SELECTOR = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
-export function Modal({ title, onClose, children, footer, size }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; size?: 'wide' | 'narrow' }) {
+export function Modal({ title, onClose, children, footer, size }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; size?: 'wide' | 'medium' | 'narrow' }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const closeRef = useRef(onClose);
@@ -390,6 +408,7 @@ export function Meter({ value, max = 100, color }: { value: number; max?: number
   return <div className="meter" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${pct}%`, ['--c' as string]: color }} /></div>;
 }
 
+/** Các số trang cần hiện: luôn có trang đầu, trang cuối và 1 trang mỗi bên trang hiện tại; khoảng trống = null (…). */
 function pageWindow(page: number, totalPages: number): (number | null)[] {
   const keep = new Set([0, totalPages - 1, page - 1, page, page + 1]);
   const out: (number | null)[] = [];

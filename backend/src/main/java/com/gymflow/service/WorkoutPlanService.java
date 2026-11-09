@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,9 +55,10 @@ public class WorkoutPlanService {
                 .map(mappers::planDetail).orElse(null);
     }
 
+    /** HLV / quản lý soạn cho hội viên; hội viên chưa có HLV (gói không kèm HLV) tự soạn cho mình, trainer = null. */
     @Transactional
     public WorkoutPlanResponse create(AuthUser user, WorkoutPlanRequest req) {
-        Member m = access.requireCoach(user, req.memberId());
+        Member m = user.isMember() ? access.requireSelfCoach(user, req.memberId()) : access.requireCoach(user, req.memberId());
         validate(req);
         WorkoutPlan p = new WorkoutPlan();
         p.setMember(m);
@@ -64,14 +67,15 @@ public class WorkoutPlanService {
         apply(p, req);
         planRepository.save(p);
         archiveOtherActive(p);
-        auditService.log("WORKOUT_PLAN_CREATE", "WORKOUT_PLAN", p.getId(), m.getCode() + " · " + p.getName());
+        auditService.log("WORKOUT_PLAN_CREATE", "WORKOUT_PLAN", p.getId(), m.getCode() + " · " + p.getName()
+                + (user.isMember() ? " · hội viên tự soạn" : ""));
         return mappers.planDetail(p);
     }
 
     @Transactional
     public WorkoutPlanResponse update(AuthUser user, Long id, WorkoutPlanRequest req) {
         WorkoutPlan p = load(id);
-        if (!access.canCoach(user, p.getMember())) throw ApiException.forbidden();
+        requireEdit(user, p);
         if (!p.getMember().getId().equals(req.memberId())) throw ApiException.badRequest("Không thể chuyển giáo án sang hội viên khác");
         validate(req);
         apply(p, req);
@@ -83,7 +87,7 @@ public class WorkoutPlanService {
     @Transactional
     public WorkoutPlanSummary setStatus(AuthUser user, Long id, PlanStatus status) {
         WorkoutPlan p = load(id);
-        if (!access.canCoach(user, p.getMember())) throw ApiException.forbidden();
+        requireEdit(user, p);
         p.setStatus(status);
         if (status == PlanStatus.ACTIVE) archiveOtherActive(p);
         auditService.log("WORKOUT_PLAN_STATUS", "WORKOUT_PLAN", p.getId(), p.getName() + " → " + status);
@@ -93,11 +97,18 @@ public class WorkoutPlanService {
     @Transactional
     public void delete(AuthUser user, Long id) {
         WorkoutPlan p = load(id);
-        if (!access.canCoach(user, p.getMember())) throw ApiException.forbidden();
+        requireEdit(user, p);
         // Buổi tập đã gắn giáo án vẫn giữ lại, chỉ bỏ liên kết.
         scheduleRepository.findByPlanId(id).forEach(s -> s.setPlan(null));
         planRepository.delete(p);
         auditService.log("WORKOUT_PLAN_DELETE", "WORKOUT_PLAN", id, p.getName());
+    }
+
+    /** Admin / HLV phụ trách sửa được mọi giáo án của hội viên; hội viên tự tập chỉ sửa giáo án do chính mình soạn (không có HLV). */
+    private void requireEdit(AuthUser user, WorkoutPlan p) {
+        if (access.canCoach(user, p.getMember())) return;
+        if (p.getTrainer() == null && access.canSelfCoach(user, p.getMember())) return;
+        throw ApiException.forbidden();
     }
 
     /** Mỗi hội viên chỉ có một giáo án đang áp dụng; giáo án cũ chuyển sang lưu trữ. */
@@ -111,9 +122,20 @@ public class WorkoutPlanService {
         if (req.endDate().isBefore(req.startDate())) throw ApiException.badRequest("Ngày kết thúc phải sau ngày bắt đầu");
         if (req.startDate().plusYears(1).isBefore(req.endDate())) throw ApiException.badRequest("Giáo án dài tối đa 1 năm");
         if (req.items().isEmpty()) throw ApiException.badRequest("Giáo án cần ít nhất một bài tập");
+        for (PlanItemRequest r : req.items()) {
+            String reps = r.reps().replace(" ", "").replaceAll("[sS]$", "");
+            if (!reps.matches("\\d{1,3}(-\\d{1,3})?")) continue;
+            String[] range = reps.split("-");
+            if (Integer.parseInt(range[0]) == 0) throw ApiException.badRequest("Số lần phải lớn hơn 0");
+            if (range.length == 2 && Integer.parseInt(range[0]) > Integer.parseInt(range[1])) {
+                throw ApiException.badRequest("Số lần \"" + r.reps().trim() + "\": số đầu phải nhỏ hơn số sau, VD 8-12");
+            }
+        }
     }
 
     private void apply(WorkoutPlan p, WorkoutPlanRequest req) {
+        // Bài đã có trong giáo án được giữ dù sau đó bị ẩn hoặc trả về chỉnh sửa; bài thêm mới phải đã duyệt và đang hiện.
+        Set<Long> existing = p.getItems().stream().map(i -> i.getExercise().getId()).collect(Collectors.toSet());
         p.setName(req.name().trim());
         p.setGoal(Mappers.blankToNull(req.goal()));
         p.setStartDate(req.startDate());
@@ -122,9 +144,13 @@ public class WorkoutPlanService {
         p.getItems().clear();
         int order = 0;
         for (PlanItemRequest r : req.items()) {
+            Exercise ex = exerciseService.load(r.exerciseId());
+            if (!existing.contains(ex.getId()) && (ex.getReviewStatus() != ReviewStatus.APPROVED || ex.isHidden())) {
+                throw ApiException.badRequest("Bài \"" + ex.getName() + "\" chưa được quản lý duyệt hoặc đang ẩn, chưa thêm được vào giáo án");
+            }
             WorkoutPlanItem i = new WorkoutPlanItem();
             i.setPlan(p);
-            i.setExercise(exerciseService.load(r.exerciseId()));
+            i.setExercise(ex);
             i.setDayOfWeek(r.dayOfWeek());
             i.setSortOrder(r.sortOrder() == null ? order : r.sortOrder());
             i.setSets(r.sets());

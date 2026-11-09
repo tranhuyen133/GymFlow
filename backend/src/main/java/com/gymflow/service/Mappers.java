@@ -72,7 +72,7 @@ public class Mappers {
     // ---------- Plan ----------
     public PlanResponse plan(MembershipPlan p) {
         return new PlanResponse(p.getId(), p.getName(), p.getDescription(), p.getPrice(), p.getDurationDays(),
-                p.getBenefits(), p.isActive(), subscriptionRepository.countCurrentByPlan(p.getId(), today()));
+                p.getBenefits(), p.isActive(), subscriptionRepository.countCurrentByPlan(p.getId(), today()), p.isIncludesTrainer());
     }
 
     // ---------- Subscription ----------
@@ -95,8 +95,17 @@ public class Mappers {
                 e.getBreathing(), e.getCommonMistakes(), e.getSafetyNotes(), e.getVariations(), e.getSuggestedDose(),
                 e.getContentOrigin(), e.getReviewStatus(), e.getReviewNote(),
                 e.getReviewedBy() == null ? null : e.getReviewedBy().getFullName(), e.getReviewedAt(), e.getUpdatedAt(),
-                sources(e.getSources()));
+                sources(e.getSources()),
+                splitKeys(e.getTargetMuscles()), splitKeys(e.getSecondaryMuscleKeys()), splitKeys(e.getEquipmentKeys()),
+                e.getImageKey());
     }
+
+    /** V13 · "chest,triceps" -> [chest, triceps]; null/rỗng -> []. */
+    public static List<String> splitKeys(String csv) {
+        if (csv == null || csv.isBlank()) return List.of();
+        return java.util.Arrays.stream(csv.split(",")).map(String::trim).filter(s -> !s.isEmpty()).distinct().toList();
+    }
+
 
     // ---------- Nguồn & kho kiến thức ----------
     public SourceResponse source(ContentSource s) {
@@ -191,7 +200,8 @@ public class Mappers {
 
     // ---------- Others ----------
     public WeightResponse weight(WeightRecord w) {
-        return w == null ? null : new WeightResponse(w.getId(), w.getRecordedDate(), w.getWeightKg(), w.getBodyFat(), w.getNote());
+        return w == null ? null : new WeightResponse(w.getId(), w.getRecordedDate(), w.getWeightKg(), w.getBodyFat(),
+                w.getWaistCm(), w.getChestCm(), w.getArmCm(), w.getThighCm(), w.getNote());
     }
 
     public UserResponse user(User u) {

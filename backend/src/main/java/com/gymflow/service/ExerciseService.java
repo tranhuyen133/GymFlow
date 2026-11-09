@@ -13,9 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -54,7 +57,7 @@ public class ExerciseService {
     }
 
     private static boolean matches(Exercise e, String needle) {
-        for (String field : new String[]{e.getName(), e.getNameEn(), e.getAliases(), e.getEquipment()}) {
+        for (String field : new String[]{e.getName(), e.getNameEn(), e.getAliases(), e.getEquipment(), e.getSecondaryMuscles()}) {
             if (field != null && field.toLowerCase(Locale.ROOT).contains(needle)) return true;
         }
         return false;
@@ -103,18 +106,49 @@ public class ExerciseService {
     public ExerciseResponse review(AuthUser user, Long id, ReviewRequest req) {
         Exercise e = load(id);
         String note = Mappers.blankToNull(req.note());
-        if (req.status() == ReviewStatus.APPROVED && e.getSources().isEmpty()) {
-            throw ApiException.badRequest("Bài tập cần ít nhất một nguồn tham khảo trước khi duyệt");
+        if (req.status() == ReviewStatus.APPROVED) {
+            if (e.getSources().isEmpty()) throw ApiException.badRequest("Bài tập cần ít nhất một nguồn tham khảo trước khi duyệt");
+            List<String> missing = ExerciseChecklist.missing(e);
+            if (!missing.isEmpty()) throw ApiException.badRequest("Chưa đủ điều kiện duyệt: " + String.join("; ", missing));
         }
         if (req.status() == ReviewStatus.NEEDS_REVIEW && note == null) {
             throw ApiException.badRequest("Vui lòng ghi rõ nội dung cần chỉnh sửa");
         }
-        e.setReviewStatus(req.status());
+        markReviewed(user, e, req.status(), note);
+        auditService.log("EXERCISE_REVIEW", "EXERCISE", e.getId(), e.getName() + " → " + req.status());
+        return mappers.exercise(e);
+    }
+
+    /** Duyệt nhiều bài một lần; bài chưa đủ checklist hoặc đã duyệt thì bỏ qua và báo lý do. */
+    @Transactional
+    public BulkApproveResponse approveMany(AuthUser user, BulkApproveRequest req) {
+        String note = Mappers.blankToNull(req.note());
+        int approved = 0;
+        List<String> skipped = new ArrayList<>();
+        for (Long id : req.ids().stream().distinct().toList()) {
+            Exercise e = exerciseRepository.findById(id).orElse(null);
+            if (e == null) {
+                skipped.add("#" + id + ": không tồn tại");
+                continue;
+            }
+            if (e.getReviewStatus() == ReviewStatus.APPROVED) continue;
+            List<String> missing = ExerciseChecklist.missing(e);
+            if (!missing.isEmpty()) {
+                skipped.add(e.getName() + ": " + String.join("; ", missing));
+                continue;
+            }
+            markReviewed(user, e, ReviewStatus.APPROVED, note);
+            approved++;
+        }
+        auditService.log("EXERCISE_REVIEW_BULK", "EXERCISE", null, approved + " bài được duyệt, bỏ qua " + skipped.size());
+        return new BulkApproveResponse(approved, skipped);
+    }
+
+    private void markReviewed(AuthUser user, Exercise e, ReviewStatus status, String note) {
+        e.setReviewStatus(status);
         e.setReviewNote(note);
         e.setReviewedBy(userRepository.getReferenceById(user.id()));
         e.setReviewedAt(LocalDateTime.now());
-        auditService.log("EXERCISE_REVIEW", "EXERCISE", e.getId(), e.getName() + " → " + req.status());
-        return mappers.exercise(e);
     }
 
     @Transactional
@@ -156,6 +190,23 @@ public class ExerciseService {
         e.setSuggestedDose(Mappers.blankToNull(req.suggestedDose()));
         if (req.contentOrigin() != null) e.setContentOrigin(req.contentOrigin());
         if (req.sourceIds() != null) e.setSources(resolveSources(sourceRepository, req.sourceIds()));
+        if (req.targetMuscles() != null) e.setTargetMuscles(joinKeys(req.targetMuscles(), MUSCLE_KEYS, "vùng cơ"));
+        if (req.secondaryMuscleKeys() != null) e.setSecondaryMuscleKeys(joinKeys(req.secondaryMuscleKeys(), MUSCLE_KEYS, "vùng cơ"));
+        if (req.equipmentKeys() != null) e.setEquipmentKeys(joinKeys(req.equipmentKeys(), EQUIPMENT_KEYS, "dụng cụ"));
+        if (req.imageKey() != null) e.setImageKey(Mappers.blankToNull(req.imageKey()));
+    }
+
+    /** V13 · khớp lib/anatomy.ts ở frontend. */
+    static final Set<String> MUSCLE_KEYS = Set.of("chest", "front-deltoids", "back-deltoids", "biceps", "triceps", "forearm",
+            "abs", "obliques", "trapezius", "upper-back", "lower-back", "gluteal", "quadriceps", "hamstring", "adductor",
+            "abductors", "calves", "neck");
+    static final Set<String> EQUIPMENT_KEYS = Set.of("barbell", "dumbbell", "kettlebell", "machine", "cable", "bench",
+            "pullup-bar", "bodyweight", "band", "ball", "cardio-machine", "other");
+
+    static String joinKeys(List<String> keys, Set<String> allowed, String what) {
+        List<String> clean = keys.stream().filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).distinct().toList();
+        for (String k : clean) if (!allowed.contains(k)) throw ApiException.badRequest("Mã " + what + " không hợp lệ: " + k);
+        return clean.isEmpty() ? null : String.join(",", clean);
     }
 
     static LinkedHashSet<ContentSource> resolveSources(ContentSourceRepository repo, List<Long> ids) {

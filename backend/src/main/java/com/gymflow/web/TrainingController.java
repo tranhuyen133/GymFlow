@@ -53,6 +53,12 @@ public class TrainingController {
         return exerciseService.review(CurrentUser.get(), id, req);
     }
 
+    @PostMapping("/api/exercises/review/approve-many")
+    @PreAuthorize("hasRole('ADMIN')")
+    public BulkApproveResponse approveExercises(@Valid @RequestBody BulkApproveRequest req) {
+        return exerciseService.approveMany(CurrentUser.get(), req);
+    }
+
     @PostMapping("/api/exercises")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")
@@ -99,26 +105,26 @@ public class TrainingController {
 
     @PostMapping("/api/workout-plans")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TRAINER','MEMBER')")
     public WorkoutPlanResponse createPlan(@Valid @RequestBody WorkoutPlanRequest req) {
         return planService.create(CurrentUser.get(), req);
     }
 
     @PutMapping("/api/workout-plans/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TRAINER','MEMBER')")
     public WorkoutPlanResponse updatePlan(@PathVariable Long id, @Valid @RequestBody WorkoutPlanRequest req) {
         return planService.update(CurrentUser.get(), id, req);
     }
 
     @PutMapping("/api/workout-plans/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TRAINER','MEMBER')")
     public WorkoutPlanSummary planStatus(@PathVariable Long id, @Valid @RequestBody PlanStatusRequest req) {
         return planService.setStatus(CurrentUser.get(), id, req.status());
     }
 
     @DeleteMapping("/api/workout-plans/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TRAINER','MEMBER')")
     public void deletePlan(@PathVariable Long id) {
         planService.delete(CurrentUser.get(), id);
     }

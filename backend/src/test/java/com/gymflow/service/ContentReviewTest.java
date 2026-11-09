@@ -77,12 +77,55 @@ class ContentReviewTest {
 
     @Test
     void approvingExerciseRecordsReviewer() {
-        Exercise e = exercise(ReviewStatus.PENDING, true);
+        Exercise e = complete(exercise(ReviewStatus.PENDING, true));
         when(userRepository.getReferenceById(1L)).thenReturn(new User());
         exercises.review(ADMIN, 10L, new ReviewRequest(ReviewStatus.APPROVED, null));
         assertThat(e.getReviewStatus()).isEqualTo(ReviewStatus.APPROVED);
         assertThat(e.getReviewedBy()).isNotNull();
         assertThat(e.getReviewedAt()).isNotNull();
+    }
+
+    /** Điền đủ các mục trong checklist duyệt (mô tả, ≥ 2 bước, lưu ý an toàn, nơi tập, mục tiêu). */
+    private static Exercise complete(Exercise e) {
+        e.setDescription("Bài giữ thân trên cẳng tay, rèn sức bền cơ lõi.");
+        e.setInstructions("1. Chống cẳng tay xuống thảm.\n2. Giữ thân thẳng từ đầu đến gót.");
+        e.setSafetyNotes("Dừng nếu đau lưng.");
+        e.setLocation(ExerciseLocation.ANY);
+        e.setGoals("ENDURANCE");
+        return e;
+    }
+
+    @Test
+    void approvingIncompleteExerciseListsMissingItems() {
+        Exercise e = exercise(ReviewStatus.PENDING, true);
+        e.setInstructions("Chống tay và giữ thân thẳng.");
+        assertThatThrownBy(() -> exercises.review(ADMIN, 10L, new ReviewRequest(ReviewStatus.APPROVED, null)))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("ít nhất 2 bước")
+                .hasMessageContaining("lưu ý an toàn");
+        assertThat(e.getReviewStatus()).isEqualTo(ReviewStatus.PENDING);
+    }
+
+    @Test
+    void approveManySkipsIncompleteAndAlreadyApproved() {
+        Exercise ready = complete(exercise(ReviewStatus.PENDING, true));
+        Exercise missing = new Exercise();
+        missing.setId(11L);
+        missing.setName("Bài thiếu");
+        Exercise done = new Exercise();
+        done.setId(12L);
+        done.setReviewStatus(ReviewStatus.APPROVED);
+        when(exerciseRepository.findById(11L)).thenReturn(Optional.of(missing));
+        when(exerciseRepository.findById(12L)).thenReturn(Optional.of(done));
+        when(userRepository.getReferenceById(1L)).thenReturn(new User());
+
+        BulkApproveResponse res = exercises.approveMany(ADMIN, new BulkApproveRequest(java.util.List.of(10L, 11L, 12L), null));
+
+        assertThat(res.approved()).isEqualTo(1);
+        assertThat(res.skipped()).hasSize(1);
+        assertThat(res.skipped().get(0)).startsWith("Bài thiếu:");
+        assertThat(ready.getReviewStatus()).isEqualTo(ReviewStatus.APPROVED);
+        assertThat(missing.getReviewStatus()).isEqualTo(ReviewStatus.PENDING);
     }
 
     @Test

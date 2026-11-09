@@ -41,6 +41,7 @@ public class AuthService {
     private final AuditService auditService;
     private final UserService userService;
     private final MemberService memberService;
+    private final EmailService emailService;
     private final Clock clock;
 
     @Value("${app.reset.expose-token:false}")
@@ -81,6 +82,10 @@ public class AuthService {
         if (!req.password().equals(req.confirmPassword())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Mật khẩu nhập lại không khớp");
         }
+        String phone = Mappers.blankToNull(req.phone());
+        if (phone != null && userRepository.existsByPhoneIn(phoneVariants(phone))) {
+            throw ApiException.conflict("Số điện thoại đã được dùng cho một tài khoản khác");
+        }
         UserService.Created c = userService.createAccount(req.email(), req.fullName(), req.phone(), req.password(), Role.MEMBER);
         memberService.createSelfRegistered(c.user());
         return new RegisterResponse("Đăng ký thành công! Bạn có thể đăng nhập ngay.", c.user().getEmail());
@@ -114,14 +119,18 @@ public class AuthService {
         Long memberId = u.getRole() == Role.MEMBER ? memberRepository.findByUserId(u.getId()).map(Member::getId).orElse(null) : null;
         Long trainerId = u.getRole() == Role.TRAINER ? trainerRepository.findByUserId(u.getId()).map(Trainer::getId).orElse(null) : null;
         return new MeResponse(u.getId(), u.getEmail(), u.getFullName(), u.getPhone(), u.getRole(), memberId, trainerId,
-                u.getLastLoginAt());
+                u.getLastLoginAt(), u.getAvatarUpdatedAt());
     }
 
     @Transactional
     public MeResponse updateProfile(AuthUser principal, UpdateProfileRequest req) {
         User u = userRepository.findById(principal.id()).orElseThrow(() -> ApiException.notFound("tài khoản"));
+        String phone = Mappers.blankToNull(req.phone());
+        if (phone != null && userRepository.existsByPhoneInAndIdNot(phoneVariants(phone), u.getId())) {
+            throw ApiException.conflict("Số điện thoại đã được dùng cho một tài khoản khác");
+        }
         u.setFullName(req.fullName().trim());
-        u.setPhone(Mappers.blankToNull(req.phone()));
+        u.setPhone(phone);
         auditService.log("PROFILE_UPDATE", "USER", u.getId(), null);
         return me(u);
     }
@@ -156,6 +165,7 @@ public class AuthService {
         t.setTokenHash(Secrets.sha256(token));
         t.setExpiresAt(now.plusMinutes(resetValidMinutes));
         resetTokenRepository.save(t);
+        emailService.sendPasswordResetCode(u, token, resetValidMinutes);
         auditService.logAs(u.getId(), u.getEmail(), "PASSWORD_RESET_REQUEST", "USER", u.getId(), null, true);
         if (exposeResetToken) {
             log.info("[DEMO] Mã khôi phục cho {}: {}", u.getEmail(), token);
@@ -180,4 +190,12 @@ public class AuthService {
         resetTokenRepository.invalidateActiveTokens(u, now);
         auditService.logAs(u.getId(), u.getEmail(), "PASSWORD_RESET", "USER", u.getId(), null, true);
     }
+    /** 0912345678 và +84912345678 là cùng một số. */
+    static List<String> phoneVariants(String phone) {
+        String p = phone.trim();
+        if (p.startsWith("+84")) return List.of(p, "0" + p.substring(3));
+        if (p.startsWith("0")) return List.of(p, "+84" + p.substring(1));
+        return List.of(p);
+    }
+
 }

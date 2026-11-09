@@ -52,15 +52,17 @@ class AuthServiceRegisterTest {
     @Mock AuditService auditService;
     @Mock UserService userService;
     @Mock MemberService memberService;
+    @Mock EmailService emailService;
 
     AuthService service;
 
     @BeforeEach
     void setUp() {
         service = new AuthService(userRepository, memberRepository, trainerRepository, resetTokenRepository,
-                passwordEncoder, jwtService, auditService, userService, memberService, Clock.systemDefaultZone());
+                passwordEncoder, jwtService, auditService, userService, memberService, emailService, Clock.systemDefaultZone());
         ReflectionTestUtils.setField(service, "registrationEnabled", true);
         ReflectionTestUtils.setField(service, "demoQuickLogin", true);
+        ReflectionTestUtils.setField(service, "resetValidMinutes", 30);
     }
 
     private static RegisterRequest req(String pw, String confirm, boolean terms) {
@@ -155,6 +157,7 @@ class AuthServiceRegisterTest {
         service.forgotPassword(new ForgotPasswordRequest("member@example.com"));
         verify(resetTokenRepository, times(2)).invalidateActiveTokens(eq(u), any(LocalDateTime.class));
         verify(resetTokenRepository, times(2)).save(any(PasswordResetToken.class));
+        verify(emailService, times(2)).sendPasswordResetCode(eq(u), anyString(), eq(30));
 
         // Thử dùng mã lần 1 đã bị đánh dấu used_at -> bị báo lỗi "đã được sử dụng"
         PasswordResetToken token1 = new PasswordResetToken();
@@ -222,6 +225,21 @@ class AuthServiceRegisterTest {
         assertThat(res.message()).isEqualTo("Nếu email tồn tại trong hệ thống, mã khôi phục đã được gửi.");
         assertThat(res.resetToken()).isNull();
         verifyNoInteractions(resetTokenRepository);
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void forgotPasswordSendsSixDigitCodeStoredAsHash() {
+        User u = user("member@example.com", Role.MEMBER, UserStatus.ACTIVE);
+        u.setId(10L);
+        when(userRepository.findByEmailIgnoreCase("member@example.com")).thenReturn(Optional.of(u));
+
+        service.forgotPassword(new ForgotPasswordRequest("member@example.com"));
+
+        org.mockito.ArgumentCaptor<String> code = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendPasswordResetCode(eq(u), code.capture(), eq(30));
+        assertThat(code.getValue()).matches("\\d{6}");
+        verify(resetTokenRepository).save(argThat(t -> t.getTokenHash().equals(Secrets.sha256(code.getValue()))));
     }
 
     @Test

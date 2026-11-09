@@ -31,6 +31,19 @@ public class WeightRecord {
     @Column(name = "body_fat")
     private Double bodyFat;
 
+    /** Số đo vòng (cm), không bắt buộc */
+    @Column(name = "waist_cm")
+    private Double waistCm;
+
+    @Column(name = "chest_cm")
+    private Double chestCm;
+
+    @Column(name = "arm_cm")
+    private Double armCm;
+
+    @Column(name = "thigh_cm")
+    private Double thighCm;
+
     private String note;
 
     @Column(name = "created_at", nullable = false, updatable = false)

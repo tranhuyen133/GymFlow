@@ -36,6 +36,10 @@ public class User {
     @Column(nullable = false)
     private UserStatus status = UserStatus.ACTIVE;
 
+    /** NULL = chưa có ảnh đại diện; ảnh nằm ở bảng user_avatars. */
+    @Column(name = "avatar_updated_at")
+    private LocalDateTime avatarUpdatedAt;
+
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 

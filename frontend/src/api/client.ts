@@ -36,17 +36,15 @@ function buildUrl(path: string, query?: Query) {
 
 const TIMEOUT_MS = 20_000;
 
-async function request<T>(method: string, path: string, body?: unknown, query?: Query): Promise<T> {
-  const headers: Record<string, string> = { Accept: 'application/json' };
+/** Gửi request kèm token, timeout và chuẩn hoá lỗi; trả về Response đã kiểm tra res.ok. */
+async function send(method: string, path: string, body: BodyInit | undefined, headers: Record<string, string>, query?: Query): Promise<Response> {
   const token = tokenStore.get();
   if (token) headers.Authorization = `Bearer ${token}`;
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
-
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   let res: Response;
   try {
-    res = await fetch(buildUrl(path, query), { method, headers, body: body === undefined ? undefined : JSON.stringify(body), signal: ctrl.signal });
+    res = await fetch(buildUrl(path, query), { method, headers, body, signal: ctrl.signal });
   } catch (e) {
     throw new ApiError(0, e instanceof DOMException && e.name === 'AbortError'
       ? 'Máy chủ phản hồi quá lâu, vui lòng thử lại.'
@@ -54,17 +52,24 @@ async function request<T>(method: string, path: string, body?: unknown, query?: 
   } finally {
     clearTimeout(timer);
   }
-
-  if (res.status === 204) return undefined as T;
-  const text = await res.text();
-  const data = text ? safeJson(text) : null;
   if (!res.ok) {
+    const text = await res.text();
+    const data = text ? safeJson(text) : null;
     const err = (data ?? {}) as Partial<ApiErrorBody>;
     if (res.status === 401 && token && !path.startsWith('/auth/login')) onUnauthorized?.();
     // Phản hồi không phải JSON (VD proxy / CORS chặn) → thông báo chung, không hiện chuỗi kỹ thuật cho người dùng.
     throw new ApiError(res.status, err.message || defaultMessage(res.status, data === null && !!text), err.fieldErrors);
   }
-  return data as T;
+  return res;
+}
+
+async function request<T>(method: string, path: string, body?: unknown, query?: Query): Promise<T> {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const res = await send(method, path, body === undefined ? undefined : JSON.stringify(body), headers, query);
+  if (res.status === 204) return undefined as T;
+  const text = await res.text();
+  return (text ? safeJson(text) : null) as T;
 }
 
 function safeJson(text: string) {
@@ -75,6 +80,7 @@ function defaultMessage(status: number, nonJson = false) {
   if (status === 401) return 'Phiên đăng nhập đã hết hạn';
   if (status === 403) return nonJson ? 'Máy chủ từ chối yêu cầu (cấu hình truy cập). Vui lòng liên hệ quản trị viên.' : 'Bạn không có quyền thực hiện thao tác này';
   if (status === 404) return 'Không tìm thấy dữ liệu';
+  if (status === 413) return 'File quá lớn';
   if (status === 429) return 'Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút';
   if (status >= 500) return 'Máy chủ gặp lỗi, vui lòng thử lại';
   return 'Có lỗi xảy ra';
@@ -85,4 +91,11 @@ export const api = {
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body ?? {}),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body ?? {}),
   del: <T = void>(path: string) => request<T>('DELETE', path),
+  /** Gửi multipart/form-data; trình duyệt tự đặt Content-Type kèm boundary nên không tự gán. */
+  upload: async <T>(path: string, form: FormData): Promise<T> => {
+    const res = await send('POST', path, form, { Accept: 'application/json' });
+    return safeJson(await res.text()) as T;
+  },
+  /** Tải file cần token (VD ảnh đại diện) – thẻ <img> không gửi được header Authorization. */
+  blob: async (path: string, query?: Query): Promise<Blob> => (await send('GET', path, undefined, {}, query)).blob(),
 };

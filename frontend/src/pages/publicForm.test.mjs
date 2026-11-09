@@ -45,21 +45,21 @@ test('SCRUM-145: focus theo thứ tự form, bỏ lỗi API lạ và trường d
   }
 });
 
-test('SCRUM-146: yêu cầu mã đủ 8 ký tự, bỏ khoảng trắng ở hai đầu', () => {
-  for (const token of ['', '1234567', '123456789']) assert.ok(validateReset(token, 'Password1', 'Password1').token);
-  assert.deepEqual(validateReset(' AB12CD34 ', 'Password1', 'Password1'), {});
+test('SCRUM-146: yêu cầu mã đúng 6 chữ số, bỏ khoảng trắng ở hai đầu', () => {
+  for (const token of ['', '12345', '1234567', '12345a', 'ABCDEF']) assert.ok(validateReset(token, 'Password1', 'Password1').token);
+  assert.deepEqual(validateReset(' 123456 ', 'Password1', 'Password1'), {});
 });
 
 test('SCRUM-146: kiểm tra mật khẩu 8–72 ký tự, có chữ và số', () => {
   for (const password of ['Abc1234', 'abcdefgh', '12345678', 'a'.repeat(72) + '1']) {
-    assert.ok(validateReset('AB12CD34', password, password).newPassword);
+    assert.ok(validateReset('123456', password, password).newPassword);
   }
   for (const password of ['Abc12345', 'a'.repeat(71) + '1']) {
-    assert.deepEqual(validateReset('AB12CD34', password, password), {});
+    assert.deepEqual(validateReset('123456', password, password), {});
   }
 });
 
 test('SCRUM-146: không chấp nhận mật khẩu xác nhận rỗng hoặc không khớp', () => {
-  assert.ok(validateReset('AB12CD34', 'Password1', '').confirm);
-  assert.ok(validateReset('AB12CD34', 'Password1', 'Password2').confirm);
+  assert.ok(validateReset('123456', 'Password1', '').confirm);
+  assert.ok(validateReset('123456', 'Password1', 'Password2').confirm);
 });

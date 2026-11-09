@@ -1,7 +1,12 @@
+/**
+ * Lịch tập. V12: hội viên chưa có HLV phụ trách (gói tự tập) tự xếp, dời, huỷ buổi tự tập của mình; buổi có HLV vẫn do HLV / quản lý xếp.
+ * CHỦ FILE: Tùng (Lê Thanh Tùng) — SCRUM-188
+ * ĐÓNG GÓP: Hồ Khánh Linh — SCRUM-196 · Form hoàn thành buổi
+ */
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Member, Schedule, ScheduleCreated, ScheduleStatus, Trainer, WorkoutPlanSummary } from '../../api/types';
+import type { Member, Schedule, ScheduleCreated, ScheduleStatus, TimeSlot, Trainer, WorkoutPlanSummary } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
 import { MemberSelect } from '../../components/MemberSelect';
@@ -9,7 +14,9 @@ import { useToast } from '../../components/Toast';
 import { WeekCalendar } from '../../components/WeekCalendar';
 import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
 import { t } from '../../i18n';
-import { addDays, fmtDateTime, fmtTime, fmtWeekday, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
+import { addDays, DAY_NAMES, fmtDateTime, fmtTime, fmtWeekday, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
+import { covered, fromMin, GYM_CLOSE, GYM_OPEN, hm, timeOptions, toMin, type WeekSlot } from '../../lib/hours';
+import '../../components/week-slots.css';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 
 type Filter = 'ALL' | ScheduleStatus;
@@ -17,6 +24,9 @@ type Filter = 'ALL' | ScheduleStatus;
 export default function Schedules() {
   const me = useMe();
   const staff = me.role !== 'MEMBER';
+  // Hội viên tự tập (chưa có HLV phụ trách) được tự xếp buổi
+  const member = useAsync(() => (staff ? Promise.resolve(null) : api.get<Member>('/members/me')), [staff]);
+  const selfTrain = !staff && member.data != null && member.data.trainerId == null;
   const [params, setParams] = useSearchParams();
   const [week, setWeek] = useState(() => startOfWeek(new Date()));
   const [filter, setFilter] = useState<Filter>('ALL');
@@ -42,8 +52,11 @@ export default function Schedules() {
   return (
     <div className="page">
       <PageHead eyebrow={staff ? 'Lịch tập' : 'Lịch của tôi'} title={staff ? 'Lịch tập tuần' : 'Lịch tập của tôi'}
-        desc={staff ? 'Xếp lịch lặp hằng tuần, hệ thống tự chặn trùng giờ HLV và hội viên, chỉ cho xếp khi hội viên còn gói hiệu lực.' : 'Bấm vào buổi tập để xem chi tiết và đánh dấu hoàn thành.'}
-        actions={staff && <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Xếp lịch</Button>} />
+        desc={staff ? 'Xếp lịch lặp hằng tuần, hệ thống tự chặn trùng giờ HLV và hội viên, chỉ cho xếp khi hội viên còn gói hiệu lực.'
+          : selfTrain ? 'Gói tự tập: tự xếp buổi theo giáo án của bạn, dời hoặc huỷ trước giờ tập, tập xong thì đánh dấu hoàn thành.'
+          : 'Bấm vào buổi tập để xem chi tiết và đánh dấu hoàn thành.'}
+        actions={staff ? <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Xếp lịch</Button>
+          : selfTrain && <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>{t('Tự xếp buổi tập')}</Button>} />
 
       <div className="toolbar">
         <div className="row">
@@ -55,8 +68,8 @@ export default function Schedules() {
         <div className="spacer" />
         {me.role === 'ADMIN' && (
           <Select value={trainerId} onChange={(e) => setTrainerId(e.target.value)} aria-label="Lọc theo HLV">
-            <option value="">Tất cả HLV</option>
-            {trainers.data?.map((t) => <option key={t.id} value={t.id}>{t.fullName}</option>)}
+            <option value="">{t('Tất cả HLV')}</option>
+            {trainers.data?.map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}</option>)}
           </Select>
         )}
         <Segmented<Filter> value={filter} onChange={setFilter} options={[
@@ -80,7 +93,7 @@ export default function Schedules() {
       </div>
 
       {open && <SessionModal session={open} onClose={() => setOpen(null)} onChanged={(d) => { setOpen(null); if (d) setWeek(startOfWeek(d)); void reload(); }} />}
-      {creating && <ScheduleForm onClose={closeCreate} onSaved={(firstDay) => { closeCreate(); if (firstDay) setWeek(startOfWeek(firstDay)); void reload(); }} />}
+      {creating && (staff || selfTrain) && <ScheduleForm presetMemberId={staff ? undefined : me.memberId ?? undefined} onClose={closeCreate} onSaved={(firstDay) => { closeCreate(); if (firstDay) setWeek(startOfWeek(firstDay)); void reload(); }} />}
     </div>
   );
 }
@@ -90,6 +103,8 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
   const me = useMe();
   const toast = useToast();
   const staff = me.role !== 'MEMBER';
+  // Buổi tự tập (không có HLV) thì hội viên tự dời / huỷ; đánh vắng vẫn chỉ HLV / quản lý
+  const manage = staff || session.trainerId == null;
   const [mode, setMode] = useState<'view' | 'complete' | 'edit'>('view');
   const [confirm, setConfirm] = useState<'cancel' | 'missed' | null>(null);
   const started = parseDateTime(session.startTime) <= new Date();
@@ -106,9 +121,9 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
   return (
     <>
       <Modal title={session.title} onClose={onClose} footer={<>
-        {staff && session.status === 'SCHEDULED' && <>
+        {manage && session.status === 'SCHEDULED' && <>
           <Button variant="danger" icon="ban" onClick={() => setConfirm('cancel')}>{t('Huỷ buổi')}</Button>
-          {started && <Button icon="x" onClick={() => setConfirm('missed')}>{t('Đánh vắng')}</Button>}
+          {staff && started && <Button icon="x" onClick={() => setConfirm('missed')}>{t('Đánh vắng')}</Button>}
           {!started && <Button icon="edit" onClick={() => setMode('edit')}>{t('Dời lịch')}</Button>}
         </>}
         <span className="grow" />
@@ -189,7 +204,7 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
         <Field label={t('Cảm nhận buổi tập')}>
           <div className="row" style={{ gap: 4 }}>
             {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} type="button" className="btn btn-ghost btn-icon" aria-label={`${n} sao`} onClick={() => setRating(n)} style={{ color: n <= rating ? 'var(--warning)' : 'var(--faint)' }}>
+              <button key={n} type="button" className="btn btn-ghost btn-icon" aria-label={t('{n}/5 sao', { n })} onClick={() => setRating(n)} style={{ color: n <= rating ? 'var(--warning)' : 'var(--faint)' }}>
                 <Icon name="star" fill={n <= rating ? 'currentColor' : 'none'} />
               </button>
             ))}
@@ -203,14 +218,20 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
 }
 
 // ================= Form xếp / dời lịch =================
+// Giờ bắt đầu: bước 15 phút trong giờ mở cửa, muộn nhất 21:30 để còn 30 phút tập
+const START_TIMES = timeOptions(15, GYM_OPEN, fromMin(toMin(GYM_CLOSE) - 30));
+const withCurrent = (list: string[], v: string) => (list.includes(v) ? list : [...list, v].sort((a, b) => toMin(a) - toMin(b)));
 export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?: Schedule; presetMemberId?: number; onClose: () => void; onSaved: (firstDay?: Date) => void }) {
   const me = useMe();
   const toast = useToast();
+  // Hội viên tự xếp buổi tự tập cho chính mình: không chọn hội viên / HLV, không cần đối chiếu giờ HLV
+  const self = me.role === 'MEMBER';
+  const defaultTitle = self ? 'Buổi tự tập' : 'Buổi tập với HLV';
   const start0 = edit ? parseDateTime(edit.startTime) : (() => { const d = addDays(new Date(), 1); d.setHours(18, 0, 0, 0); return d; })();
   const [memberId, setMemberId] = useState<string>(edit ? String(edit.memberId) : presetMemberId ? String(presetMemberId) : '');
   const [trainerId, setTrainerId] = useState<string>(edit?.trainerId ? String(edit.trainerId) : '');
   const [planId, setPlanId] = useState<string>(edit?.planId ? String(edit.planId) : '');
-  const [title, setTitle] = useState(edit?.title ?? 'Buổi tập với HLV');
+  const [title, setTitle] = useState(edit?.title ?? defaultTitle);
   const [date, setDate] = useState(toIsoDate(start0));
   const [time, setTime] = useState(`${String(start0.getHours()).padStart(2, '0')}:${String(start0.getMinutes()).padStart(2, '0')}`);
   const [duration, setDuration] = useState(edit ? String(Math.round((parseDateTime(edit.endTime).getTime() - start0.getTime()) / 60000)) : '60');
@@ -242,12 +263,30 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
       setTitle(`Buổi tập – ${active.name}`.slice(0, 120));
     } else {
       setPlanId('');
-      setTitle('Buổi tập với HLV');
+      setTitle(defaultTitle);
     }
     if (me.role === 'ADMIN') {
       setTrainerId(selected?.trainerId ? String(selected.trainerId) : '');
     }
-  }, [plans.data, plans.loading, memberId, selected?.trainerId, edit, me.role]);
+  }, [plans.data, plans.loading, memberId, selected?.trainerId, edit, me.role, defaultTitle]);
+
+  // Giờ hội viên muốn tập và ca của HLV phụ trách, để chọn giờ cho khớp cả hai bên
+  const prefs = useAsync(() => (memberId && !self ? api.get<TimeSlot[]>(`/members/${memberId}/time-preferences`) : Promise.resolve([] as TimeSlot[])), [memberId, self]);
+  const tid = self ? '' : trainerId || (selected?.trainerId ? String(selected.trainerId) : '') || (edit?.trainerId ? String(edit.trainerId) : '') || (me.trainerId ? String(me.trainerId) : '');
+  const trainer = useAsync(() => (tid ? api.get<Trainer>(`/trainers/${tid}`).catch(() => null) : Promise.resolve(null)), [tid]);
+  const dow = date ? ((new Date(`${date}T00:00:00`).getDay() + 6) % 7) + 1 : 0;
+  const dayPrefs = (prefs.data ?? []).filter((p) => p.dayOfWeek === dow).sort((a, b) => toMin(a.startTime) - toMin(b.startTime));
+  const slot: WeekSlot = { dayOfWeek: dow, startTime: time, endTime: fromMin(toMin(time) + (Number(duration) || 0)) };
+  const fitsMember = dayPrefs.length === 0 || covered(dayPrefs, slot);
+  const shifts = trainer.data?.shifts ?? [];
+  const fitsTrainer = !trainer.data || shifts.length === 0 || covered(shifts, slot);
+  const outsideHours = toMin(time) < toMin(GYM_OPEN) || toMin(slot.endTime) > toMin(GYM_CLOSE);
+  const pickPref = (p: TimeSlot) => {
+    setTime(hm(p.startTime));
+    const len = toMin(p.endTime) - toMin(p.startTime);
+    // Giữ thời lượng đang chọn nếu vừa trong khung; khung ngắn hơn thì rút lại cho vừa
+    if (len < (Number(duration) || 0)) setDuration(String(Math.max(15, Math.min(240, len))));
+  };
 
   const submit = async () => {
     const v: Record<string, string> = {};
@@ -260,6 +299,7 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
     else if (start < new Date()) v.date = 'Không xếp vào thời điểm đã qua';
     const end = new Date(start.getTime() + d * 60000);
     if (!v.duration && end.getDate() !== start.getDate()) v.duration = 'Buổi tập phải kết thúc trong ngày';
+    if (!v.duration && outsideHours) v.time = t('Phòng tập mở cửa {open}–{close}, buổi tập phải nằm trong giờ này', { open: GYM_OPEN, close: GYM_CLOSE });
     setErrors(v); setError(null);
     if (Object.keys(v).length) return;
     setBusy(true);
@@ -274,7 +314,7 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
         onSaved(start);
       } else {
         const res = await api.post<ScheduleCreated>('/schedules', { ...body, memberId: Number(memberId), repeatWeeks: Number(repeat) });
-        toast.success(`Đã xếp ${res.created.length} buổi tập`);
+        toast.success(t('Đã xếp {n} buổi tập', { n: res.created.length }));
         if (res.skipped.length) { setSkipped(res.skipped); setBusy(false); return; }
         onSaved(start);
       }
@@ -292,14 +332,14 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
   }
 
   return (
-    <Modal title={edit ? 'Dời lịch buổi tập' : 'Xếp lịch tập'} onClose={onClose} footer={<>
+    <Modal title={edit ? 'Dời lịch buổi tập' : self ? 'Tự xếp buổi tập' : 'Xếp lịch tập'} onClose={onClose} footer={<>
       <Button variant="ghost" onClick={onClose}>Huỷ</Button>
       <Button variant="primary" icon="check" loading={busy} onClick={submit}>{edit ? 'Lưu thay đổi' : 'Xếp lịch'}</Button>
     </>}>
       <div className="stack">
         {error && <Alert kind="error">{error}</Alert>}
         <div className="form-grid">
-          {edit ? (
+          {self ? null : edit ? (
             <Field label="Hội viên" className="span-2"><Person name={edit.memberName} size="sm" /></Field>
           ) : (
             <Field label="Hội viên" error={errors.memberId} required className="span-2">
@@ -319,8 +359,8 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
           {me.role === 'ADMIN' && (
             <Field label="Huấn luyện viên" hint="Để trống = HLV phụ trách của hội viên">
               <Select value={trainerId} onChange={(e) => setTrainerId(e.target.value)}>
-                <option value="">Mặc định</option>
-                {trainers.data?.filter((t) => t.active).map((t) => <option key={t.id} value={t.id}>{t.fullName}</option>)}
+                <option value="">{t('Mặc định')}</option>
+                {trainers.data?.filter((tr) => tr.active).map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}</option>)}
               </Select>
             </Field>
           )}
@@ -332,24 +372,55 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
           </Field>
           <Field label="Tiêu đề" error={errors.title} required className="span-2"><Input maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
           <Field label="Ngày" error={errors.date} required><Input type="date" value={date} min={toIsoDate(new Date())} onChange={(e) => setDate(e.target.value)} /></Field>
-          <Field label="Giờ bắt đầu" required><Input type="time" step={900} value={time} onChange={(e) => setTime(e.target.value)} /></Field>
-          <Field label="Thời lượng (phút)" error={errors.duration} required>
-            <Select value={duration} onChange={(e) => setDuration(e.target.value)}>
-              {[30, 45, 60, 75, 90, 120].map((m) => <option key={m} value={m}>{m} phút</option>)}
-              {![30, 45, 60, 75, 90, 120].includes(Number(duration)) && <option value={duration}>{duration} phút</option>}
+          <Field label="Giờ bắt đầu" error={errors.time} required hint={t('Mở cửa {open}–{close}', { open: GYM_OPEN, close: GYM_CLOSE })}>
+            <Select value={time} invalid={!!errors.time} onChange={(e) => { setTime(e.target.value); setErrors((x) => ({ ...x, time: '' })); }}>
+              {withCurrent(START_TIMES, time).map((v) => <option key={v} value={v}>{v}</option>)}
             </Select>
           </Field>
+          <Field label="Thời lượng (phút)" error={errors.duration} required hint={toMin(time) ? t('Kết thúc lúc {t}', { t: slot.endTime }) : undefined}>
+            <Select value={duration} onChange={(e) => setDuration(e.target.value)}>
+              {[30, 45, 60, 75, 90, 120].map((m) => <option key={m} value={m} disabled={toMin(time) + m > toMin(GYM_CLOSE)}>{t('{n} phút', { n: m })}</option>)}
+              {![30, 45, 60, 75, 90, 120].includes(Number(duration)) && <option value={duration}>{t('{n} phút', { n: duration })}</option>}
+            </Select>
+          </Field>
+          {memberId && dow > 0 && !self && (
+            <div className="span-2 hours-note">
+              <Icon name="clock" size={15} />
+              <span className="small">{t('Hội viên muốn tập {day}:', { day: DAY_NAMES[dow - 1] })}</span>
+              {prefs.loading && !prefs.data ? <span className="tiny faint">…</span>
+                : dayPrefs.length === 0 ? <span className="tiny faint">{(prefs.data?.length ?? 0) > 0 ? t('không đăng ký ngày này') : t('chưa đăng ký giờ tập')}</span>
+                : dayPrefs.map((p) => {
+                  const on = covered([p], slot);
+                  return (
+                    <button key={p.startTime} type="button" className={`pref-chip ${on ? 'ok' : ''}`} onClick={() => pickPref(p)} title={t('Chọn khung giờ này')}>
+                      {on && <Icon name="check" size={12} />}{hm(p.startTime)}–{hm(p.endTime)}
+                    </button>
+                  );
+                })}
+            </div>
+          )}
+          {!outsideHours && (!fitsMember || !fitsTrainer) && (
+            <div className="span-2">
+              <Alert kind="warning">
+                {!fitsMember && <div>{t('Giờ này nằm ngoài khung hội viên đã đăng ký. Nên chọn một khung ở trên hoặc hỏi lại hội viên.')}</div>}
+                {!fitsTrainer && <div>{t('Giờ này nằm ngoài ca làm của HLV {name} ({shifts}). Cập nhật ca ở Hồ sơ › Ca làm nếu cần.', {
+                  name: trainer.data?.fullName ?? '',
+                  shifts: shifts.filter((s) => s.dayOfWeek === dow).map((s) => `${hm(s.startTime)}–${hm(s.endTime)}`).join(', ') || t('nghỉ ngày này'),
+                })}</div>}
+              </Alert>
+            </div>
+          )}
           {!edit && (
             <Field label="Lặp lại hằng tuần" hint="Tuần nào trùng giờ / hết gói sẽ được bỏ qua">
               <Select value={repeat} onChange={(e) => setRepeat(e.target.value)}>
-                <option value="0">Không lặp</option>
-                {[1, 2, 3, 4, 6, 8, 12].map((n) => <option key={n} value={n}>Thêm {n} tuần ({n + 1} buổi)</option>)}
+                <option value="0">{t('Không lặp')}</option>
+                {[1, 2, 3, 4, 6, 8, 12].map((n) => <option key={n} value={n}>{t('Thêm {n} tuần ({m} buổi)', { n, m: n + 1 })}</option>)}
               </Select>
             </Field>
           )}
-          <Field label="Ghi chú" className="span-2"><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: tập trung kỹ thuật squat" /></Field>
+          <Field label="Ghi chú" className="span-2"><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder={self ? 'VD: chân, 45 phút' : 'VD: tập trung kỹ thuật squat'} /></Field>
         </div>
-        {!edit && Number(repeat) > 0 && <Badge tone="blue">Sẽ tạo tối đa {Number(repeat) + 1} buổi vào {fmtWeekday(`${date}T${time}:00`).split(',')[0]} hằng tuần</Badge>}
+        {!edit && Number(repeat) > 0 && <Badge tone="blue">{t('Sẽ tạo tối đa {n} buổi vào {day} hằng tuần', { n: Number(repeat) + 1, day: fmtWeekday(`${date}T${time}:00`).split(',')[0] })}</Badge>}
       </div>
     </Modal>
   );

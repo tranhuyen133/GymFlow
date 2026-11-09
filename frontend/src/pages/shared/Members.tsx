@@ -8,10 +8,11 @@ import { api } from '../../api/client';
 import type { Gender, Member, MemberCreated, MemberForm as Form, MemberStatus, Page, Trainer } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge, Textarea } from '../../components/ui';
+import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge, Table, Textarea } from '../../components/ui';
 import { downloadCsv } from '../../lib/csv';
 import { EMAIL_RE, fmtDate, genderLabel, memberStatus, subState } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync, useDebounced } from '../../lib/hooks';
+import { t, tn } from '../../i18n';
 
 export default function Members() {
   const me = useMe();
@@ -83,13 +84,13 @@ export default function Members() {
       <div className="toolbar">
         <SearchInput value={q} onChange={setQ} placeholder="Tìm theo tên, email, SĐT, mã HV…" />
         <Select value={status} onChange={(e) => setStatus(e.target.value as MemberStatus | '')} aria-label="Trạng thái">
-          <option value="">Mọi trạng thái</option>
+          <option value="">{t('Mọi trạng thái')}</option>
           {(Object.keys(memberStatus) as MemberStatus[]).map((s) => <option key={s} value={s}>{memberStatus[s][0]}</option>)}
         </Select>
         {admin && (
           <Select value={trainerId} onChange={(e) => setTrainerId(e.target.value)} aria-label="HLV">
-            <option value="">Mọi HLV</option>
-            {trainers.data?.map((t) => <option key={t.id} value={t.id}>{t.fullName}</option>)}
+            <option value="">{t('Mọi HLV')}</option>
+            {trainers.data?.map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}</option>)}
           </Select>
         )}
       </div>
@@ -100,29 +101,27 @@ export default function Members() {
             : data && data.content.length === 0 ? <Empty icon="users" title="Không có hội viên phù hợp" desc="Thử đổi từ khoá hoặc bộ lọc." />
               : data && (
                 <>
-                  <div className="table-wrap">
-                    <table className="table">
-                      <thead><tr><th>Hội viên</th><th>Liên hệ</th><th>HLV</th><th>Gói hiện tại</th><th>Trạng thái</th><th>Tham gia</th></tr></thead>
-                      <tbody>
-                        {/* Bấm vào dòng để mở hồ sơ chi tiết (SCRUM-142). */}
-                        {data.content.map((m) => (
-                          <tr key={m.id} className="clickable" onClick={() => navigate(`/members/${m.id}`)}>
-                            <td><Person name={m.fullName} sub={m.code} /></td>
-                            <td><div className="small">{m.phone ?? '—'}</div><div className="tiny faint">{m.email}</div></td>
-                            <td>{m.trainerName ?? <span className="faint">Chưa phân công</span>}</td>
-                            <td>
-                              {m.currentPlanName ? <div className="stack-sm" style={{ gap: 4 }}>
-                                <span className="small">{m.currentPlanName}</span>
-                                <span className="row" style={{ gap: 6 }}><StatusBadge map={subState} value={m.subscriptionState} />{m.subscriptionState !== 'EXPIRED' && m.daysLeft != null && <span className="tiny faint">{m.daysLeft} ngày</span>}</span>
-                              </div> : <Badge tone="muted">Chưa có gói</Badge>}
-                            </td>
-                            <td><StatusBadge map={memberStatus} value={m.status} />{m.accountStatus === 'LOCKED' && <div className="mt-4"><Badge tone="red">TK khoá</Badge></div>}</td>
-                            <td className="nowrap muted">{fmtDate(m.joinedAt)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <Table caption="Danh sách hội viên">
+                    <thead><tr><th>Hội viên</th><th>Liên hệ</th><th>HLV</th><th>Gói hiện tại</th><th>Trạng thái</th><th>Tham gia</th></tr></thead>
+                    <tbody>
+                      {/* Bấm vào dòng để mở hồ sơ chi tiết (SCRUM-142). */}
+                      {data.content.map((m) => (
+                        <tr key={m.id} className="clickable" onClick={() => navigate(`/members/${m.id}`)}>
+                          <td><Person name={m.fullName} sub={m.code} /></td>
+                          <td><div className="small">{m.phone ?? '—'}</div><div className="tiny faint">{m.email}</div></td>
+                          <td>{m.trainerName ?? <span className="faint">Chưa phân công</span>}</td>
+                          <td>
+                            {m.currentPlanName ? <div className="stack-sm" style={{ gap: 4 }}>
+                              <span className="small">{m.currentPlanName}</span>
+                              <span className="row" style={{ gap: 6 }}><StatusBadge map={subState} value={m.subscriptionState} />{m.subscriptionState !== 'EXPIRED' && m.daysLeft != null && <span className="tiny faint">{m.daysLeft} ngày</span>}</span>
+                            </div> : <Badge tone="muted">Chưa có gói</Badge>}
+                          </td>
+                          <td><StatusBadge map={memberStatus} value={m.status} />{m.accountStatus === 'LOCKED' && <div className="mt-4"><Badge tone="red">TK khoá</Badge></div>}</td>
+                          <td className="nowrap muted">{fmtDate(m.joinedAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
                   <Pager page={data.page} totalPages={data.totalPages} total={data.totalElements} onPage={setPage} />
                 </>
               )}
@@ -138,9 +137,9 @@ export default function Members() {
           <div className="stack">
             <Person name={created.member.fullName} sub={`${created.member.code} · ${created.member.email}`} size="lg" />
             {created.temporaryPassword
-              ? <Alert kind="info">Mật khẩu tạm: <b className="num" style={{ letterSpacing: 1 }}>{created.temporaryPassword}</b>. Gửi cho hội viên và nhắc đổi sau lần đăng nhập đầu.</Alert>
+              ? <Alert kind="info">{tn('Mật khẩu tạm: {pw}. Gửi cho hội viên và nhắc đổi sau lần đăng nhập đầu.', { pw: <b className="num" style={{ letterSpacing: 1 }}>{created.temporaryPassword}</b> })}</Alert>
               : <Alert kind="success">Hội viên dùng mật khẩu bạn vừa đặt để đăng nhập.</Alert>}
-            <p className="small muted">Bước tiếp theo: đăng ký gói tập cho hội viên trong trang hồ sơ.</p>
+            <p className="small muted">{t('Bước tiếp theo: đăng ký gói tập cho hội viên trong trang hồ sơ.')}</p>
           </div>
         </Modal>
       )}
@@ -184,14 +183,14 @@ export function MemberFormModal({ member, onClose, onSaved }: { member?: Member;
         onSaved(res);
       } else {
         const res = await api.post<MemberCreated>('/members', body);
-        toast.success(`Đã thêm ${res.member.fullName} (${res.member.code})`);
+        toast.success(t('Đã thêm {name} ({code})', { name: res.member.fullName, code: res.member.code }));
         onSaved(res);
       }
     } catch (e) { setError(errMsg(e)); setErrors(fieldErrs(e)); } finally { setBusy(false); }
   };
 
   return (
-    <Modal title={member ? `Sửa hội viên ${member.code}` : 'Thêm hội viên'} onClose={onClose} footer={<>
+    <Modal title={member ? t('Sửa hội viên {code}', { code: member.code }) : 'Thêm hội viên'} onClose={onClose} footer={<>
       <Button variant="ghost" onClick={onClose}>Huỷ</Button>
       <Button variant="primary" icon="check" loading={busy} onClick={submit}>{member ? 'Lưu thay đổi' : 'Tạo hội viên'}</Button>
     </>}>
@@ -214,8 +213,8 @@ export function MemberFormModal({ member, onClose, onSaved }: { member?: Member;
           <Field label="Chiều cao (cm)" error={errors.heightCm}><Input type="number" min={80} max={250} value={f.heightCm ?? ''} onChange={(e) => set('heightCm', e.target.value ? Number(e.target.value) : null)} /></Field>
           <Field label="Huấn luyện viên phụ trách">
             <Select value={f.trainerId ?? ''} onChange={(e) => set('trainerId', e.target.value ? Number(e.target.value) : null)}>
-              <option value="">Chưa phân công</option>
-              {trainers.data?.filter((t) => t.active || t.id === f.trainerId).map((t) => <option key={t.id} value={t.id}>{t.fullName} · {t.memberCount} HV</option>)}
+              <option value="">{t('Chưa phân công')}</option>
+              {trainers.data?.filter((tr) => tr.active || tr.id === f.trainerId).map((tr) => <option key={tr.id} value={tr.id}>{t('{name} · {n} HV', { name: tr.fullName, n: tr.memberCount })}</option>)}
             </Select>
           </Field>
           <Field label="Mục tiêu tập luyện"><Input maxLength={255} value={f.goal} onChange={(e) => set('goal', e.target.value)} placeholder="Giảm mỡ, tăng cơ…" /></Field>

@@ -90,8 +90,8 @@ export default function ForgotPassword() {
           ) : (
             <form ref={formRef} className="stack" onSubmit={reset} noValidate>
               {demoToken && <Alert kind="info">{t('Chế độ demo (chưa gửi email thật): mã của bạn là')} <b className="num" style={{ letterSpacing: 2 }}>{demoToken}</b></Alert>}
-              <Field htmlFor="recovery-token" label="Mã khôi phục" error={errors.token} required>
-                <Input id="recovery-token" name="token" required autoComplete="one-time-code" aria-describedby={errors.token ? 'recovery-token-error' : ''} value={token} invalid={!!errors.token} onChange={(e) => setToken(e.target.value.toUpperCase())} placeholder="VD: K7M2QX9A" style={{ letterSpacing: 2 }} />
+              <Field htmlFor="recovery-token" label="Mã khôi phục" error={errors.token} hint="Mã gồm 6 chữ số được gửi tới email của bạn" required>
+                <Input id="recovery-token" name="token" required autoComplete="one-time-code" inputMode="numeric" maxLength={6} aria-describedby={errors.token ? 'recovery-token-error' : 'recovery-token-hint'} value={token} invalid={!!errors.token} onChange={(e) => setToken(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="VD: 123456" style={{ letterSpacing: 2 }} />
               </Field>
               <Field htmlFor="recovery-password" label="Mật khẩu mới" error={errors.newPassword} hint="Tối thiểu 8 ký tự, gồm chữ và số" required>
                 <PasswordInput id="recovery-password" name="newPassword" required aria-describedby={errors.newPassword ? 'recovery-password-error' : 'recovery-password-hint'} value={pw} invalid={!!errors.newPassword} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />

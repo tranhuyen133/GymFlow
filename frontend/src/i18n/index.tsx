@@ -1,5 +1,6 @@
 import { Children, cloneElement, Fragment, isValidElement, createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { EN } from './en';
+import { EN_EXTRA } from './en-extra';
 
 /**
  * Đa ngôn ngữ tối giản: chuỗi tiếng Việt chính là khoá, bản tiếng Anh nằm trong en.ts.
@@ -15,13 +16,14 @@ function readLang(): Lang {
 
 let current: Lang = readLang();
 const missing = new Set<string>();
+const DICT: Record<string, string> = { ...EN, ...EN_EXTRA };
 
 type Vars = Record<string, string | number | null | undefined>;
 
 export function t(vi: string, vars?: Vars): string {
   let s = vi;
   if (current === 'en') {
-    const en = EN[vi];
+    const en = DICT[vi];
     if (en !== undefined) s = en;
     else if (import.meta.env.DEV && vi && !missing.has(vi)) { missing.add(vi); console.debug('[i18n] thiếu bản dịch:', vi); }
   }
@@ -66,7 +68,12 @@ function applyDocument(l: Lang) {
   document.documentElement.lang = l;
 }
 
-export function LangProvider({ children }: { children: ReactNode }) {
+/**
+ * children nên là hàm (xem main.tsx): đổi ngôn ngữ thì hàm được gọi lại, cả cây render lại với chữ mới nhưng KHÔNG bị
+ * gỡ ra lắp lại – giữ nguyên dữ liệu đã tải, chữ đang nhập trong form và vị trí cuộn trang.
+ * Trước đây dùng key={lang}: mỗi lần đổi ngôn ngữ cả trang dựng lại từ đầu, tải lại dữ liệu, nháy khung chờ và nhảy về đầu trang.
+ */
+export function LangProvider({ children }: { children: ReactNode | (() => ReactNode) }) {
   const [lang, setLangState] = useState<Lang>(current);
 
   useEffect(() => { applyDocument(lang); }, [lang]);
@@ -89,8 +96,9 @@ export function LangProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({ lang, setLang }), [lang, setLang]);
-  // key={lang}: dựng lại cây giao diện để mọi chỗ gọi t() lấy ngôn ngữ mới (phiên đăng nhập vẫn giữ trong localStorage).
-  return <LangContext.Provider value={value}><Fragment key={lang}>{children}</Fragment></LangContext.Provider>;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const tree = useMemo(() => (typeof children === 'function' ? children() : children), [children, lang]);
+  return <LangContext.Provider value={value}>{tree}</LangContext.Provider>;
 }
 
 export function useLang() {

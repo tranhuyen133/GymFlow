@@ -128,6 +128,8 @@ class WorkoutPlanServiceTest {
         e.setLevel(Level.BEGINNER);
         e.setLocation(ExerciseLocation.GYM);
         e.setEquipment("Tạ đòn");
+        // Giáo án chỉ nhận bài mới đã duyệt; bài chưa duyệt có test riêng ở cuối file
+        e.setReviewStatus(ReviewStatus.APPROVED);
         return e;
     }
 
@@ -356,6 +358,69 @@ class WorkoutPlanServiceTest {
 
         verify(planRepository).saveAndFlush(plan);
         verify(auditService).log(eq("WORKOUT_PLAN_UPDATE"), eq("WORKOUT_PLAN"), eq(100L), eq("Giáo án đã sửa"));
+    }
+
+    // ==========================================
+    // Bài chưa duyệt và số lần không hợp lệ
+    // ==========================================
+
+    @Test
+    @DisplayName("Thêm bài chưa duyệt vào giáo án mới thì bị từ chối 400")
+    void create_withUnapprovedExercise_isRejected() {
+        squat.setReviewStatus(ReviewStatus.PENDING);
+        when(access.requireCoach(TRAINER, 10L)).thenReturn(member);
+        when(access.requireTrainerOf(TRAINER)).thenReturn(trainer);
+        when(exerciseService.load(2L)).thenReturn(squat);
+
+        WorkoutPlanRequest req = new WorkoutPlanRequest(10L, "Giáo án chân", null,
+                LocalDate.of(2026, 11, 1), LocalDate.of(2026, 12, 1), null,
+                List.of(new PlanItemRequest(2L, 1, 0, 3, "10", null, null, null, null)));
+
+        assertThatThrownBy(() -> service.create(TRAINER, req))
+                .isInstanceOf(ApiException.class)
+                .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(planRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Bài đã có trong giáo án vẫn được giữ khi sửa dù sau đó bị trả về chỉnh sửa")
+    void update_keepsExistingExercise_evenIfNoLongerApproved() {
+        WorkoutPlan plan = new WorkoutPlan();
+        plan.setId(100L);
+        plan.setMember(member);
+        WorkoutPlanItem old = new WorkoutPlanItem();
+        old.setPlan(plan);
+        old.setExercise(benchPress);
+        old.setDayOfWeek(1);
+        old.setSets(3);
+        old.setReps("10");
+        plan.getItems().add(old);
+        benchPress.setReviewStatus(ReviewStatus.NEEDS_REVIEW);
+
+        when(planRepository.findById(100L)).thenReturn(Optional.of(plan));
+        when(access.canCoach(ADMIN, member)).thenReturn(true);
+        when(exerciseService.load(1L)).thenReturn(benchPress);
+
+        WorkoutPlanRequest req = new WorkoutPlanRequest(10L, "Giáo án ngực", null,
+                LocalDate.of(2026, 11, 1), LocalDate.of(2026, 12, 1), null,
+                List.of(new PlanItemRequest(1L, 1, 0, 4, "8-10", 40.0, 90, null, null)));
+
+        service.update(ADMIN, 100L, req);
+        assertThat(plan.getItems()).hasSize(1);
+        assertThat(plan.getItems().get(0).getSets()).isEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("Số lần dạng khoảng ngược (12-8) bị từ chối 400")
+    void create_withReversedRepRange_isRejected() {
+        when(access.requireCoach(TRAINER, 10L)).thenReturn(member);
+        WorkoutPlanRequest req = new WorkoutPlanRequest(10L, "Giáo án ngực", null,
+                LocalDate.of(2026, 11, 1), LocalDate.of(2026, 12, 1), null,
+                List.of(new PlanItemRequest(1L, 1, 0, 3, "12-8", null, null, null, null)));
+
+        assertThatThrownBy(() -> service.create(TRAINER, req))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("số đầu phải nhỏ hơn số sau");
     }
 
     // ==========================================

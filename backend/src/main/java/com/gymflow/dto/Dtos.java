@@ -20,6 +20,17 @@ public final class Dtos {
     private static final String EMAIL_MSG = "Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)";
     private static final String PHONE_RULE = "^$|^(0|\\+84)\\d{9,10}$";
     private static final String PHONE_MSG = "Số điện thoại không hợp lệ";
+    private static final String NAME_RULE = "^[\\p{L}\\p{M}][\\p{L}\\p{M} .'-]*$";
+    private static final String NAME_MSG = "Họ tên chỉ gồm chữ cái và khoảng trắng";
+    /** Tên giáo án / bài tập: phải có chữ cái (không chỉ gồm số), cho phép số và dấu câu thường gặp. Trùng validation.ts. */
+    private static final String TITLE_RULE = "^(?=.*\\p{L})[\\p{L}\\p{M}\\d .,:;/()+&#'’–-]+$";
+    private static final String PLAN_NAME_MSG = "Tên giáo án phải có chữ cái (có thể kèm số), VD: Full body 3 buổi/tuần";
+    private static final String EXERCISE_NAME_MSG = "Tên bài tập phải có chữ cái (có thể kèm số), VD: Squat thanh đòn";
+    /** Để trống hoặc có ít nhất một chữ cái (dụng cụ, cơ phụ trợ, tên gọi khác). */
+    private static final String TEXT_RULE = "^$|(?s).*\\p{L}.*";
+    private static final String NAME_EN_RULE = "^$|^[A-Za-z][A-Za-z0-9 ()'’/,.&+-]*$";
+    /** Số lần: 10, 10-12, 45s (giây). Trùng PlanEditor.tsx. */
+    private static final String REPS_RULE = "^\\d{1,3}(\\s*-\\s*\\d{1,3})?\\s*[sS]?$";
 
     // ===================== Auth =====================
     public record LoginRequest(
@@ -28,7 +39,7 @@ public final class Dtos {
     }
 
     public record MeResponse(Long id, String email, String fullName, String phone, Role role,
-                             Long memberId, Long trainerId, LocalDateTime lastLoginAt) {
+                             Long memberId, Long trainerId, LocalDateTime lastLoginAt, LocalDateTime avatarUpdatedAt) {
     }
 
     public record LoginResponse(String token, long expiresInMinutes, MeResponse user) {
@@ -39,7 +50,7 @@ public final class Dtos {
      * Mật khẩu xác nhận được kiểm tra lại ở service (FE đã kiểm tra trước).
      */
     public record RegisterRequest(
-            @NotBlank(message = "Vui lòng nhập họ tên") @Size(min = 2, max = 100, message = "Họ tên từ 2 đến 100 ký tự") String fullName,
+            @NotBlank(message = "Vui lòng nhập họ tên") @Size(min = 2, max = 100, message = "Họ tên từ 2 đến 100 ký tự") @Pattern(regexp = NAME_RULE, message = NAME_MSG) String fullName,
             @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone,
             @NotBlank(message = "Vui lòng nhập mật khẩu") @Pattern(regexp = PASSWORD_RULE, message = PASSWORD_MSG) String password,
@@ -66,7 +77,7 @@ public final class Dtos {
             @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email) {
     }
 
-    /** resetToken chỉ trả về khi bật chế độ demo (app.reset.expose-token=true) vì chưa tích hợp gửi email. */
+    /** resetToken chỉ trả về khi bật chế độ demo (app.reset.expose-token=true); production gửi mã qua email. */
     public record ForgotPasswordResponse(String message, String resetToken, int validMinutes) {
     }
 
@@ -76,19 +87,19 @@ public final class Dtos {
     }
 
     public record UpdateProfileRequest(
-            @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") String fullName,
+            @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") @Pattern(regexp = NAME_RULE, message = NAME_MSG) String fullName,
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone) {
     }
 
     // ===================== Member =====================
     public record MemberCreateRequest(
             @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email,
-            @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") String fullName,
+            @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") @Pattern(regexp = NAME_RULE, message = NAME_MSG) String fullName,
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone,
             @Pattern(regexp = "^$|" + PASSWORD_RULE, message = PASSWORD_MSG) String password,
             @Past(message = "Ngày sinh phải ở quá khứ") LocalDate dateOfBirth,
             Gender gender,
-            @DecimalMin(value = "80", message = "Chiều cao từ 80 cm") @DecimalMax(value = "250", message = "Chiều cao tối đa 250 cm") Double heightCm,
+            @DecimalMin(value = "80", message = "Chiều cao phải từ 80 cm trở lên") @DecimalMax(value = "250", message = "Chiều cao không được vượt quá 250 cm") Double heightCm,
             @Size(max = 255, message = "Mục tiêu tối đa 255 ký tự") String goal,
             @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự") String address,
             Long trainerId,
@@ -100,11 +111,11 @@ public final class Dtos {
     }
 
     public record MemberUpdateRequest(
-            @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") String fullName,
+            @NotBlank(message = "Vui lòng nhập họ tên") @Size(max = 100, message = "Họ tên tối đa 100 ký tự") @Pattern(regexp = NAME_RULE, message = NAME_MSG) String fullName,
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone,
             @Past(message = "Ngày sinh phải ở quá khứ") LocalDate dateOfBirth,
             Gender gender,
-            @DecimalMin(value = "80", message = "Chiều cao từ 80 cm") @DecimalMax(value = "250", message = "Chiều cao tối đa 250 cm") Double heightCm,
+            @DecimalMin(value = "80", message = "Chiều cao phải từ 80 cm trở lên") @DecimalMax(value = "250", message = "Chiều cao không được vượt quá 250 cm") Double heightCm,
             @Size(max = 255, message = "Mục tiêu tối đa 255 ký tự") String goal,
             @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự") String address,
             Long trainerId,
@@ -120,7 +131,7 @@ public final class Dtos {
             @Pattern(regexp = PHONE_RULE, message = PHONE_MSG) String phone,
             @Past(message = "Ngày sinh phải ở quá khứ") LocalDate dateOfBirth,
             Gender gender,
-            @DecimalMin(value = "80", message = "Chiều cao từ 80 cm") @DecimalMax(value = "250", message = "Chiều cao tối đa 250 cm") Double heightCm,
+            @DecimalMin(value = "80", message = "Chiều cao phải từ 80 cm trở lên") @DecimalMax(value = "250", message = "Chiều cao không được vượt quá 250 cm") Double heightCm,
             @Size(max = 255, message = "Mục tiêu tối đa 255 ký tự") String goal,
             @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự") String address) {
         @AssertTrue(message = "Ngày sinh phải sau ngày 01/01/1900")
@@ -201,11 +212,16 @@ public final class Dtos {
             @Size(max = 500) String description,
             @NotNull(message = "Vui lòng nhập giá") @Min(value = 0, message = "Giá không âm") Long price,
             @NotNull(message = "Vui lòng nhập thời hạn") @Min(value = 1, message = "Thời hạn tối thiểu 1 ngày") @Max(value = 1095, message = "Thời hạn tối đa 3 năm") Integer durationDays,
-            @Size(max = 1000) String benefits) {
+            @Size(max = 1000) String benefits,
+            /** Gói có HLV kèm (PT). Không gửi = false: hội viên tự soạn giáo án, tự xếp lịch. */
+            boolean includesTrainer) {
+        public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits) {
+            this(name, description, price, durationDays, benefits, false);
+        }
     }
 
     public record PlanResponse(Long id, String name, String description, Long price, Integer durationDays,
-                               String benefits, boolean active, long currentSubscriptions) {
+                               String benefits, boolean active, long currentSubscriptions, boolean includesTrainer) {
     }
 
     // ===================== Subscription =====================
@@ -231,18 +247,19 @@ public final class Dtos {
 
     // ===================== Exercise =====================
     public record ExerciseRequest(
-            @NotBlank(message = "Vui lòng nhập tên bài tập") @Size(max = 120) String name,
+            @NotBlank(message = "Vui lòng nhập tên bài tập") @Size(min = 2, max = 120, message = "Tên bài tập từ 2 đến 120 ký tự")
+            @Pattern(regexp = TITLE_RULE, message = EXERCISE_NAME_MSG) String name,
             @NotNull(message = "Vui lòng chọn nhóm cơ") MuscleGroup muscleGroup,
-            @Size(max = 60) String equipment,
+            @Size(max = 60, message = "Dụng cụ tối đa 60 ký tự") @Pattern(regexp = TEXT_RULE, message = "Dụng cụ phải có chữ, VD: Tạ đơn") String equipment,
             @NotNull(message = "Vui lòng chọn cấp độ") Level level,
-            @Size(max = 1000) String description,
-            @Size(max = 2000) String instructions,
-            @Pattern(regexp = "^$|^https?://.+", message = "Link video phải bắt đầu bằng http(s)://") @Size(max = 255) String videoUrl,
-            @Size(max = 120) String nameEn,
-            @Size(max = 255) String aliases,
-            @Size(max = 255) String secondaryMuscles,
+            @Size(max = 1000, message = "Mô tả tối đa 1000 ký tự") String description,
+            @Size(max = 2000, message = "Hướng dẫn tối đa 2000 ký tự") String instructions,
+            @Pattern(regexp = "^$|^https?://[^\\s]+\\.[^\\s]+$", message = "Link video phải là địa chỉ web đầy đủ, bắt đầu bằng http(s)://") @Size(max = 255) String videoUrl,
+            @Size(max = 120) @Pattern(regexp = NAME_EN_RULE, message = "Tên tiếng Anh chỉ gồm chữ không dấu, số và khoảng trắng") String nameEn,
+            @Size(max = 255) @Pattern(regexp = TEXT_RULE, message = "Tên gọi khác phải có chữ") String aliases,
+            @Size(max = 255) @Pattern(regexp = TEXT_RULE, message = "Cơ phụ trợ phải có chữ, VD: Mông, lưng dưới") String secondaryMuscles,
             ExerciseLocation location,
-            List<ExerciseGoal> goals,
+            @Size(max = 5) List<ExerciseGoal> goals,
             @Size(max = 500) String breathing,
             @Size(max = 2000) String commonMistakes,
             @Size(max = 2000) String safetyNotes,
@@ -250,10 +267,34 @@ public final class Dtos {
             @Size(max = 255) String suggestedDose,
             ContentOrigin contentOrigin,
             /** null = giữ nguyên nguồn đang gắn; danh sách rỗng = bỏ hết nguồn */
-            List<Long> sourceIds) {
+            @Size(max = 20, message = "Tối đa 20 nguồn") List<Long> sourceIds,
+            /** V13 · khoá vùng cơ trên bản đồ (lib/anatomy.ts). null = giữ nguyên. */
+            @Size(max = 6, message = "Chọn tối đa 6 vùng cơ chính") List<String> targetMuscles,
+            @Size(max = 10, message = "Chọn tối đa 10 vùng cơ phụ") List<String> secondaryMuscleKeys,
+            @Size(max = 6, message = "Chọn tối đa 6 loại dụng cụ") List<String> equipmentKeys,
+            @Size(max = 80) @Pattern(regexp = "^$|^[A-Za-z0-9_-]+$", message = "Mã ảnh chỉ gồm chữ không dấu, số, _ và -") String imageKey) {
+
+        /** Giữ chữ ký cũ (trước V13) cho các chỗ gọi / test đang dùng. */
+        public ExerciseRequest(String name, MuscleGroup muscleGroup, String equipment, Level level, String description,
+                               String instructions, String videoUrl, String nameEn, String aliases, String secondaryMuscles,
+                               ExerciseLocation location, List<ExerciseGoal> goals, String breathing, String commonMistakes,
+                               String safetyNotes, String variations, String suggestedDose, ContentOrigin contentOrigin,
+                               List<Long> sourceIds) {
+            this(name, muscleGroup, equipment, level, description, instructions, videoUrl, nameEn, aliases, secondaryMuscles,
+                    location, goals, breathing, commonMistakes, safetyNotes, variations, suggestedDose, contentOrigin, sourceIds,
+                    null, null, null, null);
+        }
     }
 
     public record HiddenRequest(@NotNull Boolean hidden) {
+    }
+
+    /** Duyệt loạt: chỉ bài đạt đủ checklist được duyệt, bài thiếu được trả về kèm lý do. */
+    public record BulkApproveRequest(@NotEmpty(message = "Chọn ít nhất một bài") @Size(max = 100, message = "Tối đa 100 bài mỗi lần") List<Long> ids,
+                                     @Size(max = 500, message = "Ghi chú tối đa 500 ký tự") String note) {
+    }
+
+    public record BulkApproveResponse(int approved, List<String> skipped) {
     }
 
     /** Chỉ ADMIN. NEEDS_REVIEW bắt buộc kèm ghi chú để người biên soạn biết cần sửa gì. */
@@ -274,7 +315,23 @@ public final class Dtos {
                                    List<ExerciseGoal> goals, String breathing, String commonMistakes, String safetyNotes,
                                    String variations, String suggestedDose, ContentOrigin contentOrigin,
                                    ReviewStatus reviewStatus, String reviewNote, String reviewedByName,
-                                   LocalDateTime reviewedAt, LocalDateTime updatedAt, List<SourceResponse> sources) {
+                                   LocalDateTime reviewedAt, LocalDateTime updatedAt, List<SourceResponse> sources,
+                                   List<String> targetMuscles, List<String> secondaryMuscleKeys, List<String> equipmentKeys,
+                                   String imageKey) {
+        /** Giữ chữ ký trước V13 (test và code cũ): chưa có vùng cơ, dụng cụ, ảnh. */
+        public ExerciseResponse(Long id, String name, MuscleGroup muscleGroup, String equipment, Level level,
+                                String description, String instructions, String videoUrl, boolean hidden,
+                                long usageCount, String createdByName,
+                                String nameEn, String aliases, String secondaryMuscles, ExerciseLocation location,
+                                List<ExerciseGoal> goals, String breathing, String commonMistakes, String safetyNotes,
+                                String variations, String suggestedDose, ContentOrigin contentOrigin,
+                                ReviewStatus reviewStatus, String reviewNote, String reviewedByName,
+                                LocalDateTime reviewedAt, LocalDateTime updatedAt, List<SourceResponse> sources) {
+            this(id, name, muscleGroup, equipment, level, description, instructions, videoUrl, hidden, usageCount, createdByName,
+                    nameEn, aliases, secondaryMuscles, location, goals, breathing, commonMistakes, safetyNotes, variations,
+                    suggestedDose, contentOrigin, reviewStatus, reviewNote, reviewedByName, reviewedAt, updatedAt, sources,
+                    List.of(), List.of(), List.of(), null);
+        }
     }
 
     // ===================== Knowledge base =====================
@@ -316,8 +373,9 @@ public final class Dtos {
             @NotNull @Min(value = 1, message = "Thứ từ 1 đến 7") @Max(value = 7, message = "Thứ từ 1 đến 7") Integer dayOfWeek,
             Integer sortOrder,
             @NotNull(message = "Nhập số hiệp") @Min(value = 1, message = "Tối thiểu 1 hiệp") @Max(value = 20, message = "Tối đa 20 hiệp") Integer sets,
-            @NotBlank(message = "Nhập số lần (VD: 10-12)") @Size(max = 20) String reps,
-            @DecimalMin(value = "0", message = "Mức tạ không âm") Double weightKg,
+            @NotBlank(message = "Nhập số lần (VD: 10-12)") @Size(max = 20)
+            @Pattern(regexp = REPS_RULE, message = "Số lần ghi dạng 10, 10-12 hoặc 45s") String reps,
+            @DecimalMin(value = "0", message = "Mức tạ không âm") @DecimalMax(value = "500", message = "Mức tạ tối đa 500 kg") Double weightKg,
             @Min(value = 0, message = "Nghỉ không âm") @Max(value = 900, message = "Nghỉ tối đa 900 giây") Integer restSeconds,
             @Min(value = 1, message = "Tối thiểu 1 phút") @Max(value = 300, message = "Tối đa 300 phút") Integer durationMinutes,
             @Size(max = 255) String note) {
@@ -325,7 +383,8 @@ public final class Dtos {
 
     public record WorkoutPlanRequest(
             @NotNull(message = "Vui lòng chọn hội viên") Long memberId,
-            @NotBlank(message = "Vui lòng nhập tên giáo án") @Size(max = 120) String name,
+            @NotBlank(message = "Vui lòng nhập tên giáo án") @Size(min = 3, max = 120, message = "Tên giáo án từ 3 đến 120 ký tự")
+            @Pattern(regexp = TITLE_RULE, message = PLAN_NAME_MSG) String name,
             @Size(max = 255) String goal,
             @NotNull(message = "Chọn ngày bắt đầu") LocalDate startDate,
             @NotNull(message = "Chọn ngày kết thúc") LocalDate endDate,
@@ -392,12 +451,17 @@ public final class Dtos {
     // ===================== Weight & progress =====================
     public record WeightRequest(
             @NotNull(message = "Chọn ngày") @PastOrPresent(message = "Không ghi cho ngày tương lai") LocalDate recordedDate,
-            @NotNull(message = "Nhập cân nặng") @DecimalMin(value = "20", message = "Cân nặng từ 20 kg") @DecimalMax(value = "300", message = "Cân nặng tối đa 300 kg") Double weightKg,
-            @DecimalMin(value = "2", message = "% mỡ từ 2") @DecimalMax(value = "70", message = "% mỡ tối đa 70") Double bodyFat,
+            @NotNull(message = "Nhập cân nặng") @DecimalMin(value = "20", message = "Cân nặng phải từ 20 kg trở lên") @DecimalMax(value = "300", message = "Cân nặng không được vượt quá 300 kg") Double weightKg,
+            @DecimalMin(value = "2", message = "% mỡ cơ thể phải từ 2% trở lên") @DecimalMax(value = "70", message = "% mỡ cơ thể không được vượt quá 70%") Double bodyFat,
+            @DecimalMin(value = "40", message = "Vòng eo phải từ 40 cm trở lên") @DecimalMax(value = "200", message = "Vòng eo không được vượt quá 200 cm") Double waistCm,
+            @DecimalMin(value = "50", message = "Vòng ngực phải từ 50 cm trở lên") @DecimalMax(value = "200", message = "Vòng ngực không được vượt quá 200 cm") Double chestCm,
+            @DecimalMin(value = "15", message = "Vòng tay phải từ 15 cm trở lên") @DecimalMax(value = "80", message = "Vòng tay không được vượt quá 80 cm") Double armCm,
+            @DecimalMin(value = "25", message = "Vòng đùi phải từ 25 cm trở lên") @DecimalMax(value = "120", message = "Vòng đùi không được vượt quá 120 cm") Double thighCm,
             @Size(max = 255) String note) {
     }
 
-    public record WeightResponse(Long id, LocalDate recordedDate, Double weightKg, Double bodyFat, String note) {
+    public record WeightResponse(Long id, LocalDate recordedDate, Double weightKg, Double bodyFat,
+                                 Double waistCm, Double chestCm, Double armCm, Double thighCm, String note) {
     }
 
     public record WeekAttendance(LocalDate weekStart, long scheduled, long completed, long missed) {

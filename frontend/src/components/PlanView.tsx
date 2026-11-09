@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { PlanItem } from '../api/types';
 import { t } from '../i18n';
+import type { PlanItem } from '../api/types';
 import { DAYS, DAY_NAMES, muscleColor, muscleLabel } from '../lib/format';
 import { Icon } from './Icon';
 import { Empty } from './ui';
