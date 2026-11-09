@@ -1,7 +1,7 @@
 /**
  * CHỦ FILE: Tùng (Lê Thanh Tùng)
  * TASK: SCRUM-138
- * Layout dùng chung cho khu ứng dụng: sidebar desktop, topbar, tab bar mobile.
+ * Layout dùng chung cho khu ứng dụng: sidebar desktop (nhóm gập/mở, thu gọn được), topbar, tab bar mobile, hướng dẫn lần đầu.
  */
 import { Fragment, useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -15,21 +15,29 @@ import { MyAvatar } from './AvatarEditor';
 import { Badge, Button, Confirm } from './ui';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { locale, t } from '../i18n';
+import { Tour } from './Tour';
+import './nav.css';
 
 interface NavItem { to: string; label: string; icon: IconName; roles: Role[]; group?: string; tab?: boolean }
 
+/**
+ * Mục không có group luôn hiện; mục cùng group (đứng liền nhau) gom thành nhóm gập/mở được.
+ * Thứ tự ở đây là thứ tự trên menu. tab: hiện ở tab bar điện thoại (4 mục đầu theo vai trò).
+ */
 export const NAV: NavItem[] = [
   { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard', roles: ['ADMIN', 'TRAINER', 'MEMBER'], tab: true },
   { to: '/me/schedule', label: 'Lịch tập của tôi', icon: 'calendar', roles: ['MEMBER'], tab: true },
   { to: '/me/plan', label: 'Giáo án của tôi', icon: 'clipboard', roles: ['MEMBER'], tab: true },
-  { to: '/me/progress', label: 'Tiến độ', icon: 'chart', roles: ['MEMBER'], tab: true },
-  { to: '/me/journey', label: 'Hành trình của tôi', icon: 'trophy', roles: ['MEMBER'] },
   { to: '/me/packages', label: 'Gói tập của tôi', icon: 'ticket', roles: ['MEMBER'] },
   { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['ADMIN', 'TRAINER'], tab: true },
+  { to: '/me/progress', label: 'Tiến độ', icon: 'chart', roles: ['MEMBER'], group: 'Sức khoẻ & tiến độ', tab: true },
+  { to: '/me/journey', label: 'Hành trình của tôi', icon: 'trophy', roles: ['MEMBER'], group: 'Sức khoẻ & tiến độ' },
   { to: '/members', label: 'Hội viên', icon: 'users', roles: ['ADMIN', 'TRAINER'], group: 'Huấn luyện', tab: true },
   { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['ADMIN', 'TRAINER'], group: 'Huấn luyện', tab: true },
-  { to: '/exercises', label: 'Thư viện bài tập', icon: 'dumbbell', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Huấn luyện' },
-  { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Huấn luyện' },
+  { to: '/exercises', label: 'Thư viện bài tập', icon: 'dumbbell', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Kiến thức' },
+  { to: '/equipment', label: 'Dụng cụ tập', icon: 'zap', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Kiến thức' },
+  { to: '/programs', label: 'Lịch tập mẫu', icon: 'layers', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Kiến thức' },
+  { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Kiến thức' },
   { to: '/trainers', label: 'Huấn luyện viên', icon: 'badge', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/plans', label: 'Gói tập', icon: 'ticket', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/subscriptions', label: 'Đăng ký gói', icon: 'card', roles: ['ADMIN'], group: 'Kinh doanh' },
@@ -39,8 +47,14 @@ export const NAV: NavItem[] = [
   { to: '/users', label: 'Tài khoản & quyền', icon: 'userCog', roles: ['ADMIN'], group: 'Hệ thống' },
   { to: '/audit-logs', label: 'Nhật ký hệ thống', icon: 'scroll', roles: ['ADMIN'], group: 'Hệ thống' },
   { to: '/profile', label: 'Hồ sơ cá nhân', icon: 'user', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Tài khoản' },
+  { to: '/help', label: 'Trợ giúp', icon: 'info', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Tài khoản' },
   { to: '/', label: 'Trang giới thiệu', icon: 'home', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Tài khoản' },
 ];
+
+const GROUPS_KEY = 'gf.nav.groups';
+const MINI_KEY = 'gf.side.mini';
+const readJson = <T,>(k: string, fallback: T): T => { try { return (JSON.parse(localStorage.getItem(k) ?? 'null') as T) ?? fallback; } catch { return fallback; } };
+const writeLocal = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* chế độ riêng tư: chỉ nhớ trong phiên */ } };
 
 function Clock() {
   const [now, setNow] = useState(new Date());
@@ -53,10 +67,12 @@ function Clock() {
   );
 }
 
-function Notifications() {
+function Notifications({ userId }: { userId: number }) {
   const [items, setItems] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
-  const [seen, setSeen] = useState<string[]>(() => JSON.parse(sessionStorage.getItem('gf.seen') ?? '[]'));
+  // Nhớ thông báo đã xem theo tài khoản, qua cả lần đăng nhập sau (trước đây chỉ nhớ trong phiên nên mở lại là báo đỏ lại)
+  const seenKey = `gf.seen.${userId}`;
+  const [seen, setSeen] = useState<string[]>(() => { const v = readJson<unknown>(seenKey, []); return Array.isArray(v) ? (v as string[]) : []; });
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -81,12 +97,12 @@ function Notifications() {
     setOpen((o) => !o);
     const ids = items.map((n) => n.id);
     setSeen(ids);
-    sessionStorage.setItem('gf.seen', JSON.stringify(ids));
+    writeLocal(seenKey, JSON.stringify(ids));
   };
   const icon = (l: Notification['level']): IconName => (l === 'danger' ? 'alert' : l === 'warning' ? 'clock' : 'info');
 
   return (
-    <div className="bell" ref={ref}>
+    <div className="bell" ref={ref} data-tour="bell">
       <Button variant="ghost" icon="bell" aria-label={t('Thông báo ({n} mới)', { n: unread })} onClick={toggle} />
       {unread > 0 && <span className="dot">{unread}</span>}
       {open && (
@@ -135,7 +151,7 @@ function AccountMenu({ onLogout }: { onLogout: () => void }) {
   const { pathname } = useLocation();
   useEffect(() => setOpen(false), [pathname]);
   return (
-    <div className="account" ref={ref}>
+    <div className="account" ref={ref} data-tour="account">
       <button type="button" className="account-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}
         aria-label={t('Tài khoản: {name}', { name: user.fullName })}>
         <MyAvatar size="sm" />
@@ -155,6 +171,7 @@ function AccountMenu({ onLogout }: { onLogout: () => void }) {
           <Link to="/profile" role="menuitem" className="menu-item"><Icon name="user" />{t('Hồ sơ cá nhân')}</Link>
           {user.role === 'MEMBER' && <Link to="/me/packages" role="menuitem" className="menu-item"><Icon name="ticket" />{t('Gói tập của tôi')}</Link>}
           {user.role === 'MEMBER' && <Link to="/me/progress" role="menuitem" className="menu-item"><Icon name="chart" />{t('Tiến độ')}</Link>}
+          <Link to="/help" role="menuitem" className="menu-item"><Icon name="info" />{t('Trợ giúp')}</Link>
           <div className="menu-prefs"><span className="tiny muted">{t('Giao diện & ngôn ngữ')}</span><ThemeToggle /></div>
           <button type="button" role="menuitem" className="menu-item danger" onClick={() => { setOpen(false); onLogout(); }}><Icon name="logout" />{t('Đăng xuất')}</button>
         </div>
@@ -170,6 +187,11 @@ export function Layout() {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const [askLogout, setAskLogout] = useState(false);
+  const [mini, setMini] = useState(() => readJson<boolean>(MINI_KEY, false) === true);
+  const [groups, setGroups] = useState<Record<string, boolean>>(() => readJson<Record<string, boolean>>(GROUPS_KEY, {}));
+  /** Nhóm đang được hướng dẫn mở tạm (không ghi đè lựa chọn gập/mở của người dùng) */
+  const [reveal, setReveal] = useState<string | null>(null);
+  const tourDrawer = useRef(false);
   const closeBtn = useRef<HTMLButtonElement>(null);
   useEffect(() => { setOpen(false); window.scrollTo({ top: 0 }); }, [pathname]);
 
@@ -180,7 +202,7 @@ export function Layout() {
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('keydown', onKey);
-    closeBtn.current?.focus();
+    if (!tourDrawer.current) closeBtn.current?.focus(); // drawer do hướng dẫn mở: focus ở lại hộp thoại hướng dẫn
     return () => { document.body.style.overflow = prev; document.removeEventListener('keydown', onKey); };
   }, [open]);
 
@@ -188,32 +210,69 @@ export function Layout() {
   const current = items.find((n) => pathname === n.to || pathname.startsWith(n.to + '/'));
   const tabs = items.filter((n) => n.tab).slice(0, 4);
   const doLogout = () => { logout(); navigate('/login'); };
-  let lastGroup: string | undefined;
+
+  // Gom các mục liền nhau cùng group thành một khối
+  const sections: { group?: string; items: NavItem[] }[] = [];
+  items.forEach((n) => {
+    const last = sections[sections.length - 1];
+    if (last && last.group === n.group) last.items.push(n);
+    else sections.push({ group: n.group, items: [n] });
+  });
+  // Chưa từng bấm gập/mở: chỉ mở sẵn nhóm chứa trang đang xem
+  const isOpen = (g: string, hasActive: boolean) => g === reveal || (groups[g] ?? hasActive);
+  const toggleGroup = (g: string, now: boolean) => setGroups((p) => {
+    const n = { ...p, [g]: !now };
+    writeLocal(GROUPS_KEY, JSON.stringify(n));
+    return n;
+  });
+  const toggleMini = () => setMini((m) => { writeLocal(MINI_KEY, JSON.stringify(!m)); return !m; });
+
+  // Hướng dẫn cần chỉ vào menu: mở nhóm chứa mục đó; trên điện thoại mở drawer
+  const onTourNav = useCallback((to: string | true | null) => {
+    setReveal(typeof to === 'string' ? NAV.find((n) => n.to === to)?.group ?? null : null);
+    const narrow = window.matchMedia('(max-width: 900px)').matches;
+    if (to && narrow) { tourDrawer.current = true; setOpen(true); }
+    else if (tourDrawer.current) { tourDrawer.current = false; setOpen(false); }
+  }, []);
+
+  const link = (n: NavItem) => (
+    <NavLink key={n.to} to={n.to} className={({ isActive }) => (isActive ? 'active' : '')}
+      title={mini ? t(n.label) : undefined} data-tour={`nav:${n.to}`}>
+      <Icon name={n.icon} /><span>{t(n.label)}</span>
+    </NavLink>
+  );
 
   return (
-    <div className="shell">
+    <div className={`shell ${mini ? 'side-mini' : ''}`}>
       <aside id="app-sidebar" className={`sidebar ${open ? 'open' : ''}`} aria-label={t('Điều hướng chính')}>
         <div className="side-head">
           <Link to="/" title={t('Về trang giới thiệu GymFlow')} aria-label={t('Về trang giới thiệu GymFlow')}><Brand /></Link>
+          <button type="button" className="btn btn-ghost btn-icon side-mini-btn" aria-pressed={mini}
+            aria-label={mini ? t('Mở rộng menu') : t('Thu gọn menu')} title={mini ? t('Mở rộng menu') : t('Thu gọn menu')} onClick={toggleMini}>
+            <Icon name={mini ? 'chevronRight' : 'chevronLeft'} />
+          </button>
           <button ref={closeBtn} type="button" className="btn btn-ghost btn-icon side-close" aria-label={t('Đóng menu')} onClick={() => setOpen(false)}><Icon name="x" /></button>
         </div>
-        <nav className="nav">
-          {items.map((n) => {
-            const showGroup = n.group && n.group !== lastGroup;
-            lastGroup = n.group ?? lastGroup;
+        <nav className="nav" data-tour="nav">
+          {sections.map((s, i) => {
+            if (!s.group) return <Fragment key={`top-${i}`}>{s.items.map(link)}</Fragment>;
+            const hasActive = s.items.some((n) => n === current);
+            const opened = isOpen(s.group, hasActive);
+            const id = `nav-sec-${i}`;
             return (
-              <Fragment key={n.to}>
-                {showGroup && <div className="nav-group">{t(n.group!)}</div>}
-                <NavLink to={n.to} className={({ isActive }) => (isActive ? 'active' : '')}>
-                  <Icon name={n.icon} /><span>{t(n.label)}</span>
-                </NavLink>
-              </Fragment>
+              <div key={s.group} className="nav-section">
+                <button type="button" className={`nav-group-btn ${hasActive ? 'has-active' : ''}`} aria-expanded={opened} aria-controls={id}
+                  onClick={() => toggleGroup(s.group!, opened)}>
+                  <span>{t(s.group)}</span><Icon name="chevronDown" size={14} />
+                </button>
+                <div id={id} className={`nav-sub ${opened ? '' : 'collapsed'}`}>{s.items.map(link)}</div>
+              </div>
             );
           })}
         </nav>
         <div className="side-prefs"><ThemeToggle /></div>
         <div className="side-user">
-          <Link to="/profile" className="side-user-link" aria-label={t('Hồ sơ cá nhân')}>
+          <Link to="/profile" className="side-user-link" aria-label={t('Hồ sơ cá nhân')} title={mini ? user.fullName : undefined}>
             <MyAvatar />
             <div className="grow" style={{ minWidth: 0 }}>
               <div>{user.fullName}</div>
@@ -234,10 +293,11 @@ export function Layout() {
           <div className="spacer" />
           <Clock />
           <ThemeToggle className="top-theme" />
-          <Notifications />
+          <Link to="/help" className="btn btn-ghost btn-icon top-help" aria-label={t('Trợ giúp')} title={t('Trợ giúp')} data-tour="help"><Icon name="info" /></Link>
+          <Notifications userId={user.id} />
           <AccountMenu onLogout={() => setAskLogout(true)} />
         </header>
-        <main className="content" id="main">
+        <main className="content" id="main" data-tour="content">
           <Outlet />
         </main>
       </div>
@@ -250,6 +310,8 @@ export function Layout() {
         ))}
         <a href="#menu" aria-controls="app-sidebar" aria-expanded={open} onClick={(e) => { e.preventDefault(); setOpen(true); }}><Icon name="more" /><span>{t('Thêm')}</span></a>
       </nav>
+
+      <Tour onNav={onTourNav} />
 
       {askLogout && <Confirm title="Đăng xuất?" message={t('Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng GymFlow.')} confirmText="Đăng xuất"
         onClose={() => setAskLogout(false)} onConfirm={doLogout} />}

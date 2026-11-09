@@ -163,3 +163,31 @@ Thành phần chung nằm ở `components/motivation.tsx` và `motivation.css`.
 - **Thông tin nhận tiền:** nằm ở bảng một dòng `payment_settings` (id = 1). Ảnh QR lưu trong CSDL (`MEDIUMBLOB`, ≤ 512 KB, chỉ JPG/PNG/WebP, kiểm tra theo nội dung file như ảnh đại diện) để không phải thêm volume trên VPS. Ảnh tải qua `GET /api/payment-settings/qr` có kèm token, phản hồi đặt `no-store` và `nosniff`. Không xoá được QR khi đang bật chuyển khoản.
 
 **Sau khi deploy:** mọi gói cũ đều là gói tự tập. Quản lý cần đánh dấu lại các gói PT ở Quản lý › Gói tập, và muốn nhận chuyển khoản thì vào Quản lý › Thanh toán để nhập tài khoản, tải QR rồi bật. Hội viên đang có HLV vẫn giữ HLV đó.
+
+## 13. Kho kiến thức: bản đồ cơ, ảnh minh hoạ, dụng cụ, lịch tập mẫu
+
+**Bản đồ cơ (V13).** 18 vùng cơ (`lib/anatomy.ts`) vẽ trên hình người mặt trước / mặt sau (`components/MuscleMap.tsx`, toạ độ đa giác lấy từ react-body-highlighter, giấy phép MIT – ghi chú giấy phép nằm đầu `components/bodyShapes.ts`). Mỗi bài có `target_muscles` (tối đa 6 vùng chính) và `secondary_muscle_keys` (tối đa 10 vùng phụ), lưu dạng khoá cách nhau dấu phẩy; backend chỉ nhận khoá có trong danh sách. Cột `muscle_group` cũ giữ nguyên để bộ lọc, báo cáo cũ vẫn chạy; khi chọn vùng chính đầu tiên trong form, nhóm cơ cũ tự đặt cho khớp.
+- **Thư viện bài tập:** bấm vào vùng cơ trên bản đồ để lọc (vùng càng đậm càng nhiều bài, vùng 0 bài không bấm được), lọc thêm theo dụng cụ; thẻ bài có ảnh minh hoạ, rê chuột để xem động tác.
+- **Soạn giáo án:** khung thêm bài có bản đồ cơ thu gọn, ô tìm, danh sách có ảnh, bấm một lần là thêm; thẻ "Nhóm cơ cả tuần" tô theo số hiệp mỗi vùng và nhắc vùng lớn chưa có bài.
+
+**Ảnh minh hoạ.** `image_key` trỏ tới `frontend/public/exercise-img/<key>/0.jpg` (tư thế đầu) và `1.jpg` (tư thế cuối), chạy luân phiên như ảnh động. Ảnh lấy từ Free Exercise DB (github.com/yuhonas/free-exercise-db, The Unlicense – phát hành công cộng), tải một lần lúc tạo nhánh và lưu trong repo, không gọi trang ngoài khi người dùng xem. Bài không có ảnh hiện bản đồ cơ thay thế. Nguồn `FREE_EXERCISE_DB` được gắn vào mọi bài có ảnh. Không lấy nội dung, video hay ảnh của GymATLAS (điều khoản trang đó không cho dùng lại).
+
+**Dụng cụ.** `equipment_keys` (12 loại: thanh đòn, tạ đơn, tạ ấm, máy, cáp, ghế, xà, không dụng cụ, dây kháng lực, bóng, máy tim mạch, khác). Trang `/equipment` liệt kê từng loại kèm ảnh, mô tả, lưu ý an toàn, nhóm cơ hay tập và lối tắt sang thư viện đã lọc (`/exercises?equipment=…&muscle=…`).
+
+**Lịch tập mẫu.** `lib/programs.ts`: 8 lịch phổ biến (toàn thân 3 buổi, thân trên / dưới 4 buổi, đẩy – kéo – chân 6 buổi, mỗi ngày một nhóm cơ, sức mạnh 5x5, sức mạnh + tăng cơ 4 buổi, giảm mỡ, tập tại nhà). Mỗi bài ghi bằng tên trong thư viện kèm bài thay thế. Trang `/programs` hiện lịch tuần, bản đồ cơ được tập, từng bài có ảnh. "Dùng làm giáo án" mở trình soạn (`?template=<slug>`) đã điền bài, hiệp, số lần, thời gian nghỉ; **chỉ bài đã duyệt được thêm**, bài chưa duyệt được liệt kê để HLV chọn bài khác. Hội viên đang có HLV chỉ xem được lịch mẫu.
+
+**Dữ liệu V13.** Điền vùng cơ / dụng cụ / ảnh cho khoảng 75 bài đã có (chỉ khi cột còn trống), thêm 61 bài phòng gym mới do nhóm tự viết tiếng Việt, trạng thái **chờ duyệt**, nguồn NHS + WHO + Free Exercise DB. Quản lý duyệt bằng hàng chờ duyệt như cũ.
+
+## 14. Điều hướng phân cấp, hướng dẫn lần đầu, trung tâm trợ giúp
+
+**Menu.** `NAV` trong `Layout.tsx`: mục không có `group` luôn hiện (việc dùng hằng ngày: Tổng quan, Lịch tập, Giáo án, Gói tập); mục cùng `group` đứng liền nhau gom thành nhóm gập/mở (Sức khoẻ & tiến độ, Huấn luyện, Kiến thức, Kinh doanh, Hệ thống, Tài khoản). Lần đầu chỉ mở sẵn nhóm chứa trang đang xem; người dùng bấm gập/mở thì nhớ ở `localStorage['gf.nav.groups']`. Nhóm đang gập mà chứa trang hiện tại có chấm xanh. Không thêm cấp thứ ba.
+
+**Thu gọn sidebar.** Nút ‹ / › cạnh logo (chỉ màn rộng hơn 900px) thu sidebar còn 76px chỉ có biểu tượng; tên mục hiện bằng `title` và vẫn đọc được bằng trình đọc màn hình. Nhớ ở `gf.side.mini`. Điện thoại giữ drawer đầy đủ.
+
+**Hướng dẫn lần đầu.** `lib/tour.ts` (bước theo từng vai trò, chỉ giới thiệu chức năng vai trò đó có) + `components/Tour.tsx`. Phần tử được giới thiệu gắn `data-tour="…"` (`nav`, `nav:/đường-dẫn`, `content`, `bell`, `account`, `help`). Lớp phủ làm mờ, vùng sáng có viền nhịp nhẹ, hộp thoại có mũi tên, tiến độ "Bước n/N", phím ← → và Esc, giữ Tab trong hộp thoại. Bước chỉ vào menu tự mở nhóm chứa mục đó, trên điện thoại tự mở drawer rồi đóng lại khi xong.
+- Tự hiện một lần ở trang Tổng quan khi tài khoản chưa xem. "Để sau" chỉ ẩn trong phiên; "Bỏ qua" nhớ bước đang dừng; "Hoàn thành" không hiện lại.
+- Tiến độ lưu ở `localStorage['gf.tour.<userId>.<ROLE>']` – theo tài khoản + vai trò nhưng **trên từng trình duyệt** (đổi máy sẽ hỏi lại). Không thêm API / bảng mới.
+
+**Trợ giúp `/help`.** Câu hỏi thường gặp lọc theo vai trò, tìm không dấu ("doi mat khau"), giải thích trạng thái đơn đăng ký gói / gói tập / buổi tập (dùng đúng nhãn ở `lib/format.ts`), nút "Xem hướng dẫn lại" / "Tiếp tục từ bước n". Câu trả lời mô tả đúng màn hình hiện có – đổi luồng nghiệp vụ thì sửa `FAQ` trong `pages/shared/Help.tsx`.
+
+**Thông báo đã xem** nhớ theo tài khoản ở `localStorage['gf.seen.<userId>']` (trước đây `sessionStorage`, mở tab mới là báo đỏ lại).

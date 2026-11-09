@@ -35,7 +35,19 @@ public class Exercise {
     @Column(name = "secondary_muscles")
     private String secondaryMuscles;
 
+    /** V13 · vùng cơ chính trên bản đồ cơ thể, khoá cách nhau dấu phẩy (VD "chest,triceps"). */
+    @Column(name = "target_muscles", length = 160)
+    private String targetMuscles;
+
+    /** V13 · vùng cơ phụ trên bản đồ cơ thể. */
+    @Column(name = "secondary_muscle_keys", length = 160)
+    private String secondaryMuscleKeys;
+
     private String equipment;
+
+    /** V13 · khoá dụng cụ (barbell, dumbbell, machine…), cách nhau dấu phẩy. */
+    @Column(name = "equipment_keys", length = 120)
+    private String equipmentKeys;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -66,6 +78,10 @@ public class Exercise {
 
     @Column(name = "video_url")
     private String videoUrl;
+
+    /** V13 · thư mục ảnh minh hoạ /exercise-img/{imageKey}/0.jpg và 1.jpg. */
+    @Column(name = "image_key", length = 80)
+    private String imageKey;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "content_origin", nullable = false)

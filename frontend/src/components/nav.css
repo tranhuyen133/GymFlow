@@ -1,0 +1,49 @@
+/* Điều hướng phân cấp + thu gọn sidebar (Layout.tsx). Bổ sung cho styles.css, không sửa quy tắc cũ. */
+.nav-section { display: flex; flex-direction: column; gap: 2px; }
+.nav-group-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; margin-top: 10px; padding: 8px 12px; border: 0; border-radius: var(--r-sm);
+  background: transparent; color: var(--faint); cursor: pointer;
+  font: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; text-align: left;
+}
+.nav-group-btn:hover { color: var(--ink); background: var(--hover-tint); }
+.nav-group-btn:focus-visible { outline: 2px solid var(--primary-bright); outline-offset: -2px; }
+.nav-group-btn svg { flex: none; transition: transform 0.25s var(--ease-out); }
+.nav-group-btn[aria-expanded='false'] svg { transform: rotate(-90deg); }
+/* Nhóm đang gập nhưng chứa trang đang mở: chấm xanh để vẫn biết mình đang ở đâu */
+.nav-group-btn.has-active span::after {
+  content: ''; display: inline-block; width: 6px; height: 6px; margin-left: 8px; border-radius: 50%;
+  background: var(--primary-bright); vertical-align: 1px;
+}
+.nav-group-btn[aria-expanded='true'].has-active span::after { display: none; }
+.nav-sub { display: flex; flex-direction: column; gap: 2px; animation: navOpen 0.22s var(--ease-out); }
+.nav-sub.collapsed { display: none; }
+@keyframes navOpen { from { opacity: 0; transform: translateY(-4px); } }
+
+.side-mini-btn { display: inline-flex; margin-top: -22px; }
+.top-help { display: inline-flex; }
+
+/* ---------- Sidebar thu gọn (chỉ màn rộng; điện thoại luôn dùng drawer đầy đủ) ---------- */
+@media (min-width: 901px) {
+  .shell.side-mini { --sidebar-w: 76px; }
+  .side-mini .sidebar { padding: 22px 10px; }
+  .side-mini .side-head { flex-direction: column; align-items: center; gap: 10px; }
+  .side-mini .side-head .brand { padding: 0; }
+  .side-mini .brand-name { display: none; }
+  .side-mini .side-mini-btn { margin-top: 0; }
+  .side-mini .nav a { justify-content: center; padding: 0; }
+  /* Chữ ẩn bằng mắt nhưng vẫn đọc được bằng trình đọc màn hình; di chuột có title */
+  .side-mini .nav a span, .side-mini .side-user-link .grow {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  .side-mini .nav-group-btn { display: none; }
+  .side-mini .nav-sub, .side-mini .nav-sub.collapsed { display: flex; border-top: 1px solid var(--hairline); padding-top: 6px; margin-top: 6px; animation: none; }
+  .side-mini .side-user { flex-direction: column; padding: 14px 0 0; }
+  .side-mini .side-user-link { flex: none; justify-content: center; }
+}
+@media (max-width: 900px) {
+  .side-mini-btn { display: none; }
+  .nav-group-btn { min-height: 40px; }
+}
+@media (max-width: 560px) { .top-help { display: none; } }
+@media (prefers-reduced-motion: reduce) { .nav-sub { animation: none; } .nav-group-btn svg { transition: none; } }

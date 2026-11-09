@@ -1,0 +1,3 @@
+Ảnh trong thư mục này lấy từ Free Exercise DB – https://github.com/yuhonas/free-exercise-db
+Bộ dữ liệu phát hành công cộng theo The Unlicense (https://unlicense.org/).
+Mỗi thư mục là một bài: 0.jpg = tư thế đầu, 1.jpg = tư thế cuối động tác.

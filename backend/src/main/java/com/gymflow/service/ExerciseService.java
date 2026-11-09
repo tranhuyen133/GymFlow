@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -55,7 +57,7 @@ public class ExerciseService {
     }
 
     private static boolean matches(Exercise e, String needle) {
-        for (String field : new String[]{e.getName(), e.getNameEn(), e.getAliases(), e.getEquipment()}) {
+        for (String field : new String[]{e.getName(), e.getNameEn(), e.getAliases(), e.getEquipment(), e.getSecondaryMuscles()}) {
             if (field != null && field.toLowerCase(Locale.ROOT).contains(needle)) return true;
         }
         return false;
@@ -188,6 +190,23 @@ public class ExerciseService {
         e.setSuggestedDose(Mappers.blankToNull(req.suggestedDose()));
         if (req.contentOrigin() != null) e.setContentOrigin(req.contentOrigin());
         if (req.sourceIds() != null) e.setSources(resolveSources(sourceRepository, req.sourceIds()));
+        if (req.targetMuscles() != null) e.setTargetMuscles(joinKeys(req.targetMuscles(), MUSCLE_KEYS, "vùng cơ"));
+        if (req.secondaryMuscleKeys() != null) e.setSecondaryMuscleKeys(joinKeys(req.secondaryMuscleKeys(), MUSCLE_KEYS, "vùng cơ"));
+        if (req.equipmentKeys() != null) e.setEquipmentKeys(joinKeys(req.equipmentKeys(), EQUIPMENT_KEYS, "dụng cụ"));
+        if (req.imageKey() != null) e.setImageKey(Mappers.blankToNull(req.imageKey()));
+    }
+
+    /** V13 · khớp lib/anatomy.ts ở frontend. */
+    static final Set<String> MUSCLE_KEYS = Set.of("chest", "front-deltoids", "back-deltoids", "biceps", "triceps", "forearm",
+            "abs", "obliques", "trapezius", "upper-back", "lower-back", "gluteal", "quadriceps", "hamstring", "adductor",
+            "abductors", "calves", "neck");
+    static final Set<String> EQUIPMENT_KEYS = Set.of("barbell", "dumbbell", "kettlebell", "machine", "cable", "bench",
+            "pullup-bar", "bodyweight", "band", "ball", "cardio-machine", "other");
+
+    static String joinKeys(List<String> keys, Set<String> allowed, String what) {
+        List<String> clean = keys.stream().filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).distinct().toList();
+        for (String k : clean) if (!allowed.contains(k)) throw ApiException.badRequest("Mã " + what + " không hợp lệ: " + k);
+        return clean.isEmpty() ? null : String.join(",", clean);
     }
 
     static LinkedHashSet<ContentSource> resolveSources(ContentSourceRepository repo, List<Long> ids) {

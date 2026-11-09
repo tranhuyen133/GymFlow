@@ -267,7 +267,23 @@ public final class Dtos {
             @Size(max = 255) String suggestedDose,
             ContentOrigin contentOrigin,
             /** null = giữ nguyên nguồn đang gắn; danh sách rỗng = bỏ hết nguồn */
-            @Size(max = 20, message = "Tối đa 20 nguồn") List<Long> sourceIds) {
+            @Size(max = 20, message = "Tối đa 20 nguồn") List<Long> sourceIds,
+            /** V13 · khoá vùng cơ trên bản đồ (lib/anatomy.ts). null = giữ nguyên. */
+            @Size(max = 6, message = "Chọn tối đa 6 vùng cơ chính") List<String> targetMuscles,
+            @Size(max = 10, message = "Chọn tối đa 10 vùng cơ phụ") List<String> secondaryMuscleKeys,
+            @Size(max = 6, message = "Chọn tối đa 6 loại dụng cụ") List<String> equipmentKeys,
+            @Size(max = 80) @Pattern(regexp = "^$|^[A-Za-z0-9_-]+$", message = "Mã ảnh chỉ gồm chữ không dấu, số, _ và -") String imageKey) {
+
+        /** Giữ chữ ký cũ (trước V13) cho các chỗ gọi / test đang dùng. */
+        public ExerciseRequest(String name, MuscleGroup muscleGroup, String equipment, Level level, String description,
+                               String instructions, String videoUrl, String nameEn, String aliases, String secondaryMuscles,
+                               ExerciseLocation location, List<ExerciseGoal> goals, String breathing, String commonMistakes,
+                               String safetyNotes, String variations, String suggestedDose, ContentOrigin contentOrigin,
+                               List<Long> sourceIds) {
+            this(name, muscleGroup, equipment, level, description, instructions, videoUrl, nameEn, aliases, secondaryMuscles,
+                    location, goals, breathing, commonMistakes, safetyNotes, variations, suggestedDose, contentOrigin, sourceIds,
+                    null, null, null, null);
+        }
     }
 
     public record HiddenRequest(@NotNull Boolean hidden) {
@@ -299,7 +315,23 @@ public final class Dtos {
                                    List<ExerciseGoal> goals, String breathing, String commonMistakes, String safetyNotes,
                                    String variations, String suggestedDose, ContentOrigin contentOrigin,
                                    ReviewStatus reviewStatus, String reviewNote, String reviewedByName,
-                                   LocalDateTime reviewedAt, LocalDateTime updatedAt, List<SourceResponse> sources) {
+                                   LocalDateTime reviewedAt, LocalDateTime updatedAt, List<SourceResponse> sources,
+                                   List<String> targetMuscles, List<String> secondaryMuscleKeys, List<String> equipmentKeys,
+                                   String imageKey) {
+        /** Giữ chữ ký trước V13 (test và code cũ): chưa có vùng cơ, dụng cụ, ảnh. */
+        public ExerciseResponse(Long id, String name, MuscleGroup muscleGroup, String equipment, Level level,
+                                String description, String instructions, String videoUrl, boolean hidden,
+                                long usageCount, String createdByName,
+                                String nameEn, String aliases, String secondaryMuscles, ExerciseLocation location,
+                                List<ExerciseGoal> goals, String breathing, String commonMistakes, String safetyNotes,
+                                String variations, String suggestedDose, ContentOrigin contentOrigin,
+                                ReviewStatus reviewStatus, String reviewNote, String reviewedByName,
+                                LocalDateTime reviewedAt, LocalDateTime updatedAt, List<SourceResponse> sources) {
+            this(id, name, muscleGroup, equipment, level, description, instructions, videoUrl, hidden, usageCount, createdByName,
+                    nameEn, aliases, secondaryMuscles, location, goals, breathing, commonMistakes, safetyNotes, variations,
+                    suggestedDose, contentOrigin, reviewStatus, reviewNote, reviewedByName, reviewedAt, updatedAt, sources,
+                    List.of(), List.of(), List.of(), null);
+        }
     }
 
     // ===================== Knowledge base =====================

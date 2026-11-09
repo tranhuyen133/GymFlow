@@ -3,14 +3,18 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client';
 import type { Exercise, Member, MuscleGroup, PlanItem, PlanStatus, WorkoutPlan } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
+import { ExerciseMedia } from '../../components/ExerciseMedia';
 import { Icon } from '../../components/Icon';
+import { MuscleMap } from '../../components/MuscleMap';
 import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Select, StatusBadge, Textarea } from '../../components/ui';
+import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, SearchInput, Select, StatusBadge, Textarea } from '../../components/ui';
 import { t, tn } from '../../i18n';
-import { addDays, DAYS, DAY_NAMES, muscleColor, muscleLabel, planStatus, toIsoDate } from '../../lib/format';
+import { addDays, DAYS, DAY_NAMES, levelLabel, muscleColor, muscleLabel, planStatus, toIsoDate } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { checkPlanName, itemProblems, type ItemField } from '../../lib/validation';
+import { isMuscleKey, MUSCLE_BY_KEY, type MuscleKey } from '../../lib/anatomy';
+import { PROGRAM_BY_SLUG, PROGRAMS, resolveItem, type Program } from '../../lib/programs';
 import './exercises.css';
 
 type Draft = PlanItem & { key: number };
@@ -48,8 +52,13 @@ export default function PlanEditor() {
   const [note, setNote] = useState('');
   const [items, setItems] = useState<Draft[]>([]);
   const [day, setDay] = useState(1);
-  const [pick, setPick] = useState('');
   const [groupFilter, setGroupFilter] = useState<'' | MuscleGroup>('');
+  const [muscleFilter, setMuscleFilter] = useState<MuscleKey | null>(null);
+  const [libQ, setLibQ] = useState('');
+  const [showMap, setShowMap] = useState(true);
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [replaceWith, setReplaceWith] = useState<Program | null>(null);
+  const [templateSkipped, setTemplateSkipped] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showItemErrors, setShowItemErrors] = useState(false);
@@ -117,7 +126,62 @@ export default function PlanEditor() {
   const waitingCount = (library.data?.length ?? 0) - approvedLib.length;
 
   const dayItems = items.filter((i) => i.dayOfWeek === day);
-  const visibleLib = useMemo(() => approvedLib.filter((e) => !groupFilter || e.muscleGroup === groupFilter), [approvedLib, groupFilter]);
+  const targetOf = (e: Exercise | undefined): MuscleKey[] => (e?.targetMuscles ?? []).filter(isMuscleKey);
+  const libCounts = useMemo(() => {
+    const c: Partial<Record<MuscleKey, number>> = {};
+    approvedLib.forEach((e) => targetOf(e).forEach((k) => { c[k] = (c[k] ?? 0) + 1; }));
+    return c;
+  }, [approvedLib]);
+  const visibleLib = useMemo(() => {
+    const k = libQ.trim().toLowerCase();
+    return approvedLib
+      .filter((e) => !groupFilter || e.muscleGroup === groupFilter)
+      .filter((e) => !muscleFilter || targetOf(e).includes(muscleFilter))
+      .filter((e) => !k || `${e.name} ${e.nameEn ?? ''} ${e.aliases ?? ''} ${e.equipment ?? ''}`.toLowerCase().includes(k))
+      .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+  }, [approvedLib, groupFilter, muscleFilter, libQ]);
+  // Số hiệp mỗi vùng cơ chính nhận được trong cả tuần: thấy ngay nhóm nào đang bị bỏ quên
+  const weekLoad = useMemo(() => {
+    const c: Partial<Record<MuscleKey, number>> = {};
+    items.forEach((i) => targetOf(libById.get(i.exerciseId)).forEach((k) => { c[k] = (c[k] ?? 0) + (Number.isFinite(i.sets) ? i.sets : 0); }));
+    return c;
+  }, [items, libById]);
+  const missedBig = (['chest', 'upper-back', 'quadriceps', 'hamstring', 'gluteal', 'front-deltoids', 'abs'] as MuscleKey[]).filter((k) => !weekLoad[k]);
+
+  // Áp lịch tập mẫu: chỉ lấy bài đã duyệt, bài nào chưa có thì báo lại để HLV tự chọn bài thay
+  const approvedByName = useMemo(() => new Map(approvedLib.map((e) => [e.name.toLowerCase(), e])), [approvedLib]);
+  const applyTemplate = (p: Program) => {
+    const skipped: string[] = [];
+    const next: Draft[] = [];
+    p.days.forEach((d) => d.items.forEach((it) => {
+      const ex = resolveItem(it, approvedByName);
+      if (!ex) { skipped.push(`${DAYS[d.dow - 1]} · ${it.ex[0]}`); return; }
+      next.push({
+        key: keySeq++, exerciseId: ex.id, exerciseName: ex.name, muscleGroup: ex.muscleGroup, equipment: ex.equipment,
+        dayOfWeek: d.dow, sortOrder: next.filter((x) => x.dayOfWeek === d.dow).length, sets: it.sets,
+        reps: it.minutes ? '1' : it.reps ?? '10', weightKg: null, restSeconds: it.minutes ? null : it.rest ?? 60,
+        durationMinutes: it.minutes ?? null, note: it.note ? t(it.note) : null,
+      });
+    }));
+    setItems(next);
+    setDay(next[0]?.dayOfWeek ?? 1);
+    setShowItemErrors(false);
+    if (!name.trim()) setName(t(p.name));
+    if (!goal.trim()) setGoal(t(p.goal));
+    if (!note.trim()) setNote(p.tips.map((x) => `- ${t(x)}`).join('\n').slice(0, 1000));
+    setTemplateSkipped(skipped);
+    setTemplateOpen(false); setReplaceWith(null);
+    toast.success(t('Đã điền lịch "{name}" · {n} bài', { name: t(p.name), n: next.length }));
+  };
+  const chooseTemplate = (p: Program) => { if (items.length) setReplaceWith(p); else applyTemplate(p); };
+  const templated = useRef(false);
+  useEffect(() => {
+    if (!isNew || templated.current || !library.data) return;
+    const p = PROGRAM_BY_SLUG.get(params.get('template') ?? '');
+    templated.current = true;
+    if (p) applyTemplate(p);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, library.data]);
   const problems = useMemo(() => new Map(items.map((i) => [i.key, itemProblems(i)])), [items]);
   const badItems = items.filter((i) => Object.keys(problems.get(i.key) ?? {}).length > 0);
   const errOf = (it: Draft, f: ItemField) => (showItemErrors ? problems.get(it.key)?.[f] : undefined);
@@ -132,7 +196,6 @@ export default function PlanEditor() {
       dayOfWeek: day, sortOrder: xs.filter((x) => x.dayOfWeek === day).length, sets: cardio ? 1 : 3, reps: cardio ? '1' : '10-12',
       weightKg: null, restSeconds: cardio ? null : 60, durationMinutes: cardio ? 15 : null, note: null,
     }]);
-    setPick('');
   };
   const update = (key: number, patch: Partial<PlanItem>) => setItems((xs) => xs.map((x) => (x.key === key ? { ...x, ...patch } : x)));
   const remove = (key: number) => {
@@ -236,9 +299,18 @@ export default function PlanEditor() {
           {summary && summary.status !== 'ACTIVE' && <Button icon="play" onClick={() => void setStatus('ACTIVE')}>Áp dụng lại</Button>}
           {summary && summary.status === 'ACTIVE' && <Button icon="checkCircle" onClick={() => void setStatus('COMPLETED')}>Đánh dấu hoàn thành</Button>}
           {dirty && <Badge tone="amber">Chưa lưu</Badge>}
+          <Button icon="layers" onClick={() => setTemplateOpen(true)}>Dùng lịch mẫu</Button>
           <Button variant="primary" icon="check" loading={busy} disabled={!isNew && !dirty} onClick={() => void save()}>{isNew ? 'Tạo giáo án' : 'Lưu thay đổi'}</Button>
         </>} />
       {error && <div style={{ marginBottom: 16 }}><Alert kind="error">{error}</Alert></div>}
+      {templateSkipped.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <Alert kind="warning" action={<Button size="sm" variant="ghost" icon="x" aria-label="Đóng" onClick={() => setTemplateSkipped([])} />}>
+            <b>{t('{n} bài trong lịch mẫu chưa được duyệt nên chưa thêm:', { n: templateSkipped.length })}</b>
+            <span className="tiny"> {templateSkipped.join(' · ')}. {t('Chọn bài thay thế ở khung bên phải hoặc nhờ quản lý duyệt.')}</span>
+          </Alert>
+        </div>
+      )}
 
       <div className="grid grid-main" style={{ alignItems: 'start' }}>
         <Card title="Bài tập theo ngày" icon="calendar">
@@ -337,18 +409,36 @@ export default function PlanEditor() {
               <Field label="Ghi chú chung"><Textarea maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Khởi động, dinh dưỡng, lưu ý chấn thương…" /></Field>
             </div>
           </Card>
-          <Card title={t('Thêm bài vào {day}', { day: DAYS[day - 1] })} icon="plus">
+          <Card title={t('Thêm bài vào {day}', { day: DAYS[day - 1] })} icon="plus"
+            actions={<Button size="sm" variant="ghost" icon={showMap ? 'eyeOff' : 'target'} onClick={() => setShowMap((s) => !s)}>{showMap ? 'Ẩn bản đồ' : 'Bản đồ cơ'}</Button>}>
             <div className="stack">
+              {showMap && (
+                <MuscleMap size="sm" counts={libCounts} selected={muscleFilter} className="lib-map"
+                  onSelect={(k) => { setMuscleFilter(k); if (k) setGroupFilter(''); }} />
+              )}
               <div className="chips">
-                <button className={`chip ${groupFilter === '' ? 'on' : ''}`} onClick={() => setGroupFilter('')}>{t('Tất cả')}</button>
-                {(Object.keys(muscleLabel) as MuscleGroup[]).map((g) => <button key={g} className={`chip ${groupFilter === g ? 'on' : ''}`} onClick={() => setGroupFilter(g)}>{muscleLabel[g]}</button>)}
+                <button className={`chip ${groupFilter === '' && !muscleFilter ? 'on' : ''}`} onClick={() => { setGroupFilter(''); setMuscleFilter(null); }}>{t('Tất cả')}</button>
+                {muscleFilter && <button className="chip on" onClick={() => setMuscleFilter(null)}>{t(MUSCLE_BY_KEY.get(muscleFilter)?.label ?? muscleFilter)} <Icon name="x" size={12} /></button>}
+                {(Object.keys(muscleLabel) as MuscleGroup[]).map((g) => <button key={g} className={`chip ${groupFilter === g ? 'on' : ''}`} onClick={() => { setGroupFilter(g); setMuscleFilter(null); }}>{muscleLabel[g]}</button>)}
               </div>
-              <div className="row">
-                <Select value={pick} onChange={(e) => setPick(e.target.value)} aria-label="Chọn bài tập" disabled={library.loading}>
-                  <option value="">{t('— Chọn bài tập ({n}) —', { n: visibleLib.length })}</option>
-                  {visibleLib.map((e) => <option key={e.id} value={e.id}>{e.name} · {muscleLabel[e.muscleGroup]}</option>)}
-                </Select>
-                <Button variant="primary" icon="plus" disabled={!pick} onClick={() => add(Number(pick))} aria-label="Thêm bài" />
+              <SearchInput value={libQ} onChange={setLibQ} placeholder="Tìm bài, dụng cụ…" />
+              <div className="lib-list" aria-busy={library.loading}>
+                {visibleLib.map((e) => {
+                  const inDay = dayItems.some((x) => x.exerciseId === e.id);
+                  return (
+                    <button type="button" key={e.id} className={`lib-row ${inDay ? 'in-day' : ''}`} onClick={() => add(e.id)}
+                      title={t('Thêm "{name}" vào {day}', { name: e.name, day: DAY_NAMES[day - 1] })}>
+                      <ExerciseMedia imageKey={e.imageKey} alt="" playOnHover className="lib-thumb"
+                        fallback={<span className="lib-thumb ex-media-empty"><Icon name="dumbbell" size={14} /></span>} />
+                      <span className="lib-name">
+                        <b className="small ellipsis">{e.name}</b>
+                        <span className="tiny faint ellipsis">{targetOf(e).map((k) => t(MUSCLE_BY_KEY.get(k)?.label ?? k)).join(', ') || muscleLabel[e.muscleGroup]}{e.equipment ? ` · ${e.equipment}` : ''}</span>
+                      </span>
+                      {inDay ? <Badge tone="green">{t('Đã có')}</Badge> : <Icon name="plus" size={16} />}
+                    </button>
+                  );
+                })}
+                {!library.loading && approvedLib.length > 0 && visibleLib.length === 0 && <p className="tiny faint" style={{ margin: 0, padding: 8 }}>{t('Không có bài phù hợp bộ lọc.')}</p>}
               </div>
               {library.error && <Alert kind="error">{library.error}</Alert>}
               {!library.loading && approvedLib.length === 0 && <Alert kind="warning">{t('Chưa có bài tập nào được duyệt. Nhờ quản lý vào Thư viện bài tập › Hàng chờ duyệt.')}</Alert>}
@@ -356,6 +446,15 @@ export default function PlanEditor() {
               {waitingCount > 0 && <div className="tiny faint row" style={{ gap: 6 }}><Icon name="info" size={13} />{tn('Chỉ hiện bài đã duyệt. {n} bài khác đang chờ duyệt hoặc đã ẩn.', { n: waitingCount })}</div>}
             </div>
           </Card>
+          {items.length > 0 && (
+            <Card title="Nhóm cơ cả tuần" icon="target">
+              <div className="stack-sm">
+                <MuscleMap size="sm" counts={weekLoad} className="lib-map" />
+                <span className="tiny muted">{t('Màu càng đậm, vùng đó càng nhiều hiệp trong tuần.')}</span>
+                {missedBig.length > 0 && <span className="tiny" style={{ color: 'var(--warning)' }}>{t('Chưa có bài cho: {list}', { list: missedBig.map((k) => t(MUSCLE_BY_KEY.get(k)?.label ?? k)).join(', ') })}</span>}
+              </div>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -365,6 +464,36 @@ export default function PlanEditor() {
       {copyTo !== null && <Confirm title={t('Ghi đè {day}?', { day: DAY_NAMES[copyTo - 1] })} confirmText="Ghi đè"
         message={tn('{day} đang có {n} bài. Các bài đó sẽ được thay bằng bài của {from}.', { day: DAY_NAMES[copyTo - 1], n: items.filter((x) => x.dayOfWeek === copyTo).length, from: DAY_NAMES[day - 1] })}
         onClose={() => setCopyTo(null)} onConfirm={() => doCopy(copyTo)} />}
+
+      {templateOpen && (
+        <Modal title={t('Chọn lịch tập mẫu')} size="medium" onClose={() => setTemplateOpen(false)} footer={<>
+          <Link to="/programs" className="btn btn-ghost"><span>{t('Xem chi tiết các lịch')}</span></Link>
+          <Button variant="ghost" onClick={() => setTemplateOpen(false)}>Đóng</Button>
+        </>}>
+          <div className="stack-sm">
+            <p className="tiny muted" style={{ margin: 0 }}>{t('Bài, số hiệp, số lần và thời gian nghỉ được điền sẵn theo từng ngày. Bài chưa duyệt sẽ được bỏ qua; bạn chỉnh lại tuỳ hội viên.')}</p>
+            <div className="tpl-list">
+              {PROGRAMS.map((p) => {
+                const all = p.days.flatMap((d) => d.items);
+                const ok = all.filter((it) => resolveItem(it, approvedByName)).length;
+                return (
+                  <button type="button" key={p.slug} className="tpl-row" disabled={ok === 0} onClick={() => chooseTemplate(p)}>
+                    <span className="tpl-ic"><Icon name="layers" size={18} /></span>
+                    <span style={{ minWidth: 0 }}>
+                      <b className="small" style={{ display: 'block' }}>{t(p.name)}</b>
+                      <span className="tiny faint">{p.short} · {t('{a}/{b} bài sẵn sàng', { a: ok, b: all.length })}</span>
+                    </span>
+                    <StatusBadge map={levelLabel} value={p.level} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Modal>
+      )}
+      {replaceWith && <Confirm title={t('Thay toàn bộ bài hiện có?')} confirmText="Dùng lịch mẫu"
+        message={tn('Giáo án đang có {n} bài. Các bài này sẽ được thay bằng lịch "{name}". Tên, mục tiêu, ghi chú đã nhập được giữ nguyên.', { n: items.length, name: t(replaceWith.name) })}
+        onClose={() => setReplaceWith(null)} onConfirm={() => applyTemplate(replaceWith)} />}
 
       {leaveTo !== null && (
         <Modal title={t('Rời trang khi chưa lưu?')} size="narrow" onClose={() => setLeaveTo(null)} footer={<>

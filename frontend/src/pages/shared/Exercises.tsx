@@ -2,14 +2,18 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api } from '../../api/client';
 import type { BulkApproveResult, ContentOrigin, Exercise, ExerciseGoal, ExerciseLocation, Level, MuscleGroup, ReviewStatus, Source } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
+import { useSearchParams } from 'react-router-dom';
 import { HealthDisclaimer, InfoRow, Missing, SourceList } from '../../components/Content';
+import { ExerciseMedia, mediaCredit } from '../../components/ExerciseMedia';
+import { MuscleMap } from '../../components/MuscleMap';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, SearchInput, Select, StatusBadge, Textarea } from '../../components/ui';
-import { fmtDateTime, goalLabel, levelLabel, locationLabel, muscleColor, muscleLabel, reviewLabel } from '../../lib/format';
+import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, SearchInput, Segmented, Select, StatusBadge, Textarea } from '../../components/ui';
+import { fmtDateTime, goalLabel, levelLabel, locationLabel, muscleLabel, reviewLabel } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync, useDebounced, usePaged } from '../../lib/hooks';
 import { t } from '../../i18n';
 import './exercises.css';
+import { EQUIPMENT, EQUIPMENT_BY_KEY, isMuscleKey, MUSCLE_BY_KEY, MUSCLES, type EquipmentKey, type MuscleKey } from '../../lib/anatomy';
 import { autoChecks, countSteps, exerciseFieldErrors, MANUAL_CHECKS, MIN_DESCRIPTION, MIN_STEPS } from '../../lib/validation';
 
 const GROUPS = Object.keys(muscleLabel) as MuscleGroup[];
@@ -26,6 +30,11 @@ const SORTS: { value: Sort; label: string }[] = [
 ];
 // Thứ tự ưu tiên khi sắp "Cần duyệt trước": bài bị trả về → chờ duyệt → bản nháp → đã duyệt
 const REVIEW_ORDER: Record<ReviewStatus, number> = { NEEDS_REVIEW: 0, PENDING: 1, DRAFT: 2, APPROVED: 3 };
+const targetOf = (e: Exercise): MuscleKey[] => (e.targetMuscles ?? []).filter(isMuscleKey);
+const secondaryOf = (e: Exercise): MuscleKey[] => (e.secondaryMuscleKeys ?? []).filter(isMuscleKey);
+const equipOf = (e: Exercise): EquipmentKey[] => (e.equipmentKeys ?? []).filter((k): k is EquipmentKey => EQUIPMENT_BY_KEY.has(k as EquipmentKey));
+const muscleName = (k: MuscleKey) => t(MUSCLE_BY_KEY.get(k)?.label ?? k);
+
 const byName = (a: Exercise, b: Exercise) => a.name.localeCompare(b.name, 'vi');
 const SORTERS: Record<Sort, (a: Exercise, b: Exercise) => number> = {
   name: byName,
@@ -58,12 +67,35 @@ export default function Exercises() {
     data?.forEach((e) => { c[e.muscleGroup] = (c[e.muscleGroup] ?? 0) + 1; });
     return c;
   }, [data]);
-  const sorted = useMemo(() => [...(data ?? [])].sort(SORTERS[sort]), [data, sort]);
-  const paged = usePaged(sorted, 'exercises', `${dq}|${group}|${level}|${location}|${goal}|${review}|${showHidden}|${sort}`, 12);
+
+  // Bản đồ cơ + dụng cụ lọc ngay trên dữ liệu đã tải (link từ trang Dụng cụ: ?equipment=dumbbell, ?muscle=chest)
+  const [params] = useSearchParams();
+  const [muscle, setMuscle] = useState<MuscleKey | null>(() => { const m = params.get('muscle'); return m && isMuscleKey(m) ? m : null; });
+  const [equip, setEquip] = useState<'' | EquipmentKey>(() => { const k = params.get('equipment'); return k && EQUIPMENT_BY_KEY.has(k as EquipmentKey) ? k as EquipmentKey : ''; });
+  const [withSecondary, setWithSecondary] = useState(false);
+  const [mapOpen, setMapOpen] = useState(true);
+  const byEquip = useMemo(() => (data ?? []).filter((e) => !equip || equipOf(e).includes(equip)), [data, equip]);
+  const muscleCounts = useMemo(() => {
+    const c: Partial<Record<MuscleKey, number>> = {};
+    byEquip.forEach((e) => new Set([...targetOf(e), ...(withSecondary ? secondaryOf(e) : [])]).forEach((k) => { c[k] = (c[k] ?? 0) + 1; }));
+    return c;
+  }, [byEquip, withSecondary]);
+  const equipCounts = useMemo(() => {
+    const c: Partial<Record<EquipmentKey, number>> = {};
+    data?.forEach((e) => equipOf(e).forEach((k) => { c[k] = (c[k] ?? 0) + 1; }));
+    return c;
+  }, [data]);
+  const shown = useMemo(() => (muscle ? byEquip.filter((e) => targetOf(e).includes(muscle) || (withSecondary && secondaryOf(e).includes(muscle))) : byEquip), [byEquip, muscle, withSecondary]);
+  const pickMuscle = (k: MuscleKey | null) => { setMuscle(k); if (k) setGroup(''); };
+  const pickGroup = (g: '' | MuscleGroup) => { setGroup(g); if (g) setMuscle(null); };
+  const muscleInfo = muscle ? MUSCLE_BY_KEY.get(muscle) : null;
+
+  const sorted = useMemo(() => [...shown].sort(SORTERS[sort]), [shown, sort]);
+  const paged = usePaged(sorted, 'exercises', `${dq}|${group}|${level}|${location}|${goal}|${review}|${showHidden}|${sort}|${muscle}|${equip}|${withSecondary}`, 12);
   const pendingCount = data?.filter((e) => e.reviewStatus !== 'APPROVED').length ?? 0;
   const viewing = data?.find((e) => e.id === viewingId) ?? null;
-  const filtered = !!(q || group || level || location || goal || review || showHidden);
-  const clearFilters = () => { setQ(''); setGroup(''); setLevel(''); setLocation(''); setGoal(''); setReview(''); setShowHidden(false); };
+  const filtered = !!(q || group || level || location || goal || review || showHidden || muscle || equip);
+  const clearFilters = () => { setQ(''); setGroup(''); setLevel(''); setLocation(''); setGoal(''); setReview(''); setShowHidden(false); setMuscle(null); setEquip(''); };
   const isAdmin = me.role === 'ADMIN';
 
   // Hàng chờ duyệt: danh sách id cố định lúc mở, duyệt xong bài nào tự sang bài kế tiếp
@@ -153,12 +185,65 @@ export default function Exercises() {
         {staff && <label className="check"><input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />{t('Hiện cả bài đã ẩn')}</label>}
         {filtered && <Button variant="ghost" size="sm" icon="x" onClick={clearFilters}>Xoá bộ lọc</Button>}
       </div>
-      <div className="chips" style={{ marginBottom: 18 }}>
-        <button className={`chip ${group === '' ? 'on' : ''}`} onClick={() => setGroup('')}>{t('Tất cả')}</button>
-        {GROUPS.map((g) => <button key={g} className={`chip ${group === g ? 'on' : ''}`} onClick={() => setGroup(g)}>{muscleLabel[g]}{group === '' && counts[g] ? ` · ${counts[g]}` : ''}</button>)}
+      <div className="chips" style={{ marginBottom: 14 }}>
+        <button className={`chip ${group === '' ? 'on' : ''}`} onClick={() => pickGroup('')}>{t('Tất cả')}</button>
+        {GROUPS.map((g) => <button key={g} className={`chip ${group === g ? 'on' : ''}`} onClick={() => pickGroup(g)}>{muscleLabel[g]}{group === '' && counts[g] ? ` · ${counts[g]}` : ''}</button>)}
       </div>
 
-      {error ? <ErrorState message={error} onRetry={reload} /> : loading && !data ? <LoadingBlock rows={6} /> : data && data.length === 0 ? (
+      {data && data.length > 0 && (
+        <Card className="ex-explore" title="Tìm bài theo vùng cơ" icon="target"
+          actions={<Button size="sm" variant="ghost" icon={mapOpen ? 'eyeOff' : 'eye'} onClick={() => setMapOpen((o) => !o)}>{mapOpen ? 'Thu gọn' : 'Mở bản đồ cơ'}</Button>}>
+          {mapOpen ? (
+            <div className="ex-explore-in">
+              <MuscleMap size="lg" counts={muscleCounts} selected={muscle} onSelect={pickMuscle} />
+              <div className="ex-explore-side">
+                <div className="ex-explore-now">
+                  {muscleInfo ? <>
+                    <div className="row between" style={{ gap: 8 }}>
+                      <b>{t(muscleInfo.label)} <span className="tiny faint">· {muscleInfo.labelEn}</span></b>
+                      <Button size="sm" variant="ghost" icon="x" onClick={() => pickMuscle(null)}>Bỏ chọn</Button>
+                    </div>
+                    <span className="tiny muted">{t(muscleInfo.hint)}</span>
+                    <span className="ex-explore-count">{t('{n} bài tập', { n: shown.length })}</span>
+                  </> : <>
+                    <b>{t('Chọn vùng cơ muốn tập')}</b>
+                    <span className="tiny muted">{t('Vùng càng đậm càng có nhiều bài. Bấm lần nữa để bỏ chọn.')}</span>
+                  </>}
+                  <label className="check tiny"><input type="checkbox" checked={withSecondary} onChange={(ev) => setWithSecondary(ev.target.checked)} />{t('Tính cả bài có vùng này là cơ phụ')}</label>
+                </div>
+
+                <div>
+                  <span className="tiny muted">{t('Vùng cơ')}</span>
+                  <div className="chips mt-8">
+                    {MUSCLES.filter((m) => muscleCounts[m.key] || muscle === m.key).map((m) => (
+                      <button key={m.key} type="button" className={`chip ${muscle === m.key ? 'on' : ''}`} aria-pressed={muscle === m.key}
+                        onClick={() => pickMuscle(muscle === m.key ? null : m.key)}>{t(m.label)} · {muscleCounts[m.key] ?? 0}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="tiny muted">{t('Dụng cụ')}</span>
+                  <div className="chips mt-8">
+                    <button type="button" className={`chip ${equip === '' ? 'on' : ''}`} onClick={() => setEquip('')}>{t('Mọi dụng cụ')}</button>
+                    {EQUIPMENT.filter((x) => equipCounts[x.key] || equip === x.key).map((x) => (
+                      <button key={x.key} type="button" className={`chip ${equip === x.key ? 'on' : ''}`} aria-pressed={equip === x.key}
+                        onClick={() => setEquip(equip === x.key ? '' : x.key)}>{t(x.label)} · {equipCounts[x.key] ?? 0}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (muscle || equip) ? (
+            <div className="row row-wrap" style={{ gap: 6 }}>
+              {muscle && <button type="button" className="chip on" onClick={() => pickMuscle(null)}>{muscleName(muscle)} <Icon name="x" size={12} /></button>}
+              {equip && <button type="button" className="chip on" onClick={() => setEquip('')}>{t(EQUIPMENT_BY_KEY.get(equip)?.label ?? equip)} <Icon name="x" size={12} /></button>}
+            </div>
+          ) : null}
+        </Card>
+      )}
+
+      {error ? <ErrorState message={error} onRetry={reload} /> : loading && !data ? <LoadingBlock rows={6} /> : data && shown.length === 0 ? (
         <Card><Empty icon="dumbbell" title="Không có bài tập phù hợp" desc={filtered ? 'Thử bỏ bớt bộ lọc hoặc đổi từ khoá.' : undefined}
           action={filtered ? <Button onClick={clearFilters}>Xoá bộ lọc</Button> : undefined} /></Card>
       ) : (
@@ -166,9 +251,13 @@ export default function Exercises() {
           <div className="grid grid-3" aria-busy={loading}>
             {paged.items.map((e) => (
               <Card key={e.id} className={`hoverable ex-card ${e.hidden ? 'is-hidden' : ''}`}>
+                <button type="button" className="ex-thumb-btn" onClick={() => setViewingId(e.id)} aria-label={t('Xem {name}', { name: e.name })}>
+                  <ExerciseMedia imageKey={e.imageKey} alt={e.name} playOnHover className="ex-thumb"
+                    tag={targetOf(e).slice(0, 2).map(muscleName).join(' · ') || undefined}
+                    fallback={<div className="ex-thumb ex-thumb-map"><MuscleMap size="sm" primary={targetOf(e)} secondary={secondaryOf(e)} /></div>} />
+                </button>
                 <div className="top">
                   <div className="row" style={{ alignItems: 'flex-start' }}>
-                    <div className="muscle-ic" style={{ ['--c' as string]: muscleColor[e.muscleGroup] }}><Icon name="dumbbell" /></div>
                     <div>
                       <button type="button" className="ex-title" onClick={() => setViewingId(e.id)}>{e.name}</button>
                       {e.nameEn && <div className="tiny faint">{e.nameEn}</div>}
@@ -282,13 +371,27 @@ function ExerciseDetail({ exercise: e, canReview, queue, onClose, onEdit, onRevi
           {e.location && <span className="chip">{locationLabel[e.location]}</span>}
           {e.goals.map((g) => <span key={g} className="chip">{goalLabel[g]}</span>)}
         </div>
+        <div className={`ex-hero ${e.imageKey ? '' : 'no-media'}`}>
+          {e.imageKey && (
+            <figure className="ex-hero-media">
+              <ExerciseMedia imageKey={e.imageKey} alt={e.name} play tag={t('Tư thế đầu ⇄ cuối')} />
+              <figcaption className="tiny faint">{mediaCredit()}</figcaption>
+            </figure>
+          )}
+          <div className="ex-hero-map">
+            <b className="small">{t('Nhóm cơ tác động')}</b>
+            {targetOf(e).length + secondaryOf(e).length > 0
+              ? <MuscleMap size="md" primary={targetOf(e)} secondary={secondaryOf(e)} />
+              : <p className="tiny faint" style={{ margin: 0 }}>{t('Bài chưa được gắn vùng cơ trên bản đồ.')}</p>}
+          </div>
+        </div>
         <HealthDisclaimer pending={e.reviewStatus !== 'APPROVED'} />
         {e.description ? <p className="muted">{e.description}</p> : <p className="small"><Missing /></p>}
 
         <div className="info-grid">
           <InfoRow label="Tên tiếng Anh" value={e.nameEn} />
           <InfoRow label="Tên gọi khác" value={e.aliases} />
-          <InfoRow label="Dụng cụ" value={e.equipment} />
+          <InfoRow label="Dụng cụ" value={e.equipment ?? (equipOf(e).map((k) => t(EQUIPMENT_BY_KEY.get(k)?.label ?? k)).join(', ') || null)} />
           <InfoRow label="Cơ phụ trợ" value={e.secondaryMuscles} />
         </div>
 
@@ -382,6 +485,7 @@ const TABS: { id: Tab; label: string; desc?: string }[] = [
 const FIELD_TAB: Record<string, Tab> = {
   name: 'basic', nameEn: 'basic', aliases: 'basic', description: 'basic',
   muscleGroup: 'class', secondaryMuscles: 'class', level: 'class', location: 'class', equipment: 'class', goals: 'class',
+  targetMuscles: 'class', secondaryMuscleKeys: 'class', equipmentKeys: 'class', imageKey: 'class',
   instructions: 'guide', breathing: 'guide', commonMistakes: 'guide', variations: 'guide', videoUrl: 'guide',
   safetyNotes: 'safety', suggestedDose: 'safety', contentOrigin: 'source', sourceIds: 'source',
 };
@@ -414,6 +518,8 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
     commonMistakes: base?.commonMistakes ?? '', safetyNotes: base?.safetyNotes ?? '', variations: base?.variations ?? '',
     suggestedDose: base?.suggestedDose ?? '', videoUrl: base?.videoUrl ?? '',
     contentOrigin: base?.contentOrigin ?? ('SELF_AUTHORED' as ContentOrigin), sourceIds: base?.sources.map((s) => s.id) ?? ([] as number[]),
+    targetMuscles: base ? targetOf(base) : ([] as MuscleKey[]), secondaryMuscleKeys: base ? secondaryOf(base) : ([] as MuscleKey[]),
+    equipmentKeys: base ? equipOf(base) : ([] as EquipmentKey[]), imageKey: base?.imageKey ?? '',
   }), [base, copyOf, exercise]);
   const [f, setF] = useState(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -422,6 +528,24 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [sourceQ, setSourceQ] = useState('');
   const [tab, setTab] = useState<Tab>('basic');
+  const [mapMode, setMapMode] = useState<'primary' | 'secondary'>('primary');
+  const [pickNote, setPickNote] = useState<string | null>(null);
+  // Bấm vào vùng cơ: thêm/bỏ ở danh sách theo chế độ đang chọn; một vùng chỉ nằm ở một danh sách.
+  // Vùng chính đầu tiên tự đặt "Nhóm cơ chính" cho khớp để bộ lọc cũ vẫn đúng.
+  const pickArea = (k: MuscleKey) => {
+    setPickNote(null);
+    const isP = f.targetMuscles.includes(k), isS = f.secondaryMuscleKeys.includes(k);
+    if (mapMode === 'primary') {
+      if (isP) { set('targetMuscles', f.targetMuscles.filter((x) => x !== k)); return; }
+      if (f.targetMuscles.length >= 6) { setPickNote(t('Tối đa 6 vùng cơ chính.')); return; }
+      setF((x) => ({ ...x, targetMuscles: [...x.targetMuscles, k], secondaryMuscleKeys: x.secondaryMuscleKeys.filter((y) => y !== k),
+        muscleGroup: x.targetMuscles.length === 0 ? MUSCLE_BY_KEY.get(k)?.group ?? x.muscleGroup : x.muscleGroup }));
+    } else {
+      if (isS) { set('secondaryMuscleKeys', f.secondaryMuscleKeys.filter((x) => x !== k)); return; }
+      if (f.secondaryMuscleKeys.length >= 10) { setPickNote(t('Tối đa 10 vùng cơ phụ.')); return; }
+      setF((x) => ({ ...x, secondaryMuscleKeys: [...x.secondaryMuscleKeys, k], targetMuscles: x.targetMuscles.filter((y) => y !== k) }));
+    }
+  };
   const bodyRef = useRef<HTMLDivElement>(null);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => {
     setF((x) => ({ ...x, [k]: v }));
@@ -467,7 +591,7 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
       const body = {
         ...f, name: blank(f.name).replace(/\s+/g, " "), nameEn: blank(f.nameEn), aliases: blank(f.aliases), secondaryMuscles: blank(f.secondaryMuscles),
         equipment: blank(f.equipment), breathing: blank(f.breathing), suggestedDose: blank(f.suggestedDose), videoUrl: blank(f.videoUrl),
-        location: f.location || null,
+        location: f.location || null, imageKey: blank(f.imageKey),
       };
       if (exercise) await api.put(`/exercises/${exercise.id}`, body); else await api.post('/exercises', body);
       toast.success(exercise ? 'Đã lưu bài tập' : 'Đã thêm bài tập – đang chờ duyệt');
@@ -565,6 +689,58 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
                 })}
               </div>
             </div>
+
+            <div className="span-2 ex-pick">
+              <div className="row between row-wrap" style={{ gap: 8 }}>
+                <div>
+                  <b className="small">{t('Vùng cơ trên bản đồ')}</b>
+                  <div className="tiny muted">{t('Chọn chế độ rồi bấm vào hình. Bấm lại để bỏ. Hội viên dùng bản đồ này để tìm bài.')}</div>
+                </div>
+                <Segmented value={mapMode} onChange={setMapMode} options={[
+                  { value: 'primary', label: t('Cơ chính · {n}/6', { n: f.targetMuscles.length }) },
+                  { value: 'secondary', label: t('Cơ phụ · {n}/10', { n: f.secondaryMuscleKeys.length }) },
+                ]} />
+              </div>
+              <div className="ex-pick-in">
+                <MuscleMap size="md" primary={f.targetMuscles} secondary={f.secondaryMuscleKeys} onSelect={(k) => k && pickArea(k)} />
+                <div className="ex-pick-list">
+                  {MUSCLES.map((m) => {
+                    const p = f.targetMuscles.includes(m.key), s = f.secondaryMuscleKeys.includes(m.key);
+                    return (
+                      <button type="button" key={m.key} className={`chip chip-toggle ${p ? 'on' : s ? 'on-soft' : ''}`} aria-pressed={p || s} onClick={() => pickArea(m.key)}
+                        title={p ? t('Cơ chính') : s ? t('Cơ phụ') : undefined}>
+                        <Icon name={p || s ? 'check' : 'plus'} size={12} />{t(m.label)}{s && <span className="tiny faint"> · {t('phụ')}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {pickNote && <p className="tiny" style={{ margin: 0, color: 'var(--warning)' }}>{pickNote}</p>}
+            </div>
+
+            <div className="span-2">
+              <span className="tiny muted">{t('Loại dụng cụ')} · {t('dùng cho trang Dụng cụ và bộ lọc')}</span>
+              <div className="chips mt-8" role="group" aria-label={t('Loại dụng cụ')}>
+                {EQUIPMENT.map((x) => {
+                  const on = f.equipmentKeys.includes(x.key);
+                  return (
+                    <button type="button" key={x.key} className={`chip chip-toggle ${on ? 'on' : ''}`} aria-pressed={on}
+                      disabled={!on && f.equipmentKeys.length >= 6} onClick={() => set('equipmentKeys', toggle(f.equipmentKeys, x.key))}>
+                      <Icon name={on ? 'check' : 'plus'} size={12} />{t(x.label)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <Field label="Mã ảnh minh hoạ" className="span-2" hint={t('Thư mục ảnh trong /exercise-img/ (VD Barbell_Squat). Để trống thì hiện bản đồ cơ.')}>
+              <div className="ex-img-field">
+                <Input maxLength={80} value={f.imageKey} placeholder="VD: Barbell_Squat"
+                  onChange={(e) => set('imageKey', e.target.value.replace(/[^A-Za-z0-9_-]/g, ''))} />
+                <ExerciseMedia key={f.imageKey} imageKey={blank(f.imageKey) || null} alt={f.name || t('Ảnh minh hoạ')} play className="ex-img-preview"
+                  fallback={<div className="ex-img-preview ex-media-empty"><Icon name="camera" size={20} /></div>} />
+              </div>
+            </Field>
           </FormSection>
 
           <FormSection id="guide" active={tab}>

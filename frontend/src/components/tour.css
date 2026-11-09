@@ -1,0 +1,56 @@
+/* Hướng dẫn tương tác (Tour.tsx). z-index trên drawer (50), modal và toast. */
+.tour { position: fixed; inset: 0; z-index: 1000; pointer-events: none; }
+.tour-block { position: fixed; inset: 0; pointer-events: auto; }
+.tour-scrim { position: fixed; inset: 0; background: var(--scrim); animation: fadeIn 0.2s; }
+.tour-spot {
+  position: fixed; border-radius: 12px;
+  box-shadow: 0 0 0 2px var(--primary-bright), 0 0 0 9999px var(--scrim);
+  transition: top 0.3s var(--ease-out), left 0.3s var(--ease-out), width 0.3s var(--ease-out), height 0.3s var(--ease-out);
+}
+/* Vòng sáng nhịp nhẹ: chỉ cho người dùng biết chỗ cần nhìn */
+.tour-spot::after {
+  content: ''; position: absolute; inset: -2px; border-radius: inherit; border: 2px solid var(--primary-bright);
+  animation: tourPulse 1.8s var(--ease-out) infinite;
+}
+@keyframes tourPulse { from { opacity: 0.9; transform: scale(1); } to { opacity: 0; transform: scale(1.06); } }
+
+.tour-card {
+  position: fixed; pointer-events: auto;
+  width: min(360px, calc(100vw - 24px));
+  padding: 18px 18px 14px; border-radius: var(--r-md);
+  background: var(--surface-2); border: 1px solid var(--line-strong); box-shadow: var(--shadow-modal);
+  transition: top 0.3s var(--ease-out), left 0.3s var(--ease-out);
+  animation: dropIn 0.25s var(--ease-out);
+}
+.tour-card:focus { outline: none; }
+.tour-card:focus-visible { outline: 2px solid var(--primary-bright); outline-offset: 2px; }
+.tour-card h2 { font-size: 18px; margin: 0 0 6px; }
+.tour-card p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 14px; }
+.tour-progress { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.tour-dots { display: flex; gap: 4px; }
+.tour-dots i { width: 14px; height: 4px; border-radius: 2px; background: var(--line-strong); transition: background 0.2s; }
+.tour-dots i.on { background: var(--primary-bright); }
+.tour-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.tour-foot .spacer { flex: 1; }
+.tour-skip { color: var(--muted); }
+
+/* Mũi tên chỉ vào vùng sáng: hình vuông xoay 45°, vị trí theo --arrow */
+.tour-card::before {
+  content: ''; position: absolute; width: 12px; height: 12px;
+  background: var(--surface-2); border: 1px solid var(--line-strong); transform: rotate(45deg);
+}
+.tour-card.place-right::before { left: -7px; top: calc(var(--arrow) - 6px); border-top: 0; border-right: 0; }
+.tour-card.place-left::before { right: -7px; top: calc(var(--arrow) - 6px); border-bottom: 0; border-left: 0; }
+.tour-card.place-bottom::before { top: -7px; left: calc(var(--arrow) - 6px); border-right: 0; border-bottom: 0; }
+.tour-card.place-top::before { bottom: -7px; left: calc(var(--arrow) - 6px); border-left: 0; border-top: 0; }
+.tour-card.place-center::before, .tour-card.place-sheet::before { display: none; }
+
+@media (max-width: 560px) {
+  .tour-card { padding: 16px; }
+  .tour-foot .btn { flex: 1 1 auto; min-height: 40px; }
+  .tour-foot .spacer { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-spot, .tour-card { transition: none; animation: none; }
+  .tour-spot::after { animation: none; opacity: 0; }
+}
