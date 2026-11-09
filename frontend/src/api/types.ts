@@ -321,6 +321,18 @@ export interface WorkoutPlanSummary {
   itemCount: number; trainingDays: number; createdAt: string;
 }
 export interface WorkoutPlan { summary: WorkoutPlanSummary; note: string | null; items: PlanItem[] }
+export interface WorkoutPlanHistory {
+  id: number;
+  memberId: number;
+  oldPlanId: number | null;
+  oldPlanName: string | null;
+  newPlanId: number;
+  newPlanName: string;
+  appliedAt: string;
+  endedAt: string | null;
+  cancelledFutureSessions: number;
+  note: string | null;
+}
 
 // ---------- Schedules ----------
 export interface WorkoutLog { id: number; completedAt: string; durationMinutes: number | null; calories: number | null; rating: number | null; note: string | null }
