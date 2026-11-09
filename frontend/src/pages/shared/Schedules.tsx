@@ -1,5 +1,7 @@
 /**
  * Lịch tập. V12: hội viên chưa có HLV phụ trách (gói tự tập) tự xếp, dời, huỷ buổi tự tập của mình; buổi có HLV vẫn do HLV / quản lý xếp.
+ * CHỦ FILE: Tùng (Lê Thanh Tùng) — SCRUM-188
+ * ĐÓNG GÓP: Hồ Khánh Linh — SCRUM-196 · Form hoàn thành buổi
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
