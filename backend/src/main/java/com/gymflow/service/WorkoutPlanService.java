@@ -3,19 +3,22 @@ package com.gymflow.service;
 import com.gymflow.common.ApiException;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
+import com.gymflow.repository.WorkoutPlanHistoryRepository;
 import com.gymflow.repository.WorkoutPlanRepository;
 import com.gymflow.repository.WorkoutScheduleRepository;
 import com.gymflow.security.AuthUser;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class WorkoutPlanService {
 
     private final WorkoutPlanRepository planRepository;
@@ -24,6 +27,28 @@ public class WorkoutPlanService {
     private final AccessService access;
     private final AuditService auditService;
     private final Mappers mappers;
+    private final WorkoutPlanHistoryRepository historyRepository;
+    private final Clock clock;
+
+    @Autowired
+    public WorkoutPlanService(WorkoutPlanRepository planRepository, WorkoutScheduleRepository scheduleRepository,
+                              ExerciseService exerciseService, AccessService access, AuditService auditService,
+                              Mappers mappers, WorkoutPlanHistoryRepository historyRepository, Clock clock) {
+        this.planRepository = planRepository;
+        this.scheduleRepository = scheduleRepository;
+        this.exerciseService = exerciseService;
+        this.access = access;
+        this.auditService = auditService;
+        this.mappers = mappers;
+        this.historyRepository = historyRepository;
+        this.clock = clock;
+    }
+
+    public WorkoutPlanService(WorkoutPlanRepository planRepository, WorkoutScheduleRepository scheduleRepository,
+                              ExerciseService exerciseService, AccessService access, AuditService auditService,
+                              Mappers mappers) {
+        this(planRepository, scheduleRepository, exerciseService, access, auditService, mappers, null, Clock.systemDefaultZone());
+    }
 
     @Transactional(readOnly = true)
     public List<WorkoutPlanSummary> list(AuthUser user, Long memberId) {
@@ -102,6 +127,82 @@ public class WorkoutPlanService {
         scheduleRepository.findByPlanId(id).forEach(s -> s.setPlan(null));
         planRepository.delete(p);
         auditService.log("WORKOUT_PLAN_DELETE", "WORKOUT_PLAN", id, p.getName());
+    }
+
+    /**
+     * Đổi sang giáo án khác:
+     * - Lưu lại lịch sử gồm: giáo án cũ, giáo án mới, thời điểm bắt đầu và kết thúc áp dụng.
+     * - Tại một thời điểm, mỗi người dùng chỉ có tối đa MỘT giáo án đang áp dụng (ACTIVE). Giáo án cũ chuyển sang kết thúc (ARCHIVED).
+     * - Các buổi tập trong tương lai của giáo án cũ bị huỷ (CANCELLED), còn các buổi đã tập trong quá khứ giữ nguyên.
+     */
+    @Transactional
+    public WorkoutPlanResponse switchPlan(AuthUser user, SwitchPlanRequest req) {
+        Member m = access.requireMemberOf(user);
+        WorkoutPlan newPlan = load(req.newPlanId());
+        if (!access.canView(user, newPlan.getMember())) throw ApiException.forbidden();
+
+        LocalDateTime now = LocalDateTime.now(clock);
+        Optional<WorkoutPlan> activeOpt = planRepository.findFirstByMemberIdAndStatusOrderByStartDateDesc(m.getId(), PlanStatus.ACTIVE);
+
+        WorkoutPlan oldPlan = null;
+        String oldPlanName = null;
+        int cancelledFutureCount = 0;
+
+        if (activeOpt.isPresent()) {
+            oldPlan = activeOpt.get();
+            oldPlanName = oldPlan.getName();
+            if (!oldPlan.getId().equals(newPlan.getId())) {
+                oldPlan.setStatus(PlanStatus.ARCHIVED);
+                planRepository.save(oldPlan);
+
+                // Huỷ các buổi tập trong tương lai của giáo án cũ, giữ nguyên buổi trong quá khứ / đã hoàn thành
+                List<WorkoutSchedule> oldSchedules = scheduleRepository.findByPlanId(oldPlan.getId());
+                for (WorkoutSchedule s : oldSchedules) {
+                    if (s.getStatus() == ScheduleStatus.SCHEDULED && s.getStartTime().isAfter(now)) {
+                        s.setStatus(ScheduleStatus.CANCELLED);
+                        cancelledFutureCount++;
+                    }
+                }
+            }
+        }
+
+        archiveOtherActive(newPlan);
+        newPlan.setStatus(PlanStatus.ACTIVE);
+        planRepository.save(newPlan);
+
+        if (historyRepository != null) {
+            WorkoutPlanHistory history = new WorkoutPlanHistory();
+            history.setMember(m);
+            history.setOldPlan(oldPlan);
+            history.setOldPlanName(oldPlanName);
+            history.setNewPlan(newPlan);
+            history.setNewPlanName(newPlan.getName());
+            history.setAppliedAt(now);
+            history.setEndedAt(now);
+            history.setCancelledFutureSessions(cancelledFutureCount);
+            history.setNote(req.note());
+            historyRepository.save(history);
+        }
+
+        auditService.log("WORKOUT_PLAN_SWITCH", "WORKOUT_PLAN", newPlan.getId(),
+                (oldPlanName != null ? oldPlanName + " → " : "") + newPlan.getName()
+                        + " · huỷ " + cancelledFutureCount + " buổi tương lai");
+
+        return mappers.planDetail(newPlan);
+    }
+
+    @Transactional(readOnly = true)
+    public List<WorkoutPlanHistoryResponse> history(AuthUser user, Long memberId) {
+        Long targetMemberId;
+        if (memberId != null) {
+            access.requireView(user, memberId);
+            targetMemberId = memberId;
+        } else {
+            targetMemberId = access.requireMemberOf(user).getId();
+        }
+        if (historyRepository == null) return List.of();
+        return historyRepository.findByMemberIdOrderByAppliedAtDesc(targetMemberId).stream()
+                .map(mappers::planHistory).toList();
     }
 
     /** Admin / HLV phụ trách sửa được mọi giáo án của hội viên; hội viên tự tập chỉ sửa giáo án do chính mình soạn (không có HLV). */

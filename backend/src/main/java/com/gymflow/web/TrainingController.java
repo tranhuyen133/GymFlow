@@ -136,4 +136,22 @@ public class TrainingController {
     public void deletePlan(@PathVariable Long id) {
         planService.delete(CurrentUser.get(), id);
     }
+
+    @PostMapping("/api/workout-plans/switch")
+    @PreAuthorize("hasRole('MEMBER')")
+    public WorkoutPlanResponse switchPlan(@Valid @RequestBody SwitchPlanRequest req) {
+        return planService.switchPlan(CurrentUser.get(), req);
+    }
+
+    @GetMapping("/api/workout-plans/me/history")
+    @PreAuthorize("hasRole('MEMBER')")
+    public List<WorkoutPlanHistoryResponse> myPlanHistory() {
+        return planService.history(CurrentUser.get(), null);
+    }
+
+    @GetMapping("/api/workout-plans/{memberId}/history")
+    @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")
+    public List<WorkoutPlanHistoryResponse> memberPlanHistory(@PathVariable Long memberId) {
+        return planService.history(CurrentUser.get(), memberId);
+    }
 }

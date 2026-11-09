@@ -294,6 +294,21 @@ public class Mappers {
         return new WorkoutPlanResponse(planSummary(p), p.getNote(), items);
     }
 
+    public WorkoutPlanHistoryResponse planHistory(WorkoutPlanHistory h) {
+        return new WorkoutPlanHistoryResponse(
+                h.getId(),
+                h.getMember().getId(),
+                h.getOldPlan() != null ? h.getOldPlan().getId() : null,
+                h.getOldPlanName(),
+                h.getNewPlan().getId(),
+                h.getNewPlanName(),
+                h.getAppliedAt(),
+                h.getEndedAt(),
+                h.getCancelledFutureSessions(),
+                h.getNote()
+        );
+    }
+
     // ---------- Schedule ----------
     public ScheduleResponse schedule(WorkoutSchedule s, WorkoutLog log) {
         Trainer t = s.getTrainer();

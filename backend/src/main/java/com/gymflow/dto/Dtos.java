@@ -572,6 +572,19 @@ public final class Dtos {
     public record WorkoutPlanResponse(WorkoutPlanSummary summary, String note, List<PlanItemResponse> items) {
     }
 
+    public record WorkoutPlanHistoryResponse(
+            Long id, Long memberId,
+            Long oldPlanId, String oldPlanName,
+            Long newPlanId, String newPlanName,
+            LocalDateTime appliedAt, LocalDateTime endedAt,
+            int cancelledFutureSessions, String note) {
+    }
+
+    public record SwitchPlanRequest(
+            @NotNull(message = "Vui lòng chọn giáo án mới") Long newPlanId,
+            String note) {
+    }
+
     // ===================== Schedule =====================
     public record ScheduleRequest(
             @NotNull(message = "Vui lòng chọn hội viên") Long memberId,

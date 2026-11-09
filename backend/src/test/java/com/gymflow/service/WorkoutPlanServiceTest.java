@@ -7,10 +7,13 @@ package com.gymflow.service;
 import com.gymflow.common.ApiException;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
+import com.gymflow.repository.WorkoutPlanHistoryRepository;
 import com.gymflow.repository.WorkoutPlanRepository;
 import com.gymflow.repository.WorkoutScheduleRepository;
 import com.gymflow.security.AuthUser;
 import org.junit.jupiter.api.BeforeEach;
+
+import java.time.Clock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,8 +45,10 @@ class WorkoutPlanServiceTest {
     @Mock AccessService access;
     @Mock AuditService auditService;
     @Mock Mappers mappers;
+    @Mock WorkoutPlanHistoryRepository historyRepository;
 
     WorkoutPlanService service;
+    Clock clock;
 
     static final AuthUser ADMIN = new AuthUser(1L, "admin@gymflow.vn", Role.ADMIN, "Quản lý");
     static final AuthUser TRAINER = new AuthUser(2L, "trainer@gymflow.vn", Role.TRAINER, "HLV Nam");
@@ -57,7 +62,8 @@ class WorkoutPlanServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new WorkoutPlanService(planRepository, scheduleRepository, exerciseService, access, auditService, mappers);
+        clock = Clock.fixed(java.time.Instant.parse("2026-11-10T03:00:00Z"), java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        service = new WorkoutPlanService(planRepository, scheduleRepository, exerciseService, access, auditService, mappers, historyRepository, clock);
 
         User memberAccount = new User();
         memberAccount.setId(30L);
@@ -774,5 +780,89 @@ class WorkoutPlanServiceTest {
         verify(scheduleRepository, never()).deleteAll(any());
         verify(scheduleRepository, never()).deleteById(any());
         verify(planRepository).delete(plan);
+    }
+
+    // ==========================================
+    // PHẦN 2: Đổi giáo án có lưu lịch sử
+    // ==========================================
+
+    @Test
+    @DisplayName("Đổi giáo án lưu lịch sử, huỷ các buổi tương lai và giữ nguyên các buổi quá khứ")
+    void switchPlan_savesHistory_archivesOldPlan_cancelsFutureSchedulesOnly() {
+        LocalDateTime now = LocalDateTime.now(clock);
+
+        WorkoutPlan oldPlan = new WorkoutPlan();
+        oldPlan.setId(100L);
+        oldPlan.setName("Giáo án cũ");
+        oldPlan.setMember(member);
+        oldPlan.setStatus(PlanStatus.ACTIVE);
+
+        WorkoutPlan newPlan = new WorkoutPlan();
+        newPlan.setId(200L);
+        newPlan.setName("Giáo án mới");
+        newPlan.setMember(member);
+        newPlan.setStatus(PlanStatus.ARCHIVED);
+
+        // Buổi tương lai (sẽ bị huỷ)
+        WorkoutSchedule futureSchedule = new WorkoutSchedule();
+        futureSchedule.setId(1L);
+        futureSchedule.setPlan(oldPlan);
+        futureSchedule.setMember(member);
+        futureSchedule.setStatus(ScheduleStatus.SCHEDULED);
+        futureSchedule.setStartTime(now.plusDays(2));
+        futureSchedule.setEndTime(now.plusDays(2).plusHours(1));
+
+        // Buổi quá khứ chưa hoàn thành (giữ nguyên, không huỷ)
+        WorkoutSchedule pastSchedule = new WorkoutSchedule();
+        pastSchedule.setId(2L);
+        pastSchedule.setPlan(oldPlan);
+        pastSchedule.setMember(member);
+        pastSchedule.setStatus(ScheduleStatus.SCHEDULED);
+        pastSchedule.setStartTime(now.minusDays(2));
+        pastSchedule.setEndTime(now.minusDays(2).plusHours(1));
+
+        // Buổi đã hoàn thành (giữ nguyên COMPLETED)
+        WorkoutSchedule completedSchedule = new WorkoutSchedule();
+        completedSchedule.setId(3L);
+        completedSchedule.setPlan(oldPlan);
+        completedSchedule.setMember(member);
+        completedSchedule.setStatus(ScheduleStatus.COMPLETED);
+        completedSchedule.setStartTime(now.minusDays(5));
+        completedSchedule.setEndTime(now.minusDays(5).plusHours(1));
+
+        when(access.requireMemberOf(MEMBER_USER)).thenReturn(member);
+        when(planRepository.findById(200L)).thenReturn(Optional.of(newPlan));
+        when(access.canView(MEMBER_USER, member)).thenReturn(true);
+        when(planRepository.findFirstByMemberIdAndStatusOrderByStartDateDesc(member.getId(), PlanStatus.ACTIVE))
+                .thenReturn(Optional.of(oldPlan));
+        when(scheduleRepository.findByPlanId(100L)).thenReturn(List.of(futureSchedule, pastSchedule, completedSchedule));
+        when(planRepository.findByMemberIdOrderByStartDateDesc(member.getId())).thenReturn(List.of(oldPlan, newPlan));
+        when(mappers.planDetail(newPlan)).thenReturn(new WorkoutPlanResponse(null, null, List.of()));
+
+        SwitchPlanRequest req = new SwitchPlanRequest(200L, "Chuyển sang giáo án tăng cơ");
+        WorkoutPlanResponse res = service.switchPlan(MEMBER_USER, req);
+
+        // 1. Trạng thái giáo án mới là ACTIVE, giáo án cũ là ARCHIVED
+        assertThat(newPlan.getStatus()).isEqualTo(PlanStatus.ACTIVE);
+        assertThat(oldPlan.getStatus()).isEqualTo(PlanStatus.ARCHIVED);
+
+        // 2. Buổi tương lai bị CANCELLED
+        assertThat(futureSchedule.getStatus()).isEqualTo(ScheduleStatus.CANCELLED);
+        // Buổi quá khứ giữ nguyên trạng thái
+        assertThat(pastSchedule.getStatus()).isEqualTo(ScheduleStatus.SCHEDULED);
+        assertThat(completedSchedule.getStatus()).isEqualTo(ScheduleStatus.COMPLETED);
+
+        // 3. Lưu lịch sử đổi giáo án
+        org.mockito.ArgumentCaptor<WorkoutPlanHistory> historyCaptor = org.mockito.ArgumentCaptor.forClass(WorkoutPlanHistory.class);
+        verify(historyRepository).save(historyCaptor.capture());
+        WorkoutPlanHistory savedHistory = historyCaptor.getValue();
+
+        assertThat(savedHistory.getMember().getId()).isEqualTo(member.getId());
+        assertThat(savedHistory.getOldPlan().getId()).isEqualTo(100L);
+        assertThat(savedHistory.getOldPlanName()).isEqualTo("Giáo án cũ");
+        assertThat(savedHistory.getNewPlan().getId()).isEqualTo(200L);
+        assertThat(savedHistory.getNewPlanName()).isEqualTo("Giáo án mới");
+        assertThat(savedHistory.getCancelledFutureSessions()).isEqualTo(1);
+        assertThat(savedHistory.getNote()).isEqualTo("Chuyển sang giáo án tăng cơ");
     }
 }
