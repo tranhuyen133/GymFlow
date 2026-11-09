@@ -6,7 +6,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import type { Notification, Role } from '../api/types';
+import type { Notification, OnboardingData, Role } from '../api/types';
 import { useMe, useAuth } from '../auth/AuthContext';
 import { relativeTime, roleLabel } from '../lib/format';
 import { Brand } from './Brand';
@@ -26,6 +26,7 @@ interface NavItem { to: string; label: string; icon: IconName; roles: Role[]; gr
  * Thứ tự ở đây là thứ tự trên menu. tab: hiện ở tab bar điện thoại (4 mục đầu theo vai trò).
  */
 export const NAV: NavItem[] = [
+  { to: '/getting-started', label: 'Bắt đầu', icon: 'sparkle', roles: ['MEMBER'], tab: true },
   { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard', roles: ['ADMIN', 'TRAINER', 'MEMBER'], tab: true },
   { to: '/messages', label: 'Tin nhắn', icon: 'message', roles: ['TRAINER', 'MEMBER'] },
   { to: '/me/schedule', label: 'Lịch tập của tôi', icon: 'calendar', roles: ['MEMBER'], tab: true },
@@ -195,9 +196,20 @@ export function Layout() {
   /** Nhóm đang được hướng dẫn mở tạm (không ghi đè lựa chọn gập/mở của người dùng) */
   const [reveal, setReveal] = useState<string | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [readyToTrain, setReadyToTrain] = useState<boolean | null>(null);
   const tourDrawer = useRef(false);
   const closeBtn = useRef<HTMLButtonElement>(null);
   useEffect(() => { setOpen(false); window.scrollTo({ top: 0 }); }, [pathname]);
+
+  // Kiểm tra trạng thái sẵn sàng tập để hiện chấm đỏ nhắc nhở trên mục "Bắt đầu"
+  useEffect(() => {
+    if (user.role !== 'MEMBER') return;
+    let alive = true;
+    api.get<OnboardingData>('/me/onboarding')
+      .then((res) => { if (alive) setReadyToTrain(res.readyToTrain); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [user.role, pathname]);
 
   // Polling số tin nhắn chưa đọc (60s), dừng khi tab bị ẩn
   useEffect(() => {
@@ -265,6 +277,7 @@ export function Layout() {
       title={mini ? t(n.label) : undefined} data-tour={`nav:${n.to}`}>
       <Icon name={n.icon} /><span>{t(n.label)}</span>
       {n.to === '/messages' && unreadMessages > 0 && <span className="nav-badge">{unreadMessages}</span>}
+      {n.to === '/getting-started' && readyToTrain === false && <span className="nav-badge dot-remind" />}
     </NavLink>
   );
 
@@ -333,6 +346,7 @@ export function Layout() {
           <NavLink key={n.to} to={n.to} className={({ isActive }) => (isActive ? 'active' : '')} data-tour={`nav:${n.to}`}>
             <Icon name={n.icon} /><span>{t(n.label.replace(' của tôi', ''))}</span>
             {n.to === '/messages' && unreadMessages > 0 && <span className="nav-badge">{unreadMessages}</span>}
+            {n.to === '/getting-started' && readyToTrain === false && <span className="nav-badge dot-remind" />}
           </NavLink>
         ))}
         <a href="#menu" aria-controls="app-sidebar" aria-expanded={open} onClick={(e) => { e.preventDefault(); setOpen(true); }}><Icon name="more" /><span>{t('Thêm')}</span></a>

@@ -229,3 +229,38 @@ export interface Conversation {
 export interface UnreadCount {
   unreadCount: number;
 }
+
+// ---------- Onboarding & Tours ----------
+export type OnboardingStepStatus = 'DONE' | 'IN_PROGRESS' | 'BLOCKED' | 'TODO';
+
+export interface OnboardingStep {
+  key: string;
+  title: string;
+  required: boolean;
+  status: OnboardingStepStatus;
+  updatedAt: string | null;
+  reason: string;
+  nextActionLabel: string | null;
+  nextActionUrl: string | null;
+}
+
+export interface Entitlements {
+  planName: string;
+  startDate: string;
+  endDate: string;
+  daysLeft: number;
+}
+
+export interface OnboardingData {
+  readyToTrain: boolean;
+  currentStep: string;
+  steps: OnboardingStep[];
+  entitlements: Entitlements | null;
+}
+
+export interface TourProgress {
+  tourKey: string;
+  step: number;
+  status: 'PAUSED' | 'DONE' | 'SKIPPED';
+  updatedAt: string;
+}
