@@ -13,6 +13,10 @@ import java.util.Optional;
 public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
     Optional<PasswordResetToken> findByTokenHash(String tokenHash);
 
+    Optional<PasswordResetToken> findFirstByUser_IdAndUsedAtIsNullOrderByCreatedAtDesc(Long userId);
+
+    long countByUser_IdAndCreatedAtAfter(Long userId, LocalDateTime after);
+
     @Modifying
     @Query("UPDATE PasswordResetToken t SET t.usedAt = :now WHERE t.user = :user AND t.usedAt IS NULL")
     int invalidateActiveTokens(@Param("user") User user, @Param("now") LocalDateTime now);

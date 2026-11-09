@@ -15,6 +15,7 @@ import Subscriptions from './pages/admin/Subscriptions';
 import Trainers from './pages/admin/Trainers';
 import Users from './pages/admin/Users';
 import ForgotPassword from './pages/ForgotPassword';
+import VerifyEmail from './pages/VerifyEmail';
 import { ForumList, ForumTopicPage } from './pages/Forum';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -83,6 +84,7 @@ export default function App() {
       <Route path="/login" element={loading ? <Splash /> : user ? <Navigate to="/dashboard" replace /> : <Login />} />
       <Route path="/register" element={loading ? <Splash /> : user ? <Navigate to="/dashboard" replace /> : <Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/policies" element={<Policies />} />
       <Route path="/forum" element={<ForumList />} />
       <Route path="/forum/:id" element={<ForumTopicPage />} />

@@ -61,6 +61,18 @@ public final class Dtos {
     public record RegisterResponse(String message, String email) {
     }
 
+    public record VerifyEmailRequest(
+            @NotBlank @Email @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120) String email,
+            @NotBlank @Pattern(regexp = "\\d{6}", message = "Mã OTP gồm 6 chữ số") String code) {
+    }
+
+    public record ResendVerificationRequest(
+            @NotBlank @Email @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120) String email) {
+    }
+
+    public record AuthMessageResponse(String message) {
+    }
+
     /** Tài khoản demo chỉ trả về khi bật app.demo.quick-login và tài khoản thật sự tồn tại, đang hoạt động. */
     public record DemoAccount(String label, Role role, String email, String password) {
     }
@@ -77,13 +89,32 @@ public final class Dtos {
             @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120, message = "Email tối đa 120 ký tự") String email) {
     }
 
-    /** resetToken chỉ trả về khi bật chế độ demo (app.reset.expose-token=true) vì chưa tích hợp gửi email. */
-    public record ForgotPasswordResponse(String message, String resetToken, int validMinutes) {
+    public record ForgotPasswordResponse(String message, int validMinutes) {
     }
 
     public record ResetPasswordRequest(
-            @NotBlank(message = "Vui lòng nhập mã khôi phục") String token,
+            @NotBlank @Email @Pattern(regexp = EMAIL_RULE, message = EMAIL_MSG) @Size(max = 120) String email,
+            @NotBlank(message = "Vui lòng nhập mã khôi phục") @Pattern(regexp = "\\d{6}", message = "Mã OTP gồm 6 chữ số") String code,
             @NotBlank @Pattern(regexp = PASSWORD_RULE, message = PASSWORD_MSG) String newPassword) {
+    }
+
+    public record ChatSendRequest(@NotNull(message = "Thiếu mã hội thoại") Long conversationId,
+                                  @NotBlank(message = "Vui lòng nhập câu hỏi")
+                                  @Size(max = 2000, message = "Câu hỏi tối đa 2.000 ký tự") String content) {
+    }
+
+    public record ChatMessageResponse(Long id, String sender, String content, LocalDateTime createdAt) {
+    }
+
+    public record ChatConversationResponse(Long id, String title, LocalDateTime createdAt,
+                                          LocalDateTime updatedAt, String lastMessage) {
+    }
+
+    public record ChatCreateConversationResponse(Long id, String title, LocalDateTime createdAt,
+                                                LocalDateTime updatedAt) {
+    }
+
+    public record ChatHistoryResponse(Long conversationId, List<ChatMessageResponse> messages) {
     }
 
     public record UpdateProfileRequest(

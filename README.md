@@ -45,7 +45,11 @@ docker compose -p gymflow -f compose.yaml -f compose.prod.yaml up -d --build
 ```
 VPS chỉ có khoảng 2 GB RAM. Nếu build bị `Killed`, chạy `docker compose -p gymflow -f compose.yaml -f compose.prod.yaml down` trước rồi `up -d --build`. **Không dùng `down -v`** vì sẽ xoá dữ liệu.
 
-Trước buổi bảo vệ, tắt các cờ demo trong `.env` của VPS (SCRUM-202): `DEMO_QUICK_LOGIN=false`, `RESET_EXPOSE_TOKEN=false`.
+Trước buổi bảo vệ, tắt các cờ demo trong `.env` của VPS: `DEMO_QUICK_LOGIN=false`.
+
+## AI Chatbot và xác thực email
+
+Xem [hướng dẫn cấu hình AI/SMTP và kiểm thử](docs/AI_EMAIL_SETUP.md). API key AI và thông tin SMTP chỉ cấu hình qua `.env`/secret của môi trường; không đưa giá trị thật vào Git.
 
 ## Quy tắc làm việc
 1. Mỗi task một nhánh tách từ `develop`: `feat/SCRUM-xxx-mo-ta-ngan`.

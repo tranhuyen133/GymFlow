@@ -51,6 +51,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [busy, setBusy] = useState(false);
   const [caps, setCaps] = useState(false);
   const inFlight = useRef(false);
@@ -66,7 +67,7 @@ export default function Login() {
     if (!em) v.email = 'Vui lòng nhập email';
     else if (!EMAIL_RE.test(em)) v.email = 'Email không hợp lệ (không dùng chữ có dấu hoặc khoảng trắng)';
     if (!pw) v.password = 'Vui lòng nhập mật khẩu';
-    setErrors(v); setError(null);
+    setErrors(v); setError(null); setNeedsVerification(false);
     if (Object.keys(v).length) {
       requestAnimationFrame(() => focusFormError(formRef.current, v));
       return;
@@ -78,6 +79,7 @@ export default function Login() {
       navigate(from, { replace: true });
     } catch (err) {
       setError(errMsg(err));
+      setNeedsVerification(/email chưa được xác thực/i.test(errMsg(err)));
       const fields = fieldErrs(err);
       setErrors(fields);
       requestAnimationFrame(() => focusFormError(formRef.current, fields));
@@ -104,6 +106,7 @@ export default function Login() {
           </div>
           {state?.registered && !error && <Alert kind="success">Tạo tài khoản thành công. Nhập mật khẩu vừa đặt để đăng nhập.</Alert>}
           {error && <Alert kind="error">{error}</Alert>}
+          {needsVerification && <Link to={`/verify-email?email=${encodeURIComponent(email.trim())}`} className="link small">Xác thực email / gửi lại mã OTP</Link>}
           <Field htmlFor="login-email" label="Email" error={errors.email} required>
             <div className="input-icon">
               <Icon name="mail" />

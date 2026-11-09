@@ -275,6 +275,7 @@ public class DataSeeder implements ApplicationRunner {
         u.setPhone(phone);
         u.setRole(role);
         u.setStatus(UserStatus.ACTIVE);
+        u.setEmailVerifiedAt(LocalDateTime.now(clock));
         return userRepository.save(u);
     }
 

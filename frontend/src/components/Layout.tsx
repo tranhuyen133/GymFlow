@@ -12,6 +12,7 @@ import { relativeTime, roleLabel } from '../lib/format';
 import { Brand } from './Brand';
 import { Icon, type IconName } from './Icon';
 import { MyAvatar } from './AvatarEditor';
+import { ChatWidget } from './ChatWidget';
 import { Badge, Button, Confirm } from './ui';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { locale, t } from '../i18n';
@@ -315,6 +316,7 @@ export function Layout() {
 
       {askLogout && <Confirm title="Đăng xuất?" message={t('Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng GymFlow.')} confirmText="Đăng xuất"
         onClose={() => setAskLogout(false)} onConfirm={doLogout} />}
+      <ChatWidget />
     </div>
   );
 }
