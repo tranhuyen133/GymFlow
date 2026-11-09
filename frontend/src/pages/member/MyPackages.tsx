@@ -45,7 +45,7 @@ function overlaps(subs: Subscription[], start: string, end: string) {
 export default function MyPackages() {
   const toast = useToast();
   const subs = useAsync(() => api.get<Subscription[]>('/subscriptions/me'), []);
-  const plans = useAsync(() => api.get<MembershipPlan[]>('/plans'), []);
+  const plans = useAsync(() => api.get<MembershipPlan[]>('/plans/upgrades'), []);
   const reqs = useAsync(() => api.get<PackageRequest[]>('/package-requests/me'), []);
   const pay = useAsync(() => api.get<PaymentSettings>('/payment-settings'), []);
   const me = useAsync(() => api.get<Member>('/members/me'), []);
@@ -71,7 +71,7 @@ export default function MyPackages() {
   const total = current
     ? (parseDate(current.endDate).getTime() - parseDate(current.startDate).getTime()) / 86400000 + 1
     : 1;
-  const reloadAll = () => { void subs.reload(); void reqs.reload(); };
+  const reloadAll = () => { void subs.reload(); void reqs.reload(); void plans.reload(); };
 
   const cancelRequest = async () => {
     if (!cancelling) return;
@@ -273,11 +273,30 @@ export default function MyPackages() {
           </Card>
         </div>
 
-        <Card title={t('Các gói đang mở bán')} icon="sparkle" actions={<Link to="/packages" className="btn btn-sm btn-ghost">{t('So sánh gói')}</Link>}>
+        <Card
+          title={current ? t('Gói đề xuất nâng cấp') : t('Các gói đang mở bán')}
+          icon="sparkle"
+          actions={<Link to="/packages" className="btn btn-sm btn-ghost">{t('Xem tất cả gói tập')}</Link>}
+        >
           <div className="plan-stack">
             {plans.error && <ErrorState message={plans.error} onRetry={plans.reload} />}
             {plans.loading && !plans.data && <LoadingBlock rows={3} />}
-            {plans.data && onSale.length === 0 && <Empty icon="ticket" title="Chưa có gói nào đang mở bán" />}
+            {plans.data && onSale.length === 0 && (
+              current ? (
+                <div className="stack" style={{ gap: 12 }}>
+                  <Alert kind="info">
+                    {t('Bạn đang dùng gói cao nhất.')}
+                  </Alert>
+                  <div>
+                    <Link to="/packages" className="btn btn-sm btn-secondary">
+                      {t('Xem tất cả gói tập')}
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <Empty icon="ticket" title="Chưa có gói nào đang mở bán" />
+              )
+            )}
             {onSale.map((p) => {
               const mine = current?.planId === p.id;
               const isLegacyPt = (p.planType === 'GYM_PT' || p.includesTrainer) && !p.ptSessions;
@@ -292,7 +311,7 @@ export default function MyPackages() {
                     ) : (
                       <Button size="sm" variant={p.id === best ? 'primary' : 'secondary'} block icon={mine ? 'repeat' : 'plus'} disabled={!!pending}
                         title={pending ? t('Bạn đang có một đơn chờ xác nhận') : undefined} onClick={() => setPicked(p)}>
-                        {mine ? t('Gia hạn gói này') : t('Đăng ký gói này')}
+                        {mine ? t('Gia hạn gói này') : (current ? t('Nâng cấp gói này') : t('Đăng ký gói này'))}
                       </Button>
                     )
                   } />

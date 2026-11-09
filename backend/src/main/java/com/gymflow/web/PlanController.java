@@ -31,6 +31,11 @@ public class PlanController {
         return planService.list(type, false);
     }
 
+    @GetMapping("/api/plans/upgrades")
+    public List<PlanResponse> upgrades() {
+        return planService.listUpgrades(CurrentUser.get());
+    }
+
     @GetMapping("/api/plans")
     public List<PlanResponse> plans(@RequestParam(required = false) PlanType type,
                                     @RequestParam(defaultValue = "false") boolean includeInactive) {
