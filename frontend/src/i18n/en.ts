@@ -1183,6 +1183,7 @@ const EN_DEMO: Record<string, string> = {
   'Đã xếp {n} buổi tập': '{n} sessions scheduled',
   'Đã xếp lịch, có tuần bị bỏ qua': 'Scheduled, some weeks skipped',
   'Các tuần sau không xếp được nên hệ thống bỏ qua, các tuần còn lại vẫn được tạo:': 'These weeks could not be scheduled and were skipped; the others were created:',
+  'Đã tạo {created} buổi, bỏ qua {n} tuần.': 'Created {created} sessions, skipped {n} weeks.',
   'Dời lịch buổi tập': 'Reschedule session',
   'Xếp lịch tập': 'Schedule a session',
   '— Chọn hội viên —': '— Choose a member —',
