@@ -69,16 +69,38 @@ export interface MemberTimeSlot extends TimeSlot { memberId: number; memberName:
 export interface BulkApproveResult { approved: number; skipped: string[] }
 
 // ---------- Plans & subscriptions ----------
+export type PlanType = 'GYM' | 'GYM_PT';
+
 export interface MembershipPlan {
   id: number; name: string; description: string | null; price: number; durationDays: number;
   benefits: string | null; active: boolean; currentSubscriptions: number;
   /** Gói có HLV kèm (PT): hội viên chọn HLV khi đăng ký. false = tự tập, tự soạn giáo án. Backend luôn trả về. */
   includesTrainer?: boolean;
+  planType?: PlanType;
+  ptSessions?: number | null;
+  ptValidDays?: number | null;
 }
 export interface Subscription {
   id: number; memberId: number; memberName: string; memberCode: string; planId: number; planName: string;
   startDate: string; endDate: string; pricePaid: number; state: SubscriptionState; daysLeft: number;
   cancelled: boolean; cancelledAt: string | null; note: string | null; createdAt: string; createdByName: string | null;
+  ptSessionsTotal?: number | null;
+  ptSessionsUsed?: number | null;
+  ptSessionsRemaining?: number | null;
+  ptValidUntil?: string | null;
+}
+export interface PtSessionUsage {
+  id: number;
+  subscriptionId: number;
+  scheduleId: number;
+  scheduleTitle: string;
+  startTime: string;
+  endTime: string;
+  trainerId?: number | null;
+  trainerName?: string | null;
+  usedAt: string;
+  createdById?: number | null;
+  createdByName?: string | null;
 }
 export interface SubscriptionPreview { startDate: string; endDate: string; price: number; chained: boolean }
 export type PackageRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';

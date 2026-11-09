@@ -5,7 +5,8 @@ import { durationLabel, fmtMoney } from '../lib/format';
 import { Icon } from './Icon';
 import './packages.css';
 
-type PlanLike = Pick<MembershipPlan, 'name' | 'price' | 'durationDays' | 'description' | 'benefits' | 'includesTrainer'> & { id?: number };
+type PlanLike = Pick<MembershipPlan, 'name' | 'price' | 'durationDays' | 'description' | 'benefits' | 'includesTrainer'> &
+  Partial<Pick<MembershipPlan, 'planType' | 'ptSessions' | 'ptValidDays'>> & { id?: number };
 
 export const benefitsOf = (p: Pick<MembershipPlan, 'benefits'>) => (p.benefits ?? '').split(/[,\n]/).map((b) => b.trim()).filter(Boolean);
 
@@ -59,10 +60,24 @@ export function PlanCard({ plan, best, saving, badge, compact, className = '', f
       </div>
       <h3 className="pc-name">{t(plan.name)}</h3>
       {plan.includesTrainer != null && (
-        <span className={`chip ${plan.includesTrainer ? 'on' : ''}`} style={{ alignSelf: 'flex-start', marginTop: 6 }}
+        <span className={`chip ${plan.includesTrainer ? 'on' : ''}`} style={{ alignSelf: 'flex-start', marginTop: 4 }}
           title={plan.includesTrainer ? t('HLV riêng soạn giáo án và xếp lịch cho bạn') : t('Bạn tự soạn giáo án từ thư viện bài tập và tự xếp lịch')}>
-          <Icon name={plan.includesTrainer ? 'badge' : 'user'} size={13} />{plan.includesTrainer ? t('Có HLV kèm') : t('Tự tập')}
+          <Icon name={plan.includesTrainer ? 'badge' : 'user'} size={13} />
+          {plan.includesTrainer ? t('Có PT') : t('Gói Gym (Tự tập)')}
         </span>
+      )}
+      {(plan.planType === 'GYM_PT' || plan.includesTrainer) && (
+        plan.ptSessions ? (
+          <div className="pc-pt-sessions">
+            <Icon name="badge" size={14} />
+            <span>{t('{n} buổi PT · dùng trong {d} ngày', { n: plan.ptSessions, d: plan.ptValidDays ?? plan.durationDays })}</span>
+          </div>
+        ) : (
+          <div className="pc-pt-warning">
+            <Icon name="alert" size={14} />
+            <span>{t('Gói PT chưa có số buổi (Đang cập nhật)')}</span>
+          </div>
+        )
       )}
       <div className="pc-price" aria-label={fmtMoney(plan.price)}>
         <span className="pc-amount" key={plan.price}>{fmtMoney(plan.price)}</span>

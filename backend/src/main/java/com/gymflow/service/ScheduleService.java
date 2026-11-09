@@ -4,7 +4,10 @@ import com.gymflow.common.ApiException;
 import com.gymflow.common.GymHours;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
+import com.gymflow.repository.MemberSubscriptionRepository;
+import com.gymflow.repository.PtSessionUsageRepository;
 import com.gymflow.repository.TrainerRepository;
+import com.gymflow.repository.UserRepository;
 import com.gymflow.repository.WorkoutLogRepository;
 import com.gymflow.repository.WorkoutPlanRepository;
 import com.gymflow.repository.WorkoutScheduleRepository;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -44,6 +48,9 @@ public class ScheduleService {
     private final AuditService auditService;
     private final Mappers mappers;
     private final Clock clock;
+    private final UserRepository userRepository;
+    private final PtSessionUsageRepository ptSessionUsageRepository;
+    private final MemberSubscriptionRepository subscriptionRepository;
 
     @Transactional(readOnly = true)
     public List<ScheduleResponse> list(AuthUser user, LocalDateTime from, LocalDateTime to, Long memberId, Long trainerId) {
@@ -172,6 +179,36 @@ public class ScheduleService {
         log.setRating(req.rating());
         log.setNote(Mappers.blankToNull(req.note()));
         logRepository.save(log);
+
+        // Nếu buổi tập có HLV (buổi PT): trừ 1 buổi PT trong cùng transaction
+        if (s.getTrainer() != null) {
+            LocalDate today = now.toLocalDate();
+            List<MemberSubscription> ptSubs = subscriptionRepository.findEffectivePtSubscriptionsForUpdate(s.getMember().getId(), today);
+            if (ptSubs.isEmpty()) {
+                ptSubs = subscriptionRepository.findEffectivePtSubscriptionsForUpdate(s.getMember().getId(), s.getStartTime().toLocalDate());
+            }
+            if (ptSubs.isEmpty()) {
+                throw ApiException.conflict("Hội viên không có gói tập kèm HLV (PT) còn hiệu lực");
+            }
+            MemberSubscription sub = ptSubs.get(0);
+            if (sub.getPtValidUntil() != null && today.isAfter(sub.getPtValidUntil())) {
+                throw ApiException.conflict("Buổi PT của gói đã hết hạn sử dụng (hạn đến " + sub.getPtValidUntil().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ")");
+            }
+            if (sub.getPtSessionsTotal() != null) {
+                long used = ptSessionUsageRepository.countBySubscriptionId(sub.getId());
+                if (used >= sub.getPtSessionsTotal()) {
+                    throw ApiException.conflict("Hội viên đã sử dụng hết " + sub.getPtSessionsTotal() + " buổi PT của gói này");
+                }
+            }
+            PtSessionUsage usage = new PtSessionUsage();
+            usage.setSubscription(sub);
+            usage.setSchedule(s);
+            usage.setTrainer(s.getTrainer());
+            usage.setUsedAt(now);
+            usage.setCreatedBy(userRepository.getReferenceById(user.id()));
+            ptSessionUsageRepository.save(usage);
+        }
+
         s.setStatus(ScheduleStatus.COMPLETED);
         auditService.log("SCHEDULE_COMPLETE", "SCHEDULE", s.getId(), s.getMember().getCode());
         return mappers.schedule(s, log);
@@ -216,6 +253,9 @@ public class ScheduleService {
     String conflict(Member member, Trainer trainer, LocalDateTime start, LocalDateTime end, Long excludeId) {
         if (!subscriptionService.hasEffective(member.getId(), start.toLocalDate())) {
             return "hội viên không có gói tập hiệu lực vào ngày " + start.toLocalDate();
+        }
+        if (trainer != null && !subscriptionRepository.hasEffectivePtSubscription(member.getId(), start.toLocalDate())) {
+            return "hội viên chỉ có gói tự tập, không thể xếp lịch có huấn luyện viên (PT)";
         }
         if (scheduleRepository.memberBusy(member.getId(), start, end, excludeId, ScheduleStatus.CANCELLED)) {
             return "hội viên đã có buổi tập khác trùng giờ";

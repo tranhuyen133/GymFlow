@@ -2,6 +2,7 @@ package com.gymflow.service;
 
 import com.gymflow.common.ApiException;
 import com.gymflow.domain.*;
+import com.gymflow.dto.Dtos.SubscriptionPreview;
 import com.gymflow.dto.Dtos.SubscriptionRequest;
 import com.gymflow.dto.Dtos.SubscriptionResponse;
 import com.gymflow.dto.PackageRequestDtos.*;
@@ -74,9 +75,13 @@ public class PackageRequestService {
         }
         // Gói không kèm HLV: bỏ qua trainerId gửi lên, hội viên tự soạn giáo án và tự xếp lịch.
         Trainer trainer = null;
-        if (plan.isIncludesTrainer()) {
+        Integer ptSessionsSnapshot = null;
+        Integer ptValidDaysSnapshot = null;
+        if (plan.getPlanType() == PlanType.GYM_PT || plan.isIncludesTrainer()) {
             if (req.trainerId() == null) throw ApiException.badRequest("Gói này có HLV kèm, vui lòng chọn huấn luyện viên");
             trainer = activeTrainer(req.trainerId());
+            ptSessionsSnapshot = plan.getPtSessions();
+            ptValidDaysSnapshot = plan.getPtValidDays();
         }
 
         LocalDate today = mappers.today();
@@ -104,6 +109,8 @@ public class PackageRequestService {
         r.setPlanName(plan.getName());
         r.setPrice(plan.getPrice());
         r.setDurationDays(plan.getDurationDays());
+        r.setPtSessionsSnapshot(ptSessionsSnapshot);
+        r.setPtValidDaysSnapshot(ptValidDaysSnapshot);
         r.setDesiredStartDate(start);
         r.setMemberNote(Mappers.blankToNull(req.note()));
         r.setPaymentMethod(method);
@@ -168,7 +175,7 @@ public class PackageRequestService {
         }
         // Gói có HLV kèm: kiểm tra HLV trước khi tạo gói, để lỗi HLV không để lại gói đã tạo.
         Trainer assign = null;
-        if (r.getTrainer() != null || r.getPlan().isIncludesTrainer()) {
+        if (r.getTrainer() != null || r.getPlan().isIncludesTrainer() || r.getPlan().getPlanType() == PlanType.GYM_PT) {
             assign = req != null && req.trainerId() != null ? activeTrainer(req.trainerId()) : r.getTrainer();
             if (assign == null) throw ApiException.badRequest("Gói có HLV kèm: chọn huấn luyện viên cho hội viên trước khi duyệt");
             if (!assign.isActive()) throw ApiException.badRequest("Huấn luyện viên " + assign.getUser().getFullName() + " đang ngừng nhận hội viên, hãy chọn HLV khác");
@@ -184,8 +191,13 @@ public class PackageRequestService {
         String decision = Mappers.blankToNull(req == null ? null : req.note());
         String paid = r.getPaymentMethod() == PaymentMethod.BANK_TRANSFER ? " · chuyển khoản " + r.getPaymentCode() : "";
         String note = "Đơn #" + r.getId() + " hội viên tự đăng ký" + paid + (decision == null ? "" : " · " + decision);
+
+        SubscriptionPreview preview = subscriptionService.preview(memberId, r.getPlan().getId(), start);
+        LocalDate validUntil = r.getPtValidDaysSnapshot() != null ? preview.startDate().plusDays(r.getPtValidDaysSnapshot()) : null;
+
         SubscriptionResponse created = subscriptionService.create(admin,
-                new SubscriptionRequest(memberId, r.getPlan().getId(), start, r.getPrice(), note.length() > 255 ? note.substring(0, 255) : note));
+                new SubscriptionRequest(memberId, r.getPlan().getId(), start, r.getPrice(), note.length() > 255 ? note.substring(0, 255) : note,
+                        r.getPtSessionsSnapshot(), validUntil));
 
         if (assign != null) {
             Member m = r.getMember();

@@ -51,6 +51,17 @@
 }
 .pc-desc { margin: 2px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
 
+.pc-pt-sessions {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border-radius: 8px; background: color-mix(in srgb, var(--primary) 14%, var(--surface-2));
+  color: var(--primary-bright); font-size: 12px; font-weight: 700; align-self: flex-start;
+}
+.pc-pt-warning {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border-radius: 8px; background: color-mix(in srgb, var(--warning, #ffb020) 16%, var(--surface-2));
+  color: var(--warning, #ffb020); font-size: 12px; font-weight: 700; align-self: flex-start;
+}
+
 .pc-perks { list-style: none; margin: 4px 0 0; padding: 12px 0 0; display: grid; gap: 8px; font-size: 13px; border-top: 1px dashed var(--hairline); }
 .pc-perks li { display: flex; align-items: flex-start; gap: 8px; line-height: 1.45; }
 .pc-tick {

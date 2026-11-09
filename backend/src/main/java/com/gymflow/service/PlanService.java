@@ -2,6 +2,7 @@ package com.gymflow.service;
 
 import com.gymflow.common.ApiException;
 import com.gymflow.domain.MembershipPlan;
+import com.gymflow.domain.PlanType;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.repository.MemberSubscriptionRepository;
 import com.gymflow.repository.MembershipPlanRepository;
@@ -24,8 +25,19 @@ public class PlanService {
 
     @Transactional(readOnly = true)
     public List<PlanResponse> list(boolean includeInactive) {
-        List<MembershipPlan> plans = includeInactive ? planRepository.findAllByOrderByPriceAsc()
-                : planRepository.findByActiveTrueOrderByPriceAsc();
+        return list(null, includeInactive);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PlanResponse> list(PlanType type, boolean includeInactive) {
+        List<MembershipPlan> plans;
+        if (type != null) {
+            plans = includeInactive ? planRepository.findByPlanTypeOrderByPriceAsc(type)
+                    : planRepository.findByPlanTypeAndActiveTrueOrderByPriceAsc(type);
+        } else {
+            plans = includeInactive ? planRepository.findAllByOrderByPriceAsc()
+                    : planRepository.findByActiveTrueOrderByPriceAsc();
+        }
         return plans.stream().map(mappers::plan).toList();
     }
 
@@ -73,12 +85,35 @@ public class PlanService {
     }
 
     private void apply(MembershipPlan p, PlanRequest req) {
+        PlanType type = req.planType();
+        if (type == null) {
+            type = req.includesTrainer() ? PlanType.GYM_PT : PlanType.GYM;
+        }
+        if (type == PlanType.GYM_PT) {
+            if (req.ptSessions() == null || req.ptSessions() < 1 || req.ptSessions() > 200) {
+                throw ApiException.badRequest("Gói có PT bắt buộc nhập số buổi PT từ 1 đến 200");
+            }
+            if (req.ptValidDays() == null || req.ptValidDays() < 1 || req.ptValidDays() > 1095) {
+                throw ApiException.badRequest("Gói có PT bắt buộc nhập hạn dùng buổi từ 1 đến 1095 ngày");
+            }
+        } else {
+            if (req.ptSessions() != null) {
+                throw ApiException.badRequest("Gói Gym (tự tập) không được có số buổi PT");
+            }
+            if (req.ptValidDays() != null) {
+                throw ApiException.badRequest("Gói Gym (tự tập) không được có hạn dùng buổi PT");
+            }
+        }
+
         p.setName(req.name().trim());
         p.setDescription(Mappers.blankToNull(req.description()));
         p.setPrice(req.price());
         p.setDurationDays(req.durationDays());
         p.setBenefits(Mappers.blankToNull(req.benefits()));
-        p.setIncludesTrainer(req.includesTrainer());
+        p.setPlanType(type);
+        p.setIncludesTrainer(type == PlanType.GYM_PT);
+        p.setPtSessions(type == PlanType.GYM_PT ? req.ptSessions() : null);
+        p.setPtValidDays(type == PlanType.GYM_PT ? req.ptValidDays() : null);
     }
 
     MembershipPlan load(Long id) {

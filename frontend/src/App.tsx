@@ -21,6 +21,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import MemberDashboard from './pages/member/MemberDashboard';
 import MyPackages from './pages/member/MyPackages';
+import PackagesCatalog from './pages/member/PackagesCatalog';
 import MyPlan from './pages/member/MyPlan';
 import MyJourney from './pages/member/MyJourney';
 import MyProgress from './pages/member/MyProgress';
@@ -105,6 +106,7 @@ export default function App() {
         <Route path="/me/progress" element={<Only roles={MEMBER}><MyProgress /></Only>} />
         <Route path="/me/journey" element={<Only roles={MEMBER}><MyJourney /></Only>} />
         <Route path="/me/packages" element={<Only roles={MEMBER}><MyPackages /></Only>} />
+        <Route path="/packages" element={<Only roles={MEMBER}><PackagesCatalog /></Only>} />
         <Route path="/coaches" element={<Only roles={MEMBER}><Coaches /></Only>} />
         <Route path="/coaches/:id" element={<Only roles={MEMBER}><CoachDetail /></Only>} />
         <Route path="/messages" element={<Only roles={CHAT_ROLES}><Messages /></Only>} />

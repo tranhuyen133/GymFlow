@@ -97,7 +97,7 @@ class PackageRequestServiceTest {
 
     private static SubscriptionResponse sub(LocalDate start) {
         return new SubscriptionResponse(77L, 1L, "Hội Viên", "HV00001", 2L, "Gói 1 tháng", start, start.plusDays(29),
-                450_000L, SubscriptionState.ACTIVE, 29, false, null, null, null, "Quản lý");
+                450_000L, SubscriptionState.ACTIVE, 29, false, null, null, null, "Quản lý", null, null, null, null);
     }
 
     // ---------- Gửi đơn ----------

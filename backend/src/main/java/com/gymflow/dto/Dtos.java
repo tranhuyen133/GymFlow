@@ -245,14 +245,22 @@ public final class Dtos {
             @NotNull(message = "Vui lòng nhập thời hạn") @Min(value = 1, message = "Thời hạn tối thiểu 1 ngày") @Max(value = 1095, message = "Thời hạn tối đa 3 năm") Integer durationDays,
             @Size(max = 1000) String benefits,
             /** Gói có HLV kèm (PT). Không gửi = false: hội viên tự soạn giáo án, tự xếp lịch. */
-            boolean includesTrainer) {
+            boolean includesTrainer,
+            PlanType planType,
+            Integer ptSessions,
+            Integer ptValidDays) {
         public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits) {
-            this(name, description, price, durationDays, benefits, false);
+            this(name, description, price, durationDays, benefits, false, PlanType.GYM, null, null);
+        }
+
+        public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits, boolean includesTrainer) {
+            this(name, description, price, durationDays, benefits, includesTrainer, includesTrainer ? PlanType.GYM_PT : PlanType.GYM, null, null);
         }
     }
 
     public record PlanResponse(Long id, String name, String description, Long price, Integer durationDays,
-                               String benefits, boolean active, long currentSubscriptions, boolean includesTrainer) {
+                               String benefits, boolean active, long currentSubscriptions, boolean includesTrainer,
+                               PlanType planType, Integer ptSessions, Integer ptValidDays) {
     }
 
     // ===================== Subscription =====================
@@ -261,7 +269,12 @@ public final class Dtos {
             @NotNull(message = "Vui lòng chọn gói tập") Long planId,
             LocalDate startDate,
             @Min(value = 0, message = "Số tiền không âm") Long pricePaid,
-            @Size(max = 255) String note) {
+            @Size(max = 255) String note,
+            Integer ptSessionsTotal,
+            LocalDate ptValidUntil) {
+        public SubscriptionRequest(Long memberId, Long planId, LocalDate startDate, Long pricePaid, String note) {
+            this(memberId, planId, startDate, pricePaid, note, null, null);
+        }
     }
 
     public record CancelRequest(@Size(max = 200) String reason) {
@@ -273,7 +286,14 @@ public final class Dtos {
     public record SubscriptionResponse(Long id, Long memberId, String memberName, String memberCode,
                                        Long planId, String planName, LocalDate startDate, LocalDate endDate,
                                        Long pricePaid, SubscriptionState state, long daysLeft, boolean cancelled,
-                                       LocalDateTime cancelledAt, String note, LocalDateTime createdAt, String createdByName) {
+                                       LocalDateTime cancelledAt, String note, LocalDateTime createdAt, String createdByName,
+                                       Integer ptSessionsTotal, Integer ptSessionsUsed, Integer ptSessionsRemaining, LocalDate ptValidUntil) {
+    }
+
+    public record PtSessionUsageResponse(Long id, Long subscriptionId, Long scheduleId, String scheduleTitle,
+                                         LocalDateTime startTime, LocalDateTime endTime,
+                                         Long trainerId, String trainerName,
+                                         LocalDateTime usedAt, Long createdById, String createdByName) {
     }
 
     // ===================== Exercise =====================

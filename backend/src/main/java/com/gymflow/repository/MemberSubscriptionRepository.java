@@ -52,6 +52,24 @@ public interface MemberSubscriptionRepository extends JpaRepository<MemberSubscr
             """)
     List<MemberSubscription> findEffective(@Param("memberId") Long memberId, @Param("day") LocalDate day);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select s from MemberSubscription s
+            where s.member.id = :memberId and s.cancelled = false
+              and s.startDate <= :day and s.endDate >= :day
+              and (s.plan.planType = com.gymflow.domain.PlanType.GYM_PT or s.ptSessionsTotal is not null)
+            order by s.startDate desc
+            """)
+    List<MemberSubscription> findEffectivePtSubscriptionsForUpdate(@Param("memberId") Long memberId, @Param("day") LocalDate day);
+
+    @Query("""
+            select count(s) > 0 from MemberSubscription s
+            where s.member.id = :memberId and s.cancelled = false
+              and s.startDate <= :day and s.endDate >= :day
+              and (s.plan.planType = com.gymflow.domain.PlanType.GYM_PT or s.plan.includesTrainer = true)
+            """)
+    boolean hasEffectivePtSubscription(@Param("memberId") Long memberId, @Param("day") LocalDate day);
+
     @Query("""
             select count(distinct s.member.id) from MemberSubscription s
             where s.cancelled = false and s.startDate <= :day and s.endDate >= :day

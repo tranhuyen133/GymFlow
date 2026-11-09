@@ -4,6 +4,7 @@ import com.gymflow.common.ApiException;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.repository.MemberSubscriptionRepository;
+import com.gymflow.repository.PtSessionUsageRepository;
 import com.gymflow.repository.UserRepository;
 import com.gymflow.security.AuthUser;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class SubscriptionService {
     private final AuditService auditService;
     private final Mappers mappers;
     private final Clock clock;
+    private final PtSessionUsageRepository ptSessionUsageRepository;
 
     @Transactional(readOnly = true)
     public List<SubscriptionResponse> list(SubscriptionState state, Long memberId) {
@@ -94,6 +96,15 @@ public class SubscriptionService {
         s.setPricePaid(req.pricePaid() == null ? plan.getPrice() : req.pricePaid());
         s.setNote(Mappers.blankToNull(req.note()));
         s.setCreatedBy(userRepository.getReferenceById(actor.id()));
+
+        Integer ptTotal = req.ptSessionsTotal() != null ? req.ptSessionsTotal() : plan.getPtSessions();
+        LocalDate ptValidUntil = req.ptValidUntil();
+        if (ptValidUntil == null && plan.getPtValidDays() != null) {
+            ptValidUntil = p.startDate().plusDays(plan.getPtValidDays());
+        }
+        s.setPtSessionsTotal(ptTotal);
+        s.setPtValidUntil(ptValidUntil);
+
         subscriptionRepository.saveAndFlush(s);
         auditService.log(p.chained() ? "SUBSCRIPTION_RENEW" : "SUBSCRIPTION_CREATE", "SUBSCRIPTION", s.getId(),
                 member.getCode() + " · " + plan.getName() + " · " + s.getStartDate() + " → " + s.getEndDate());
@@ -120,5 +131,14 @@ public class SubscriptionService {
     @Transactional(readOnly = true)
     public boolean hasEffective(Long memberId, LocalDate day) {
         return !subscriptionRepository.findEffective(memberId, day).isEmpty();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PtSessionUsageResponse> listPtUsages(AuthUser user, Long subscriptionId) {
+        MemberSubscription s = subscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> ApiException.notFound("gói tập"));
+        access.requireView(user, s.getMember().getId());
+        return ptSessionUsageRepository.findBySubscriptionIdWithDetails(subscriptionId)
+                .stream().map(mappers::ptSessionUsage).toList();
     }
 }

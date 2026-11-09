@@ -31,6 +31,7 @@ export const NAV: NavItem[] = [
   { to: '/me/schedule', label: 'Lịch tập của tôi', icon: 'calendar', roles: ['MEMBER'], tab: true },
   { to: '/me/plan', label: 'Giáo án của tôi', icon: 'clipboard', roles: ['MEMBER'], tab: true },
   { to: '/me/packages', label: 'Gói tập của tôi', icon: 'ticket', roles: ['MEMBER'], group: 'Dịch vụ' },
+  { to: '/packages', label: 'Bảng giá & Gói tập', icon: 'sparkle', roles: ['MEMBER'], group: 'Dịch vụ' },
   { to: '/coaches', label: 'Huấn luyện viên', icon: 'badge', roles: ['MEMBER'], group: 'Dịch vụ' },
   { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['ADMIN', 'TRAINER'], tab: true },
   { to: '/me/progress', label: 'Tiến độ', icon: 'chart', roles: ['MEMBER'], group: 'Sức khoẻ & tiến độ', tab: true },

@@ -27,6 +27,7 @@ export default function Plans() {
   const users = sorted.reduce((s, p) => s + p.currentSubscriptions, 0);
   const maxUsers = Math.max(1, ...sorted.map((p) => p.currentSubscriptions));
   const top = [...sorted].sort((a, b) => b.currentSubscriptions - a.currentSubscriptions)[0];
+  const missingSessionsPlans = sorted.filter((p) => (p.planType === 'GYM_PT' || p.includesTrainer) && !p.ptSessions);
 
   const toggle = async (p: MembershipPlan) => {
     try { await api.put(`/plans/${p.id}/active`, { active: !p.active }); toast.success(p.active ? 'Đã ngừng bán gói' : 'Đã mở bán lại'); void reload(); }
@@ -41,6 +42,16 @@ export default function Plans() {
         <Card><Empty icon="ticket" title="Chưa có gói tập" desc="Tạo gói đầu tiên để hội viên đăng ký trên ứng dụng và trang chủ." action={<Button variant="primary" icon="plus" onClick={() => setEditing('new')}>Thêm gói</Button>} /></Card>
       ) : (
         <>
+          {missingSessionsPlans.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <Alert kind="warning">
+                {t('Có {n} gói PT chưa khai báo số buổi PT ({names}). Vui lòng bấm Sửa để bổ sung số buổi và thời hạn dùng buổi.', {
+                  n: missingSessionsPlans.length,
+                  names: missingSessionsPlans.map((p) => p.name).join(', ')
+                })}
+              </Alert>
+            </div>
+          )}
           <div className="plan-stats">
             <div className="plan-stat"><span className="tiny muted">{t('Đang bán')}</span><b>{onSale.length}</b></div>
             <div className="plan-stat"><span className="tiny muted">{t('Ngừng bán')}</span><b>{sorted.length - onSale.length}</b></div>
@@ -59,7 +70,14 @@ export default function Plans() {
             <div className="plan-grid">
               {shown.map((p) => (
                 <PlanCard key={p.id} plan={p} best={p.id === best} saving={p.active ? save.get(p.id) : undefined} className={p.active ? '' : 'inactive'}
-                  badge={p.active ? <Badge tone="green">Đang bán</Badge> : <Badge tone="muted">Ngừng bán</Badge>}
+                  badge={
+                    <div className="row" style={{ gap: 4 }}>
+                      {p.active ? <Badge tone="green">Đang bán</Badge> : <Badge tone="muted">Ngừng bán</Badge>}
+                      {(p.planType === 'GYM_PT' || p.includesTrainer) && !p.ptSessions && (
+                        <Badge tone="amber">Thiếu số buổi</Badge>
+                      )}
+                    </div>
+                  }
                   footer={
                     <div className="plan-admin-foot">
                       <div className="stack-sm" style={{ gap: 4, flex: 1, minWidth: 0 }}>
@@ -92,13 +110,25 @@ const DURATIONS = [30, 90, 180, 365];
 function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; others: MembershipPlan[]; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const [f, setF] = useState({ name: plan?.name ?? '', description: plan?.description ?? '', price: String(plan?.price ?? ''), durationDays: String(plan?.durationDays ?? 30), benefits: plan?.benefits ?? '' });
-  const [pt, setPt] = useState(plan?.includesTrainer ?? false);
+  const [pt, setPt] = useState(plan?.planType === 'GYM_PT' || (plan?.includesTrainer ?? false));
+  const [ptSessions, setPtSessions] = useState(plan?.ptSessions != null ? String(plan.ptSessions) : '12');
+  const [ptValidDays, setPtValidDays] = useState(plan?.ptValidDays != null ? String(plan.ptValidDays) : String(plan?.durationDays ?? 30));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f, v: string) => { setF((x) => ({ ...x, [k]: v })); if (errors[k]) setErrors((x) => ({ ...x, [k]: '' })); };
   const price = Number(f.price); const days = Number(f.durationDays);
-  const preview = { name: f.name.trim() || t('Tên gói'), price: Number.isFinite(price) && price >= 0 ? price : 0, durationDays: days > 0 ? days : 1, description: f.description.trim() || null, benefits: f.benefits, includesTrainer: pt };
+  const preview = {
+    name: f.name.trim() || t('Tên gói'),
+    price: Number.isFinite(price) && price >= 0 ? price : 0,
+    durationDays: days > 0 ? days : 1,
+    description: f.description.trim() || null,
+    benefits: f.benefits,
+    includesTrainer: pt,
+    planType: pt ? ('GYM_PT' as const) : ('GYM' as const),
+    ptSessions: pt ? Number(ptSessions) : null,
+    ptValidDays: pt ? Number(ptValidDays) : null,
+  };
   const previewSave = savings([...others.filter((p) => p.active), preview]).get(undefined);
 
   const submit = async () => {
@@ -109,10 +139,27 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
     else if (others.some((p) => p.name.trim().toLowerCase() === name.toLowerCase())) v.name = 'Đã có gói trùng tên';
     if (f.price === '' || !Number.isFinite(price) || price < 0) v.price = 'Giá không hợp lệ';
     if (!Number.isInteger(days) || days < 1 || days > 1095) v.durationDays = 'Từ 1 đến 1095 ngày';
+    if (pt) {
+      const sess = Number(ptSessions);
+      const vdays = Number(ptValidDays);
+      if (!Number.isInteger(sess) || sess < 1 || sess > 200) v.ptSessions = 'Số buổi PT từ 1 đến 200';
+      if (!Number.isInteger(vdays) || vdays < 1 || vdays > 1095) v.ptValidDays = 'Thời hạn buổi từ 1 đến 1095 ngày';
+    }
     setErrors(v); setError(null);
     if (Object.keys(v).length) return;
     setBusy(true);
-    const body = { ...f, name, description: f.description.trim(), benefits: f.benefits.split(/[,\n]/).map((b) => b.trim()).filter(Boolean).join(', '), price, durationDays: days, includesTrainer: pt };
+    const body = {
+      ...f,
+      name,
+      description: f.description.trim(),
+      benefits: f.benefits.split(/[,\n]/).map((b) => b.trim()).filter(Boolean).join(', '),
+      price,
+      durationDays: days,
+      planType: pt ? 'GYM_PT' : 'GYM',
+      includesTrainer: pt,
+      ptSessions: pt ? Number(ptSessions) : null,
+      ptValidDays: pt ? Number(ptValidDays) : null,
+    };
     try {
       if (plan) await api.put(`/plans/${plan.id}`, body); else await api.post('/plans', body);
       toast.success('Đã lưu gói tập'); onSaved();
@@ -139,12 +186,24 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
               {DURATIONS.map((d) => <button key={d} type="button" className={`chip ${days === d ? 'on' : ''}`} onClick={() => set('durationDays', String(d))}>{durationLabel(d)}</button>)}
             </div>
             <Field label="Mô tả" className="span-2" hint={t('{n}/500', { n: f.description.length })}><Textarea maxLength={500} value={f.description} onChange={(e) => set('description', e.target.value)} placeholder="VD: Phù hợp người mới, tập không giới hạn giờ mở cửa" /></Field>
-            <Field label="Huấn luyện viên" className="span-2">
-              <div className="pick-grid" role="radiogroup" aria-label={t('Huấn luyện viên')}>
-                <PickCard on={!pt} onClick={() => setPt(false)} icon="user" title={t('Tự tập')} sub={t('Hội viên tự soạn giáo án từ thư viện bài tập và tự xếp lịch')} />
-                <PickCard on={pt} onClick={() => setPt(true)} icon="badge" title={t('Có HLV kèm (PT)')} sub={t('Hội viên chọn HLV khi mua; HLV soạn giáo án, xếp lịch')} />
+            <Field label="Phân loại gói" className="span-2">
+              <div className="pick-grid" role="radiogroup" aria-label={t('Phân loại gói')}>
+                <PickCard on={!pt} onClick={() => setPt(false)} icon="user" title={t('Gói Gym (Tự tập)')} sub={t('Hội viên tự soạn giáo án từ thư viện bài tập và tự xếp lịch')} />
+                <PickCard on={pt} onClick={() => setPt(true)} icon="badge" title={t('Gói Gym + PT (Có HLV)')} sub={t('Kèm số buổi HLV 1-1; HLV soạn giáo án, xếp lịch')} />
               </div>
             </Field>
+            {pt && (
+              <>
+                <Field label="Số buổi PT" error={errors.ptSessions} required hint="Từ 1 đến 200 buổi">
+                  <Input type="number" inputMode="numeric" min={1} max={200} value={ptSessions} invalid={!!errors.ptSessions}
+                    onChange={(e) => { setPtSessions(e.target.value); if (errors.ptSessions) setErrors((x) => ({ ...x, ptSessions: '' })); }} />
+                </Field>
+                <Field label="Thời hạn dùng buổi PT (ngày)" error={errors.ptValidDays} required hint="Từ 1 đến 1095 ngày">
+                  <Input type="number" inputMode="numeric" min={1} max={1095} value={ptValidDays} invalid={!!errors.ptValidDays}
+                    onChange={(e) => { setPtValidDays(e.target.value); if (errors.ptValidDays) setErrors((x) => ({ ...x, ptValidDays: '' })); }} />
+                </Field>
+              </>
+            )}
             {plan && plan.includesTrainer && !pt && plan.currentSubscriptions > 0 && (
               <div className="span-2"><Alert kind="warning">{t('Hội viên đang dùng gói này vẫn giữ HLV hiện tại. Đổi HLV ở hồ sơ từng hội viên nếu cần.')}</Alert></div>
             )}

@@ -41,6 +41,12 @@ public class PackageRequest {
     @Column(name = "duration_days", nullable = false)
     private Integer durationDays;
 
+    @Column(name = "pt_sessions_snapshot")
+    private Integer ptSessionsSnapshot;
+
+    @Column(name = "pt_valid_days_snapshot")
+    private Integer ptValidDaysSnapshot;
+
     @Column(name = "desired_start_date")
     private LocalDate desiredStartDate;
 

@@ -35,6 +35,7 @@ class SubscriptionServiceTest {
     @Mock AccessService access;
     @Mock AuditService auditService;
     @Mock Mappers mappers;
+    @Mock com.gymflow.repository.PtSessionUsageRepository ptSessionUsageRepository;
 
     SubscriptionService service;
     Member member;
@@ -43,7 +44,7 @@ class SubscriptionServiceTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(TODAY.atTime(10, 0).atZone(ZONE).toInstant(), ZONE);
-        service = new SubscriptionService(subscriptionRepository, userRepository, planService, access, auditService, mappers, clock);
+        service = new SubscriptionService(subscriptionRepository, userRepository, planService, access, auditService, mappers, clock, ptSessionUsageRepository);
         member = new Member();
         member.setId(1L);
         member.setCode("HV00001");

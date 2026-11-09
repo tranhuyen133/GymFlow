@@ -6,15 +6,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Member, Schedule, ScheduleCreated, ScheduleStatus, TimeSlot, Trainer, WorkoutPlanSummary } from '../../api/types';
+import type { Member, Schedule, ScheduleCreated, ScheduleStatus, Subscription, TimeSlot, Trainer, WorkoutPlanSummary } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
 import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
 import { WeekCalendar } from '../../components/WeekCalendar';
-import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
-import { t } from '../../i18n';
-import { addDays, DAY_NAMES, fmtDateTime, fmtTime, fmtWeekday, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
+import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
+import { t, tn } from '../../i18n';
+import { addDays, DAY_NAMES, fmtDate, fmtDateTime, fmtTime, fmtWeekday, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
 import { covered, fromMin, GYM_CLOSE, GYM_OPEN, hm, timeOptions, toMin, type WeekSlot } from '../../lib/hours';
 import '../../components/week-slots.css';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
@@ -171,7 +171,17 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
   const [rating, setRating] = useState(4);
   const [note, setNote] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  const isPt = session.trainerId != null;
+  const subs = useAsync(
+    () => (isPt ? api.get<Subscription[]>(`/members/${session.memberId}/subscriptions`) : Promise.resolve([] as Subscription[])),
+    [session.memberId, isPt],
+  );
+  const activePtSub = (subs.data ?? []).find(
+    (s) => !s.cancelled && s.ptSessionsTotal != null && (s.state === 'ACTIVE' || s.state === 'EXPIRING'),
+  );
 
   const ratingLabels = ['', t('Rất mệt'), t('Hơi đuối'), t('Ổn'), t('Tốt'), t('Xuất sắc')];
 
@@ -180,14 +190,19 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
     const d = Number(duration); const c = calories === '' ? null : Number(calories);
     if (!Number.isInteger(d) || d < 1 || d > 600) v.durationMinutes = t('Từ 1 đến 600 phút');
     if (c != null && (!Number.isInteger(c) || c < 0 || c > 5000)) v.calories = t('Từ 0 đến 5000 kcal');
-    setErrors(v);
+    setErrors(v); setServerError('');
     if (Object.keys(v).length) return;
     setBusy(true);
     try {
       await api.post(`/schedules/${session.id}/complete`, { durationMinutes: d, calories: c, rating, note: note || null });
       toast.success(t('Tuyệt vời! Đã ghi nhận buổi tập 💪'));
       onDone();
-    } catch (e) { toast.error(errMsg(e)); setErrors(fieldErrs(e)); } finally { setBusy(false); }
+    } catch (e) {
+      const err = errMsg(e);
+      toast.error(err);
+      setServerError(err);
+      setErrors(fieldErrs(e));
+    } finally { setBusy(false); }
   };
 
   return (
@@ -197,6 +212,24 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
     </>}>
       <div className="stack">
         <div className="muted small">{session.title} · {fmtTime(session.startTime)}–{fmtTime(session.endTime)}</div>
+        {isPt && (
+          activePtSub ? (
+            <Alert kind={activePtSub.ptSessionsRemaining && activePtSub.ptSessionsRemaining > 0 ? 'info' : 'warning'}>
+              {tn('Hội viên còn {x} buổi PT (đã dùng {used}/{total}){until}. Buổi tập này sẽ được trừ sau khi lưu.', {
+                x: <b>{t('{n} buổi', { n: activePtSub.ptSessionsRemaining ?? 0 })}</b>,
+                used: activePtSub.ptSessionsUsed ?? 0,
+                total: activePtSub.ptSessionsTotal,
+                until: activePtSub.ptValidUntil ? t(' · hạn đến {d}', { d: fmtDate(activePtSub.ptValidUntil) }) : '',
+              })}
+            </Alert>
+          ) : subs.loading ? (
+            <LoadingBlock rows={1} />
+          ) : (
+            <Alert kind="warning">
+              {t('Hội viên hiện không có gói PT hiệu lực còn buổi.')}
+            </Alert>
+          )
+        )}
         <div className="form-grid">
           <Field label={t('Thời lượng (phút)')} error={errors.durationMinutes} required><Input type="number" min={1} max={600} value={duration} onChange={(e) => setDuration(e.target.value)} /></Field>
           <Field label={t('Calo tiêu thụ (kcal)')} error={errors.calories} hint={t('Xem trên đồng hồ / máy tập')}><Input type="number" min={0} max={5000} value={calories} onChange={(e) => setCalories(e.target.value)} placeholder="VD: 420" /></Field>
@@ -212,6 +245,7 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
           </div>
         </Field>
         <Field label={t('Ghi chú')} error={errors.note}><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: tăng 2.5kg bench press" /></Field>
+        {serverError && <Alert kind="error">{serverError}</Alert>}
       </div>
     </Modal>
   );

@@ -46,6 +46,9 @@ class ScheduleServiceTest {
     @Mock AccessService access;
     @Mock AuditService auditService;
     @Mock Mappers mappers;
+    @Mock com.gymflow.repository.UserRepository userRepository;
+    @Mock com.gymflow.repository.PtSessionUsageRepository ptSessionUsageRepository;
+    @Mock com.gymflow.repository.MemberSubscriptionRepository memberSubscriptionRepository;
 
     ScheduleService service;
     Member member;
@@ -56,7 +59,8 @@ class ScheduleServiceTest {
     void setUp() {
         Clock clock = Clock.fixed(NOW.atZone(ZONE).toInstant(), ZONE);
         service = new ScheduleService(scheduleRepository, logRepository, planRepository, trainerRepository,
-                subscriptionService, access, auditService, mappers, clock);
+                subscriptionService, access, auditService, mappers, clock,
+                userRepository, ptSessionUsageRepository, memberSubscriptionRepository);
         User tu = new User();
         tu.setId(5L);
         tu.setFullName("Lê Hoàng Phúc");
@@ -68,6 +72,21 @@ class ScheduleServiceTest {
         member.setId(1L);
         member.setCode("HV00001");
         member.setStatus(MemberStatus.ACTIVE);
+
+        MemberSubscription dummySub = new MemberSubscription();
+        dummySub.setId(100L);
+        dummySub.setMember(member);
+        dummySub.setStartDate(NOW.toLocalDate().minusDays(10));
+        dummySub.setEndDate(NOW.toLocalDate().plusDays(20));
+        dummySub.setPtSessionsTotal(20);
+        dummySub.setPtValidUntil(NOW.toLocalDate().plusDays(20));
+
+        lenient().when(memberSubscriptionRepository.findEffectivePtSubscriptionsForUpdate(any(), any()))
+                .thenReturn(List.of(dummySub));
+        lenient().when(memberSubscriptionRepository.hasEffectivePtSubscription(any(), any()))
+                .thenReturn(true);
+        lenient().when(ptSessionUsageRepository.countBySubscriptionId(any())).thenReturn(0L);
+        lenient().when(userRepository.getReferenceById(any())).thenReturn(tu);
         member.setTrainer(trainer);
         lenient().when(access.requireCoach(trainerUser, 1L)).thenReturn(member);
         lenient().when(access.requireTrainerOf(trainerUser)).thenReturn(trainer);

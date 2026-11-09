@@ -38,6 +38,12 @@ public class MemberSubscription {
     @Column(name = "price_paid", nullable = false)
     private Long pricePaid;
 
+    @Column(name = "pt_sessions_total")
+    private Integer ptSessionsTotal;
+
+    @Column(name = "pt_valid_until")
+    private LocalDate ptValidUntil;
+
     @Column(nullable = false)
     private boolean cancelled = false;
 

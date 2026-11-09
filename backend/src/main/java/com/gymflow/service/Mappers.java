@@ -24,6 +24,7 @@ public class Mappers {
     private final MemberRepository memberRepository;
     private final WorkoutPlanItemRepository planItemRepository;
     private final WorkoutLogRepository logRepository;
+    private final PtSessionUsageRepository ptSessionUsageRepository;
     private final Clock clock;
 
     public LocalDate today() {
@@ -83,17 +84,46 @@ public class Mappers {
     // ---------- Plan ----------
     public PlanResponse plan(MembershipPlan p) {
         return new PlanResponse(p.getId(), p.getName(), p.getDescription(), p.getPrice(), p.getDurationDays(),
-                p.getBenefits(), p.isActive(), subscriptionRepository.countCurrentByPlan(p.getId(), today()), p.isIncludesTrainer());
+                p.getBenefits(), p.isActive(), subscriptionRepository.countCurrentByPlan(p.getId(), today()),
+                p.isIncludesTrainer(), p.getPlanType(), p.getPtSessions(), p.getPtValidDays());
     }
 
     // ---------- Subscription ----------
     public SubscriptionResponse subscription(MemberSubscription s) {
         LocalDate today = today();
         Member m = s.getMember();
+        Integer ptTotal = s.getPtSessionsTotal();
+        Integer ptUsed = null;
+        Integer ptRemaining = null;
+        if (ptTotal != null) {
+            long usedCount = ptSessionUsageRepository.countBySubscriptionId(s.getId());
+            ptUsed = (int) usedCount;
+            ptRemaining = Math.max(0, ptTotal - ptUsed);
+        }
         return new SubscriptionResponse(s.getId(), m.getId(), m.getUser().getFullName(), m.getCode(),
                 s.getPlan().getId(), s.getPlan().getName(), s.getStartDate(), s.getEndDate(), s.getPricePaid(),
                 s.stateOn(today), s.daysLeft(today), s.isCancelled(), s.getCancelledAt(), s.getNote(),
-                s.getCreatedAt(), s.getCreatedBy() == null ? null : s.getCreatedBy().getFullName());
+                s.getCreatedAt(), s.getCreatedBy() == null ? null : s.getCreatedBy().getFullName(),
+                ptTotal, ptUsed, ptRemaining, s.getPtValidUntil());
+    }
+
+    public PtSessionUsageResponse ptSessionUsage(PtSessionUsage u) {
+        WorkoutSchedule s = u.getSchedule();
+        Trainer t = u.getTrainer();
+        User cb = u.getCreatedBy();
+        return new PtSessionUsageResponse(
+                u.getId(),
+                u.getSubscription().getId(),
+                s.getId(),
+                s.getTitle(),
+                s.getStartTime(),
+                s.getEndTime(),
+                t == null ? null : t.getId(),
+                t == null ? null : t.getUser().getFullName(),
+                u.getUsedAt(),
+                cb == null ? null : cb.getId(),
+                cb == null ? null : cb.getFullName()
+        );
     }
 
     // ---------- Exercise ----------

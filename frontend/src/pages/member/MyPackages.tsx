@@ -6,8 +6,9 @@
  * V12: trả tại quầy hoặc chuyển khoản theo mã QR (nội dung = mã đơn); gói có HLV kèm thì chọn HLV khi gửi đơn.
  */
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Member, MembershipPlan, PackageRequest, PaymentMethod, PaymentSettings, Subscription, Trainer } from '../../api/types';
+import type { Member, MembershipPlan, PackageRequest, PaymentMethod, PaymentSettings, PtSessionUsage, Subscription, Trainer } from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { initials, PaymentInfo, PickCard } from '../../components/PaymentQr';
 import { benefitsOf, PlanCard, pickBest, savings } from '../../components/PlanCard';
@@ -41,6 +42,7 @@ export default function MyPackages() {
   const [picked, setPicked] = useState<MembershipPlan | null>(null);
   const [cancelling, setCancelling] = useState<PackageRequest | null>(null);
   const [paying, setPaying] = useState<PackageRequest | null>(null);
+  const [viewUsagesSubId, setViewUsagesSubId] = useState<number | null>(null);
 
   if (subs.error) return <ErrorState message={subs.error} onRetry={subs.reload} />;
   if (subs.loading || !subs.data) return (
@@ -143,6 +145,23 @@ export default function MyPackages() {
                   <span>{t('Bắt đầu {d}', { d: fmtDate(current.startDate) })}</span>
                   <span>{t('Hết hạn {d}', { d: fmtDate(current.endDate) })}</span>
                 </div>
+                {current.ptSessionsTotal != null && (
+                  <div className="pkg-pt-box mt-16" style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--hairline)' }}>
+                    <div className="row between row-wrap" style={{ gap: 8, marginBottom: 8 }}>
+                      <span className="small">
+                        <Icon name="badge" size={15} style={{ verticalAlign: -2, marginRight: 4 }} />
+                        <b>{t('Còn {x}/{n} buổi PT', { x: current.ptSessionsRemaining ?? 0, n: current.ptSessionsTotal })}</b>
+                        {current.ptValidUntil && (
+                          <span className="muted"> · {t('hạn đến {d}', { d: fmtDate(current.ptValidUntil) })}</span>
+                        )}
+                      </span>
+                      <Button size="sm" variant="ghost" icon="scroll" onClick={() => setViewUsagesSubId(current.id)}>
+                        {t('Lịch sử dùng')}
+                      </Button>
+                    </div>
+                    <Meter value={current.ptSessionsUsed ?? 0} max={current.ptSessionsTotal} color="var(--primary)" />
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -213,14 +232,29 @@ export default function MyPackages() {
               <Empty icon="ticket" title="Chưa có gói nào" desc="Gói đã được kích hoạt sẽ hiện ở đây." />
             ) : (
               <Table caption={t('Lịch sử gói tập')}>
-                <thead><tr><th>{t('Gói')}</th><th>{t('Thời gian')}</th><th>{t('Số tiền')}</th><th>{t('Trạng thái')}</th></tr></thead>
+                <thead><tr><th>{t('Gói')}</th><th>{t('Thời gian')}</th><th>{t('Số tiền')}</th><th>{t('Trạng thái')}</th><th aria-label={t('Chi tiết')} /></tr></thead>
                 <tbody>
                   {subs.data.map((s) => (
                     <tr key={s.id}>
-                      <td><b>{s.planName}</b>{s.note && <div className="tiny faint">{s.note}</div>}</td>
+                      <td>
+                        <b>{s.planName}</b>{s.note && <div className="tiny faint">{s.note}</div>}
+                        {s.ptSessionsTotal != null && (
+                          <div className="tiny faint">
+                            {t('PT: còn {rem}/{tot} buổi', { rem: s.ptSessionsRemaining ?? 0, tot: s.ptSessionsTotal })}
+                            {s.ptValidUntil && ` · ${t('hạn {d}', { d: fmtDate(s.ptValidUntil) })}`}
+                          </div>
+                        )}
+                      </td>
                       <td className="small nowrap">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</td>
                       <td className="num nowrap">{fmtMoney(s.pricePaid)}</td>
                       <td><StatusBadge map={subState} value={s.state} /></td>
+                      <td className="nowrap">
+                        {s.ptSessionsTotal != null && (
+                          <Button size="sm" variant="ghost" icon="scroll" onClick={() => setViewUsagesSubId(s.id)}>
+                            {t('Lịch sử PT')}
+                          </Button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -229,21 +263,28 @@ export default function MyPackages() {
           </Card>
         </div>
 
-        <Card title={t('Các gói đang mở bán')} icon="sparkle">
+        <Card title={t('Các gói đang mở bán')} icon="sparkle" actions={<Link to="/packages" className="btn btn-sm btn-ghost">{t('So sánh gói')}</Link>}>
           <div className="plan-stack">
             {plans.error && <ErrorState message={plans.error} onRetry={plans.reload} />}
             {plans.loading && !plans.data && <LoadingBlock rows={3} />}
             {plans.data && onSale.length === 0 && <Empty icon="ticket" title="Chưa có gói nào đang mở bán" />}
             {onSale.map((p) => {
               const mine = current?.planId === p.id;
+              const isLegacyPt = (p.planType === 'GYM_PT' || p.includesTrainer) && !p.ptSessions;
               return (
                 <PlanCard key={p.id} plan={p} compact best={p.id === best} saving={save.get(p.id)} className={mine ? 'current' : ''}
                   badge={mine ? <Badge tone="blue">{t('Bạn đang dùng')}</Badge> : undefined}
                   footer={
-                    <Button size="sm" variant={p.id === best ? 'primary' : 'secondary'} block icon={mine ? 'repeat' : 'plus'} disabled={!!pending}
-                      title={pending ? t('Bạn đang có một đơn chờ xác nhận') : undefined} onClick={() => setPicked(p)}>
-                      {mine ? t('Gia hạn gói này') : t('Đăng ký gói này')}
-                    </Button>
+                    isLegacyPt ? (
+                      <Button size="sm" variant="secondary" block disabled title={t('Gói PT đang được cập nhật số buổi')}>
+                        {t('Đang cập nhật')}
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant={p.id === best ? 'primary' : 'secondary'} block icon={mine ? 'repeat' : 'plus'} disabled={!!pending}
+                        title={pending ? t('Bạn đang có một đơn chờ xác nhận') : undefined} onClick={() => setPicked(p)}>
+                        {mine ? t('Gia hạn gói này') : t('Đăng ký gói này')}
+                      </Button>
+                    )
                   } />
               );
             })}
@@ -260,6 +301,7 @@ export default function MyPackages() {
         onClose={() => setPicked(null)}
         onDone={(created) => { setPicked(null); reloadAll(); if (created.paymentMethod === 'BANK_TRANSFER') setPaying(created); }} />}
       {paying && pay.data && <PayModal req={paying} settings={pay.data} onClose={() => setPaying(null)} onPaid={() => { setPaying(null); reloadAll(); }} />}
+      {viewUsagesSubId && <PtUsagesModal subscriptionId={viewUsagesSubId} onClose={() => setViewUsagesSubId(null)} />}
       {cancelling && (
         <Confirm title={t('Huỷ đơn đăng ký?')} danger confirmText={t('Huỷ đơn')}
           message={tn('Đơn đăng ký {plan} sẽ bị huỷ. Bạn có thể gửi đơn mới bất cứ lúc nào.', { plan: <b>{cancelling.planName}</b> })}
@@ -269,7 +311,7 @@ export default function MyPackages() {
   );
 }
 
-function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onDone }: {
+export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onDone }: {
   plan: MembershipPlan; subs: Subscription[]; payment: PaymentSettings | null; currentTrainerId: number | null;
   onClose: () => void; onDone: (created: PackageRequest) => void;
 }) {
@@ -279,6 +321,7 @@ function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onD
   const lastEnd = lastEndDate(subs);
   const asapStart = lastEnd ? toIsoDate(addDays(parseDate(lastEnd), 1)) : today;
   const pt = !!plan.includesTrainer;
+  const isLegacyPt = pt && !plan.ptSessions;
   const online = !!payment?.onlineEnabled && payment.hasQr;
   const trainers = useAsync(() => (pt ? api.get<Trainer[]>('/trainers') : Promise.resolve([] as Trainer[])), [pt]);
   const activeTrainers = (trainers.data ?? []).filter((tr) => tr.active);
@@ -309,7 +352,7 @@ function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onD
 
   const submit = async () => {
     setTried(true);
-    if (invalid) return;
+    if (invalid || isLegacyPt) return;
     setBusy(true); setServerError('');
     try {
       const created = await api.post<PackageRequest>('/package-requests', {
@@ -326,14 +369,25 @@ function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onD
   return (
     <Modal title={t('Đăng ký {plan}', { plan: t(plan.name) })} onClose={onClose} footer={<>
       <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
-      <Button variant="primary" icon="check" loading={busy} disabled={!agree} onClick={submit}>{t('Gửi đơn đăng ký')}</Button>
+      <Button variant="primary" icon="check" loading={busy} disabled={!agree || isLegacyPt} onClick={submit}>{t('Gửi đơn đăng ký')}</Button>
     </>}>
       <div className="stack">
         <div className="plan-summary">
           <div><span className="tiny muted">{t('Gói')}</span><b>{t(plan.name)}</b></div>
+          <div><span className="tiny muted">{t('Loại gói')}</span><b>{pt ? t('Gói Gym + PT') : t('Gói Gym')}</b></div>
           <div><span className="tiny muted">{t('Thời hạn')}</span><b>{durationLabel(plan.durationDays)}</b></div>
           <div><span className="tiny muted">{t('Số tiền')}</span><b className="num">{fmtMoney(plan.price)}</b></div>
+          {pt && plan.ptSessions != null && (
+            <div>
+              <span className="tiny muted">{t('Số buổi PT')}</span>
+              <b>{t('{n} buổi', { n: plan.ptSessions })}</b>
+              {plan.ptValidDays != null && <span className="tiny faint"> · {t('hạn {n} ngày', { n: plan.ptValidDays })}</span>}
+            </div>
+          )}
         </div>
+        {isLegacyPt && (
+          <Alert kind="warning">{t('Gói PT này đang chờ quản trị viên cập nhật số buổi và hạn dùng. Bạn chưa thể gửi đơn đăng ký cho gói này.')}</Alert>
+        )}
         {benefitsOf(plan).length > 0 && (
           <ul className="plan-benefits">{benefitsOf(plan).map((b) => <li key={b}><Icon name="check" size={13} className="ok" />{t(b)}</li>)}</ul>
         )}
@@ -403,7 +457,7 @@ function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onD
 }
 
 /** Mã QR + thông tin chuyển khoản của một đơn; "Tôi đã chuyển khoản" chỉ báo cho quản lý, chưa kích hoạt gói. */
-function PayModal({ req, settings, onClose, onPaid }: { req: PackageRequest; settings: PaymentSettings; onClose: () => void; onPaid: () => void }) {
+export function PayModal({ req, settings, onClose, onPaid }: { req: PackageRequest; settings: PaymentSettings; onClose: () => void; onPaid: () => void }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const markPaid = async () => {
@@ -434,6 +488,44 @@ function PayModal({ req, settings, onClose, onPaid }: { req: PackageRequest; set
         {settings.onlineEnabled
           ? <PaymentInfo settings={settings} amount={req.price} code={req.paymentCode} />
           : <Alert kind="warning">{t('Phòng tập vừa tạm dừng nhận chuyển khoản. Vui lòng thanh toán tại quầy, đơn của bạn vẫn giữ nguyên.')}</Alert>}
+      </div>
+    </Modal>
+  );
+}
+
+export function PtUsagesModal({ subscriptionId, onClose }: { subscriptionId: number; onClose: () => void }) {
+  const usages = useAsync(() => api.get<PtSessionUsage[]>(`/subscriptions/${subscriptionId}/pt-usages`), [subscriptionId]);
+
+  return (
+    <Modal title={t('Lịch sử sử dụng buổi PT')} onClose={onClose} footer={<Button variant="ghost" onClick={onClose}>{t('Đóng')}</Button>}>
+      <div className="stack">
+        {usages.error && <ErrorState message={usages.error} onRetry={usages.reload} />}
+        {usages.loading && !usages.data && <LoadingBlock rows={3} />}
+        {usages.data && usages.data.length === 0 && (
+          <Empty icon="scroll" title={t('Chưa có buổi nào được trừ')} desc={t('Số buổi PT sẽ được trừ tự động khi HLV hoàn thành buổi tập.')} />
+        )}
+        {usages.data && usages.data.length > 0 && (
+          <Table caption={t('Lịch sử trừ buổi PT')}>
+            <thead>
+              <tr>
+                <th>{t('Thời gian')}</th>
+                <th>{t('Buổi tập')}</th>
+                <th>{t('Huấn luyện viên')}</th>
+                <th>{t('Người ghi nhận')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {usages.data.map((u) => (
+                <tr key={u.id}>
+                  <td className="small nowrap">{fmtDateTime(u.usedAt)}</td>
+                  <td><b>{u.scheduleTitle || t('Buổi #{id}', { id: u.scheduleId })}</b></td>
+                  <td>{u.trainerName || '—'}</td>
+                  <td className="small muted">{u.createdByName || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
       </div>
     </Modal>
   );

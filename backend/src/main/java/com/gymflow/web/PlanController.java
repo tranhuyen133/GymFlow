@@ -1,5 +1,6 @@
 package com.gymflow.web;
 
+import com.gymflow.domain.PlanType;
 import com.gymflow.domain.SubscriptionState;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.security.CurrentUser;
@@ -26,13 +27,14 @@ public class PlanController {
 
     // ---------- Gói tập ----------
     @GetMapping("/api/plans/public")
-    public List<PlanResponse> publicPlans() {
-        return planService.list(false);
+    public List<PlanResponse> publicPlans(@RequestParam(required = false) PlanType type) {
+        return planService.list(type, false);
     }
 
     @GetMapping("/api/plans")
-    public List<PlanResponse> plans(@RequestParam(defaultValue = "false") boolean includeInactive) {
-        return planService.list(includeInactive && CurrentUser.get().isAdmin());
+    public List<PlanResponse> plans(@RequestParam(required = false) PlanType type,
+                                    @RequestParam(defaultValue = "false") boolean includeInactive) {
+        return planService.list(type, includeInactive && CurrentUser.get().isAdmin());
     }
 
     @PostMapping("/api/plans")
@@ -93,5 +95,11 @@ public class PlanController {
     @PreAuthorize("hasRole('ADMIN')")
     public SubscriptionResponse cancel(@PathVariable Long id, @Valid @RequestBody(required = false) CancelRequest req) {
         return subscriptionService.cancel(id, req == null ? null : req.reason());
+    }
+
+    @GetMapping("/api/subscriptions/{id}/pt-usages")
+    @PreAuthorize("hasAnyRole('MEMBER', 'TRAINER', 'ADMIN')")
+    public List<PtSessionUsageResponse> ptUsages(@PathVariable Long id) {
+        return subscriptionService.listPtUsages(CurrentUser.get(), id);
     }
 }

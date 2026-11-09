@@ -34,6 +34,16 @@ public class MembershipPlan {
     @Column(name = "includes_trainer", nullable = false)
     private boolean includesTrainer;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "plan_type", nullable = false, length = 10)
+    private PlanType planType = PlanType.GYM;
+
+    @Column(name = "pt_sessions")
+    private Integer ptSessions;
+
+    @Column(name = "pt_valid_days")
+    private Integer ptValidDays;
+
     @Column(nullable = false)
     private boolean active = true;
 
