@@ -1,6 +1,7 @@
 package com.gymflow.service;
 
 import com.gymflow.common.ApiException;
+import com.gymflow.domain.MemberSubscription;
 import com.gymflow.domain.MembershipPlan;
 import com.gymflow.domain.PlanServiceGrant;
 import com.gymflow.domain.PlanType;
@@ -10,14 +11,15 @@ import com.gymflow.repository.MemberSubscriptionRepository;
 import com.gymflow.repository.MembershipPlanRepository;
 import com.gymflow.repository.PackageRequestRepository;
 import com.gymflow.repository.ServiceItemRepository;
-import lombok.RequiredArgsConstructor;
+import com.gymflow.security.AuthUser;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class PlanService {
 
     private final MembershipPlanRepository planRepository;
@@ -26,6 +28,33 @@ public class PlanService {
     private final ServiceItemRepository serviceItemRepository;
     private final AuditService auditService;
     private final Mappers mappers;
+    private final AccessService access;
+
+    @Autowired
+    public PlanService(MembershipPlanRepository planRepository,
+                       MemberSubscriptionRepository subscriptionRepository,
+                       PackageRequestRepository packageRequestRepository,
+                       ServiceItemRepository serviceItemRepository,
+                       AuditService auditService,
+                       Mappers mappers,
+                       AccessService access) {
+        this.planRepository = planRepository;
+        this.subscriptionRepository = subscriptionRepository;
+        this.packageRequestRepository = packageRequestRepository;
+        this.serviceItemRepository = serviceItemRepository;
+        this.auditService = auditService;
+        this.mappers = mappers;
+        this.access = access;
+    }
+
+    public PlanService(MembershipPlanRepository planRepository,
+                       MemberSubscriptionRepository subscriptionRepository,
+                       PackageRequestRepository packageRequestRepository,
+                       ServiceItemRepository serviceItemRepository,
+                       AuditService auditService,
+                       Mappers mappers) {
+        this(planRepository, subscriptionRepository, packageRequestRepository, serviceItemRepository, auditService, mappers, null);
+    }
 
     @Transactional(readOnly = true)
     public List<PlanResponse> list(boolean includeInactive) {
@@ -43,6 +72,81 @@ public class PlanService {
                     : planRepository.findByActiveTrueOrderByPriceAsc();
         }
         return plans.stream().map(mappers::plan).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PlanResponse> listUpgrades(AuthUser user) {
+        Long memberId = (access != null && user != null) ? access.memberIdOrNull(user) : null;
+        if (memberId == null) {
+            return list(null, false);
+        }
+
+        LocalDate today = mappers.today();
+        List<MemberSubscription> effective = subscriptionRepository.findEffective(memberId, today);
+        if (effective.isEmpty()) {
+            return list(null, false);
+        }
+
+        // Lấy gói có giá trị cao nhất trong các gói đang có hiệu lực
+        MembershipPlan currentPlan = effective.stream()
+                .map(MemberSubscription::getPlan)
+                .max((p1, p2) -> {
+                    int t1 = p1.getPlanType() == PlanType.GYM_PT ? 1 : 0;
+                    int t2 = p2.getPlanType() == PlanType.GYM_PT ? 1 : 0;
+                    if (t1 != t2) return Integer.compare(t1, t2);
+                    return Long.compare(p1.getPrice(), p2.getPrice());
+                })
+                .orElse(effective.get(0).getPlan());
+
+        List<MembershipPlan> activePlans = planRepository.findByActiveTrueOrderByPriceAsc();
+        return activePlans.stream()
+                .filter(p -> isUpgrade(p, currentPlan))
+                .map(mappers::plan)
+                .toList();
+    }
+
+    public boolean isUpgrade(MembershipPlan candidate, MembershipPlan current) {
+        if (candidate == null || current == null) {
+            return false;
+        }
+        if (candidate.getId() != null && candidate.getId().equals(current.getId())) {
+            return false;
+        }
+
+        PlanType currentType = current.getPlanType() != null ? current.getPlanType()
+                : (current.isIncludesTrainer() ? PlanType.GYM_PT : PlanType.GYM);
+        PlanType candidateType = candidate.getPlanType() != null ? candidate.getPlanType()
+                : (candidate.isIncludesTrainer() ? PlanType.GYM_PT : PlanType.GYM);
+
+        // Không hiện gói hạ cấp: đang dùng GYM_PT mà ứng viên là GYM
+        if (currentType == PlanType.GYM_PT && candidateType == PlanType.GYM) {
+            return false;
+        }
+
+        // Nâng bậc: từ GYM lên GYM_PT
+        if (currentType == PlanType.GYM && candidateType == PlanType.GYM_PT) {
+            return true;
+        }
+
+        // Cùng bậc GYM: giá cao hơn
+        if (currentType == PlanType.GYM && candidateType == PlanType.GYM) {
+            return candidate.getPrice() > current.getPrice();
+        }
+
+        // Cùng bậc GYM_PT: giá cao hơn hoặc có số buổi PT nhiều hơn
+        if (currentType == PlanType.GYM_PT && candidateType == PlanType.GYM_PT) {
+            int currentPt = current.getPtSessions() != null ? current.getPtSessions() : 0;
+            int candidatePt = candidate.getPtSessions() != null ? candidate.getPtSessions() : 0;
+            if (candidate.getPrice() > current.getPrice()) {
+                return true;
+            }
+            if (candidatePt > currentPt) {
+                return true;
+            }
+            return false;
+        }
+
+        return false;
     }
 
     @Transactional

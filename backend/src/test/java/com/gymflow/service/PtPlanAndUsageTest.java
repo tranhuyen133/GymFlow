@@ -70,7 +70,7 @@ class PtPlanAndUsageTest {
     void setUp() {
         clock = Clock.fixed(NOW.atZone(ZONE).toInstant(), ZONE);
 
-        planService = new PlanService(planRepository, subscriptionRepository, packageRequestRepository, serviceItemRepository, auditService, mappers);
+        planService = new PlanService(planRepository, subscriptionRepository, packageRequestRepository, serviceItemRepository, auditService, mappers, access);
         subscriptionService = new SubscriptionService(subscriptionRepository, userRepository, planService, access, auditService, mappers, clock, ptSessionUsageRepository, entitlementRepository);
         packageRequestService = new PackageRequestService(packageRequestRepository, subscriptionRepository, entitlementRepository, promotionRepository, promotionService, userRepository, subscriptionService, planService, access, auditService, mappers, clock, trainerRepository, paymentSettings);
         scheduleService = new ScheduleService(scheduleRepository, logRepository, workoutPlanRepository, trainerRepository, subscriptionService, access, auditService, mappers, clock, userRepository, ptSessionUsageRepository, subscriptionRepository);
@@ -416,5 +416,130 @@ class PtPlanAndUsageTest {
         assertThat(selfSchedule.getStatus()).isEqualTo(ScheduleStatus.COMPLETED);
         verify(ptSessionUsageRepository, never()).save(any());
         verify(subscriptionRepository, never()).findEffectivePtSubscriptionsForUpdate(any(), any());
+    }
+
+    @Test
+    @DisplayName("listUpgrades: Chưa có gói còn hiệu lực -> trả về tất cả gói đang mở bán")
+    void listUpgrades_whenNoActiveSubscription_returnsAllActivePlans() {
+        when(access.memberIdOrNull(MEMBER_USER)).thenReturn(1L);
+        when(subscriptionRepository.findEffective(1L, TODAY)).thenReturn(List.of());
+
+        MembershipPlan p1 = new MembershipPlan();
+        p1.setId(10L);
+        p1.setName("Gói 1 tháng");
+        p1.setPrice(500_000L);
+        p1.setPlanType(PlanType.GYM);
+        p1.setActive(true);
+
+        when(planRepository.findByActiveTrueOrderByPriceAsc()).thenReturn(List.of(p1));
+        when(mappers.plan(p1)).thenReturn(new PlanResponse(10L, "Gói 1 tháng", null, 500_000L, 30, null, true, 0L, false, PlanType.GYM, null, null, List.of()));
+
+        List<PlanResponse> result = planService.listUpgrades(MEMBER_USER);
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo(10L);
+    }
+
+    @Test
+    @DisplayName("listUpgrades: Đang dùng gói Gym 500k -> chỉ đề xuất gói Gym giá cao hơn hoặc gói PT")
+    void listUpgrades_whenUserHasGymPlan_returnsHigherPriceGymAndPtPlans() {
+        when(access.memberIdOrNull(MEMBER_USER)).thenReturn(1L);
+
+        MembershipPlan currentGymPlan = new MembershipPlan();
+        currentGymPlan.setId(10L);
+        currentGymPlan.setName("Gói 1 tháng");
+        currentGymPlan.setPrice(500_000L);
+        currentGymPlan.setPlanType(PlanType.GYM);
+
+        MemberSubscription sub = new MemberSubscription();
+        sub.setId(50L);
+        sub.setMember(member);
+        sub.setPlan(currentGymPlan);
+        sub.setStartDate(TODAY.minusDays(5));
+        sub.setEndDate(TODAY.plusDays(25));
+        sub.setPricePaid(500_000L);
+
+        when(subscriptionRepository.findEffective(1L, TODAY)).thenReturn(List.of(sub));
+
+        MembershipPlan pCheap = new MembershipPlan();
+        pCheap.setId(9L);
+        pCheap.setName("Gói tuần");
+        pCheap.setPrice(200_000L);
+        pCheap.setPlanType(PlanType.GYM);
+        pCheap.setActive(true);
+
+        MembershipPlan pSame = new MembershipPlan();
+        pSame.setId(10L);
+        pSame.setName("Gói 1 tháng");
+        pSame.setPrice(500_000L);
+        pSame.setPlanType(PlanType.GYM);
+        pSame.setActive(true);
+
+        MembershipPlan pHigherGym = new MembershipPlan();
+        pHigherGym.setId(11L);
+        pHigherGym.setName("Gói 3 tháng");
+        pHigherGym.setPrice(1_350_000L);
+        pHigherGym.setPlanType(PlanType.GYM);
+        pHigherGym.setActive(true);
+
+        MembershipPlan pPt = new MembershipPlan();
+        pPt.setId(12L);
+        pPt.setName("Gói PT 12 buổi");
+        pPt.setPrice(3_600_000L);
+        pPt.setPlanType(PlanType.GYM_PT);
+        pPt.setPtSessions(12);
+        pPt.setActive(true);
+
+        when(planRepository.findByActiveTrueOrderByPriceAsc()).thenReturn(List.of(pCheap, pSame, pHigherGym, pPt));
+        when(mappers.plan(pHigherGym)).thenReturn(new PlanResponse(11L, "Gói 3 tháng", null, 1_350_000L, 90, null, true, 0L, false, PlanType.GYM, null, null, List.of()));
+        when(mappers.plan(pPt)).thenReturn(new PlanResponse(12L, "Gói PT 12 buổi", null, 3_600_000L, 30, null, true, 0L, true, PlanType.GYM_PT, 12, 60, List.of()));
+
+        List<PlanResponse> result = planService.listUpgrades(MEMBER_USER);
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(PlanResponse::id).containsExactly(11L, 12L);
+    }
+
+    @Test
+    @DisplayName("listUpgrades: Đang dùng gói PT 12 buổi -> chỉ đề xuất gói PT cao hơn, không hiện gói Gym rẻ hơn hoặc hạ cấp")
+    void listUpgrades_whenUserHasPtPlan_excludesGymPlansAndCheaperPt() {
+        when(access.memberIdOrNull(MEMBER_USER)).thenReturn(1L);
+
+        MembershipPlan currentPtPlan = new MembershipPlan();
+        currentPtPlan.setId(12L);
+        currentPtPlan.setName("Gói PT 12 buổi");
+        currentPtPlan.setPrice(3_600_000L);
+        currentPtPlan.setPlanType(PlanType.GYM_PT);
+        currentPtPlan.setPtSessions(12);
+
+        MemberSubscription sub = new MemberSubscription();
+        sub.setId(50L);
+        sub.setMember(member);
+        sub.setPlan(currentPtPlan);
+        sub.setStartDate(TODAY.minusDays(5));
+        sub.setEndDate(TODAY.plusDays(25));
+        sub.setPricePaid(3_600_000L);
+
+        when(subscriptionRepository.findEffective(1L, TODAY)).thenReturn(List.of(sub));
+
+        MembershipPlan pGym12m = new MembershipPlan();
+        pGym12m.setId(13L);
+        pGym12m.setName("Gói Gym 12 tháng");
+        pGym12m.setPrice(4_500_000L);
+        pGym12m.setPlanType(PlanType.GYM);
+        pGym12m.setActive(true);
+
+        MembershipPlan pPt24 = new MembershipPlan();
+        pPt24.setId(14L);
+        pPt24.setName("Gói PT 24 buổi");
+        pPt24.setPrice(6_500_000L);
+        pPt24.setPlanType(PlanType.GYM_PT);
+        pPt24.setPtSessions(24);
+        pPt24.setActive(true);
+
+        when(planRepository.findByActiveTrueOrderByPriceAsc()).thenReturn(List.of(currentPtPlan, pGym12m, pPt24));
+        when(mappers.plan(pPt24)).thenReturn(new PlanResponse(14L, "Gói PT 24 buổi", null, 6_500_000L, 60, null, true, 0L, true, PlanType.GYM_PT, 24, 90, List.of()));
+
+        List<PlanResponse> result = planService.listUpgrades(MEMBER_USER);
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo(14L);
     }
 }
