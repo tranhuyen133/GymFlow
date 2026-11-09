@@ -746,6 +746,8 @@ public final class Dtos {
     public record RejectServiceRequest(
             @NotBlank(message = "Vui lòng nhập lý do từ chối")
             @Size(min = 5, max = 255, message = "Lý do từ 5 đến 255 ký tự") String reason) {
+    }
+
     // ===================== Member Onboarding & Tours =====================
     public record OnboardingStepDto(String key, String title, boolean required, String status,
                                     LocalDateTime updatedAt, String reason,
