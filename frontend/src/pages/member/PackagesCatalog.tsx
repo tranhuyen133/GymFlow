@@ -6,14 +6,40 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Member, MembershipPlan, PackageRequest, PaymentSettings, Subscription } from '../../api/types';
+import type {
+  Member,
+  MembershipPlan,
+  PackageRequest,
+  PaymentMethod,
+  PaymentSettings,
+  ServiceItem,
+  ServiceRequest,
+  Subscription,
+} from '../../api/types';
 import { Icon } from '../../components/Icon';
+import { PaymentInfo, PickCard } from '../../components/PaymentQr';
 import { benefitsOf, pickBest, PlanCard, savings, unitPrice } from '../../components/PlanCard';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Empty, ErrorState, LoadingBlock, Modal, PageHead, Segmented, Table } from '../../components/ui';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Empty,
+  ErrorState,
+  Field,
+  Input,
+  LoadingBlock,
+  Modal,
+  PageHead,
+  Segmented,
+  Table,
+  Textarea,
+} from '../../components/ui';
 import { t, tn } from '../../i18n';
-import { durationLabel, fmtMoney } from '../../lib/format';
-import { useAsync } from '../../lib/hooks';
+import { durationLabel, fmtDateTime, fmtMoney } from '../../lib/format';
+import { errMsg, useAsync } from '../../lib/hooks';
+import { CATEGORY_LABELS } from '../admin/Services';
 import { PayModal, RegisterPlanModal } from './MyPackages';
 import '../../components/packages.css';
 
@@ -26,11 +52,14 @@ export default function PackagesCatalog() {
   const reqs = useAsync(() => api.get<PackageRequest[]>('/package-requests/me'), []);
   const pay = useAsync(() => api.get<PaymentSettings>('/payment-settings'), []);
   const me = useAsync(() => api.get<Member>('/members/me'), []);
+  const services = useAsync(() => api.get<ServiceItem[]>('/services'), []);
 
   const [tab, setTab] = useState<FilterTab>('ALL');
   const [detailPlan, setDetailPlan] = useState<MembershipPlan | null>(null);
   const [registeringPlan, setRegisteringPlan] = useState<MembershipPlan | null>(null);
   const [payingReq, setPayingReq] = useState<PackageRequest | null>(null);
+  const [buyingService, setBuyingService] = useState<ServiceItem | null>(null);
+  const [payingServiceReq, setPayingServiceReq] = useState<ServiceRequest | null>(null);
   const [compareIds, setCompareIds] = useState<number[]>([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
 
@@ -119,10 +148,16 @@ export default function PackagesCatalog() {
                 n: onSalePlans.filter((p) => p.planType === 'GYM_PT' || p.includesTrainer).length,
               }),
             },
+            {
+              value: 'SERVICE',
+              label: t('Dịch vụ ({n})', {
+                n: (services.data ?? []).length,
+              }),
+            },
           ]}
         />
 
-        {compareIds.length > 0 && (
+        {tab !== 'SERVICE' && compareIds.length > 0 && (
           <div className="row" style={{ gap: 8, alignItems: 'center' }}>
             <span className="small muted">
               {t('Đã chọn {n}/3 gói so sánh', { n: compareIds.length })}
@@ -143,74 +178,151 @@ export default function PackagesCatalog() {
         )}
       </div>
 
-      {/* Grid danh sách gói */}
-      {plans.error && <ErrorState message={plans.error} onRetry={plans.reload} />}
-      {plans.loading && !plans.data && <LoadingBlock rows={4} />}
-      {plans.data && filteredPlans.length === 0 && (
-        <Empty icon="ticket" title={t('Không có gói nào phù hợp')} desc={t('Vui lòng chọn bộ lọc khác hoặc quay lại sau.')} />
-      )}
-
-      <div className="plan-grid" style={{ marginBottom: 40 }}>
-        {filteredPlans.map((p) => {
-          const isPt = p.planType === 'GYM_PT' || p.includesTrainer;
-          const isLegacyPt = isPt && !p.ptSessions;
-          const isMine = currentSub?.planId === p.id;
-          const isComparing = compareIds.includes(p.id);
-
-          return (
-            <PlanCard
-              key={p.id}
-              plan={p}
-              best={p.id === bestId}
-              saving={saveMap.get(p.id)}
-              className={isMine ? 'current' : ''}
-              badge={isMine ? <Badge tone="blue">{t('Bạn đang dùng')}</Badge> : undefined}
-              footer={
-                <div className="stack" style={{ gap: 8 }}>
-                  <div className="row" style={{ gap: 8 }}>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      style={{ flex: 1 }}
-                      icon="info"
-                      onClick={() => setDetailPlan(p)}
-                    >
-                      {t('Xem chi tiết')}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={isComparing ? 'primary' : 'secondary'}
-                      style={{ flex: 1 }}
-                      icon={isComparing ? 'check' : 'layers'}
-                      onClick={() => toggleCompare(p.id)}
-                    >
-                      {isComparing ? t('Đã chọn') : t('So sánh')}
-                    </Button>
-                  </div>
-
-                  {isLegacyPt ? (
-                    <Button size="sm" variant="secondary" block disabled title={t('Gói PT đang được cập nhật số buổi')}>
-                      {t('Đang cập nhật')}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant={p.id === bestId ? 'primary' : 'secondary'}
-                      block
-                      icon={isMine ? 'repeat' : 'plus'}
-                      disabled={!!pending}
-                      title={pending ? t('Bạn đang có một đơn chờ xác nhận') : undefined}
-                      onClick={() => setRegisteringPlan(p)}
-                    >
-                      {isMine ? t('Gia hạn gói này') : t('Đăng ký')}
-                    </Button>
-                  )}
-                </div>
-              }
+      {tab === 'SERVICE' ? (
+        <div style={{ marginBottom: 40 }}>
+          {services.error && <ErrorState message={services.error} onRetry={services.reload} />}
+          {services.loading && !services.data && <LoadingBlock rows={4} />}
+          {services.data && services.data.length === 0 && (
+            <Empty
+              icon="sparkle"
+              title={t('Chưa có dịch vụ bổ sung')}
+              desc={t('Hiện tại phòng tập chưa có dịch vụ nào mở bán lẻ. Vui lòng quay lại sau.')}
             />
-          );
-        })}
-      </div>
+          )}
+          {services.data && services.data.length > 0 && (
+            <div className="grid grid-3" style={{ gap: 20 }}>
+              {services.data.map((s) => (
+                <Card key={s.id}>
+                  <div className="stack" style={{ gap: 12, flex: 1 }}>
+                    <div className="row between" style={{ alignItems: 'flex-start' }}>
+                      <span className="chip on">{CATEGORY_LABELS[s.category] ?? s.category}</span>
+                      {s.requiresBooking && <Badge tone="blue">{t('Cần đặt lịch trước')}</Badge>}
+                    </div>
+
+                    <h3 style={{ margin: 0, fontSize: 18 }}>{s.name}</h3>
+
+                    <div className="pc-price" style={{ margin: '4px 0' }}>
+                      {s.unitPrice != null ? (
+                        <div>
+                          <span style={{ fontSize: 22, fontWeight: 800 }}>{fmtMoney(s.unitPrice)}</span>
+                          <span className="tiny muted"> / {t('lượt')}</span>
+                        </div>
+                      ) : (
+                        <span className="muted small" style={{ fontWeight: 600 }}>{t('Chỉ tặng kèm theo gói')}</span>
+                      )}
+                    </div>
+
+                    {s.openingNote && (
+                      <div className="tiny muted row" style={{ gap: 4, alignItems: 'center' }}>
+                        <Icon name="clock" size={13} />
+                        <span>{s.openingNote}</span>
+                      </div>
+                    )}
+
+                    {s.description && (
+                      <p className="small muted" style={{ margin: 0, lineHeight: 1.5, flex: 1 }}>
+                        {s.description}
+                      </p>
+                    )}
+
+                    <div style={{ marginTop: 'auto', paddingTop: 8 }}>
+                      {s.unitPrice != null ? (
+                        <Button
+                          variant="primary"
+                          block
+                          icon="plus"
+                          onClick={() => setBuyingService(s)}
+                        >
+                          {t('Mua dịch vụ')}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          block
+                          onClick={() => setTab('ALL')}
+                        >
+                          {t('Xem gói tặng kèm')}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Grid danh sách gói */}
+          {plans.error && <ErrorState message={plans.error} onRetry={plans.reload} />}
+          {plans.loading && !plans.data && <LoadingBlock rows={4} />}
+          {plans.data && filteredPlans.length === 0 && (
+            <Empty icon="ticket" title={t('Không có gói nào phù hợp')} desc={t('Vui lòng chọn bộ lọc khác hoặc quay lại sau.')} />
+          )}
+
+          <div className="plan-grid" style={{ marginBottom: 40 }}>
+            {filteredPlans.map((p) => {
+              const isPt = p.planType === 'GYM_PT' || p.includesTrainer;
+              const isLegacyPt = isPt && !p.ptSessions;
+              const isMine = currentSub?.planId === p.id;
+              const isComparing = compareIds.includes(p.id);
+
+              return (
+                <PlanCard
+                  key={p.id}
+                  plan={p}
+                  best={p.id === bestId}
+                  saving={saveMap.get(p.id)}
+                  className={isMine ? 'current' : ''}
+                  badge={isMine ? <Badge tone="blue">{t('Bạn đang dùng')}</Badge> : undefined}
+                  footer={
+                    <div className="stack" style={{ gap: 8 }}>
+                      <div className="row" style={{ gap: 8 }}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          style={{ flex: 1 }}
+                          icon="info"
+                          onClick={() => setDetailPlan(p)}
+                        >
+                          {t('Xem chi tiết')}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={isComparing ? 'primary' : 'secondary'}
+                          style={{ flex: 1 }}
+                          icon={isComparing ? 'check' : 'layers'}
+                          onClick={() => toggleCompare(p.id)}
+                        >
+                          {isComparing ? t('Đã chọn') : t('So sánh')}
+                        </Button>
+                      </div>
+
+                      {isLegacyPt ? (
+                        <Button size="sm" variant="secondary" block disabled title={t('Gói PT đang được cập nhật số buổi')}>
+                          {t('Đang cập nhật')}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant={p.id === bestId ? 'primary' : 'secondary'}
+                          block
+                          icon={isMine ? 'repeat' : 'plus'}
+                          disabled={!!pending}
+                          title={pending ? t('Bạn đang có một đơn chờ xác nhận') : undefined}
+                          onClick={() => setRegisteringPlan(p)}
+                        >
+                          {isMine ? t('Gia hạn gói này') : t('Đăng ký')}
+                        </Button>
+                      )}
+                    </div>
+                  }
+                />
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* Modal Chi tiết gói */}
       {detailPlan && (
@@ -266,6 +378,31 @@ export default function PackagesCatalog() {
             setPayingReq(null);
             reloadAll();
           }}
+        />
+      )}
+
+      {/* Modal Mua lẻ dịch vụ */}
+      {buyingService && (
+        <BuyServiceModal
+          service={buyingService}
+          payment={pay.data ?? null}
+          onClose={() => setBuyingService(null)}
+          onDone={(created) => {
+            setBuyingService(null);
+            if (created.paymentMethod === 'BANK_TRANSFER') {
+              setPayingServiceReq(created);
+            }
+          }}
+        />
+      )}
+
+      {/* Modal Chuyển khoản dịch vụ */}
+      {payingServiceReq && pay.data && (
+        <PayServiceModal
+          req={payingServiceReq}
+          settings={pay.data}
+          onClose={() => setPayingServiceReq(null)}
+          onPaid={() => setPayingServiceReq(null)}
         />
       )}
     </div>
@@ -338,6 +475,24 @@ function PlanDetailModal({
         ) : null}
 
         {plan.description && <p style={{ margin: 0, lineHeight: 1.6 }}>{t(plan.description)}</p>}
+
+        {plan.serviceGrants && plan.serviceGrants.length > 0 && (
+          <Card title={t('Quà tặng dịch vụ kèm theo')} icon="sparkle" flush>
+            <ul className="pc-perks" style={{ margin: 0, padding: 14 }}>
+              {plan.serviceGrants.map((g, idx) => (
+                <li key={idx}>
+                  <span className="pc-tick" style={{ color: 'var(--primary)' }}>
+                    <Icon name="sparkle" size={12} />
+                  </span>
+                  <span>
+                    <b>{t('Tặng {q} lượt {s}', { q: g.quantity, s: g.serviceName || t('Dịch vụ') })}</b> · {t('hạn {d} ngày', { d: g.validDays })}
+                    {g.conditions ? ` (${g.conditions})` : ''}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
 
         <Card title={t('Quyền lợi bao gồm')} icon="check" flush>
           {perks.length === 0 ? (
@@ -519,6 +674,26 @@ function PlanComparisonModal({
             </tr>
 
             <tr>
+              <td><b>{t('Quà tặng dịch vụ')}</b></td>
+              {plans.map((p) => {
+                const grants = p.serviceGrants ?? [];
+                if (grants.length === 0) return <td key={p.id} className="faint">—</td>;
+                return (
+                  <td key={p.id}>
+                    <ul style={{ margin: 0, paddingLeft: 14, fontSize: 12, lineHeight: 1.5 }}>
+                      {grants.map((g, idx) => (
+                        <li key={idx}>
+                          <b>{t('{q} lượt {s}', { q: g.quantity, s: g.serviceName || t('Dịch vụ') })}</b>
+                          <div className="tiny faint">{t('Hạn {d} ngày', { d: g.validDays })}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  </td>
+                );
+              })}
+            </tr>
+
+            <tr>
               <td><b>{t('Hành động')}</b></td>
               {plans.map((p) => {
                 const isPt = p.planType === 'GYM_PT' || p.includesTrainer;
@@ -546,6 +721,235 @@ function PlanComparisonModal({
             </tr>
           </tbody>
         </Table>
+      </div>
+    </Modal>
+  );
+}
+
+/** Modal Mua lẻ dịch vụ */
+function BuyServiceModal({
+  service,
+  payment,
+  onClose,
+  onDone,
+}: {
+  service: ServiceItem;
+  payment: PaymentSettings | null;
+  onClose: () => void;
+  onDone: (created: ServiceRequest) => void;
+}) {
+  const toast = useToast();
+  const [quantity, setQuantity] = useState(1);
+  const [method, setMethod] = useState<PaymentMethod>('COUNTER');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const unitPrice = service.unitPrice ?? 0;
+  const totalPrice = quantity * unitPrice;
+  const online = !!payment?.onlineEnabled && payment.hasQr;
+
+  const submit = async () => {
+    if (quantity < 1 || quantity > 100) {
+      setError(t('Số lượng phải từ 1 đến 100'));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const created = await api.post<ServiceRequest>('/service-requests', {
+        serviceId: service.id,
+        quantity,
+        paymentMethod: method,
+        note: note.trim() || null,
+      });
+      toast.success(
+        method === 'BANK_TRANSFER'
+          ? t('Đã gửi yêu cầu mua dịch vụ. Vui lòng chuyển khoản theo mã QR.')
+          : t('Đã gửi yêu cầu mua dịch vụ. Vui lòng thanh toán tại quầy lễ tân.')
+      );
+      onDone(created);
+    } catch (e) {
+      setError(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={t('Mua lẻ dịch vụ: {name}', { name: service.name })}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            {t('Huỷ')}
+          </Button>
+          <Button variant="primary" icon="check" loading={busy} onClick={submit}>
+            {t('Gửi yêu cầu mua')}
+          </Button>
+        </>
+      }
+    >
+      <div className="stack" style={{ gap: 16 }}>
+        {error && <Alert kind="error">{error}</Alert>}
+
+        <div className="plan-summary">
+          <div>
+            <span className="tiny muted">{t('Dịch vụ')}</span>
+            <b>{service.name}</b>
+          </div>
+          <div>
+            <span className="tiny muted">{t('Đơn giá')}</span>
+            <b className="num">{fmtMoney(unitPrice)}</b>
+          </div>
+          <div>
+            <span className="tiny muted">{t('Số lượng')}</span>
+            <b>{t('{n} lượt', { n: quantity })}</b>
+          </div>
+          <div>
+            <span className="tiny muted">{t('Tổng cộng')}</span>
+            <b className="num" style={{ fontSize: 18, color: 'var(--primary)' }}>
+              {fmtMoney(totalPrice)}
+            </b>
+          </div>
+        </div>
+
+        <Field label={t('Số lượng muốn mua')} required hint={t('Từ 1 đến 100 lượt')}>
+          <Input
+            type="number"
+            min={1}
+            max={100}
+            value={quantity}
+            onChange={(e) => setQuantity(Math.max(1, Math.min(100, Number(e.target.value))))}
+          />
+        </Field>
+
+        <Field label={t('Hình thức thanh toán')} required>
+          <div className="pick-grid" role="radiogroup" aria-label={t('Thanh toán')}>
+            <PickCard
+              on={method === 'COUNTER'}
+              onClick={() => setMethod('COUNTER')}
+              icon="ticket"
+              title={t('Trả tại quầy')}
+              sub={t('Tiền mặt hoặc quẹt thẻ ở lễ tân')}
+            />
+            <PickCard
+              on={method === 'BANK_TRANSFER'}
+              onClick={() => setMethod('BANK_TRANSFER')}
+              disabled={!online}
+              icon="card"
+              title={t('Chuyển khoản QR')}
+              sub={online ? t('Quét mã QR ngay sau khi gửi đơn') : t('Phòng tập chưa nhận chuyển khoản')}
+            />
+          </div>
+        </Field>
+
+        <Field label={t('Ghi chú')} hint={t('Không bắt buộc')}>
+          <Textarea
+            maxLength={255}
+            rows={2}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={t('Ghi chú cho lễ tân (nếu có)')}
+          />
+        </Field>
+
+        <Alert kind="info">
+          {method === 'BANK_TRANSFER'
+            ? tn('Quyền lợi dịch vụ có hiệu lực trong 90 ngày sau khi bạn chuyển khoản {price} và quản lý xác nhận.', {
+                price: <b>{fmtMoney(totalPrice)}</b>,
+              })
+            : tn('Quyền lợi dịch vụ có hiệu lực trong 90 ngày sau khi bạn thanh toán {price} tại quầy lễ tân.', {
+                price: <b>{fmtMoney(totalPrice)}</b>,
+              })}
+        </Alert>
+      </div>
+    </Modal>
+  );
+}
+
+/** Modal Chuyển khoản QR cho Mua lẻ dịch vụ */
+function PayServiceModal({
+  req,
+  settings,
+  onClose,
+  onPaid,
+}: {
+  req: ServiceRequest;
+  settings: PaymentSettings;
+  onClose: () => void;
+  onPaid: () => void;
+}) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+
+  const markPaid = async () => {
+    setBusy(true);
+    try {
+      await api.put(`/service-requests/${req.id}/paid`);
+      toast.success(t('Đã báo quản lý. Quyền lợi dịch vụ sẽ được kích hoạt sau khi đối chiếu tài khoản.'));
+      onPaid();
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const canPay = settings.onlineEnabled && !req.memberPaidAt;
+
+  return (
+    <Modal
+      title={t('Chuyển khoản mua dịch vụ {code}', { code: req.paymentCode ?? `#${req.id}` })}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            {canPay ? t('Để sau') : t('Đóng')}
+          </Button>
+          {canPay && (
+            <Button variant="primary" icon="check" loading={busy} onClick={() => void markPaid()}>
+              {t('Tôi đã chuyển khoản')}
+            </Button>
+          )}
+        </>
+      }
+    >
+      <div className="stack" style={{ gap: 14 }}>
+        <div className="plan-summary">
+          <div>
+            <span className="tiny muted">{t('Dịch vụ')}</span>
+            <b>{req.serviceName}</b>
+          </div>
+          <div>
+            <span className="tiny muted">{t('Số lượng')}</span>
+            <b>{t('{n} lượt', { n: req.quantity })}</b>
+          </div>
+          <div>
+            <span className="tiny muted">{t('Số tiền')}</span>
+            <b className="num">{fmtMoney(req.totalPrice)}</b>
+          </div>
+        </div>
+
+        {req.memberPaidAt && (
+          <div className="pay-status">
+            <Icon name="checkCircle" size={18} />
+            <span>
+              {t('Bạn đã báo chuyển khoản lúc {at}. Quản lý đang đối chiếu, dịch vụ sẽ được kích hoạt sau khi xác nhận.', {
+                at: fmtDateTime(req.memberPaidAt),
+              })}
+            </span>
+          </div>
+        )}
+
+        {settings.onlineEnabled ? (
+          <PaymentInfo settings={settings} amount={req.totalPrice} code={req.paymentCode} />
+        ) : (
+          <Alert kind="warning">
+            {t('Phòng tập vừa tạm dừng nhận chuyển khoản. Vui lòng thanh toán tại quầy, yêu cầu của bạn vẫn được lưu.')}
+          </Alert>
+        )}
       </div>
     </Modal>
   );

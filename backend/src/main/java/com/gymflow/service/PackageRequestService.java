@@ -5,11 +5,10 @@ import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.SubscriptionPreview;
 import com.gymflow.dto.Dtos.SubscriptionRequest;
 import com.gymflow.dto.Dtos.SubscriptionResponse;
+import com.gymflow.dto.Dtos.PromotionValidateRequest;
+import com.gymflow.dto.Dtos.PromotionValidationResponse;
 import com.gymflow.dto.PackageRequestDtos.*;
-import com.gymflow.repository.MemberSubscriptionRepository;
-import com.gymflow.repository.PackageRequestRepository;
-import com.gymflow.repository.TrainerRepository;
-import com.gymflow.repository.UserRepository;
+import com.gymflow.repository.*;
 import com.gymflow.security.AuthUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,6 +36,9 @@ public class PackageRequestService {
 
     private final PackageRequestRepository requestRepository;
     private final MemberSubscriptionRepository subscriptionRepository;
+    private final MemberServiceEntitlementRepository entitlementRepository;
+    private final PromotionRepository promotionRepository;
+    private final PromotionService promotionService;
     private final UserRepository userRepository;
     private final SubscriptionService subscriptionService;
     private final PlanService planService;
@@ -102,12 +104,38 @@ public class PackageRequestService {
             throw ApiException.conflict("Ngày bắt đầu bị trùng với gói bạn đang có. Để trống ngày bắt đầu để gói mới nối tiếp gói hiện tại.");
         }
 
+        Promotion promo = null;
+        long originalPrice = plan.getPrice();
+        long discountAmount = 0L;
+        long finalPrice = originalPrice;
+
+        String promoCode = Mappers.blankToNull(req.promotionCode());
+        PromotionValidationResponse validation = promotionService.validate(user, new PromotionValidateRequest(promoCode, plan.getId()));
+        if (promoCode != null) {
+            if (!validation.valid()) {
+                throw ApiException.badRequest(validation.reason());
+            }
+            if (validation.promotionId() != null) {
+                promo = promotionRepository.findById(validation.promotionId()).orElse(null);
+                discountAmount = validation.discountAmount();
+                finalPrice = validation.finalPrice();
+            }
+        } else if (validation.valid() && validation.promotionId() != null) {
+            promo = promotionRepository.findById(validation.promotionId()).orElse(null);
+            discountAmount = validation.discountAmount();
+            finalPrice = validation.finalPrice();
+        }
+
         PackageRequest r = new PackageRequest();
         r.setMember(member);
         r.setPlan(plan);
         r.setTrainer(trainer);
+        r.setPromotion(promo);
         r.setPlanName(plan.getName());
-        r.setPrice(plan.getPrice());
+        r.setPrice(finalPrice);
+        r.setOriginalPrice(originalPrice);
+        r.setDiscountAmount(discountAmount);
+        r.setFinalPrice(finalPrice);
         r.setDurationDays(plan.getDurationDays());
         r.setPtSessionsSnapshot(ptSessionsSnapshot);
         r.setPtValidDaysSnapshot(ptValidDaysSnapshot);
@@ -119,7 +147,8 @@ public class PackageRequestService {
         r.setPaymentCode(paymentCode(r.getId()));
         auditService.log("PACKAGE_REQUEST_CREATE", "PACKAGE_REQUEST", r.getId(), member.getCode() + " · " + plan.getName()
                 + (method == PaymentMethod.BANK_TRANSFER ? " · chuyển khoản " + r.getPaymentCode() : " · tại quầy")
-                + (trainer == null ? "" : " · HLV " + trainer.getUser().getFullName()));
+                + (trainer == null ? "" : " · HLV " + trainer.getUser().getFullName())
+                + (promo == null ? "" : " · ưu đãi " + promo.getName() + " (-" + discountAmount + " VND)"));
         return toResponse(r);
     }
 
@@ -199,6 +228,57 @@ public class PackageRequestService {
                 new SubscriptionRequest(memberId, r.getPlan().getId(), start, r.getPrice(), note.length() > 255 ? note.substring(0, 255) : note,
                         r.getPtSessionsSnapshot(), validUntil));
 
+        MemberSubscription subEntity = subscriptionRepository.getReferenceById(created.id());
+
+        // 1. Tăng số lượt dùng của ưu đãi (nếu có)
+        if (r.getPromotion() != null) {
+            promotionRepository.findByIdForUpdate(r.getPromotion().getId()).ifPresent(p -> {
+                p.setUsedCount(p.getUsedCount() + 1);
+            });
+        }
+
+        // 2. Tạo quyền lợi dịch vụ tặng kèm theo gói (source = PLAN)
+        if (r.getPlan().getServiceGrants() != null) {
+            for (PlanServiceGrant grant : r.getPlan().getServiceGrants()) {
+                MemberServiceEntitlement e = new MemberServiceEntitlement();
+                e.setMember(r.getMember());
+                e.setService(grant.getService());
+                e.setSource(EntitlementSource.PLAN);
+                e.setSubscription(subEntity);
+                e.setPackageRequest(r);
+                e.setServiceNameSnapshot(grant.getService().getName());
+                e.setGrantedQty(grant.getQuantity());
+                e.setUsedQty(0);
+                e.setValidFrom(created.startDate());
+                LocalDate grantUntil = created.startDate().plusDays(grant.getValidDays());
+                LocalDate validUntilDate = grantUntil.isAfter(created.endDate()) ? created.endDate() : grantUntil;
+                e.setValidUntil(validUntilDate);
+                e.setConditionsSnapshot(grant.getConditions());
+                e.setStatus(EntitlementStatus.ACTIVE);
+                entitlementRepository.save(e);
+            }
+        }
+
+        // 3. Tạo quyền lợi dịch vụ tặng từ chương trình ưu đãi (source = PROMOTION)
+        if (r.getPromotion() != null && r.getPromotion().getGrants() != null) {
+            for (PromotionGrant pg : r.getPromotion().getGrants()) {
+                MemberServiceEntitlement e = new MemberServiceEntitlement();
+                e.setMember(r.getMember());
+                e.setService(pg.getService());
+                e.setSource(EntitlementSource.PROMOTION);
+                e.setSubscription(subEntity);
+                e.setPackageRequest(r);
+                e.setServiceNameSnapshot(pg.getService().getName());
+                e.setGrantedQty(pg.getQuantity());
+                e.setUsedQty(0);
+                e.setValidFrom(created.startDate());
+                e.setValidUntil(created.startDate().plusDays(pg.getValidDays()));
+                e.setConditionsSnapshot(pg.getConditions());
+                e.setStatus(EntitlementStatus.ACTIVE);
+                entitlementRepository.save(e);
+            }
+        }
+
         if (assign != null) {
             Member m = r.getMember();
             if (m.getTrainer() == null || !Objects.equals(m.getTrainer().getId(), assign.getId())) {
@@ -212,7 +292,7 @@ public class PackageRequestService {
         r.setDecisionNote(decision);
         r.setDecidedBy(userRepository.getReferenceById(admin.id()));
         r.setDecidedAt(LocalDateTime.now(clock));
-        r.setSubscription(subscriptionRepository.getReferenceById(created.id()));
+        r.setSubscription(subEntity);
         auditService.log("PACKAGE_REQUEST_APPROVE", "PACKAGE_REQUEST", r.getId(),
                 r.getMember().getCode() + " · " + r.getPlanName() + " · " + created.startDate() + " → " + created.endDate() + paid);
         return toResponse(r);
@@ -247,6 +327,10 @@ public class PackageRequestService {
                 r.getDecidedBy() == null ? null : r.getDecidedBy().getFullName(), r.getDecidedAt(),
                 r.getSubscription() == null ? null : r.getSubscription().getId(), r.getCreatedAt(),
                 r.getPlan().isIncludesTrainer(), t == null ? null : t.getId(), t == null ? null : t.getUser().getFullName(),
-                r.getPaymentMethod(), r.getPaymentCode(), r.getMemberPaidAt());
+                r.getPaymentMethod(), r.getPaymentCode(), r.getMemberPaidAt(),
+                r.getPromotion() == null ? null : r.getPromotion().getId(),
+                r.getPromotion() == null ? null : r.getPromotion().getCode(),
+                r.getPromotion() == null ? null : r.getPromotion().getName(),
+                r.getOriginalPrice(), r.getDiscountAmount(), r.getFinalPrice());
     }
 }
