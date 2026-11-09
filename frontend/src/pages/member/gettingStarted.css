@@ -1,0 +1,168 @@
+/* GymFlow · Getting Started / Onboarding Styles */
+
+.gs-summary-card {
+  padding: 24px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  margin-bottom: 24px;
+}
+
+.gs-ready-banner {
+  background: linear-gradient(135deg, rgba(0, 178, 75, 0.15) 0%, rgba(0, 217, 91, 0.05) 100%);
+  border: 1px solid var(--primary);
+  border-radius: var(--r-md);
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gs-shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.gs-shortcut-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.gs-shortcut-card:hover {
+  border-color: var(--primary);
+  background: rgba(0, 178, 75, 0.08);
+  transform: translateY(-2px);
+}
+
+.gs-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.gs-step-card {
+  display: flex;
+  gap: 18px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.gs-step-card.active-step {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary), 0 4px 14px rgba(0, 178, 75, 0.12);
+}
+
+.gs-step-card.blocked-step {
+  border-color: var(--error, #e53935);
+}
+
+.gs-step-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.gs-step-icon.done {
+  background: rgba(0, 178, 75, 0.15);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.gs-step-icon.in_progress {
+  background: rgba(255, 176, 32, 0.15);
+  color: var(--warning, #ffb020);
+  border: 1px solid var(--warning, #ffb020);
+}
+
+.gs-step-icon.blocked {
+  background: rgba(229, 57, 53, 0.15);
+  color: var(--error, #e53935);
+  border: 1px solid var(--error, #e53935);
+}
+
+.gs-step-icon.todo {
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--hairline);
+}
+
+.gs-step-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gs-step-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.gs-step-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.gs-step-reason {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.gs-step-card.active-step .gs-step-reason {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.gs-step-card.blocked-step .gs-step-reason {
+  color: var(--error, #e53935);
+}
+
+.gs-step-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .gs-step-card {
+    padding: 16px;
+    gap: 12px;
+  }
+  .gs-step-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+}

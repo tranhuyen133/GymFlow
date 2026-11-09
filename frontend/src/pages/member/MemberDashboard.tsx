@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { MemberDashboard as Data, Progress, Schedule } from '../../api/types';
+import type { MemberDashboard as Data, OnboardingData, Progress, Schedule } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
 import { achievements, ActivityRings, BadgeShelf, weekRings } from '../../components/motivation';
@@ -14,6 +14,7 @@ import { SessionModal } from '../shared/Schedules';
 export default function MemberDashboard() {
   const me = useMe();
   const { data, error, loading, reload } = useAsync(() => api.get<Data>('/dashboard/member'), []);
+  const onboarding = useAsync(() => api.get<OnboardingData>('/me/onboarding'), []);
   // Tiến độ dùng cho huy hiệu; lỗi ở đây không chặn cả trang Tổng quan
   const progress = useAsync((): Promise<Progress | null> => (me.memberId ? api.get<Progress>(`/members/${me.memberId}/progress`) : Promise.resolve(null)), [me.memberId]);
   const [open, setOpen] = useState<Schedule | null>(null);
@@ -29,6 +30,28 @@ export default function MemberDashboard() {
 
   return (
     <div className="page">
+      {onboarding.data && !onboarding.data.readyToTrain && (
+        <div className="mb-16">
+          <Alert
+            kind="warning"
+            action={
+              <Link to="/getting-started" className="btn btn-sm btn-primary">
+                <span>{t('Xem việc cần làm')}</span>
+              </Link>
+            }
+          >
+            {tn('Việc tiếp theo để sẵn sàng tập: {reason}', {
+              reason: (
+                <b>
+                  {onboarding.data.steps.find((s) => s.key === onboarding.data!.currentStep)?.reason ??
+                    t('Hoàn thiện các bước bắt buộc')}
+                </b>
+              ),
+            })}
+          </Alert>
+        </div>
+      )}
+
       <div className="hero">
         <div className="row between row-wrap" style={{ position: 'relative', gap: 20 }}>
           <div>
