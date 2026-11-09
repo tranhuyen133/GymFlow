@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
-    /** Nạp sẵn nguồn và người tạo/duyệt để danh sách không phát sinh N+1 truy vấn. */
-    @EntityGraph(attributePaths = {"sources", "createdBy", "reviewedBy"})
+    /** Nạp sẵn nguồn, người tạo/duyệt và bài tập thay thế để không phát sinh N+1 truy vấn. */
+    @EntityGraph(attributePaths = {"sources", "createdBy", "reviewedBy", "alternatives"})
     List<Exercise> findAllByOrderByNameAsc();
 
     Optional<Exercise> findFirstByNameIgnoreCase(String name);

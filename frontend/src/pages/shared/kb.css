@@ -53,3 +53,85 @@
   .prog-thumb { width: 56px; }
   .prog-row > .badge, .prog-row > span.badge { grid-column: 2 / -1; justify-self: start; }
 }
+
+/* V18 · Chi tiết dụng cụ & Chi tiết bài tập */
+.eq-detail-grid, .ex-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+.eq-detail-main, .ex-detail-main { min-width: 0; }
+.eq-detail-side, .ex-detail-side { min-width: 0; }
+
+.video-embed-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.video-embed-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.ex-numbered-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ex-step-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  background: var(--rail);
+  border: 1px solid var(--hairline-soft);
+}
+.ex-step-num {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--on-primary, #fff);
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ex-step-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.beginner-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.beginner-guide-card {
+  transition: transform 0.2s var(--ease-spring), border-color 0.2s;
+}
+.beginner-guide-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--hairline));
+}
+
+@media (max-width: 860px) {
+  .eq-detail-grid, .ex-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

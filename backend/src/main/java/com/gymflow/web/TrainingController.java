@@ -25,15 +25,23 @@ public class TrainingController {
 
     // ---------- Thư viện bài tập ----------
     @GetMapping("/api/exercises")
-    public List<ExerciseResponse> exercises(@RequestParam(defaultValue = "") String q,
-                                            @RequestParam(required = false) MuscleGroup muscleGroup,
-                                            @RequestParam(required = false) Level level,
-                                            @RequestParam(required = false) ExerciseLocation location,
-                                            @RequestParam(required = false) ExerciseGoal goal,
-                                            @RequestParam(required = false) ReviewStatus reviewStatus,
-                                            @RequestParam(defaultValue = "false") boolean includeHidden) {
-        return exerciseService.list(CurrentUser.get(),
-                new ExerciseService.Filter(q, muscleGroup, level, location, goal, reviewStatus, includeHidden));
+    public Object exercises(@RequestParam(defaultValue = "") String q,
+                            @RequestParam(required = false) MuscleGroup muscleGroup,
+                            @RequestParam(required = false) String muscle,
+                            @RequestParam(required = false) String equipment,
+                            @RequestParam(required = false) Level level,
+                            @RequestParam(required = false) ExerciseLocation location,
+                            @RequestParam(required = false) ExerciseGoal goal,
+                            @RequestParam(required = false) ReviewStatus reviewStatus,
+                            @RequestParam(defaultValue = "false") boolean includeHidden,
+                            @RequestParam(required = false) Integer page,
+                            @RequestParam(required = false) Integer size) {
+        ExerciseService.Filter filter = new ExerciseService.Filter(q, muscleGroup, muscle, equipment, level, location, goal, reviewStatus, includeHidden);
+        if (page != null) {
+            int pageSize = (size == null || size <= 0) ? 12 : size;
+            return exerciseService.listPaged(CurrentUser.get(), filter, page, pageSize);
+        }
+        return exerciseService.list(CurrentUser.get(), filter);
     }
 
     @GetMapping("/api/exercises/{id}")

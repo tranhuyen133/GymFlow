@@ -338,7 +338,25 @@ public final class Dtos {
             @Size(max = 6, message = "Chọn tối đa 6 vùng cơ chính") List<String> targetMuscles,
             @Size(max = 10, message = "Chọn tối đa 10 vùng cơ phụ") List<String> secondaryMuscleKeys,
             @Size(max = 6, message = "Chọn tối đa 6 loại dụng cụ") List<String> equipmentKeys,
-            @Size(max = 80) @Pattern(regexp = "^$|^[A-Za-z0-9_-]+$", message = "Mã ảnh chỉ gồm chữ không dấu, số, _ và -") String imageKey) {
+            @Size(max = 80) @Pattern(regexp = "^$|^[A-Za-z0-9_-]+$", message = "Mã ảnh chỉ gồm chữ không dấu, số, _ và -") String imageKey,
+            String setupPosition,
+            String steps,
+            @Size(max = 100) String setsRepsHint,
+            ExerciseGoal primaryGoal,
+            List<Long> alternativeIds) {
+
+        /** Giữ chữ ký V13 */
+        public ExerciseRequest(String name, MuscleGroup muscleGroup, String equipment, Level level, String description,
+                               String instructions, String videoUrl, String nameEn, String aliases, String secondaryMuscles,
+                               ExerciseLocation location, List<ExerciseGoal> goals, String breathing, String commonMistakes,
+                               String safetyNotes, String variations, String suggestedDose, ContentOrigin contentOrigin,
+                               List<Long> sourceIds, List<String> targetMuscles, List<String> secondaryMuscleKeys,
+                               List<String> equipmentKeys, String imageKey) {
+            this(name, muscleGroup, equipment, level, description, instructions, videoUrl, nameEn, aliases, secondaryMuscles,
+                    location, goals, breathing, commonMistakes, safetyNotes, variations, suggestedDose, contentOrigin, sourceIds,
+                    targetMuscles, secondaryMuscleKeys, equipmentKeys, imageKey, null, instructions, null,
+                    goals != null && !goals.isEmpty() ? goals.get(0) : null, List.of());
+        }
 
         /** Giữ chữ ký cũ (trước V13) cho các chỗ gọi / test đang dùng. */
         public ExerciseRequest(String name, MuscleGroup muscleGroup, String equipment, Level level, String description,
@@ -374,6 +392,10 @@ public final class Dtos {
                                  LocalDate publisherReviewed, LocalDate accessedAt) {
     }
 
+    public record ExerciseSummary(Long id, String name, String nameEn, Level level,
+                                  List<String> targetMuscles, String imageKey) {
+    }
+
     public record ExerciseResponse(Long id, String name, MuscleGroup muscleGroup, String equipment, Level level,
                                    String description, String instructions, String videoUrl, boolean hidden,
                                    long usageCount, String createdByName,
@@ -383,7 +405,29 @@ public final class Dtos {
                                    ReviewStatus reviewStatus, String reviewNote, String reviewedByName,
                                    LocalDateTime reviewedAt, LocalDateTime updatedAt, List<SourceResponse> sources,
                                    List<String> targetMuscles, List<String> secondaryMuscleKeys, List<String> equipmentKeys,
-                                   String imageKey) {
+                                   String imageKey,
+                                   String setupPosition, String steps, String setsRepsHint,
+                                   ExerciseGoal primaryGoal, List<ExerciseSummary> alternatives) {
+
+        /** Giữ chữ ký V13 (chưa có trường mới V18). */
+        public ExerciseResponse(Long id, String name, MuscleGroup muscleGroup, String equipment, Level level,
+                                String description, String instructions, String videoUrl, boolean hidden,
+                                long usageCount, String createdByName,
+                                String nameEn, String aliases, String secondaryMuscles, ExerciseLocation location,
+                                List<ExerciseGoal> goals, String breathing, String commonMistakes, String safetyNotes,
+                                String variations, String suggestedDose, ContentOrigin contentOrigin,
+                                ReviewStatus reviewStatus, String reviewNote, String reviewedByName,
+                                LocalDateTime reviewedAt, LocalDateTime updatedAt, List<SourceResponse> sources,
+                                List<String> targetMuscles, List<String> secondaryMuscleKeys, List<String> equipmentKeys,
+                                String imageKey) {
+            this(id, name, muscleGroup, equipment, level, description, instructions, videoUrl, hidden, usageCount, createdByName,
+                    nameEn, aliases, secondaryMuscles, location, goals, breathing, commonMistakes, safetyNotes, variations,
+                    suggestedDose, contentOrigin, reviewStatus, reviewNote, reviewedByName, reviewedAt, updatedAt, sources,
+                    targetMuscles, secondaryMuscleKeys, equipmentKeys, imageKey,
+                    null, instructions, null,
+                    goals != null && !goals.isEmpty() ? goals.get(0) : null, List.of());
+        }
+
         /** Giữ chữ ký trước V13 (test và code cũ): chưa có vùng cơ, dụng cụ, ảnh. */
         public ExerciseResponse(Long id, String name, MuscleGroup muscleGroup, String equipment, Level level,
                                 String description, String instructions, String videoUrl, boolean hidden,
@@ -398,6 +442,60 @@ public final class Dtos {
                     suggestedDose, contentOrigin, reviewStatus, reviewNote, reviewedByName, reviewedAt, updatedAt, sources,
                     List.of(), List.of(), List.of(), null);
         }
+    }
+
+    // ===================== Equipment =====================
+    public record EquipmentResponse(
+            String key,
+            String name,
+            EquipmentCategory category,
+            String shortDesc,
+            List<String> targetMuscleKeys,
+            String imageKey,
+            int sortOrder,
+            long exerciseCount,
+            ReviewStatus reviewStatus,
+            boolean hidden,
+            ContentOrigin origin
+    ) {
+    }
+
+    public record EquipmentDetailResponse(
+            String key,
+            String name,
+            EquipmentCategory category,
+            String shortDesc,
+            String usageGuide,
+            String safetyNotes,
+            List<String> targetMuscleKeys,
+            String imageKey,
+            int sortOrder,
+            long exerciseCount,
+            ReviewStatus reviewStatus,
+            boolean hidden,
+            ContentOrigin origin,
+            List<ExerciseResponse> relatedExercises
+    ) {
+    }
+
+    public record EquipmentRequest(
+            @NotBlank(message = "Mã dụng cụ không được để trống")
+            @Pattern(regexp = "^[a-z0-9-]+$", message = "Mã dụng cụ chỉ gồm chữ thường không dấu, số và dấu gạch ngang")
+            String key,
+            @NotBlank(message = "Tên dụng cụ không được để trống")
+            @Size(max = 120, message = "Tên dụng cụ tối đa 120 ký tự")
+            String name,
+            @NotNull(message = "Vui lòng chọn loại dụng cụ")
+            EquipmentCategory category,
+            @Size(max = 255, message = "Mô tả ngắn tối đa 255 ký tự")
+            String shortDesc,
+            String usageGuide,
+            String safetyNotes,
+            List<String> targetMuscleKeys,
+            String imageKey,
+            Integer sortOrder,
+            Boolean hidden
+    ) {
     }
 
     // ===================== Knowledge base =====================
