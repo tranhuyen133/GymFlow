@@ -3,6 +3,7 @@ import { api } from '../../api/client';
 import type { MembershipPlan } from '../../api/types';
 import { PlanCard, pickBest, savings } from '../../components/PlanCard';
 import { useToast } from '../../components/Toast';
+import { PickCard } from '../../components/PaymentQr';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Segmented, Textarea } from '../../components/ui';
 import { durationLabel, fmtMoney } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
@@ -138,13 +139,11 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
               {DURATIONS.map((d) => <button key={d} type="button" className={`chip ${days === d ? 'on' : ''}`} onClick={() => set('durationDays', String(d))}>{durationLabel(d)}</button>)}
             </div>
             <Field label="Mô tả" className="span-2" hint={t('{n}/500', { n: f.description.length })}><Textarea maxLength={500} value={f.description} onChange={(e) => set('description', e.target.value)} placeholder="VD: Phù hợp người mới, tập không giới hạn giờ mở cửa" /></Field>
-            <Field label="Huấn luyện viên" className="span-2" hint={pt
-              ? t('Hội viên chọn HLV khi gửi đơn; duyệt đơn thì HLV đó phụ trách hội viên, soạn giáo án và xếp lịch.')
-              : t('Hội viên tự soạn giáo án từ thư viện bài tập và tự xếp lịch; vẫn hỏi HLV được qua Diễn đàn.')}>
-              <Segmented value={pt ? 'pt' : 'self'} onChange={(v) => setPt(v === 'pt')} options={[
-                { value: 'self', label: t('Tự tập') },
-                { value: 'pt', label: t('Có HLV kèm (PT)') },
-              ]} />
+            <Field label="Huấn luyện viên" className="span-2">
+              <div className="pick-grid" role="radiogroup" aria-label={t('Huấn luyện viên')}>
+                <PickCard on={!pt} onClick={() => setPt(false)} icon="user" title={t('Tự tập')} sub={t('Hội viên tự soạn giáo án từ thư viện bài tập và tự xếp lịch')} />
+                <PickCard on={pt} onClick={() => setPt(true)} icon="badge" title={t('Có HLV kèm (PT)')} sub={t('Hội viên chọn HLV khi mua; HLV soạn giáo án, xếp lịch')} />
+              </div>
             </Field>
             {plan && plan.includesTrainer && !pt && plan.currentSubscriptions > 0 && (
               <div className="span-2"><Alert kind="warning">{t('Hội viên đang dùng gói này vẫn giữ HLV hiện tại. Đổi HLV ở hồ sơ từng hội viên nếu cần.')}</Alert></div>

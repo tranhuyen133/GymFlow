@@ -8,8 +8,9 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { PackageRequest, PackageRequestStatus, Trainer } from '../../api/types';
+import { initials, PickCard } from '../../components/PaymentQr';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, Person, SearchInput, Segmented, Select, Stat, StatusBadge, Table, Textarea } from '../../components/ui';
+import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, Person, SearchInput, Segmented, Stat, StatusBadge, Table, Textarea } from '../../components/ui';
 import { durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus } from '../../lib/format';
 import { errMsg, useAsync, usePaged } from '../../lib/hooks';
 import { t, tn } from '../../i18n';
@@ -124,15 +125,17 @@ function ApproveModal({ req, onClose, onDone }: { req: PackageRequest; onClose: 
   const activeTrainers = (trainers.data ?? []).filter((tr) => tr.active);
   const [trainerId, setTrainerId] = useState(req.trainerId != null ? String(req.trainerId) : '');
   const [paid, setPaid] = useState(false);
+  const [tried, setTried] = useState(false);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState('');
   const noteError = note.length > 255 ? 'Ghi chú tối đa 255 ký tự' : undefined;
-  const trainerError = pt && !trainerId ? 'Chọn huấn luyện viên' : undefined;
+  const trainerError = tried && pt && !trainerId ? 'Chọn huấn luyện viên' : undefined;
   const chosenInactive = pt && trainers.data && trainerId && !activeTrainers.some((tr) => String(tr.id) === trainerId);
 
   const submit = async () => {
-    if (!paid || noteError || trainerError) return;
+    setTried(true);
+    if (!paid || noteError || (pt && !trainerId) || chosenInactive) return;
     setBusy(true); setServerError('');
     try {
       await api.put(`/package-requests/${req.id}/approve`, { note: note.trim() || null, trainerId: pt ? Number(trainerId) : null });
@@ -144,7 +147,7 @@ function ApproveModal({ req, onClose, onDone }: { req: PackageRequest; onClose: 
   return (
     <Modal title={t('Duyệt đơn đăng ký gói')} size="narrow" onClose={onClose} footer={<>
       <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
-      <Button variant="primary" icon="check" loading={busy} disabled={!paid || !!noteError || !!trainerError} onClick={submit}>{t('Duyệt và kích hoạt')}</Button>
+      <Button variant="primary" icon="check" loading={busy} disabled={!paid} onClick={submit}>{t('Duyệt và kích hoạt')}</Button>
     </>}>
       <div className="stack">
         <div className="plan-summary">
@@ -166,12 +169,17 @@ function ApproveModal({ req, onClose, onDone }: { req: PackageRequest; onClose: 
             : t('Gói bắt đầu hôm nay, hoặc nối tiếp ngay sau gói hiện tại của hội viên.')}
         </p>
         {pt && (
-          <Field htmlFor="approve-trainer" label={t('Huấn luyện viên phụ trách')} required error={trainerError ?? (chosenInactive ? t('HLV này đã nghỉ, chọn HLV khác') : undefined)}
+          <Field label={t('Huấn luyện viên phụ trách')} required error={trainerError ?? (chosenInactive ? t('HLV này đã nghỉ, chọn HLV khác') : undefined)}
             hint={req.trainerName ? t('Hội viên chọn {name}. Duyệt xong HLV này phụ trách giáo án và lịch tập.', { name: req.trainerName }) : t('Duyệt xong HLV này phụ trách giáo án và lịch tập.')}>
-            <Select id="approve-trainer" value={trainerId} invalid={!!trainerError || !!chosenInactive} onChange={(e) => setTrainerId(e.target.value)}>
-              <option value="">{trainers.loading ? t('Đang tải…') : t('Chọn HLV')}</option>
-              {activeTrainers.map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}{tr.specialty ? ` · ${tr.specialty}` : ''}{tr.id === req.trainerId ? ` (${t('hội viên chọn')})` : ''}</option>)}
-            </Select>
+            {trainers.loading ? <LoadingBlock rows={2} /> : (
+              <div className="pick-grid" role="radiogroup" aria-label={t('Huấn luyện viên phụ trách')}>
+                {activeTrainers.map((tr) => (
+                  <PickCard key={tr.id} on={trainerId === String(tr.id)} onClick={() => setTrainerId(String(tr.id))} avatar={initials(tr.fullName)}
+                    title={tr.fullName}
+                    sub={[tr.id === req.trainerId ? t('hội viên chọn') : null, t('{n} hội viên', { n: tr.memberCount })].filter(Boolean).join(' · ')} />
+                ))}
+              </div>
+            )}
           </Field>
         )}
         <Field htmlFor="approve-note" label={t('Ghi chú')} error={noteError} hint={transfer ? t('Không bắt buộc · VD: mã giao dịch ngân hàng') : t('Không bắt buộc · VD: đã thu tiền mặt, số phiếu thu')}>

@@ -9,10 +9,10 @@ import { useState } from 'react';
 import { api } from '../../api/client';
 import type { Member, MembershipPlan, PackageRequest, PaymentMethod, PaymentSettings, Subscription, Trainer } from '../../api/types';
 import { Icon } from '../../components/Icon';
-import { PaymentInfo } from '../../components/PaymentQr';
+import { initials, PaymentInfo, PickCard } from '../../components/PaymentQr';
 import { benefitsOf, PlanCard, pickBest, savings } from '../../components/PlanCard';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Meter, Modal, PageHead, Segmented, Select, StatusBadge, Table, Textarea } from '../../components/ui';
+import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Meter, Modal, PageHead, Segmented, StatusBadge, Table, Textarea } from '../../components/ui';
 import { t, tn } from '../../i18n';
 import { addDays, durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus, parseDate, subState, toIsoDate, todayIso } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
@@ -288,22 +288,27 @@ function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onD
   const [method, setMethod] = useState<PaymentMethod>('COUNTER');
   const [trainerId, setTrainerId] = useState(currentTrainerId ? String(currentTrainerId) : '');
   const [agree, setAgree] = useState(false);
+  const [tried, setTried] = useState(false);
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState('');
 
   const start = mode === 'asap' ? asapStart : date;
   const end = start ? toIsoDate(addDays(parseDate(start), plan.durationDays - 1)) : '';
-  const dateError = mode !== 'date' ? undefined
+  const dateRule = mode !== 'date' ? undefined
     : !date ? 'Vui lòng chọn ngày bắt đầu'
     : date < today ? 'Ngày bắt đầu không được ở quá khứ'
     : date > maxDate ? `Chỉ chọn trong vòng ${MAX_START_DAYS} ngày tới`
     : overlaps(subs, date, end) ? 'Trùng với gói bạn đang có. Chọn "Sớm nhất" để gói mới nối tiếp gói hiện tại.'
     : undefined;
   const noteError = note.length > 255 ? 'Ghi chú tối đa 255 ký tự' : undefined;
-  const trainerError = pt && !trainerId ? 'Chọn huấn luyện viên' : undefined;
-  const invalid = !!dateError || !!noteError || !!trainerError || !agree;
+  const trainerRule = pt && !trainerId ? 'Chọn huấn luyện viên phụ trách bạn' : undefined;
+  // Ngày đã chọn mà sai thì báo ngay (người dùng vừa thao tác); ô còn trống chỉ báo sau khi bấm Gửi
+  const dateError = date || tried ? dateRule : undefined;
+  const trainerError = tried ? trainerRule : undefined;
+  const invalid = !!dateRule || !!noteError || !!trainerRule || !agree;
 
   const submit = async () => {
+    setTried(true);
     if (invalid) return;
     setBusy(true); setServerError('');
     try {
@@ -321,7 +326,7 @@ function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onD
   return (
     <Modal title={t('Đăng ký {plan}', { plan: t(plan.name) })} onClose={onClose} footer={<>
       <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
-      <Button variant="primary" icon="check" loading={busy} disabled={invalid} onClick={submit}>{t('Gửi đơn đăng ký')}</Button>
+      <Button variant="primary" icon="check" loading={busy} disabled={!agree} onClick={submit}>{t('Gửi đơn đăng ký')}</Button>
     </>}>
       <div className="stack">
         <div className="plan-summary">
@@ -334,24 +339,32 @@ function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onD
         )}
 
         {pt ? (
-          <Field htmlFor="preq-trainer" label={t('Huấn luyện viên')} required error={trainerError}
-            hint={t('HLV này phụ trách bạn sau khi quản lý duyệt đơn: soạn giáo án và xếp lịch tập.')}>
-            <Select id="preq-trainer" value={trainerId} invalid={!!trainerError} onChange={(e) => setTrainerId(e.target.value)}>
-              <option value="">{trainers.loading ? t('Đang tải…') : t('Chọn HLV')}</option>
-              {activeTrainers.map((tr) => (
-                <option key={tr.id} value={tr.id}>{tr.fullName}{tr.specialty ? ` · ${tr.specialty}` : ''}{tr.id === currentTrainerId ? ` (${t('HLV hiện tại')})` : ''}</option>
-              ))}
-            </Select>
+          <Field label={t('Huấn luyện viên')} required error={trainerError}
+            hint={trainerError ? undefined : t('HLV này phụ trách bạn sau khi quản lý duyệt đơn: soạn giáo án và xếp lịch tập.')}>
+            {trainers.loading ? <LoadingBlock rows={2} />
+              : activeTrainers.length === 0 ? <div className="pick-empty">{t('Hiện chưa có HLV nhận hội viên mới, vui lòng hỏi lễ tân.')}</div>
+              : (
+                <div className="pick-grid" role="radiogroup" aria-label={t('Huấn luyện viên')}>
+                  {activeTrainers.map((tr) => (
+                    <PickCard key={tr.id} on={trainerId === String(tr.id)} onClick={() => setTrainerId(String(tr.id))} avatar={initials(tr.fullName)}
+                      title={<>{tr.fullName}{tr.id === currentTrainerId && <span className="tiny faint" style={{ fontWeight: 600 }}> · {t('HLV hiện tại')}</span>}</>}
+                      sub={[tr.specialty, tr.experienceYears > 0 ? t('{n} năm kinh nghiệm', { n: tr.experienceYears }) : null].filter(Boolean).join(' · ') || undefined} />
+                  ))}
+                </div>
+              )}
           </Field>
         ) : (
-          <Alert kind="info">{t('Gói tự tập: bạn tự soạn giáo án từ thư viện bài tập và tự xếp lịch ở mục Giáo án / Lịch tập. Cần tư vấn thì hỏi HLV ở Diễn đàn.')}</Alert>
+          <div className="pick-note"><span className="pick-ico"><Icon name="user" size={15} /></span>
+            <span>{t('Gói tự tập: bạn tự soạn giáo án từ thư viện bài tập và tự xếp lịch ở mục Giáo án / Lịch tập. Cần tư vấn thì hỏi HLV ở Diễn đàn.')}</span>
+          </div>
         )}
 
-        <Field label={t('Thanh toán')} required hint={online ? undefined : t('Phòng tập hiện chỉ nhận thanh toán tại quầy.')}>
-          <Segmented<PaymentMethod> value={method} onChange={(v) => setMethod(v === 'BANK_TRANSFER' && !online ? 'COUNTER' : v)} options={[
-            { value: 'COUNTER', label: t('Trả tại quầy') },
-            ...(online ? [{ value: 'BANK_TRANSFER' as PaymentMethod, label: t('Chuyển khoản QR') }] : []),
-          ]} />
+        <Field label={t('Thanh toán')} required>
+          <div className="pick-grid" role="radiogroup" aria-label={t('Thanh toán')}>
+            <PickCard on={method === 'COUNTER'} onClick={() => setMethod('COUNTER')} icon="ticket" title={t('Trả tại quầy')} sub={t('Tiền mặt hoặc quẹt thẻ ở lễ tân')} />
+            <PickCard on={method === 'BANK_TRANSFER'} onClick={() => setMethod('BANK_TRANSFER')} disabled={!online} icon="card" title={t('Chuyển khoản QR')}
+              sub={online ? t('Quét mã QR ngay sau khi gửi đơn') : t('Phòng tập chưa nhận chuyển khoản')} />
+          </div>
         </Field>
 
         <Field label={t('Ngày bắt đầu')} required>
@@ -369,7 +382,7 @@ function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onD
           <Textarea id="preq-note" maxLength={255} value={note} invalid={!!noteError} placeholder={t('VD: tôi sẽ qua quầy chiều thứ Sáu')} onChange={(e) => setNote(e.target.value)} />
         </Field>
 
-        {start && !dateError && (
+        {start && !dateRule && (
           <Alert kind="info">
             {tn('Dự kiến hiệu lực {from} → {to}{chain}. Ngày chính xác được chốt khi quản lý xác nhận.', {
               from: <b>{fmtDate(start)}</b>, to: <b>{fmtDate(end)}</b>,
@@ -401,19 +414,23 @@ function PayModal({ req, settings, onClose, onPaid }: { req: PackageRequest; set
       onPaid();
     } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
   };
+  const canPay = settings.onlineEnabled && !req.memberPaidAt;
   return (
     <Modal title={t('Chuyển khoản cho đơn {code}', { code: req.paymentCode ?? `#${req.id}` })} onClose={onClose} footer={<>
-      <Button variant="ghost" onClick={onClose}>{t('Để sau')}</Button>
-      {req.memberPaidAt
-        ? <Badge tone="green">{t('Đã báo lúc {at}', { at: fmtDateTime(req.memberPaidAt) })}</Badge>
-        : <Button variant="primary" icon="check" loading={busy} onClick={() => void markPaid()}>{t('Tôi đã chuyển khoản')}</Button>}
+      <Button variant="ghost" onClick={onClose}>{canPay ? t('Để sau') : t('Đóng')}</Button>
+      {canPay && <Button variant="primary" icon="check" loading={busy} onClick={() => void markPaid()}>{t('Tôi đã chuyển khoản')}</Button>}
     </>}>
       <div className="stack">
         <div className="plan-summary">
           <div><span className="tiny muted">{t('Gói')}</span><b>{req.planName}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
           <div><span className="tiny muted">{t('Số tiền')}</span><b className="num">{fmtMoney(req.price)}</b></div>
-          {req.trainerName && <div><span className="tiny muted">{t('HLV')}</span><b>{req.trainerName}</b></div>}
+          <div><span className="tiny muted">{t('HLV')}</span><b>{req.trainerName ?? t('Tự tập')}</b></div>
         </div>
+        {req.memberPaidAt && (
+          <div className="pay-status"><Icon name="checkCircle" size={18} />
+            <span>{t('Bạn đã báo chuyển khoản lúc {at}. Quản lý đang đối chiếu, gói sẽ được kích hoạt sau khi xác nhận.', { at: fmtDateTime(req.memberPaidAt) })}</span>
+          </div>
+        )}
         {settings.onlineEnabled
           ? <PaymentInfo settings={settings} amount={req.price} code={req.paymentCode} />
           : <Alert kind="warning">{t('Phòng tập vừa tạm dừng nhận chuyển khoản. Vui lòng thanh toán tại quầy, đơn của bạn vẫn giữ nguyên.')}</Alert>}
