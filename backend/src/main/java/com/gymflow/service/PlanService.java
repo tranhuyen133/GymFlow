@@ -36,17 +36,20 @@ public class PlanService {
         apply(p, req);
         p.setActive(true);
         planRepository.save(p);
-        auditService.log("PLAN_CREATE", "PLAN", p.getId(), p.getName());
+        auditService.log("PLAN_CREATE", "PLAN", p.getId(), p.getName() + (p.isIncludesTrainer() ? " · có HLV kèm" : ""));
         return mappers.plan(p);
     }
 
-    /** Sửa giá không ảnh hưởng gói đã bán: số tiền thực trả lưu riêng ở member_subscriptions.price_paid. */
+    /**
+     * Sửa giá không ảnh hưởng gói đã bán: số tiền thực trả lưu riêng ở member_subscriptions.price_paid.
+     * Đổi "có HLV kèm" cũng không gỡ HLV khỏi hội viên đang tập – quản lý đổi HLV ở hồ sơ hội viên nếu cần.
+     */
     @Transactional
     public PlanResponse update(Long id, PlanRequest req) {
         MembershipPlan p = load(id);
         if (planRepository.existsByNameIgnoreCaseAndIdNot(req.name().trim(), id)) throw ApiException.conflict("Tên gói tập đã tồn tại");
         apply(p, req);
-        auditService.log("PLAN_UPDATE", "PLAN", p.getId(), p.getName());
+        auditService.log("PLAN_UPDATE", "PLAN", p.getId(), p.getName() + (p.isIncludesTrainer() ? " · có HLV kèm" : ""));
         return mappers.plan(p);
     }
 
@@ -75,6 +78,7 @@ public class PlanService {
         p.setPrice(req.price());
         p.setDurationDays(req.durationDays());
         p.setBenefits(Mappers.blankToNull(req.benefits()));
+        p.setIncludesTrainer(req.includesTrainer());
     }
 
     MembershipPlan load(Long id) {

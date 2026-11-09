@@ -30,6 +30,10 @@ public class MembershipPlan {
 
     private String benefits;
 
+    /** Gói có HLV kèm (PT): hội viên chọn HLV khi gửi đơn. Không kèm: hội viên tự soạn giáo án, tự xếp lịch (V12). */
+    @Column(name = "includes_trainer", nullable = false)
+    private boolean includesTrainer;
+
     @Column(nullable = false)
     private boolean active = true;
 

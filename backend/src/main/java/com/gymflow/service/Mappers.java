@@ -72,7 +72,7 @@ public class Mappers {
     // ---------- Plan ----------
     public PlanResponse plan(MembershipPlan p) {
         return new PlanResponse(p.getId(), p.getName(), p.getDescription(), p.getPrice(), p.getDurationDays(),
-                p.getBenefits(), p.isActive(), subscriptionRepository.countCurrentByPlan(p.getId(), today()));
+                p.getBenefits(), p.isActive(), subscriptionRepository.countCurrentByPlan(p.getId(), today()), p.isIncludesTrainer());
     }
 
     // ---------- Subscription ----------

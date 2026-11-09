@@ -33,19 +33,19 @@ public class ScheduleController {
 
     @PostMapping("/api/schedules")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TRAINER','MEMBER')")
     public ScheduleCreatedResponse create(@Valid @RequestBody ScheduleRequest req) {
         return scheduleService.create(CurrentUser.get(), req);
     }
 
     @PutMapping("/api/schedules/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TRAINER','MEMBER')")
     public ScheduleResponse update(@PathVariable Long id, @Valid @RequestBody ScheduleUpdateRequest req) {
         return scheduleService.update(CurrentUser.get(), id, req);
     }
 
     @PutMapping("/api/schedules/{id}/cancel")
-    @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TRAINER','MEMBER')")
     public ScheduleResponse cancel(@PathVariable Long id) {
         return scheduleService.cancel(CurrentUser.get(), id);
     }

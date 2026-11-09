@@ -55,9 +55,10 @@ public class WorkoutPlanService {
                 .map(mappers::planDetail).orElse(null);
     }
 
+    /** HLV / quản lý soạn cho hội viên; hội viên chưa có HLV (gói không kèm HLV) tự soạn cho mình, trainer = null. */
     @Transactional
     public WorkoutPlanResponse create(AuthUser user, WorkoutPlanRequest req) {
-        Member m = access.requireCoach(user, req.memberId());
+        Member m = user.isMember() ? access.requireSelfCoach(user, req.memberId()) : access.requireCoach(user, req.memberId());
         validate(req);
         WorkoutPlan p = new WorkoutPlan();
         p.setMember(m);
@@ -66,14 +67,15 @@ public class WorkoutPlanService {
         apply(p, req);
         planRepository.save(p);
         archiveOtherActive(p);
-        auditService.log("WORKOUT_PLAN_CREATE", "WORKOUT_PLAN", p.getId(), m.getCode() + " · " + p.getName());
+        auditService.log("WORKOUT_PLAN_CREATE", "WORKOUT_PLAN", p.getId(), m.getCode() + " · " + p.getName()
+                + (user.isMember() ? " · hội viên tự soạn" : ""));
         return mappers.planDetail(p);
     }
 
     @Transactional
     public WorkoutPlanResponse update(AuthUser user, Long id, WorkoutPlanRequest req) {
         WorkoutPlan p = load(id);
-        if (!access.canCoach(user, p.getMember())) throw ApiException.forbidden();
+        requireEdit(user, p);
         if (!p.getMember().getId().equals(req.memberId())) throw ApiException.badRequest("Không thể chuyển giáo án sang hội viên khác");
         validate(req);
         apply(p, req);
@@ -85,7 +87,7 @@ public class WorkoutPlanService {
     @Transactional
     public WorkoutPlanSummary setStatus(AuthUser user, Long id, PlanStatus status) {
         WorkoutPlan p = load(id);
-        if (!access.canCoach(user, p.getMember())) throw ApiException.forbidden();
+        requireEdit(user, p);
         p.setStatus(status);
         if (status == PlanStatus.ACTIVE) archiveOtherActive(p);
         auditService.log("WORKOUT_PLAN_STATUS", "WORKOUT_PLAN", p.getId(), p.getName() + " → " + status);
@@ -95,11 +97,18 @@ public class WorkoutPlanService {
     @Transactional
     public void delete(AuthUser user, Long id) {
         WorkoutPlan p = load(id);
-        if (!access.canCoach(user, p.getMember())) throw ApiException.forbidden();
+        requireEdit(user, p);
         // Buổi tập đã gắn giáo án vẫn giữ lại, chỉ bỏ liên kết.
         scheduleRepository.findByPlanId(id).forEach(s -> s.setPlan(null));
         planRepository.delete(p);
         auditService.log("WORKOUT_PLAN_DELETE", "WORKOUT_PLAN", id, p.getName());
+    }
+
+    /** Admin / HLV phụ trách sửa được mọi giáo án của hội viên; hội viên tự tập chỉ sửa giáo án do chính mình soạn (không có HLV). */
+    private void requireEdit(AuthUser user, WorkoutPlan p) {
+        if (access.canCoach(user, p.getMember())) return;
+        if (p.getTrainer() == null && access.canSelfCoach(user, p.getMember())) return;
+        throw ApiException.forbidden();
     }
 
     /** Mỗi hội viên chỉ có một giáo án đang áp dụng; giáo án cũ chuyển sang lưu trữ. */

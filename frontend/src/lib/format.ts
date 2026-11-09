@@ -62,6 +62,8 @@ const actionLabel_VI: Record<string, string> = {
   SUBSCRIPTION_CREATE: 'Đăng ký gói', SUBSCRIPTION_RENEW: 'Gia hạn gói', SUBSCRIPTION_CANCEL: 'Huỷ gói',
   PACKAGE_REQUEST_CREATE: 'Hội viên gửi đơn đăng ký gói', PACKAGE_REQUEST_CANCEL: 'Hội viên huỷ đơn đăng ký gói',
   PACKAGE_REQUEST_APPROVE: 'Duyệt đơn đăng ký gói', PACKAGE_REQUEST_REJECT: 'Từ chối đơn đăng ký gói',
+  PACKAGE_REQUEST_PAID: 'Hội viên báo đã chuyển khoản', PAYMENT_SETTINGS_UPDATE: 'Cập nhật tài khoản nhận tiền',
+  PAYMENT_QR_UPDATE: 'Cập nhật mã QR ngân hàng', PAYMENT_QR_DELETE: 'Xoá mã QR ngân hàng',
   EXERCISE_CREATE: 'Thêm bài tập', EXERCISE_UPDATE: 'Sửa bài tập', EXERCISE_HIDE: 'Ẩn bài tập', EXERCISE_SHOW: 'Hiện bài tập', EXERCISE_DELETE: 'Xoá bài tập', EXERCISE_REVIEW: 'Duyệt bài tập',
   ARTICLE_CREATE: 'Soạn bài viết', ARTICLE_UPDATE: 'Sửa bài viết', ARTICLE_SUBMIT: 'Gửi duyệt bài viết', ARTICLE_APPROVE: 'Xuất bản bài viết',
   ARTICLE_REJECT: 'Trả bài viết về nháp', ARTICLE_ARCHIVE: 'Gỡ bài viết', ARTICLE_RESTORE: 'Khôi phục bài viết', ARTICLE_DELETE: 'Xoá bài viết',

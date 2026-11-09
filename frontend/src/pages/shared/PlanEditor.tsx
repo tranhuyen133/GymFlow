@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Exercise, Member, MuscleGroup, PlanItem, PlanStatus, WorkoutPlan } from '../../api/types';
+import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
 import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
@@ -30,11 +31,15 @@ export default function PlanEditor() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const toast = useToast();
+  // V12: hội viên tự tập (chưa có HLV) tự soạn giáo án cho chính mình ở /me/plan/new, /me/plan/:id
+  const me = useMe();
+  const self = me.role === 'MEMBER';
+  const back = self ? '/me/plan' : '/workout-plans';
 
   const plan = useAsync(() => (isNew ? Promise.resolve(null) : api.get<WorkoutPlan>(`/workout-plans/${id}`)), [id]);
   const library = useAsync(() => api.get<Exercise[]>('/exercises'), []);
 
-  const [memberId, setMemberId] = useState(params.get('memberId') ?? '');
+  const [memberId, setMemberId] = useState(self ? String(me.memberId ?? '') : params.get('memberId') ?? '');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [name, setName] = useState('');
   const [goal, setGoal] = useState('');
@@ -183,8 +188,8 @@ export default function PlanEditor() {
     try {
       const res = isNew ? await api.post<WorkoutPlan>('/workout-plans', body) : await api.put<WorkoutPlan>(`/workout-plans/${id}`, body);
       setBaseline(current);
-      toast.success(isNew ? 'Đã tạo giáo án, giáo án cũ của hội viên chuyển sang lưu trữ' : 'Đã lưu giáo án');
-      if (isNew) { leaving.current = true; navigate(`/workout-plans/${res.summary.id}`, { replace: true }); } else void plan.reload();
+      toast.success(isNew ? (self ? 'Đã tạo giáo án, giáo án cũ chuyển sang lưu trữ' : 'Đã tạo giáo án, giáo án cũ của hội viên chuyển sang lưu trữ') : 'Đã lưu giáo án');
+      if (isNew) { leaving.current = true; navigate(self ? '/me/plan' : `/workout-plans/${res.summary.id}`, { replace: true }); } else void plan.reload();
       return true;
     } catch (e) { setError(errMsg(e)); setErrors(fieldErrs(e)); return false; } finally { setBusy(false); }
   };
@@ -197,6 +202,18 @@ export default function PlanEditor() {
   if (plan.error) return <div className="page"><ErrorState message={plan.error} onRetry={plan.reload} /></div>;
   if (!isNew && (plan.loading || !plan.data)) return <div className="page"><LoadingBlock rows={8} /></div>;
   const summary = plan.data?.summary;
+  // Giáo án HLV soạn: hội viên chỉ xem ở Giáo án của tôi (backend cũng chặn sửa)
+  if (self && summary && summary.trainerId != null) {
+    return (
+      <div className="page">
+        <PageHead eyebrow={t('Tập luyện')} title={summary.name} />
+        <Alert kind="info" action={<Link to="/me/plan" className="btn btn-secondary btn-sm"><span>{t('Giáo án của tôi')}</span></Link>}>
+          {t('Giáo án này do HLV {name} soạn nên bạn chỉ xem được. Cần đổi bài, hãy nhắn HLV.', { name: summary.trainerName ?? '' })}
+        </Alert>
+      </div>
+    );
+  }
+  const ownDesc = self ? t('Tự soạn · {member}', { member: summary?.memberName ?? '' }) : null;
 
   return (
     <div className="page">
@@ -204,12 +221,16 @@ export default function PlanEditor() {
         type="button"
         className="link small row"
         style={{ gap: 6, marginBottom: 14, background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
-        onClick={() => (dirty ? setLeaveTo('/workout-plans') : go('/workout-plans'))}
+        onClick={() => (dirty ? setLeaveTo(back) : go(back))}
       >
-        <Icon name="arrowLeft" size={15} />{t('Danh sách giáo án')}
+        <Icon name="arrowLeft" size={15} />{self ? t('Giáo án của tôi') : t('Danh sách giáo án')}
       </button>
       <PageHead eyebrow={isNew ? 'Giáo án mới' : t('Giáo án #{id}', { id })} title={isNew ? 'Soạn giáo án' : name || 'Giáo án'}
-        desc={summary ? <span className="row" style={{ gap: 8 }}><StatusBadge map={planStatus} value={summary.status} /> {tn('HLV {trainer} · {member}', { trainer: summary.trainerName ?? '—', member: summary.memberName })}</span> : 'Chọn bài theo từng ngày trong tuần, đặt số hiệp, số lần, mức tạ và thời gian nghỉ.'}
+        desc={summary ? <span className="row" style={{ gap: 8 }}><StatusBadge map={planStatus} value={summary.status} /> {ownDesc ?? (summary.trainerId == null
+          ? tn('Hội viên tự soạn · {member}', { member: summary.memberName })
+          : tn('HLV {trainer} · {member}', { trainer: summary.trainerName ?? '—', member: summary.memberName }))}</span>
+          : self ? 'Chọn bài trong thư viện cho từng ngày trong tuần. Tạo xong, giáo án cũ (nếu có) tự chuyển sang lưu trữ; vào Lịch tập để tự xếp buổi.'
+          : 'Chọn bài theo từng ngày trong tuần, đặt số hiệp, số lần, mức tạ và thời gian nghỉ.'}
         actions={<>
           {!isNew && <Button variant="ghost" icon="trash" onClick={() => setRemoving(true)}>Xoá</Button>}
           {summary && summary.status !== 'ACTIVE' && <Button icon="play" onClick={() => void setStatus('ACTIVE')}>Áp dụng lại</Button>}
@@ -287,7 +308,7 @@ export default function PlanEditor() {
         <div className="stack" style={{ gap: 18 }}>
           <Card title="Thông tin" icon="clipboard">
             <div className="stack">
-              <Field label="Hội viên" required error={errors.memberId}>
+              {!self && <Field label="Hội viên" required error={errors.memberId}>
                 <MemberSelect
                   value={memberId}
                   disabled={!isNew}
@@ -302,7 +323,7 @@ export default function PlanEditor() {
                     setErrors((x) => ({ ...x, memberId: '' }));
                   }}
                 />
-              </Field>
+              </Field>}
               <Field label="Tên giáo án" required error={errors.name} hint="Phải có chữ cái, được kèm số. VD: Full body 3 buổi/tuần">
                 <Input maxLength={120} value={name} invalid={!!errors.name} placeholder="VD: Full body 3 buổi/tuần"
                   onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((x) => ({ ...x, name: checkPlanName(e.target.value) ?? '' })); }}
@@ -339,7 +360,7 @@ export default function PlanEditor() {
       </div>
 
       {removing && <Confirm danger title="Xoá giáo án?" message="Các buổi tập đã gắn giáo án này vẫn được giữ lại, chỉ bỏ liên kết." confirmText="Xoá" onClose={() => setRemoving(false)}
-        onConfirm={async () => { try { await api.del(`/workout-plans/${id}`); toast.success('Đã xoá giáo án'); go('/workout-plans'); } catch (e) { toast.error(errMsg(e)); throw e; } }} />}
+        onConfirm={async () => { try { await api.del(`/workout-plans/${id}`); toast.success('Đã xoá giáo án'); go(back); } catch (e) { toast.error(errMsg(e)); throw e; } }} />}
 
       {copyTo !== null && <Confirm title={t('Ghi đè {day}?', { day: DAY_NAMES[copyTo - 1] })} confirmText="Ghi đè"
         message={tn('{day} đang có {n} bài. Các bài đó sẽ được thay bằng bài của {from}.', { day: DAY_NAMES[copyTo - 1], n: items.filter((x) => x.dayOfWeek === copyTo).length, from: DAY_NAMES[day - 1] })}

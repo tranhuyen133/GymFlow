@@ -27,6 +27,11 @@ public class PackageRequest {
     @JoinColumn(name = "plan_id", nullable = false)
     private MembershipPlan plan;
 
+    /** HLV hội viên chọn cho gói có PT (V12); duyệt đơn thì HLV này được gán cho hội viên. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "trainer_id")
+    private Trainer trainer;
+
     @Column(name = "plan_name", nullable = false, length = 100)
     private String planName;
 
@@ -41,6 +46,18 @@ public class PackageRequest {
 
     @Column(name = "member_note")
     private String memberNote;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false, length = 20)
+    private PaymentMethod paymentMethod = PaymentMethod.COUNTER;
+
+    /** Nội dung chuyển khoản GF000123, sinh theo id đơn nên không trùng. */
+    @Column(name = "payment_code", length = 20)
+    private String paymentCode;
+
+    /** Lúc hội viên bấm "Tôi đã chuyển khoản" – chỉ là lời báo, quản lý vẫn phải đối chiếu tài khoản trước khi duyệt. */
+    @Column(name = "member_paid_at")
+    private LocalDateTime memberPaidAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

@@ -2,12 +2,14 @@
  * CHỦ FILE: Linh (Hồ Khánh Linh)
  * TASK: SCRUM-172 · Màn 2.5 Gói của tôi (SUB-07)
  * Bổ sung SUB-08 (kiểm thử phân hệ Hội viên): hội viên tự chọn gói và gửi đơn đăng ký, theo dõi trạng thái,
- * huỷ đơn đang chờ. Gói chỉ có hiệu lực sau khi thanh toán tại quầy và quản lý xác nhận (chưa có thanh toán trực tuyến).
+ * huỷ đơn đang chờ. Gói chỉ có hiệu lực sau khi quản lý xác nhận đã nhận tiền.
+ * V12: trả tại quầy hoặc chuyển khoản theo mã QR (nội dung = mã đơn); gói có HLV kèm thì chọn HLV khi gửi đơn.
  */
 import { useState } from 'react';
 import { api } from '../../api/client';
-import type { MembershipPlan, PackageRequest, Subscription } from '../../api/types';
+import type { Member, MembershipPlan, PackageRequest, PaymentMethod, PaymentSettings, Subscription, Trainer } from '../../api/types';
 import { Icon } from '../../components/Icon';
+import { initials, PaymentInfo, PickCard } from '../../components/PaymentQr';
 import { benefitsOf, PlanCard, pickBest, savings } from '../../components/PlanCard';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Meter, Modal, PageHead, Segmented, StatusBadge, Table, Textarea } from '../../components/ui';
@@ -34,8 +36,11 @@ export default function MyPackages() {
   const subs = useAsync(() => api.get<Subscription[]>('/subscriptions/me'), []);
   const plans = useAsync(() => api.get<MembershipPlan[]>('/plans'), []);
   const reqs = useAsync(() => api.get<PackageRequest[]>('/package-requests/me'), []);
+  const pay = useAsync(() => api.get<PaymentSettings>('/payment-settings'), []);
+  const me = useAsync(() => api.get<Member>('/members/me'), []);
   const [picked, setPicked] = useState<MembershipPlan | null>(null);
   const [cancelling, setCancelling] = useState<PackageRequest | null>(null);
+  const [paying, setPaying] = useState<PackageRequest | null>(null);
 
   if (subs.error) return <ErrorState message={subs.error} onRetry={subs.reload} />;
   if (subs.loading || !subs.data) return (
@@ -75,7 +80,21 @@ export default function MyPackages() {
       />
 
       <div className="stack" style={{ gap: 12, marginBottom: 18 }}>
-        {pending && (
+        {pending && pending.paymentMethod === 'BANK_TRANSFER' && (
+          <Alert kind="info" action={<div className="row" style={{ gap: 6 }}>
+            <Button size="sm" variant="primary" icon="card" onClick={() => setPaying(pending)}>{t('Xem mã QR')}</Button>
+            <Button size="sm" variant="ghost" onClick={() => setCancelling(pending)}>{t('Huỷ đơn')}</Button>
+          </div>}>
+            {pending.memberPaidAt
+              ? tn('Bạn đã báo chuyển khoản {price} cho đơn {plan} lúc {at}. Quản lý sẽ đối chiếu tài khoản và kích hoạt gói.', {
+                price: <b>{fmtMoney(pending.price)}</b>, plan: <b>{pending.planName}</b>, at: fmtDateTime(pending.memberPaidAt),
+              })
+              : tn('Đơn {plan} đang chờ thanh toán. Chuyển khoản {price} với nội dung {code}, rồi bấm "Tôi đã chuyển khoản".', {
+                plan: <b>{pending.planName}</b>, price: <b>{fmtMoney(pending.price)}</b>, code: <b className="num">{pending.paymentCode}</b>,
+              })}
+          </Alert>
+        )}
+        {pending && pending.paymentMethod !== 'BANK_TRANSFER' && (
           <Alert kind="info" action={<Button size="sm" variant="ghost" onClick={() => setCancelling(pending)}>{t('Huỷ đơn')}</Button>}>
             {tn('Đơn đăng ký {plan} ({price}) đang chờ xác nhận. Vui lòng thanh toán tại quầy lễ tân để được kích hoạt gói.', {
               plan: <b>{pending.planName}</b>, price: fmtMoney(pending.price),
@@ -165,6 +184,10 @@ export default function MyPackages() {
                             {durationLabel(r.durationDays)} · {r.desiredStartDate ? t('Bắt đầu mong muốn {d}', { d: fmtDate(r.desiredStartDate) }) : t('Bắt đầu sớm nhất')}
                           </div>
                           {r.note && <div className="tiny faint">{t('Ghi chú: {note}', { note: r.note })}</div>}
+                          <div className="tiny faint">
+                            {r.paymentMethod === 'BANK_TRANSFER' ? t('Chuyển khoản · {code}', { code: r.paymentCode ?? '' }) : t('Trả tại quầy')}
+                            {r.trainerName && <> · {t('HLV {name}', { name: r.trainerName })}</>}
+                          </div>
                         </td>
                         <td className="num nowrap">{fmtMoney(r.price)}</td>
                         <td className="small nowrap">{fmtDateTime(r.createdAt)}</td>
@@ -175,6 +198,7 @@ export default function MyPackages() {
                           {r.status === 'PENDING' && !r.planStillOnSale && <div className="tiny" style={{ color: 'var(--warning)', marginTop: 4 }}>{t('Gói đã ngừng kinh doanh')}</div>}
                         </td>
                         <td className="nowrap">
+                          {r.status === 'PENDING' && r.paymentMethod === 'BANK_TRANSFER' && <Button size="sm" variant="ghost" icon="card" onClick={() => setPaying(r)}>{t('Mã QR')}</Button>}
                           {r.status === 'PENDING' && <Button size="sm" variant="ghost" icon="x" onClick={() => setCancelling(r)}>{t('Huỷ đơn')}</Button>}
                         </td>
                       </tr>
@@ -224,13 +248,18 @@ export default function MyPackages() {
               );
             })}
             <p className="tiny faint mt-8">
-              <Icon name="info" size={13} style={{ display: 'inline', verticalAlign: -2 }} /> {t('Thanh toán tại quầy lễ tân. Mỗi lần chỉ gửi được một đơn; muốn đổi gói hãy huỷ đơn đang chờ.')}
+              <Icon name="info" size={13} style={{ display: 'inline', verticalAlign: -2 }} /> {pay.data?.onlineEnabled
+                ? t('Trả tại quầy lễ tân hoặc chuyển khoản theo mã QR. Mỗi lần chỉ gửi được một đơn; muốn đổi gói hãy huỷ đơn đang chờ.')
+                : t('Thanh toán tại quầy lễ tân. Mỗi lần chỉ gửi được một đơn; muốn đổi gói hãy huỷ đơn đang chờ.')}
             </p>
           </div>
         </Card>
       </div>
 
-      {picked && <RegisterPlanModal plan={picked} subs={subs.data} onClose={() => setPicked(null)} onDone={() => { setPicked(null); reloadAll(); }} />}
+      {picked && <RegisterPlanModal plan={picked} subs={subs.data} payment={pay.data} currentTrainerId={me.data?.trainerId ?? null}
+        onClose={() => setPicked(null)}
+        onDone={(created) => { setPicked(null); reloadAll(); if (created.paymentMethod === 'BANK_TRANSFER') setPaying(created); }} />}
+      {paying && pay.data && <PayModal req={paying} settings={pay.data} onClose={() => setPaying(null)} onPaid={() => { setPaying(null); reloadAll(); }} />}
       {cancelling && (
         <Confirm title={t('Huỷ đơn đăng ký?')} danger confirmText={t('Huỷ đơn')}
           message={tn('Đơn đăng ký {plan} sẽ bị huỷ. Bạn có thể gửi đơn mới bất cứ lúc nào.', { plan: <b>{cancelling.planName}</b> })}
@@ -240,44 +269,64 @@ export default function MyPackages() {
   );
 }
 
-function RegisterPlanModal({ plan, subs, onClose, onDone }: { plan: MembershipPlan; subs: Subscription[]; onClose: () => void; onDone: () => void }) {
+function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onDone }: {
+  plan: MembershipPlan; subs: Subscription[]; payment: PaymentSettings | null; currentTrainerId: number | null;
+  onClose: () => void; onDone: (created: PackageRequest) => void;
+}) {
   const toast = useToast();
   const today = todayIso();
   const maxDate = toIsoDate(addDays(new Date(), MAX_START_DAYS));
   const lastEnd = lastEndDate(subs);
   const asapStart = lastEnd ? toIsoDate(addDays(parseDate(lastEnd), 1)) : today;
+  const pt = !!plan.includesTrainer;
+  const online = !!payment?.onlineEnabled && payment.hasQr;
+  const trainers = useAsync(() => (pt ? api.get<Trainer[]>('/trainers') : Promise.resolve([] as Trainer[])), [pt]);
+  const activeTrainers = (trainers.data ?? []).filter((tr) => tr.active);
   const [mode, setMode] = useState<'asap' | 'date'>('asap');
   const [date, setDate] = useState('');
   const [note, setNote] = useState('');
+  const [method, setMethod] = useState<PaymentMethod>('COUNTER');
+  const [trainerId, setTrainerId] = useState(currentTrainerId ? String(currentTrainerId) : '');
   const [agree, setAgree] = useState(false);
+  const [tried, setTried] = useState(false);
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState('');
 
   const start = mode === 'asap' ? asapStart : date;
   const end = start ? toIsoDate(addDays(parseDate(start), plan.durationDays - 1)) : '';
-  const dateError = mode !== 'date' ? undefined
+  const dateRule = mode !== 'date' ? undefined
     : !date ? 'Vui lòng chọn ngày bắt đầu'
     : date < today ? 'Ngày bắt đầu không được ở quá khứ'
     : date > maxDate ? `Chỉ chọn trong vòng ${MAX_START_DAYS} ngày tới`
     : overlaps(subs, date, end) ? 'Trùng với gói bạn đang có. Chọn "Sớm nhất" để gói mới nối tiếp gói hiện tại.'
     : undefined;
   const noteError = note.length > 255 ? 'Ghi chú tối đa 255 ký tự' : undefined;
-  const invalid = !!dateError || !!noteError || !agree;
+  const trainerRule = pt && !trainerId ? 'Chọn huấn luyện viên phụ trách bạn' : undefined;
+  // Ngày đã chọn mà sai thì báo ngay (người dùng vừa thao tác); ô còn trống chỉ báo sau khi bấm Gửi
+  const dateError = date || tried ? dateRule : undefined;
+  const trainerError = tried ? trainerRule : undefined;
+  const invalid = !!dateRule || !!noteError || !!trainerRule || !agree;
 
   const submit = async () => {
+    setTried(true);
     if (invalid) return;
     setBusy(true); setServerError('');
     try {
-      await api.post('/package-requests', { planId: plan.id, desiredStartDate: mode === 'date' ? date : null, note: note.trim() || null });
-      toast.success(t('Đã gửi đơn đăng ký. Vui lòng thanh toán tại quầy để kích hoạt gói.'));
-      onDone();
+      const created = await api.post<PackageRequest>('/package-requests', {
+        planId: plan.id, desiredStartDate: mode === 'date' ? date : null, note: note.trim() || null,
+        paymentMethod: method, trainerId: pt ? Number(trainerId) : null,
+      });
+      toast.success(method === 'BANK_TRANSFER'
+        ? t('Đã gửi đơn. Quét mã QR để chuyển khoản, nội dung {code}.', { code: created.paymentCode ?? '' })
+        : t('Đã gửi đơn đăng ký. Vui lòng thanh toán tại quầy để kích hoạt gói.'));
+      onDone(created);
     } catch (e) { setServerError(errMsg(e)); } finally { setBusy(false); }
   };
 
   return (
     <Modal title={t('Đăng ký {plan}', { plan: t(plan.name) })} onClose={onClose} footer={<>
       <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
-      <Button variant="primary" icon="check" loading={busy} disabled={invalid} onClick={submit}>{t('Gửi đơn đăng ký')}</Button>
+      <Button variant="primary" icon="check" loading={busy} disabled={!agree} onClick={submit}>{t('Gửi đơn đăng ký')}</Button>
     </>}>
       <div className="stack">
         <div className="plan-summary">
@@ -288,6 +337,35 @@ function RegisterPlanModal({ plan, subs, onClose, onDone }: { plan: MembershipPl
         {benefitsOf(plan).length > 0 && (
           <ul className="plan-benefits">{benefitsOf(plan).map((b) => <li key={b}><Icon name="check" size={13} className="ok" />{t(b)}</li>)}</ul>
         )}
+
+        {pt ? (
+          <Field label={t('Huấn luyện viên')} required error={trainerError}
+            hint={trainerError ? undefined : t('HLV này phụ trách bạn sau khi quản lý duyệt đơn: soạn giáo án và xếp lịch tập.')}>
+            {trainers.loading ? <LoadingBlock rows={2} />
+              : activeTrainers.length === 0 ? <div className="pick-empty">{t('Hiện chưa có HLV nhận hội viên mới, vui lòng hỏi lễ tân.')}</div>
+              : (
+                <div className="pick-grid" role="radiogroup" aria-label={t('Huấn luyện viên')}>
+                  {activeTrainers.map((tr) => (
+                    <PickCard key={tr.id} on={trainerId === String(tr.id)} onClick={() => setTrainerId(String(tr.id))} avatar={initials(tr.fullName)}
+                      title={<>{tr.fullName}{tr.id === currentTrainerId && <span className="tiny faint" style={{ fontWeight: 600 }}> · {t('HLV hiện tại')}</span>}</>}
+                      sub={[tr.specialty, tr.experienceYears > 0 ? t('{n} năm kinh nghiệm', { n: tr.experienceYears }) : null].filter(Boolean).join(' · ') || undefined} />
+                  ))}
+                </div>
+              )}
+          </Field>
+        ) : (
+          <div className="pick-note"><span className="pick-ico"><Icon name="user" size={15} /></span>
+            <span>{t('Gói tự tập: bạn tự soạn giáo án từ thư viện bài tập và tự xếp lịch ở mục Giáo án / Lịch tập. Cần tư vấn thì hỏi HLV ở Diễn đàn.')}</span>
+          </div>
+        )}
+
+        <Field label={t('Thanh toán')} required>
+          <div className="pick-grid" role="radiogroup" aria-label={t('Thanh toán')}>
+            <PickCard on={method === 'COUNTER'} onClick={() => setMethod('COUNTER')} icon="ticket" title={t('Trả tại quầy')} sub={t('Tiền mặt hoặc quẹt thẻ ở lễ tân')} />
+            <PickCard on={method === 'BANK_TRANSFER'} onClick={() => setMethod('BANK_TRANSFER')} disabled={!online} icon="card" title={t('Chuyển khoản QR')}
+              sub={online ? t('Quét mã QR ngay sau khi gửi đơn') : t('Phòng tập chưa nhận chuyển khoản')} />
+          </div>
+        </Field>
 
         <Field label={t('Ngày bắt đầu')} required>
           <Segmented value={mode} onChange={(v) => setMode(v)} options={[
@@ -304,7 +382,7 @@ function RegisterPlanModal({ plan, subs, onClose, onDone }: { plan: MembershipPl
           <Textarea id="preq-note" maxLength={255} value={note} invalid={!!noteError} placeholder={t('VD: tôi sẽ qua quầy chiều thứ Sáu')} onChange={(e) => setNote(e.target.value)} />
         </Field>
 
-        {start && !dateError && (
+        {start && !dateRule && (
           <Alert kind="info">
             {tn('Dự kiến hiệu lực {from} → {to}{chain}. Ngày chính xác được chốt khi quản lý xác nhận.', {
               from: <b>{fmtDate(start)}</b>, to: <b>{fmtDate(end)}</b>,
@@ -314,9 +392,48 @@ function RegisterPlanModal({ plan, subs, onClose, onDone }: { plan: MembershipPl
         )}
         <label className="check-row">
           <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-          <span className="small">{tn('Tôi hiểu gói chỉ có hiệu lực sau khi thanh toán {price} tại quầy lễ tân và được quản lý xác nhận.', { price: <b>{fmtMoney(plan.price)}</b> })}</span>
+          <span className="small">{method === 'BANK_TRANSFER'
+            ? tn('Tôi hiểu gói chỉ có hiệu lực sau khi chuyển khoản {price} đúng nội dung và được quản lý xác nhận đã nhận tiền.', { price: <b>{fmtMoney(plan.price)}</b> })
+            : tn('Tôi hiểu gói chỉ có hiệu lực sau khi thanh toán {price} tại quầy lễ tân và được quản lý xác nhận.', { price: <b>{fmtMoney(plan.price)}</b> })}</span>
         </label>
         {serverError && <Alert kind="error">{serverError}</Alert>}
+      </div>
+    </Modal>
+  );
+}
+
+/** Mã QR + thông tin chuyển khoản của một đơn; "Tôi đã chuyển khoản" chỉ báo cho quản lý, chưa kích hoạt gói. */
+function PayModal({ req, settings, onClose, onPaid }: { req: PackageRequest; settings: PaymentSettings; onClose: () => void; onPaid: () => void }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const markPaid = async () => {
+    setBusy(true);
+    try {
+      await api.put(`/package-requests/${req.id}/paid`);
+      toast.success(t('Đã báo quản lý. Gói được kích hoạt sau khi đối chiếu tài khoản.'));
+      onPaid();
+    } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
+  };
+  const canPay = settings.onlineEnabled && !req.memberPaidAt;
+  return (
+    <Modal title={t('Chuyển khoản cho đơn {code}', { code: req.paymentCode ?? `#${req.id}` })} onClose={onClose} footer={<>
+      <Button variant="ghost" onClick={onClose}>{canPay ? t('Để sau') : t('Đóng')}</Button>
+      {canPay && <Button variant="primary" icon="check" loading={busy} onClick={() => void markPaid()}>{t('Tôi đã chuyển khoản')}</Button>}
+    </>}>
+      <div className="stack">
+        <div className="plan-summary">
+          <div><span className="tiny muted">{t('Gói')}</span><b>{req.planName}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
+          <div><span className="tiny muted">{t('Số tiền')}</span><b className="num">{fmtMoney(req.price)}</b></div>
+          <div><span className="tiny muted">{t('HLV')}</span><b>{req.trainerName ?? t('Tự tập')}</b></div>
+        </div>
+        {req.memberPaidAt && (
+          <div className="pay-status"><Icon name="checkCircle" size={18} />
+            <span>{t('Bạn đã báo chuyển khoản lúc {at}. Quản lý đang đối chiếu, gói sẽ được kích hoạt sau khi xác nhận.', { at: fmtDateTime(req.memberPaidAt) })}</span>
+          </div>
+        )}
+        {settings.onlineEnabled
+          ? <PaymentInfo settings={settings} amount={req.price} code={req.paymentCode} />
+          : <Alert kind="warning">{t('Phòng tập vừa tạm dừng nhận chuyển khoản. Vui lòng thanh toán tại quầy, đơn của bạn vẫn giữ nguyên.')}</Alert>}
       </div>
     </Modal>
   );

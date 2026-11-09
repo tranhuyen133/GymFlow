@@ -67,6 +67,8 @@ export interface BulkApproveResult { approved: number; skipped: string[] }
 export interface MembershipPlan {
   id: number; name: string; description: string | null; price: number; durationDays: number;
   benefits: string | null; active: boolean; currentSubscriptions: number;
+  /** Gói có HLV kèm (PT): hội viên chọn HLV khi đăng ký. false = tự tập, tự soạn giáo án. Backend luôn trả về. */
+  includesTrainer?: boolean;
 }
 export interface Subscription {
   id: number; memberId: number; memberName: string; memberCode: string; planId: number; planName: string;
@@ -75,11 +77,20 @@ export interface Subscription {
 }
 export interface SubscriptionPreview { startDate: string; endDate: string; price: number; chained: boolean }
 export type PackageRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type PaymentMethod = 'COUNTER' | 'BANK_TRANSFER';
 export interface PackageRequest {
   id: number; memberId: number; memberName: string; memberCode: string; memberPhone: string | null;
   planId: number; planName: string; price: number; durationDays: number; planStillOnSale: boolean;
   desiredStartDate: string | null; note: string | null; status: PackageRequestStatus; decisionNote: string | null;
   decidedByName: string | null; decidedAt: string | null; subscriptionId: number | null; createdAt: string;
+  includesTrainer: boolean; trainerId: number | null; trainerName: string | null;
+  /** paymentCode = nội dung chuyển khoản (GF000123); memberPaidAt = lúc hội viên bấm "Tôi đã chuyển khoản" */
+  paymentMethod: PaymentMethod; paymentCode: string | null; memberPaidAt: string | null;
+}
+/** Thông tin nhận chuyển khoản; ảnh QR tải riêng bằng api.blob('/payment-settings/qr'). */
+export interface PaymentSettings {
+  onlineEnabled: boolean; bankName: string | null; accountNumber: string | null; accountName: string | null;
+  hasQr: boolean; qrUpdatedAt: string | null; updatedAt: string;
 }
 
 // ---------- Exercises & plans ----------

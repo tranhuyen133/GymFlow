@@ -34,6 +34,7 @@ export const NAV: NavItem[] = [
   { to: '/plans', label: 'Gói tập', icon: 'ticket', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/subscriptions', label: 'Đăng ký gói', icon: 'card', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/package-requests', label: 'Duyệt đăng ký gói', icon: 'checkCircle', roles: ['ADMIN'], group: 'Kinh doanh' },
+  { to: '/payment-settings', label: 'Thanh toán', icon: 'wallet', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/reports', label: 'Báo cáo', icon: 'chart', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/users', label: 'Tài khoản & quyền', icon: 'userCog', roles: ['ADMIN'], group: 'Hệ thống' },
   { to: '/audit-logs', label: 'Nhật ký hệ thống', icon: 'scroll', roles: ['ADMIN'], group: 'Hệ thống' },

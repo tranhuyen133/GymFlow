@@ -212,11 +212,16 @@ public final class Dtos {
             @Size(max = 500) String description,
             @NotNull(message = "Vui lòng nhập giá") @Min(value = 0, message = "Giá không âm") Long price,
             @NotNull(message = "Vui lòng nhập thời hạn") @Min(value = 1, message = "Thời hạn tối thiểu 1 ngày") @Max(value = 1095, message = "Thời hạn tối đa 3 năm") Integer durationDays,
-            @Size(max = 1000) String benefits) {
+            @Size(max = 1000) String benefits,
+            /** Gói có HLV kèm (PT). Không gửi = false: hội viên tự soạn giáo án, tự xếp lịch. */
+            boolean includesTrainer) {
+        public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits) {
+            this(name, description, price, durationDays, benefits, false);
+        }
     }
 
     public record PlanResponse(Long id, String name, String description, Long price, Integer durationDays,
-                               String benefits, boolean active, long currentSubscriptions) {
+                               String benefits, boolean active, long currentSubscriptions, boolean includesTrainer) {
     }
 
     // ===================== Subscription =====================
