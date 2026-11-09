@@ -24,8 +24,9 @@ VALUES ('FREE_EXERCISE_DB', 'Free Exercise DB (yuhonas, GitHub)', 'Free Exercise
 ON DUPLICATE KEY UPDATE code = content_sources.code;
 
 -- ---------------- Gắn vùng cơ, dụng cụ, ảnh cho các bài đã có (V3, V5, V11) ----------------
+-- name phải cùng collation với exercises.name (V1: utf8mb4_0900_as_ci), nếu không JOIN bên dưới báo lỗi 1267
 CREATE TEMPORARY TABLE tmp_ex_map (
-    name VARCHAR(120) NOT NULL PRIMARY KEY,
+    name VARCHAR(120) COLLATE utf8mb4_0900_as_ci NOT NULL PRIMARY KEY,
     pm   VARCHAR(160) NOT NULL,
     sm   VARCHAR(160) NULL,
     eq   VARCHAR(120) NOT NULL,
