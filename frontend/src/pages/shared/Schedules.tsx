@@ -1,3 +1,6 @@
+/**
+ * Lịch tập. V12: hội viên chưa có HLV phụ trách (gói tự tập) tự xếp, dời, huỷ buổi tự tập của mình; buổi có HLV vẫn do HLV / quản lý xếp.
+ */
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -19,6 +22,9 @@ type Filter = 'ALL' | ScheduleStatus;
 export default function Schedules() {
   const me = useMe();
   const staff = me.role !== 'MEMBER';
+  // Hội viên tự tập (chưa có HLV phụ trách) được tự xếp buổi
+  const member = useAsync(() => (staff ? Promise.resolve(null) : api.get<Member>('/members/me')), [staff]);
+  const selfTrain = !staff && member.data != null && member.data.trainerId == null;
   const [params, setParams] = useSearchParams();
   const [week, setWeek] = useState(() => startOfWeek(new Date()));
   const [filter, setFilter] = useState<Filter>('ALL');
@@ -44,8 +50,11 @@ export default function Schedules() {
   return (
     <div className="page">
       <PageHead eyebrow={staff ? 'Lịch tập' : 'Lịch của tôi'} title={staff ? 'Lịch tập tuần' : 'Lịch tập của tôi'}
-        desc={staff ? 'Xếp lịch lặp hằng tuần, hệ thống tự chặn trùng giờ HLV và hội viên, chỉ cho xếp khi hội viên còn gói hiệu lực.' : 'Bấm vào buổi tập để xem chi tiết và đánh dấu hoàn thành.'}
-        actions={staff && <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Xếp lịch</Button>} />
+        desc={staff ? 'Xếp lịch lặp hằng tuần, hệ thống tự chặn trùng giờ HLV và hội viên, chỉ cho xếp khi hội viên còn gói hiệu lực.'
+          : selfTrain ? 'Gói tự tập: tự xếp buổi theo giáo án của bạn, dời hoặc huỷ trước giờ tập, tập xong thì đánh dấu hoàn thành.'
+          : 'Bấm vào buổi tập để xem chi tiết và đánh dấu hoàn thành.'}
+        actions={staff ? <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Xếp lịch</Button>
+          : selfTrain && <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>{t('Tự xếp buổi tập')}</Button>} />
 
       <div className="toolbar">
         <div className="row">
@@ -82,7 +91,7 @@ export default function Schedules() {
       </div>
 
       {open && <SessionModal session={open} onClose={() => setOpen(null)} onChanged={(d) => { setOpen(null); if (d) setWeek(startOfWeek(d)); void reload(); }} />}
-      {creating && <ScheduleForm onClose={closeCreate} onSaved={(firstDay) => { closeCreate(); if (firstDay) setWeek(startOfWeek(firstDay)); void reload(); }} />}
+      {creating && (staff || selfTrain) && <ScheduleForm presetMemberId={staff ? undefined : me.memberId ?? undefined} onClose={closeCreate} onSaved={(firstDay) => { closeCreate(); if (firstDay) setWeek(startOfWeek(firstDay)); void reload(); }} />}
     </div>
   );
 }
@@ -92,6 +101,8 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
   const me = useMe();
   const toast = useToast();
   const staff = me.role !== 'MEMBER';
+  // Buổi tự tập (không có HLV) thì hội viên tự dời / huỷ; đánh vắng vẫn chỉ HLV / quản lý
+  const manage = staff || session.trainerId == null;
   const [mode, setMode] = useState<'view' | 'complete' | 'edit'>('view');
   const [confirm, setConfirm] = useState<'cancel' | 'missed' | null>(null);
   const started = parseDateTime(session.startTime) <= new Date();
@@ -108,9 +119,9 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
   return (
     <>
       <Modal title={session.title} onClose={onClose} footer={<>
-        {staff && session.status === 'SCHEDULED' && <>
+        {manage && session.status === 'SCHEDULED' && <>
           <Button variant="danger" icon="ban" onClick={() => setConfirm('cancel')}>{t('Huỷ buổi')}</Button>
-          {started && <Button icon="x" onClick={() => setConfirm('missed')}>{t('Đánh vắng')}</Button>}
+          {staff && started && <Button icon="x" onClick={() => setConfirm('missed')}>{t('Đánh vắng')}</Button>}
           {!started && <Button icon="edit" onClick={() => setMode('edit')}>{t('Dời lịch')}</Button>}
         </>}
         <span className="grow" />
@@ -211,11 +222,14 @@ const withCurrent = (list: string[], v: string) => (list.includes(v) ? list : [.
 export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?: Schedule; presetMemberId?: number; onClose: () => void; onSaved: (firstDay?: Date) => void }) {
   const me = useMe();
   const toast = useToast();
+  // Hội viên tự xếp buổi tự tập cho chính mình: không chọn hội viên / HLV, không cần đối chiếu giờ HLV
+  const self = me.role === 'MEMBER';
+  const defaultTitle = self ? 'Buổi tự tập' : 'Buổi tập với HLV';
   const start0 = edit ? parseDateTime(edit.startTime) : (() => { const d = addDays(new Date(), 1); d.setHours(18, 0, 0, 0); return d; })();
   const [memberId, setMemberId] = useState<string>(edit ? String(edit.memberId) : presetMemberId ? String(presetMemberId) : '');
   const [trainerId, setTrainerId] = useState<string>(edit?.trainerId ? String(edit.trainerId) : '');
   const [planId, setPlanId] = useState<string>(edit?.planId ? String(edit.planId) : '');
-  const [title, setTitle] = useState(edit?.title ?? 'Buổi tập với HLV');
+  const [title, setTitle] = useState(edit?.title ?? defaultTitle);
   const [date, setDate] = useState(toIsoDate(start0));
   const [time, setTime] = useState(`${String(start0.getHours()).padStart(2, '0')}:${String(start0.getMinutes()).padStart(2, '0')}`);
   const [duration, setDuration] = useState(edit ? String(Math.round((parseDateTime(edit.endTime).getTime() - start0.getTime()) / 60000)) : '60');
@@ -247,16 +261,16 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
       setTitle(`Buổi tập – ${active.name}`.slice(0, 120));
     } else {
       setPlanId('');
-      setTitle('Buổi tập với HLV');
+      setTitle(defaultTitle);
     }
     if (me.role === 'ADMIN') {
       setTrainerId(selected?.trainerId ? String(selected.trainerId) : '');
     }
-  }, [plans.data, plans.loading, memberId, selected?.trainerId, edit, me.role]);
+  }, [plans.data, plans.loading, memberId, selected?.trainerId, edit, me.role, defaultTitle]);
 
   // Giờ hội viên muốn tập và ca của HLV phụ trách, để chọn giờ cho khớp cả hai bên
-  const prefs = useAsync(() => (memberId ? api.get<TimeSlot[]>(`/members/${memberId}/time-preferences`) : Promise.resolve([] as TimeSlot[])), [memberId]);
-  const tid = trainerId || (selected?.trainerId ? String(selected.trainerId) : '') || (edit?.trainerId ? String(edit.trainerId) : '') || (me.trainerId ? String(me.trainerId) : '');
+  const prefs = useAsync(() => (memberId && !self ? api.get<TimeSlot[]>(`/members/${memberId}/time-preferences`) : Promise.resolve([] as TimeSlot[])), [memberId, self]);
+  const tid = self ? '' : trainerId || (selected?.trainerId ? String(selected.trainerId) : '') || (edit?.trainerId ? String(edit.trainerId) : '') || (me.trainerId ? String(me.trainerId) : '');
   const trainer = useAsync(() => (tid ? api.get<Trainer>(`/trainers/${tid}`).catch(() => null) : Promise.resolve(null)), [tid]);
   const dow = date ? ((new Date(`${date}T00:00:00`).getDay() + 6) % 7) + 1 : 0;
   const dayPrefs = (prefs.data ?? []).filter((p) => p.dayOfWeek === dow).sort((a, b) => toMin(a.startTime) - toMin(b.startTime));
@@ -316,14 +330,14 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
   }
 
   return (
-    <Modal title={edit ? 'Dời lịch buổi tập' : 'Xếp lịch tập'} onClose={onClose} footer={<>
+    <Modal title={edit ? 'Dời lịch buổi tập' : self ? 'Tự xếp buổi tập' : 'Xếp lịch tập'} onClose={onClose} footer={<>
       <Button variant="ghost" onClick={onClose}>Huỷ</Button>
       <Button variant="primary" icon="check" loading={busy} onClick={submit}>{edit ? 'Lưu thay đổi' : 'Xếp lịch'}</Button>
     </>}>
       <div className="stack">
         {error && <Alert kind="error">{error}</Alert>}
         <div className="form-grid">
-          {edit ? (
+          {self ? null : edit ? (
             <Field label="Hội viên" className="span-2"><Person name={edit.memberName} size="sm" /></Field>
           ) : (
             <Field label="Hội viên" error={errors.memberId} required className="span-2">
@@ -367,7 +381,7 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
               {![30, 45, 60, 75, 90, 120].includes(Number(duration)) && <option value={duration}>{t('{n} phút', { n: duration })}</option>}
             </Select>
           </Field>
-          {memberId && dow > 0 && (
+          {memberId && dow > 0 && !self && (
             <div className="span-2 hours-note">
               <Icon name="clock" size={15} />
               <span className="small">{t('Hội viên muốn tập {day}:', { day: DAY_NAMES[dow - 1] })}</span>
@@ -402,7 +416,7 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
               </Select>
             </Field>
           )}
-          <Field label="Ghi chú" className="span-2"><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: tập trung kỹ thuật squat" /></Field>
+          <Field label="Ghi chú" className="span-2"><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder={self ? 'VD: chân, 45 phút' : 'VD: tập trung kỹ thuật squat'} /></Field>
         </div>
         {!edit && Number(repeat) > 0 && <Badge tone="blue">{t('Sẽ tạo tối đa {n} buổi vào {day} hằng tuần', { n: Number(repeat) + 1, day: fmtWeekday(`${date}T${time}:00`).split(',')[0] })}</Badge>}
       </div>

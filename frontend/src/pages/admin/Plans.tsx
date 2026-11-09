@@ -91,12 +91,13 @@ const DURATIONS = [30, 90, 180, 365];
 function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; others: MembershipPlan[]; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const [f, setF] = useState({ name: plan?.name ?? '', description: plan?.description ?? '', price: String(plan?.price ?? ''), durationDays: String(plan?.durationDays ?? 30), benefits: plan?.benefits ?? '' });
+  const [pt, setPt] = useState(plan?.includesTrainer ?? false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f, v: string) => { setF((x) => ({ ...x, [k]: v })); if (errors[k]) setErrors((x) => ({ ...x, [k]: '' })); };
   const price = Number(f.price); const days = Number(f.durationDays);
-  const preview = { name: f.name.trim() || t('Tên gói'), price: Number.isFinite(price) && price >= 0 ? price : 0, durationDays: days > 0 ? days : 1, description: f.description.trim() || null, benefits: f.benefits };
+  const preview = { name: f.name.trim() || t('Tên gói'), price: Number.isFinite(price) && price >= 0 ? price : 0, durationDays: days > 0 ? days : 1, description: f.description.trim() || null, benefits: f.benefits, includesTrainer: pt };
   const previewSave = savings([...others.filter((p) => p.active), preview]).get(undefined);
 
   const submit = async () => {
@@ -110,7 +111,7 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
     setErrors(v); setError(null);
     if (Object.keys(v).length) return;
     setBusy(true);
-    const body = { ...f, name, description: f.description.trim(), benefits: f.benefits.split(/[,\n]/).map((b) => b.trim()).filter(Boolean).join(', '), price, durationDays: days };
+    const body = { ...f, name, description: f.description.trim(), benefits: f.benefits.split(/[,\n]/).map((b) => b.trim()).filter(Boolean).join(', '), price, durationDays: days, includesTrainer: pt };
     try {
       if (plan) await api.put(`/plans/${plan.id}`, body); else await api.post('/plans', body);
       toast.success('Đã lưu gói tập'); onSaved();
@@ -137,6 +138,17 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
               {DURATIONS.map((d) => <button key={d} type="button" className={`chip ${days === d ? 'on' : ''}`} onClick={() => set('durationDays', String(d))}>{durationLabel(d)}</button>)}
             </div>
             <Field label="Mô tả" className="span-2" hint={t('{n}/500', { n: f.description.length })}><Textarea maxLength={500} value={f.description} onChange={(e) => set('description', e.target.value)} placeholder="VD: Phù hợp người mới, tập không giới hạn giờ mở cửa" /></Field>
+            <Field label="Huấn luyện viên" className="span-2" hint={pt
+              ? t('Hội viên chọn HLV khi gửi đơn; duyệt đơn thì HLV đó phụ trách hội viên, soạn giáo án và xếp lịch.')
+              : t('Hội viên tự soạn giáo án từ thư viện bài tập và tự xếp lịch; vẫn hỏi HLV được qua Diễn đàn.')}>
+              <Segmented value={pt ? 'pt' : 'self'} onChange={(v) => setPt(v === 'pt')} options={[
+                { value: 'self', label: t('Tự tập') },
+                { value: 'pt', label: t('Có HLV kèm (PT)') },
+              ]} />
+            </Field>
+            {plan && plan.includesTrainer && !pt && plan.currentSubscriptions > 0 && (
+              <div className="span-2"><Alert kind="warning">{t('Hội viên đang dùng gói này vẫn giữ HLV hiện tại. Đổi HLV ở hồ sơ từng hội viên nếu cần.')}</Alert></div>
+            )}
             <Field label="Quyền lợi" hint="Mỗi dòng hoặc dấu phẩy là một quyền lợi" className="span-2"><Textarea maxLength={1000} rows={4} value={f.benefits} onChange={(e) => set('benefits', e.target.value)} placeholder={'Tủ đồ cá nhân\nNước uống miễn phí\n1 buổi PT'} /></Field>
           </div>
         </div>

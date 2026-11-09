@@ -1,14 +1,15 @@
 /**
  * Duyệt đơn hội viên tự đăng ký gói (SUB-08). Thêm khi kiểm thử phân hệ Hội viên.
  * Quy trình: hội viên gửi đơn trong ứng dụng → lễ tân thu đúng số tiền trong đơn → quản lý bấm Duyệt để tạo gói.
+ * V12: đơn trả tại quầy hoặc chuyển khoản (nội dung = mã đơn GFxxxxxx, đối chiếu sao kê rồi duyệt); gói có HLV kèm thì duyệt là giao HLV.
  * Backend kiểm tra lại toàn bộ (đơn còn chờ, gói còn bán, chống trùng thời gian); đơn đã xử lý không duyệt lại được.
  */
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { PackageRequest, PackageRequestStatus } from '../../api/types';
+import type { PackageRequest, PackageRequestStatus, Trainer } from '../../api/types';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, Person, SearchInput, Segmented, Stat, StatusBadge, Table, Textarea } from '../../components/ui';
+import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, Person, SearchInput, Segmented, Select, Stat, StatusBadge, Table, Textarea } from '../../components/ui';
 import { durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus } from '../../lib/format';
 import { errMsg, useAsync, usePaged } from '../../lib/hooks';
 import { t, tn } from '../../i18n';
@@ -25,7 +26,7 @@ export default function PackageRequests() {
   const count = (s: PackageRequestStatus) => (data ?? []).filter((r) => r.status === s).length;
   const list = useMemo(() => (data ?? [])
     .filter((r) => (filter === 'ALL' || r.status === filter)
-      && (!q || `${r.memberName} ${r.memberCode} ${r.memberPhone ?? ''} ${r.planName}`.toLowerCase().includes(q.trim().toLowerCase())))
+      && (!q || `${r.memberName} ${r.memberCode} ${r.memberPhone ?? ''} ${r.planName} ${r.paymentCode ?? ''} ${r.trainerName ?? ''}`.toLowerCase().includes(q.trim().toLowerCase())))
     // Đơn chờ: cũ nhất lên trước để xử lý theo thứ tự; còn lại: mới nhất lên trước.
     .sort((a, b) => (filter === 'PENDING' ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt))), [data, filter, q]);
   const paged = usePaged(list, 'package-requests', `${filter}|${q}`);
@@ -35,7 +36,8 @@ export default function PackageRequests() {
   return (
     <div className="page">
       <PageHead eyebrow="Kinh doanh" title="Duyệt đăng ký gói"
-        desc="Hội viên tự chọn gói trong ứng dụng. Thu đúng số tiền ghi trong đơn tại quầy rồi bấm Duyệt để kích hoạt gói. Gói nối tiếp gói hiện tại nếu ngày mong muốn đã qua hoặc bị trùng." />
+        desc="Hội viên tự chọn gói trong ứng dụng, trả tại quầy hoặc chuyển khoản theo mã QR. Thu tiền tại quầy hoặc đối chiếu sao kê theo mã đơn (GF…) rồi bấm Duyệt để kích hoạt gói. Gói có HLV kèm: duyệt là giao HLV cho hội viên."
+        actions={<Link to="/payment-settings" className="btn btn-secondary"><span>{t('Cài đặt thanh toán')}</span></Link>} />
 
       <div className="grid grid-4" style={{ marginBottom: 18 }}>
         <Stat icon="clock" label="Chờ xác nhận" value={count('PENDING')} accent="#ffb020" />
@@ -45,7 +47,7 @@ export default function PackageRequests() {
       </div>
 
       <div className="toolbar">
-        <SearchInput value={q} onChange={setQ} placeholder="Tìm hội viên, mã, SĐT, gói…" />
+        <SearchInput value={q} onChange={setQ} placeholder="Tìm hội viên, SĐT, gói, mã đơn GF…" />
         <div className="spacer" />
         <Segmented<Filter> value={filter} onChange={setFilter} options={[
           { value: 'PENDING', label: t('Chờ xác nhận {n}', { n: count('PENDING') }) },
@@ -71,9 +73,20 @@ export default function PackageRequests() {
                       <b>{r.planName}</b>
                       <div className="tiny faint">{durationLabel(r.durationDays)}</div>
                       {r.status === 'PENDING' && !r.planStillOnSale && <Badge tone="red">{t('Gói đã ngừng bán')}</Badge>}
+                      {r.trainerName ? <div className="tiny">{t('HLV {name}', { name: r.trainerName })}</div>
+                        : r.includesTrainer && r.status === 'PENDING' && <Badge tone="amber">{t('Chưa chọn HLV')}</Badge>}
                       {r.note && <div className="tiny faint">{t('Ghi chú: {note}', { note: r.note })}</div>}
                     </td>
-                    <td className="num nowrap">{fmtMoney(r.price)}</td>
+                    <td className="nowrap">
+                      <div className="num">{fmtMoney(r.price)}</div>
+                      {r.paymentMethod === 'BANK_TRANSFER'
+                        ? <Badge tone="blue">{t('Chuyển khoản')}</Badge>
+                        : <Badge tone="muted">{t('Tại quầy')}</Badge>}
+                      {r.paymentCode && <div className="tiny faint num">{r.paymentCode}</div>}
+                      {r.paymentMethod === 'BANK_TRANSFER' && r.status === 'PENDING' && (r.memberPaidAt
+                        ? <div className="tiny" style={{ color: 'var(--green, #2bd47d)' }}>{t('HV báo đã CK {at}', { at: fmtDateTime(r.memberPaidAt) })}</div>
+                        : <div className="tiny faint">{t('HV chưa báo chuyển')}</div>)}
+                    </td>
                     <td className="small nowrap">{r.desiredStartDate ? fmtDate(r.desiredStartDate) : t('Sớm nhất')}</td>
                     <td className="tiny muted nowrap">{fmtDateTime(r.createdAt)}</td>
                     <td>
@@ -104,17 +117,25 @@ export default function PackageRequests() {
 
 function ApproveModal({ req, onClose, onDone }: { req: PackageRequest; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
+  const transfer = req.paymentMethod === 'BANK_TRANSFER';
+  // Gói có HLV kèm (hoặc đơn cũ đã chọn HLV): duyệt là giao HLV. Quản lý được đổi HLV nếu người hội viên chọn đã kín lịch.
+  const pt = !!req.includesTrainer || req.trainerId != null;
+  const trainers = useAsync(() => (pt ? api.get<Trainer[]>('/trainers') : Promise.resolve([] as Trainer[])), [pt]);
+  const activeTrainers = (trainers.data ?? []).filter((tr) => tr.active);
+  const [trainerId, setTrainerId] = useState(req.trainerId != null ? String(req.trainerId) : '');
   const [paid, setPaid] = useState(false);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState('');
   const noteError = note.length > 255 ? 'Ghi chú tối đa 255 ký tự' : undefined;
+  const trainerError = pt && !trainerId ? 'Chọn huấn luyện viên' : undefined;
+  const chosenInactive = pt && trainers.data && trainerId && !activeTrainers.some((tr) => String(tr.id) === trainerId);
 
   const submit = async () => {
-    if (!paid || noteError) return;
+    if (!paid || noteError || trainerError) return;
     setBusy(true); setServerError('');
     try {
-      await api.put(`/package-requests/${req.id}/approve`, { note: note.trim() || null });
+      await api.put(`/package-requests/${req.id}/approve`, { note: note.trim() || null, trainerId: pt ? Number(trainerId) : null });
       toast.success(t('Đã duyệt và kích hoạt gói cho {name}', { name: req.memberName }));
       onDone();
     } catch (e) { setServerError(errMsg(e)); } finally { setBusy(false); }
@@ -123,25 +144,44 @@ function ApproveModal({ req, onClose, onDone }: { req: PackageRequest; onClose: 
   return (
     <Modal title={t('Duyệt đơn đăng ký gói')} size="narrow" onClose={onClose} footer={<>
       <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
-      <Button variant="primary" icon="check" loading={busy} disabled={!paid || !!noteError} onClick={submit}>{t('Duyệt và kích hoạt')}</Button>
+      <Button variant="primary" icon="check" loading={busy} disabled={!paid || !!noteError || !!trainerError} onClick={submit}>{t('Duyệt và kích hoạt')}</Button>
     </>}>
       <div className="stack">
         <div className="plan-summary">
           <div><span className="tiny muted">{t('Hội viên')}</span><b>{req.memberName}</b><span className="tiny faint">{req.memberCode}</span></div>
           <div><span className="tiny muted">{t('Gói')}</span><b>{req.planName}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
-          <div><span className="tiny muted">{t('Số tiền cần thu')}</span><b className="num">{fmtMoney(req.price)}</b></div>
+          <div><span className="tiny muted">{transfer ? t('Số tiền phải nhận') : t('Số tiền cần thu')}</span><b className="num">{fmtMoney(req.price)}</b>
+            <span className="tiny faint">{transfer ? t('Chuyển khoản · {code}', { code: req.paymentCode ?? '' }) : t('Tại quầy')}</span></div>
         </div>
+        {transfer && (
+          <Alert kind={req.memberPaidAt ? 'info' : 'warning'}>
+            {req.memberPaidAt
+              ? t('Hội viên báo đã chuyển lúc {at}. Mở sao kê, tìm khoản {price} có nội dung {code} rồi mới duyệt.', { at: fmtDateTime(req.memberPaidAt), price: fmtMoney(req.price), code: req.paymentCode ?? '' })
+              : t('Hội viên chưa báo đã chuyển. Chỉ duyệt khi sao kê có khoản {price} với nội dung {code}.', { price: fmtMoney(req.price), code: req.paymentCode ?? '' })}
+          </Alert>
+        )}
         <p className="small muted" style={{ margin: 0 }}>
           {req.desiredStartDate
             ? t('Bắt đầu {d} nếu ngày đó còn trống; nếu đã qua hoặc trùng gói khác, gói mới nối tiếp gói hiện tại.', { d: fmtDate(req.desiredStartDate) })
             : t('Gói bắt đầu hôm nay, hoặc nối tiếp ngay sau gói hiện tại của hội viên.')}
         </p>
-        <Field htmlFor="approve-note" label={t('Ghi chú')} error={noteError} hint={t('Không bắt buộc · VD: đã thu tiền mặt, số phiếu thu')}>
+        {pt && (
+          <Field htmlFor="approve-trainer" label={t('Huấn luyện viên phụ trách')} required error={trainerError ?? (chosenInactive ? t('HLV này đã nghỉ, chọn HLV khác') : undefined)}
+            hint={req.trainerName ? t('Hội viên chọn {name}. Duyệt xong HLV này phụ trách giáo án và lịch tập.', { name: req.trainerName }) : t('Duyệt xong HLV này phụ trách giáo án và lịch tập.')}>
+            <Select id="approve-trainer" value={trainerId} invalid={!!trainerError || !!chosenInactive} onChange={(e) => setTrainerId(e.target.value)}>
+              <option value="">{trainers.loading ? t('Đang tải…') : t('Chọn HLV')}</option>
+              {activeTrainers.map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}{tr.specialty ? ` · ${tr.specialty}` : ''}{tr.id === req.trainerId ? ` (${t('hội viên chọn')})` : ''}</option>)}
+            </Select>
+          </Field>
+        )}
+        <Field htmlFor="approve-note" label={t('Ghi chú')} error={noteError} hint={transfer ? t('Không bắt buộc · VD: mã giao dịch ngân hàng') : t('Không bắt buộc · VD: đã thu tiền mặt, số phiếu thu')}>
           <Input id="approve-note" maxLength={255} value={note} invalid={!!noteError} onChange={(e) => setNote(e.target.value)} />
         </Field>
         <label className="check-row">
           <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)} />
-          <span className="small">{tn('Tôi xác nhận đã thu đủ {price} của hội viên.', { price: <b>{fmtMoney(req.price)}</b> })}</span>
+          <span className="small">{transfer
+            ? tn('Tôi xác nhận tài khoản đã nhận đủ {price} với nội dung {code}.', { price: <b>{fmtMoney(req.price)}</b>, code: <b>{req.paymentCode}</b> })
+            : tn('Tôi xác nhận đã thu đủ {price} của hội viên.', { price: <b>{fmtMoney(req.price)}</b> })}</span>
         </label>
         {serverError && <Alert kind="error">{serverError}</Alert>}
       </div>

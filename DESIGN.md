@@ -150,3 +150,16 @@ Thành phần chung nằm ở `components/motivation.tsx` và `motivation.css`.
   - Vạch đỏ nhấp nháy là giờ hiện tại. Bấm khối thì mở chi tiết buổi.
 - Thẻ "Tỉ lệ đi tập" của HLV dùng `Stat highlight` khi đạt từ 80%.
 - Nhấc thẻ dùng `translate`. Mọi chuyển động tắt khi bật "giảm chuyển động".
+
+## 12. Gói có HLV kèm / gói tự tập và thanh toán
+
+**Vai trò HLV phụ thuộc gói.** Mỗi gói có cờ `includes_trainer` (V12, mặc định `FALSE`).
+- **Gói có HLV kèm (PT):** hội viên chọn HLV khi gửi đơn. Quản lý duyệt đơn thì HLV đó được giao (`members.trainer_id`, nhật ký `MEMBER_ASSIGN_TRAINER`). Quản lý được đổi HLV lúc duyệt nếu HLV đã kín lịch. HLV soạn giáo án và xếp lịch như trước.
+- **Gói tự tập:** hội viên **chưa có HLV phụ trách** tự soạn giáo án từ thư viện bài tập và tự xếp, dời, huỷ buổi tự tập (`trainer_id = NULL`). Quyền kiểm ở `AccessService.canSelfCoach / requireSelfCoach`. Hội viên đã có HLV thì không tự tạo được giáo án hay buổi tập; giáo án và buổi do HLV tạo thì hội viên chỉ xem và đánh dấu hoàn thành. Đánh vắng vẫn chỉ HLV / quản lý làm.
+
+**Thanh toán: chưa nối cổng thanh toán.**
+- **Tại quầy (`COUNTER`, mặc định):** như cũ. Lễ tân thu tiền, quản lý duyệt đơn.
+- **Chuyển khoản QR (`BANK_TRANSFER`):** chỉ chọn được khi quản lý đã bật ở Quản lý › Thanh toán và đã có số tài khoản cùng ảnh QR. Mỗi đơn có mã `GF` + 6 số (`package_requests.payment_code`, UNIQUE), dùng làm nội dung chuyển khoản. Hội viên bấm "Tôi đã chuyển khoản" (`member_paid_at`), nhưng việc này **không** kích hoạt gói. Quản lý đối chiếu sao kê rồi mới duyệt, nên vẫn chỉ có một cửa duyệt duy nhất.
+- **Thông tin nhận tiền:** nằm ở bảng một dòng `payment_settings` (id = 1). Ảnh QR lưu trong CSDL (`MEDIUMBLOB`, ≤ 512 KB, chỉ JPG/PNG/WebP, kiểm tra theo nội dung file như ảnh đại diện) để không phải thêm volume trên VPS. Ảnh tải qua `GET /api/payment-settings/qr` có kèm token, phản hồi đặt `no-store` và `nosniff`. Không xoá được QR khi đang bật chuyển khoản.
+
+**Sau khi deploy:** mọi gói cũ đều là gói tự tập. Quản lý cần đánh dấu lại các gói PT ở Quản lý › Gói tập, và muốn nhận chuyển khoản thì vào Quản lý › Thanh toán để nhập tài khoản, tải QR rồi bật. Hội viên đang có HLV vẫn giữ HLV đó.

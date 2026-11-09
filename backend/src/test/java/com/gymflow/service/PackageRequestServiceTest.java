@@ -7,6 +7,7 @@ import com.gymflow.dto.Dtos.SubscriptionResponse;
 import com.gymflow.dto.PackageRequestDtos.*;
 import com.gymflow.repository.MemberSubscriptionRepository;
 import com.gymflow.repository.PackageRequestRepository;
+import com.gymflow.repository.TrainerRepository;
 import com.gymflow.repository.UserRepository;
 import com.gymflow.security.AuthUser;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,8 @@ class PackageRequestServiceTest {
     @Mock AccessService access;
     @Mock AuditService auditService;
     @Mock Mappers mappers;
+    @Mock TrainerRepository trainerRepository;
+    @Mock PaymentSettingsService paymentSettings;
 
     PackageRequestService service;
     AuthUser memberUser = new AuthUser(20L, "hv@example.com", Role.MEMBER, "Hội Viên");
@@ -54,7 +57,7 @@ class PackageRequestServiceTest {
     void setUp() {
         Clock clock = Clock.fixed(TODAY.atTime(10, 0).atZone(ZONE).toInstant(), ZONE);
         service = new PackageRequestService(requestRepository, subscriptionRepository, userRepository, subscriptionService,
-                planService, access, auditService, mappers, clock);
+                planService, access, auditService, mappers, clock, trainerRepository, paymentSettings);
         User u = new User();
         u.setId(20L);
         u.setFullName("Hội Viên");
@@ -250,5 +253,103 @@ class PackageRequestServiceTest {
         when(requestRepository.lockById(100L)).thenReturn(Optional.of(pending(null)));
         assertThatThrownBy(() -> service.reject(admin, 100L, new RejectPackageRequest("  ab   ")))
                 .isInstanceOf(ApiException.class).hasMessageContaining("Lý do");
+    }
+
+    // ---------- Gói có / không kèm HLV, thanh toán chuyển khoản (V12) ----------
+
+    private Trainer trainer(long id, boolean active) {
+        User u = new User();
+        u.setId(300L + id);
+        u.setFullName("HLV " + id);
+        Trainer t = new Trainer();
+        t.setId(id);
+        t.setUser(u);
+        t.setActive(active);
+        return t;
+    }
+
+    @Test
+    void createDefaultsToCounterAndGivesPaymentCode() {
+        PackageRequestResponse res = service.create(memberUser, new CreatePackageRequest(2L, null, null));
+        assertThat(res.paymentMethod()).isEqualTo(PaymentMethod.COUNTER);
+        assertThat(res.paymentCode()).isEqualTo("GF000100");
+        assertThat(res.trainerId()).isNull();
+        verifyNoInteractions(paymentSettings, trainerRepository);
+    }
+
+    @Test
+    void bankTransferNeedsOnlinePaymentEnabled() {
+        when(paymentSettings.onlineReady()).thenReturn(false);
+        assertThatThrownBy(() -> service.create(memberUser, new CreatePackageRequest(2L, null, null, PaymentMethod.BANK_TRANSFER, null)))
+                .isInstanceOf(ApiException.class).hasMessageContaining("chuyển khoản");
+        verify(requestRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void bankTransferRequestIsPendingUntilAdminApproves() {
+        when(paymentSettings.onlineReady()).thenReturn(true);
+        PackageRequestResponse res = service.create(memberUser, new CreatePackageRequest(2L, null, null, PaymentMethod.BANK_TRANSFER, null));
+        assertThat(res.paymentMethod()).isEqualTo(PaymentMethod.BANK_TRANSFER);
+        assertThat(res.status()).isEqualTo(PackageRequestStatus.PENDING);
+        verifyNoInteractions(subscriptionService);
+    }
+
+    @Test
+    void ptPlanRequiresActiveTrainer() {
+        plan.setIncludesTrainer(true);
+        assertThatThrownBy(() -> service.create(memberUser, new CreatePackageRequest(2L, null, null)))
+                .isInstanceOf(ApiException.class).hasMessageContaining("chọn huấn luyện viên");
+        when(trainerRepository.findById(7L)).thenReturn(Optional.of(trainer(7L, false)));
+        assertThatThrownBy(() -> service.create(memberUser, new CreatePackageRequest(2L, null, null, null, 7L)))
+                .isInstanceOf(ApiException.class).hasMessageContaining("ngừng nhận");
+        verify(requestRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void nonPtPlanIgnoresTrainerChoice() {
+        PackageRequestResponse res = service.create(memberUser, new CreatePackageRequest(2L, null, null, null, 7L));
+        assertThat(res.trainerId()).isNull();
+        verifyNoInteractions(trainerRepository);
+    }
+
+    @Test
+    void approvingPtRequestAssignsChosenTrainer() {
+        plan.setIncludesTrainer(true);
+        Trainer t = trainer(7L, true);
+        PackageRequest r = pending(null);
+        r.setTrainer(t);
+        when(requestRepository.lockById(100L)).thenReturn(Optional.of(r));
+        when(subscriptionService.create(eq(admin), any())).thenReturn(sub(TODAY));
+
+        service.approve(admin, 100L, null);
+
+        assertThat(member.getTrainer()).isSameAs(t);
+        verify(auditService).log(eq("MEMBER_ASSIGN_TRAINER"), eq("MEMBER"), eq(1L), any());
+    }
+
+    @Test
+    void approvingPtRequestWithInactiveTrainerCreatesNothing() {
+        plan.setIncludesTrainer(true);
+        PackageRequest r = pending(null);
+        r.setTrainer(trainer(7L, false));
+        when(requestRepository.lockById(100L)).thenReturn(Optional.of(r));
+        assertThatThrownBy(() -> service.approve(admin, 100L, null)).isInstanceOf(ApiException.class).hasMessageContaining("HLV khác");
+        verifyNoInteractions(subscriptionService);
+        assertThat(member.getTrainer()).isNull();
+    }
+
+    @Test
+    void memberMarksBankTransferAsPaidOnlyForOwnPendingRequest() {
+        PackageRequest r = pending(null);
+        r.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        r.setPaymentCode("GF000100");
+        when(requestRepository.lockById(100L)).thenReturn(Optional.of(r));
+        assertThat(service.markPaid(memberUser, 100L).memberPaidAt()).isNotNull();
+        assertThat(r.getStatus()).isEqualTo(PackageRequestStatus.PENDING);
+        verifyNoInteractions(subscriptionService);
+
+        PackageRequest counter = pending(null);
+        when(requestRepository.lockById(101L)).thenReturn(Optional.of(counter));
+        assertThatThrownBy(() -> service.markPaid(memberUser, 101L)).isInstanceOf(ApiException.class).hasMessageContaining("tại quầy");
     }
 }

@@ -5,7 +5,7 @@ import { durationLabel, fmtMoney } from '../lib/format';
 import { Icon } from './Icon';
 import './packages.css';
 
-type PlanLike = Pick<MembershipPlan, 'name' | 'price' | 'durationDays' | 'description' | 'benefits'> & { id?: number };
+type PlanLike = Pick<MembershipPlan, 'name' | 'price' | 'durationDays' | 'description' | 'benefits' | 'includesTrainer'> & { id?: number };
 
 export const benefitsOf = (p: Pick<MembershipPlan, 'benefits'>) => (p.benefits ?? '').split(/[,\n]/).map((b) => b.trim()).filter(Boolean);
 
@@ -58,6 +58,12 @@ export function PlanCard({ plan, best, saving, badge, compact, className = '', f
         {badge}
       </div>
       <h3 className="pc-name">{t(plan.name)}</h3>
+      {plan.includesTrainer != null && (
+        <span className={`chip ${plan.includesTrainer ? 'on' : ''}`} style={{ alignSelf: 'flex-start', marginTop: 6 }}
+          title={plan.includesTrainer ? t('HLV riêng soạn giáo án và xếp lịch cho bạn') : t('Bạn tự soạn giáo án từ thư viện bài tập và tự xếp lịch')}>
+          <Icon name={plan.includesTrainer ? 'badge' : 'user'} size={13} />{plan.includesTrainer ? t('Có HLV kèm') : t('Tự tập')}
+        </span>
+      )}
       <div className="pc-price" aria-label={fmtMoney(plan.price)}>
         <span className="pc-amount" key={plan.price}>{fmtMoney(plan.price)}</span>
       </div>

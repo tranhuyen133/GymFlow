@@ -41,6 +41,13 @@ public class PackageRequestController {
         return service.cancelMine(CurrentUser.get(), id);
     }
 
+    /** Hội viên báo "Tôi đã chuyển khoản" cho đơn thanh toán bằng QR. */
+    @PutMapping("/{id}/paid")
+    @PreAuthorize("hasRole('MEMBER')")
+    public PackageRequestResponse paid(@PathVariable Long id) {
+        return service.markPaid(CurrentUser.get(), id);
+    }
+
     // ---------- Quản lý ----------
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
