@@ -51,14 +51,26 @@ public class NotificationService {
             if (cur == null || cur.stateOn(today) == SubscriptionState.EXPIRED) {
                 PackageRequest waiting = packageRequestRepository.findFirstByMemberIdAndStatus(m.getId(), PackageRequestStatus.PENDING).orElse(null);
                 if (waiting != null) {
-                    out.add(n("preq-wait-" + waiting.getId(), "info", "Đơn đăng ký " + waiting.getPlanName() + " đang chờ xác nhận",
-                            "Thanh toán tại quầy lễ tân để quản lý kích hoạt gói.", "/me/packages", waiting.getCreatedAt()));
+                    out.add(n("preq-wait-" + waiting.getId(), "info", "Đơn đang chờ xác nhận thanh toán",
+                            waiting.getPaymentMethod() == PaymentMethod.BANK_TRANSFER && waiting.getMemberPaidAt() != null
+                                    ? "Đang chờ quản lý đối chiếu sao kê."
+                                    : "Vui lòng thanh toán để quản lý kích hoạt gói.", "/getting-started", waiting.getCreatedAt()));
                 } else {
-                    out.add(n("sub-none", "danger", "Bạn chưa có gói tập hiệu lực", "Chọn gói và gửi đăng ký trong mục Gói tập của tôi.", "/me/packages", now));
+                    out.add(n("sub-none", "danger", "Bạn chưa có gói tập hiệu lực", "Chọn gói và gửi đăng ký trong mục Bắt đầu cùng GymFlow.", "/getting-started", now));
                 }
+            } else if (cur.stateOn(today) == SubscriptionState.UPCOMING) {
+                out.add(n("sub-up-" + cur.getId(), "info", "Gói bắt đầu từ ngày " + cur.getStartDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                        "Gói " + cur.getPlan().getName() + " sẽ tự kích hoạt vào ngày bắt đầu.", "/getting-started", cur.getCreatedAt()));
             } else if (cur.stateOn(today) == SubscriptionState.EXPIRING) {
                 out.add(n("sub-exp-" + cur.getId(), "warning", "Gói " + cur.getPlan().getName() + " sắp hết hạn",
                         "Còn " + cur.daysLeft(today) + " ngày (hết hạn " + cur.getEndDate() + ").", "/me/packages", now));
+            }
+            for (MemberSubscription s : subscriptionRepository.findByMemberIdOrderByStartDateDesc(m.getId())) {
+                if (!s.isCancelled() && s.getStartDate().isAfter(today) && (cur == null || !s.getId().equals(cur.getId()))) {
+                    out.add(n("sub-future-" + s.getId(), "info", "Gói bắt đầu từ ngày " + s.getStartDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                            "Gói " + s.getPlan().getName() + " sẽ bắt đầu vào ngày " + s.getStartDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ".", "/getting-started", s.getCreatedAt()));
+                    break;
+                }
             }
             for (WorkoutSchedule s : scheduleRepository.findByMemberIdAndStartTimeBetweenOrderByStartTimeAsc(
                     m.getId(), today.atStartOfDay(), today.plusDays(1).atStartOfDay())) {
@@ -72,11 +84,11 @@ public class NotificationService {
             for (PackageRequest r : packageRequestRepository.findByMemberIdOrderByCreatedAtDesc(m.getId())) {
                 if (r.getDecidedAt() == null || r.getDecidedAt().isBefore(now.minusDays(3))) continue;
                 if (r.getStatus() == PackageRequestStatus.APPROVED) {
-                    out.add(n("preq-ok-" + r.getId(), "info", "Đơn đăng ký " + r.getPlanName() + " đã được duyệt",
-                            "Gói đã được kích hoạt trên tài khoản của bạn.", "/me/packages", r.getDecidedAt()));
+                    out.add(n("preq-ok-" + r.getId(), "info", "Gói đã được kích hoạt",
+                            "Đơn đăng ký " + r.getPlanName() + " đã được duyệt. Bạn có thể bắt đầu tập luyện.", "/getting-started", r.getDecidedAt()));
                 } else if (r.getStatus() == PackageRequestStatus.REJECTED) {
-                    out.add(n("preq-no-" + r.getId(), "warning", "Đơn đăng ký " + r.getPlanName() + " bị từ chối",
-                            r.getDecisionNote() == null ? "Xem chi tiết trong mục Gói tập của tôi." : "Lý do: " + r.getDecisionNote(), "/me/packages", r.getDecidedAt()));
+                    out.add(n("preq-no-" + r.getId(), "warning", "Đơn bị từ chối",
+                            r.getDecisionNote() == null ? "Xem chi tiết trong mục Gói tập." : "Lý do: " + r.getDecisionNote(), "/getting-started", r.getDecidedAt()));
                 }
             }
             // Buổi bị đánh dấu vắng trong 7 ngày qua (gồm cả buổi hệ thống tự chuyển sang MISSED khi quá hạn)

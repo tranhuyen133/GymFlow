@@ -273,7 +273,7 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
   const [note, setNote] = useState(edit?.note ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
-  const [skipped, setSkipped] = useState<string[] | null>(null);
+  const [skipped, setSkipped] = useState<{ created: number; reasons: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<Member | null>(null);
 
@@ -349,7 +349,7 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
       } else {
         const res = await api.post<ScheduleCreated>('/schedules', { ...body, memberId: Number(memberId), repeatWeeks: Number(repeat) });
         toast.success(t('Đã xếp {n} buổi tập', { n: res.created.length }));
-        if (res.skipped.length) { setSkipped(res.skipped); setBusy(false); return; }
+        if (res.skipped.length) { setSkipped({ created: res.created.length, reasons: res.skipped }); setBusy(false); return; }
         onSaved(start);
       }
     } catch (e) { setError(errMsg(e)); setErrors(fieldErrs(e)); }
@@ -358,9 +358,10 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
 
   if (skipped) {
     return (
-      <Modal title="Đã xếp lịch, có tuần bị bỏ qua" onClose={() => onSaved(new Date(`${date}T${time}:00`))} footer={<Button variant="primary" onClick={() => onSaved(new Date(`${date}T${time}:00`))}>Đã hiểu</Button>}>
-        <Alert kind="warning">Các tuần sau không xếp được nên hệ thống bỏ qua, các tuần còn lại vẫn được tạo:</Alert>
-        <ul className="small muted mt-16">{skipped.map((s) => <li key={s}>{s}</li>)}</ul>
+      <Modal title={t('Đã xếp lịch, có tuần bị bỏ qua')} onClose={() => onSaved(new Date(`${date}T${time}:00`))} footer={<Button variant="primary" onClick={() => onSaved(new Date(`${date}T${time}:00`))}>{t('Đã hiểu')}</Button>}>
+        <Alert kind="warning">{t('Các tuần sau không xếp được nên hệ thống bỏ qua, các tuần còn lại vẫn được tạo:')}</Alert>
+        <p className="small mt-16">{t('Đã tạo {created} buổi, bỏ qua {n} tuần.', { created: skipped.created, n: skipped.reasons.length })}</p>
+        <ul className="small muted mt-8">{skipped.reasons.map((s) => <li key={s}>{s}</li>)}</ul>
       </Modal>
     );
   }
@@ -448,7 +449,7 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
             <Field label="Lặp lại hằng tuần" hint="Tuần nào trùng giờ / hết gói sẽ được bỏ qua">
               <Select value={repeat} onChange={(e) => setRepeat(e.target.value)}>
                 <option value="0">{t('Không lặp')}</option>
-                {[1, 2, 3, 4, 6, 8, 12].map((n) => <option key={n} value={n}>{t('Thêm {n} tuần ({m} buổi)', { n, m: n + 1 })}</option>)}
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{t('Thêm {n} tuần ({m} buổi)', { n, m: n + 1 })}</option>)}
               </Select>
             </Field>
           )}

@@ -21,6 +21,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import { ForumList, ForumTopicPage } from './pages/Forum';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
+import GettingStarted from './pages/member/GettingStarted';
 import MemberDashboard from './pages/member/MemberDashboard';
 import MyEntitlements from './pages/member/MyEntitlements';
 import MyPackages from './pages/member/MyPackages';
@@ -99,6 +100,7 @@ export default function App() {
       {/* Kho kiến thức đã thay bằng Diễn đàn: giữ đường dẫn cũ để link / bookmark cũ không ra 404 */}
       <Route path="/knowledge/*" element={<Navigate to="/forum" replace />} />
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
+        <Route path="/getting-started" element={<Only roles={MEMBER}><GettingStarted /></Only>} />
         <Route path="/dashboard" element={<Dashboard />} />
         {/* Gõ nhầm kiểu /dashboard/login thì về trang tổng quan (chưa đăng nhập sẽ được chuyển sang đăng nhập trước) */}
         <Route path="/dashboard/*" element={<Navigate to="/dashboard" replace />} />

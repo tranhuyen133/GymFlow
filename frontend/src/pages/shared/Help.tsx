@@ -11,7 +11,7 @@ import { Icon } from '../../components/Icon';
 import { Button, Card, Empty, PageHead, SearchInput, StatusBadge } from '../../components/ui';
 import { t } from '../../i18n';
 import { packageRequestStatus, scheduleStatus, subState } from '../../lib/format';
-import { readTour, startTour, TOUR_END, tourSteps } from '../../lib/tour';
+import { readTour, startTour, TOUR_END, type TourState } from '../../lib/tour';
 import './help.css';
 
 interface Faq { q: string; a: string; to?: string; roles: Role[]; topic: string }
@@ -22,7 +22,16 @@ const STAFF: Role[] = ['ADMIN', 'TRAINER'];
 const A: Role[] = ['ADMIN'];
 
 const FAQ: Faq[] = [
-  // ---------- Hội viên ----------
+  // ---------- Hội viên: Người mới & Bắt đầu ----------
+  { topic: 'Người mới', roles: M, to: '/getting-started', q: 'Vì sao đã đăng ký tài khoản mà chưa tập được?',
+    a: 'Để đủ điều kiện vào phòng tập, bạn cần đáp ứng đủ 3 điều kiện: (1) Tài khoản đang hoạt động (ACTIVE); (2) Hồ sơ hội viên hoạt động (ACTIVE); và (3) Có ít nhất một gói tập đang trong thời hạn hiệu lực (từ ngày bắt đầu đến ngày kết thúc và chưa bị huỷ). Bạn có thể kiểm tra trực tiếp tại trang "Bắt đầu cùng GymFlow".' },
+  { topic: 'Người mới', roles: M, to: '/getting-started', q: '"Chờ xác nhận thanh toán" nghĩa là gì, bao lâu thì được duyệt?',
+    a: 'Sau khi bạn bấm "Tôi đã chuyển khoản", đơn đăng ký ở trạng thái chờ duyệt. Quản lý phòng tập sẽ kiểm tra sao kê ngân hàng đối chiếu với mã thanh toán của bạn để duyệt và kích hoạt gói, thông thường diễn ra trong giờ làm việc của phòng tập (trong ngày).' },
+  { topic: 'Người mới', roles: M, to: '/getting-started', q: 'Đơn bị từ chối phải làm gì?',
+    a: 'Bạn vào trang "Bắt đầu cùng GymFlow" hoặc "Gói tập của tôi" để xem lý do từ chối cụ thể của ban quản lý. Sau đó bạn có thể bấm "Đăng ký lại" để gửi yêu cầu mới với thông tin đã điều chỉnh.' },
+  { topic: 'Người mới', roles: M, to: '/getting-started', q: 'Gói chưa đến ngày bắt đầu có được đi tập không?',
+    a: 'Không. Gói tập chỉ bắt đầu tính hiệu lực từ ngày bắt đầu (start_date) ghi trên gói. Trước ngày đó, hệ thống sẽ hiển thị trạng thái chờ kích hoạt và bạn chưa thể check-in đi tập.' },
+  // ---------- Hội viên: Gói tập & Lịch tập ----------
   { topic: 'Gói tập', roles: M, to: '/me/packages', q: 'Làm thế nào để đăng ký gói tập?',
     a: 'Vào "Gói tập của tôi", chọn một gói đang mở bán rồi bấm "Đăng ký gói này". Chọn ngày bắt đầu (hoặc "Sớm nhất" để nối tiếp gói hiện tại), chọn huấn luyện viên nếu là gói có HLV, chọn trả tại quầy hoặc chuyển khoản QR rồi gửi đơn. Mỗi lần chỉ gửi được một đơn; muốn đổi gói thì huỷ đơn đang chờ.' },
   { topic: 'Gói tập', roles: M, to: '/me/packages', q: 'Vì sao đơn đăng ký gói đang chờ duyệt?',
@@ -76,15 +85,25 @@ const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').r
 export default function Help() {
   const user = useMe();
   const [q, setQ] = useState('');
-  const [, refresh] = useState(0);
-  // Đóng hướng dẫn ngay trên trang này thì cập nhật lại dòng "đã xem / dừng ở bước"
+  const [tour, setTour] = useState<TourState | null>(null);
+  const defaultTourKey = user.role === 'MEMBER' ? 'journey' : user.role === 'TRAINER' ? 'trainer' : 'admin';
+
   useEffect(() => {
-    const on = () => refresh((n) => n + 1);
+    let alive = true;
+    void readTour(user.id, defaultTourKey).then((t) => {
+      if (alive) setTour(t);
+    });
+    const on = () => {
+      void readTour(user.id, defaultTourKey).then((t) => {
+        if (alive) setTour(t);
+      });
+    };
     window.addEventListener(TOUR_END, on);
-    return () => window.removeEventListener(TOUR_END, on);
-  }, []);
-  const steps = tourSteps(user.role);
-  const tour = readTour(user.id, user.role);
+    return () => {
+      alive = false;
+      window.removeEventListener(TOUR_END, on);
+    };
+  }, [user.id, defaultTourKey]);
 
   const list = useMemo(() => {
     const mine = FAQ.filter((f) => f.roles.includes(user.role));
@@ -102,15 +121,20 @@ export default function Help() {
 
       <div className="help-grid">
         <Card title={t('Hướng dẫn tương tác')} icon="play">
-          <p className="small muted">{t('Đi qua {n} bước giới thiệu các chức năng chính, làm nổi bật trực tiếp trên màn hình.', { n: steps.length - 1 })}</p>
+          <p className="small muted">{t('Đi qua các bước giới thiệu chức năng chính, làm nổi bật trực tiếp trên màn hình.')}</p>
           <p className="tiny faint mt-8">
             {tour?.status === 'done' ? t('Bạn đã xem hết hướng dẫn.')
-              : tour?.status === 'paused' ? t('Bạn dừng ở bước {n}/{total}.', { n: tour.step, total: steps.length - 1 })
+              : tour?.status === 'paused' ? t('Bạn đang tạm dừng hướng dẫn.')
               : t('Bạn chưa xem hướng dẫn.')}
           </p>
           <div className="row mt-16" style={{ gap: 8, flexWrap: 'wrap' }}>
-            {tour?.status === 'paused' && tour.step > 0 && <Button variant="primary" icon="play" onClick={() => startTour(tour.step)}>{t('Tiếp tục từ bước {n}', { n: tour.step })}</Button>}
-            <Button variant={tour?.status === 'paused' ? 'secondary' : 'primary'} icon="repeat" onClick={() => startTour(1)}>{t('Xem hướng dẫn lại')}</Button>
+            <Button variant="primary" icon="play" onClick={() => startTour({ tourKey: defaultTourKey, step: 0 })}>{t('Tour tổng quan')}</Button>
+            {user.role === 'MEMBER' && (
+              <>
+                <Button variant="secondary" icon="play" onClick={() => startTour({ tourKey: 'journey', step: 0 })}>{t('Tour hành trình đi tập')}</Button>
+                <Button variant="ghost" icon="play" onClick={() => startTour({ tourKey: 'pt-intro', step: 0 })}>{t('Tour tìm HLV & tư vấn')}</Button>
+              </>
+            )}
           </div>
         </Card>
 
