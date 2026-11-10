@@ -194,7 +194,7 @@ export function ChatWidget() {
                     {message.provider === 'GEMINI' ? 'Gemini AI' : 'AI Assistant'}
                   </span>
                 )}
-                <span>{message.content}</span>
+                {renderMessageContent(message.content)}
               </div>
             ))}
             {busy && <div className="chat-typing" role="status">Trợ lý đang suy nghĩ và soạn câu trả lời…</div>}
@@ -261,4 +261,72 @@ export function ChatWidget() {
       </button>
     </div>
   );
+}
+
+function renderMessageContent(content: string) {
+  if (!content) return null;
+
+  const lines = content.split('\n');
+
+  return (
+    <div className="chat-body-content">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return <div key={idx} className="chat-gap" />;
+        }
+
+        const bulletMatch = trimmed.match(/^([*\-•])\s+(.*)$/);
+        if (bulletMatch) {
+          const itemText = bulletMatch[2];
+          return (
+            <div key={idx} className="chat-bullet-item">
+              <span className="chat-bullet-icon">•</span>
+              <span className="chat-bullet-text">{formatInlineMarkdown(itemText)}</span>
+            </div>
+          );
+        }
+
+        return (
+          <p key={idx} className="chat-paragraph">
+            {formatInlineMarkdown(trimmed)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function formatInlineMarkdown(text: string): React.ReactNode {
+  const regex = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith('**') && token.endsWith('**')) {
+      parts.push(
+        <strong key={match.index} className="chat-strong">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    } else if (token.startsWith('`') && token.endsWith('`')) {
+      parts.push(
+        <code key={match.index} className="chat-code">
+          {token.slice(1, -1)}
+        </code>
+      );
+    }
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
 }
