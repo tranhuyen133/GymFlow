@@ -3,6 +3,7 @@ import { chatApi, type ChatConversation, type ChatMessage, type ChatSuggestion }
 import { Icon } from './Icon';
 import { Button } from './ui';
 import { errMsg } from '../lib/hooks';
+import { downloadDocxReport, parseAssistantContent } from '../lib/docxExport';
 import './chat-widget.css';
 
 export function ChatWidget() {
@@ -16,6 +17,7 @@ export function ChatWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const loadConversations = async () => {
@@ -146,6 +148,15 @@ export function ChatWidget() {
     }
   };
 
+  const handleCopy = (text: string, id: number) => {
+    if (navigator.clipboard) {
+      void navigator.clipboard.writeText(text).then(() => {
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+      });
+    }
+  };
+
   return (
     <div className="chat-widget">
       {open && (
@@ -187,16 +198,54 @@ export function ChatWidget() {
                   : 'Chọn một câu hỏi bên dưới để xem lịch tập, gói tập và bài tập của bạn.'}
               </p>
             )}
-            {messages.map((message) => (
-              <div key={message.id} className={`chat-message ${message.sender.toLowerCase()}`}>
-                {message.sender === 'ASSISTANT' && message.provider && message.provider !== 'RULE' && message.provider !== 'USER' && (
-                  <span className="chat-provider-badge">
-                    {message.provider === 'GEMINI' ? 'Gemini AI' : 'AI Assistant'}
-                  </span>
-                )}
-                {renderMessageContent(message.content)}
-              </div>
-            ))}
+            {messages.map((message) => {
+              if (message.sender === 'USER') {
+                return (
+                  <div key={message.id} className="chat-message user">
+                    <span>{message.content}</span>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={message.id} className="chat-message assistant doc-card">
+                  <div className="doc-card-header">
+                    <div className="doc-card-title-group">
+                      <Icon name="scroll" size={14} className="doc-card-icon" />
+                      <span>Phiếu thông tin GymFlow</span>
+                    </div>
+                    <span className="doc-card-badge">
+                      {message.provider === 'GEMINI' ? 'Gemini AI' : 'Hệ thống'}
+                    </span>
+                  </div>
+
+                  <div className="doc-card-body">
+                    {renderDocumentBody(message.content)}
+                  </div>
+
+                  <div className="doc-card-footer">
+                    <button
+                      type="button"
+                      className="doc-footer-btn doc-download-btn"
+                      onClick={() => void downloadDocxReport(message.content, `GymFlow_Thong_Tin_${message.id}.docx`)}
+                      title="Tải văn bản Word (.docx)"
+                    >
+                      <Icon name="download" size={13} />
+                      <span>Tải .docx</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="doc-footer-btn"
+                      onClick={() => handleCopy(message.content, message.id)}
+                      title="Sao chép văn bản"
+                    >
+                      <Icon name={copiedId === message.id ? 'check' : 'copy'} size={13} />
+                      <span>{copiedId === message.id ? 'Đã sao chép' : 'Sao chép'}</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
             {busy && <div className="chat-typing" role="status">Trợ lý đang suy nghĩ và soạn câu trả lời…</div>}
             <div ref={bottomRef} />
           </div>
@@ -263,36 +312,54 @@ export function ChatWidget() {
   );
 }
 
-function renderMessageContent(content: string) {
+function renderDocumentBody(content: string) {
   if (!content) return null;
-
-  const lines = content.split('\n');
+  const parsed = parseAssistantContent(content);
 
   return (
-    <div className="chat-body-content">
-      {lines.map((line, idx) => {
-        const trimmed = line.trim();
-        if (!trimmed) {
-          return <div key={idx} className="chat-gap" />;
-        }
+    <div className="doc-flow">
+      {parsed.intro && (
+        <div className="doc-intro-box">
+          {parsed.intro.split('\n\n').map((p, i) => (
+            <p key={i} className="doc-paragraph">{formatInlineMarkdown(p)}</p>
+          ))}
+        </div>
+      )}
 
-        const bulletMatch = trimmed.match(/^([*\-•])\s+(.*)$/);
-        if (bulletMatch) {
-          const itemText = bulletMatch[2];
-          return (
-            <div key={idx} className="chat-bullet-item">
-              <span className="chat-bullet-icon">•</span>
-              <span className="chat-bullet-text">{formatInlineMarkdown(itemText)}</span>
-            </div>
-          );
-        }
+      {parsed.tableData && parsed.tableData.length > 0 && (
+        <div className="doc-table-container">
+          <table className="doc-table">
+            <thead>
+              <tr>
+                <th style={{ width: '38%' }}>Hạng mục</th>
+                <th style={{ width: '62%' }}>Thông tin chi tiết</th>
+              </tr>
+            </thead>
+            <tbody>
+              {parsed.tableData.map((row, rIdx) => (
+                <tr key={rIdx}>
+                  <td className="doc-table-key">{row.key}</td>
+                  <td className="doc-table-val">{formatInlineMarkdown(row.value)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-        return (
-          <p key={idx} className="chat-paragraph">
-            {formatInlineMarkdown(trimmed)}
-          </p>
-        );
-      })}
+      {parsed.notes && (
+        <div className="doc-guidance-callout">
+          <div className="doc-guidance-head">
+            <Icon name="info" size={13} />
+            <span>Hướng dẫn & Lưu ý</span>
+          </div>
+          <div className="doc-guidance-text">
+            {parsed.notes.split('\n\n').map((p, i) => (
+              <p key={i} className="doc-paragraph">{formatInlineMarkdown(p)}</p>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
