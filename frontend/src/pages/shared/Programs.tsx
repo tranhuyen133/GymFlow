@@ -19,7 +19,7 @@ import './kb.css';
 
 type LevelFilter = '' | Level;
 
-export default function Programs() {
+export default function Programs({ embedded = false }: { embedded?: boolean } = {}) {
   const me = useMe();
   const navigate = useNavigate();
   const lib = useAsync(() => api.get<Exercise[]>('/exercises'), []);
@@ -40,13 +40,25 @@ export default function Programs() {
   };
 
   return (
-    <div className="page">
-      <PageHead eyebrow="Kho kiến thức" title="Lịch tập mẫu"
-        desc="Các kiểu chia buổi phổ biến trong phòng gym. Dùng làm khung để soạn giáo án nhanh rồi chỉnh số hiệp, số lần, mức tạ theo từng người."
-        actions={<Segmented<LevelFilter> value={level} onChange={setLevel} options={[
-          { value: '', label: 'Tất cả' }, { value: 'BEGINNER', label: levelLabel.BEGINNER[0] },
-          { value: 'INTERMEDIATE', label: levelLabel.INTERMEDIATE[0] }, { value: 'ADVANCED', label: levelLabel.ADVANCED[0] },
-        ]} />} />
+    <div className={embedded ? 'embedded-view' : 'page'}>
+      {!embedded ? (
+        <PageHead eyebrow="Kho kiến thức" title="Lịch tập mẫu"
+          desc="Các kiểu chia buổi phổ biến trong phòng gym. Dùng làm khung để soạn giáo án nhanh rồi chỉnh số hiệp, số lần, mức tạ theo từng người."
+          actions={<Segmented<LevelFilter> value={level} onChange={setLevel} options={[
+            { value: '', label: 'Tất cả' }, { value: 'BEGINNER', label: levelLabel.BEGINNER[0] },
+            { value: 'INTERMEDIATE', label: levelLabel.INTERMEDIATE[0] }, { value: 'ADVANCED', label: levelLabel.ADVANCED[0] },
+          ]} />} />
+      ) : (
+        <div className="row row-wrap items-center justify-between gap-12 mb-16">
+          <p className="small muted" style={{ margin: 0 }}>
+            {t('Các kiểu chia buổi phổ biến trong phòng gym. Chọn một lịch phù hợp để làm khung soạn giáo án nhanh.')}
+          </p>
+          <Segmented<LevelFilter> value={level} onChange={setLevel} options={[
+            { value: '', label: 'Tất cả' }, { value: 'BEGINNER', label: levelLabel.BEGINNER[0] },
+            { value: 'INTERMEDIATE', label: levelLabel.INTERMEDIATE[0] }, { value: 'ADVANCED', label: levelLabel.ADVANCED[0] },
+          ]} />
+        </div>
+      )}
 
       {lockedByTrainer && <Alert kind="info">{t('Bạn đang có HLV phụ trách nên giáo án do HLV soạn. Bạn vẫn xem được các lịch mẫu và có thể gợi ý HLV dùng lịch mình thích.')}</Alert>}
       {lib.error && <ErrorState message={lib.error} onRetry={lib.reload} />}
