@@ -91,3 +91,48 @@
 .tpl-row:hover:not(:disabled) { border-color: color-mix(in srgb, var(--primary) 50%, var(--hairline)); transform: translateY(-1px); }
 .tpl-row:disabled { opacity: 0.5; cursor: not-allowed; }
 .tpl-ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; color: var(--primary-bright); background: color-mix(in srgb, var(--primary) 14%, transparent); }
+
+/* ---------- Giai đoạn C: Tìm kiếm thông minh, Autocomplete & View Switcher ---------- */
+.ex-search-wrapper { position: relative; flex: 1; min-width: 240px; }
+.ex-autocomplete-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 50;
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-md);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  max-height: 320px; overflow-y: auto; padding: 6px;
+}
+.ex-autocomplete-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 8px 12px; border: none; background: transparent;
+  border-radius: var(--r-sm); cursor: pointer; text-align: left; color: var(--ink);
+  transition: background 0.15s ease;
+}
+.ex-autocomplete-item:hover, .ex-autocomplete-item:focus {
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface-2));
+  outline: none;
+}
+.ex-autocomplete-title { font-weight: 600; font-size: 13px; line-height: 1.3; }
+.ex-autocomplete-sub { font-size: 11px; color: var(--faint); }
+
+/* View switcher */
+.ex-view-toggle { display: inline-flex; border-radius: var(--r-sm); border: 1px solid var(--hairline); overflow: hidden; background: var(--rail); }
+.ex-view-btn {
+  padding: 6px 10px; border: none; background: transparent; cursor: pointer;
+  color: var(--muted); display: grid; place-items: center; transition: all 0.2s;
+}
+.ex-view-btn.active { background: var(--surface); color: var(--primary-bright); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.ex-view-btn:hover:not(.active) { color: var(--ink); }
+
+/* Danh sách dạng List Table */
+.ex-list-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.ex-list-table th { padding: 10px 12px; font-size: 11px; text-transform: uppercase; color: var(--faint); font-weight: 700; border-bottom: 1px solid var(--hairline); text-align: left; }
+.ex-list-row { transition: background 0.15s; }
+.ex-list-row:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
+.ex-list-row td { padding: 10px 12px; border-bottom: 1px solid var(--hairline-soft); vertical-align: middle; }
+.ex-list-thumb { width: 44px; height: 36px; border-radius: var(--r-xs); overflow: hidden; background: var(--rail); display: grid; place-items: center; flex-shrink: 0; }
+.ex-list-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Neutral hero card */
+.ex-hero-neutral {
+  border-left: 4px solid var(--primary-bright);
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+}

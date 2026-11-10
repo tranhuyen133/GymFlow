@@ -10,9 +10,10 @@ import type { Equipment, EquipmentCategory } from '../../api/types';
 import { ExerciseMedia, mediaCredit } from '../../components/ExerciseMedia';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Badge, ErrorState, LoadingBlock, Modal, PageHead } from '../../components/ui';
+import { Badge, Button, ErrorState, LoadingBlock, Modal, PageHead, SearchInput } from '../../components/ui';
 import { useAuth } from '../../auth/AuthContext';
 import { t } from '../../i18n';
+import { MUSCLE_BY_KEY, type MuscleKey } from '../../lib/anatomy';
 import { errMsg, useAsync } from '../../lib/hooks';
 import './kb.css';
 
@@ -33,22 +34,38 @@ export default function EquipmentPage() {
 
   const [showHidden, setShowHidden] = useState(false);
   const [editing, setEditing] = useState<Equipment | 'new' | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<EquipmentCategory | ''>('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data, error, loading, reload } = useAsync(
     () => api.get<Equipment[]>('/equipment', { includeHidden: isStaff && showHidden }),
     [isStaff, showHidden]
   );
 
+  const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
+
+  const filteredData = useMemo(() => {
+    let list = data ?? [];
+    if (selectedCategory) {
+      list = list.filter((eq) => eq.category === selectedCategory);
+    }
+    if (searchQuery.trim()) {
+      const q = fold(searchQuery.trim());
+      list = list.filter((eq) => fold(eq.name).includes(q) || fold(eq.key).includes(q) || (eq.shortDesc && fold(eq.shortDesc).includes(q)));
+    }
+    return list;
+  }, [data, selectedCategory, searchQuery]);
+
   const byCategory = useMemo(() => {
     const map = new Map<EquipmentCategory, Equipment[]>();
     CATEGORIES.forEach((c) => map.set(c.key, []));
-    (data ?? []).forEach((eq) => {
+    filteredData.forEach((eq) => {
       const list = map.get(eq.category) ?? [];
       list.push(eq);
       map.set(eq.category, list);
     });
     return map;
-  }, [data]);
+  }, [filteredData]);
 
   const toggleHidden = async (eq: Equipment) => {
     try {
@@ -93,94 +110,154 @@ export default function EquipmentPage() {
       ) : loading && !data ? (
         <LoadingBlock rows={6} />
       ) : (
-        <div className="eq-categories-container mt-16">
-          {CATEGORIES.map((cat) => {
-            const items = byCategory.get(cat.key) ?? [];
-            if (items.length === 0 && !isStaff) return null;
+        <>
+          <div className="toolbar mt-16" style={{ alignItems: 'center' }}>
+            <div style={{ flex: 1, minWidth: 240 }}>
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder={t('Tìm kiếm thiết bị theo tên, mô tả…')}
+              />
+            </div>
+            {searchQuery && (
+              <Button variant="ghost" size="sm" icon="x" onClick={() => setSearchQuery('')}>
+                {t('Xoá tìm kiếm')}
+              </Button>
+            )}
+          </div>
 
-            return (
-              <section key={cat.key} className="eq-cat-section mb-28">
-                <div className="eq-cat-header mb-12">
-                  <div className="row between wrap" style={{ alignItems: 'baseline' }}>
-                    <h2 className="section-title" style={{ margin: 0 }}>
-                      <span>{t(cat.label)}</span>
-                      <span className="tiny faint ml-8">({items.length})</span>
-                    </h2>
+          <div className="chips mt-12 mb-20">
+            <button
+              type="button"
+              className={`chip ${selectedCategory === '' ? 'on' : ''}`}
+              onClick={() => setSelectedCategory('')}
+            >
+              {t('Tất cả ({n})', { n: data?.length ?? 0 })}
+            </button>
+            {CATEGORIES.map((cat) => {
+              const totalInCat = (data ?? []).filter((eq) => eq.category === cat.key).length;
+              return (
+                <button
+                  key={cat.key}
+                  type="button"
+                  className={`chip ${selectedCategory === cat.key ? 'on' : ''}`}
+                  onClick={() => setSelectedCategory(selectedCategory === cat.key ? '' : cat.key)}
+                >
+                  {t(cat.label)} ({totalInCat})
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="eq-categories-container">
+            {CATEGORIES.filter((cat) => !selectedCategory || cat.key === selectedCategory).map((cat) => {
+              const items = byCategory.get(cat.key) ?? [];
+              if (items.length === 0 && !isStaff && selectedCategory !== cat.key) return null;
+
+              return (
+                <section key={cat.key} className="eq-cat-section mb-28">
+                  <div className="eq-cat-header mb-12">
+                    <div className="row between wrap" style={{ alignItems: 'baseline' }}>
+                      <h2 className="section-title" style={{ margin: 0 }}>
+                        <span>{t(cat.label)}</span>
+                        <span className="tiny faint ml-8">({items.length})</span>
+                      </h2>
+                    </div>
+                    <p className="tiny muted mt-2" style={{ margin: 0 }}>{t(cat.desc)}</p>
                   </div>
-                  <p className="tiny muted mt-2" style={{ margin: 0 }}>{t(cat.desc)}</p>
-                </div>
 
-                {items.length === 0 ? (
-                  <div className="card p-12 text-center faint tiny">{t('Chưa có dụng cụ trong nhóm này')}</div>
-                ) : (
-                  <div className="kb-grid">
-                    {items.map((x) => (
-                      <article key={x.key} className="kb-card">
-                        <Link
-                          to={`/equipment/${x.key}`}
-                          className="kb-cover"
-                          aria-label={t('Xem chi tiết {name}', { name: x.name })}
-                        >
-                          <ExerciseMedia
-                            imageKey={x.imageKey}
-                            alt={x.name}
-                            playOnHover
-                            tag={t('{n} bài tập', { n: x.exerciseCount ?? 0 })}
-                          />
-                        </Link>
-                        <div className="kb-body">
-                          <div className="row between wrap" style={{ gap: 6, alignItems: 'flex-start' }}>
-                            <div>
-                              <h3 className="kb-title">
-                                <Link to={`/equipment/${x.key}`} className="plain-link">
-                                  {x.name}
-                                </Link>
-                              </h3>
-                              <div className="tiny faint">{x.key}</div>
-                            </div>
-                            <div className="row" style={{ gap: 4 }}>
-                              {x.hidden && <Badge tone="amber">{t('Đang ẩn')}</Badge>}
-                            </div>
-                          </div>
-
-                          <p className="small muted kb-desc line-clamp-3">{x.shortDesc}</p>
-
-                          <div className="row between mt-auto pt-8" style={{ borderTop: '1px solid var(--hairline-soft)' }}>
-                            <Link to={`/equipment/${x.key}`} className="btn btn-secondary btn-sm kb-cta">
-                              <span>{t('Xem chi tiết')}</span>
-                              <Icon name="arrowRight" size={14} />
-                            </Link>
-
-                            {isStaff && (
+                  {items.length === 0 ? (
+                    <div className="card p-12 text-center faint tiny">{t('Chưa có dụng cụ trong nhóm này')}</div>
+                  ) : (
+                    <div className="kb-grid">
+                      {items.map((x) => (
+                        <article key={x.key} className="kb-card">
+                          <Link
+                            to={`/equipment/${x.key}`}
+                            className="kb-cover"
+                            aria-label={t('Xem chi tiết {name}', { name: x.name })}
+                          >
+                            <ExerciseMedia
+                              imageKey={x.imageKey}
+                              alt={x.name}
+                              playOnHover
+                              tag={t('{n} bài tập', { n: x.exerciseCount ?? 0 })}
+                            />
+                          </Link>
+                          <div className="kb-body">
+                            <div className="row between wrap" style={{ gap: 6, alignItems: 'flex-start' }}>
+                              <div>
+                                <h3 className="kb-title">
+                                  <Link to={`/equipment/${x.key}`} className="plain-link">
+                                    {x.name}
+                                  </Link>
+                                </h3>
+                                <div className="tiny faint">{x.key}</div>
+                              </div>
                               <div className="row" style={{ gap: 4 }}>
-                                <button
-                                  type="button"
-                                  className="btn btn-ghost btn-sm"
-                                  title={x.hidden ? t('Hiện') : t('Ẩn')}
-                                  onClick={() => toggleHidden(x)}
-                                >
-                                  <Icon name={x.hidden ? 'eye' : 'eyeOff'} size={14} />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn btn-ghost btn-sm"
-                                  title={t('Sửa')}
-                                  onClick={() => setEditing(x)}
-                                >
-                                  <Icon name="edit" size={14} />
-                                </button>
+                                {x.hidden && <Badge tone="amber">{t('Đang ẩn')}</Badge>}
+                              </div>
+                            </div>
+
+                            <p className="small muted kb-desc line-clamp-3">{x.shortDesc}</p>
+
+                            {x.targetMuscleKeys && x.targetMuscleKeys.length > 0 && (
+                              <div className="chips mt-6 mb-8">
+                                {x.targetMuscleKeys.slice(0, 3).map((k) => (
+                                  <span key={k} className="chip tiny">
+                                    {MUSCLE_BY_KEY.get(k as MuscleKey)?.label ?? k}
+                                  </span>
+                                ))}
                               </div>
                             )}
+
+                            <div className="row between mt-auto pt-8 wrap gap-6" style={{ borderTop: '1px solid var(--hairline-soft)' }}>
+                              <div className="row gap-4 wrap">
+                                <Link to={`/equipment/${x.key}`} className="btn btn-secondary btn-sm kb-cta">
+                                  <span>{t('Xem chi tiết')}</span>
+                                  <Icon name="arrowRight" size={14} />
+                                </Link>
+                                <Link
+                                  to={`/exercises?equipment=${x.key}`}
+                                  className="btn btn-ghost btn-sm"
+                                  title={t('Xem bài tập dùng thiết bị này')}
+                                >
+                                  <Icon name="dumbbell" size={14} className="mr-4" />
+                                  <span>{t('{n} bài tập', { n: x.exerciseCount ?? 0 })}</span>
+                                </Link>
+                              </div>
+
+                              {isStaff && (
+                                <div className="row" style={{ gap: 4 }}>
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost btn-sm"
+                                    title={x.hidden ? t('Hiện') : t('Ẩn')}
+                                    onClick={() => toggleHidden(x)}
+                                  >
+                                    <Icon name={x.hidden ? 'eye' : 'eyeOff'} size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost btn-sm"
+                                    title={t('Sửa')}
+                                    onClick={() => setEditing(x)}
+                                  >
+                                    <Icon name="edit" size={14} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
-            );
-          })}
-        </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {editing && (

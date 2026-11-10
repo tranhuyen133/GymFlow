@@ -2,13 +2,16 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Exercise, Level } from '../../api/types';
+import { useAuth } from '../../auth/AuthContext';
+import { HealthDisclaimer, SourceList } from '../../components/Content';
 import { mediaCredit } from '../../components/ExerciseMedia';
 import { Icon } from '../../components/Icon';
 import { MuscleMap } from '../../components/MuscleMap';
-import { Badge, ErrorState, LoadingBlock, PageHead } from '../../components/ui';
+import { useToast } from '../../components/Toast';
+import { Badge, Button, ErrorState, LoadingBlock, Modal, PageHead, Textarea } from '../../components/ui';
 import { t } from '../../i18n';
 import { EQUIPMENT_BY_KEY, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey } from '../../lib/anatomy';
-import { useAsync } from '../../lib/hooks';
+import { errMsg, useAsync } from '../../lib/hooks';
 import './kb.css';
 
 const LEVEL_LABELS: Record<Level, string> = {
@@ -19,7 +22,16 @@ const LEVEL_LABELS: Record<Level, string> = {
 
 export default function ExerciseDetail() {
   const { id = '' } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const toast = useToast();
+  const isAdmin = user?.role === 'ADMIN';
+  const isStaff = user?.role === 'ADMIN' || user?.role === 'TRAINER';
+  const isMember = user?.role === 'MEMBER';
+
   const [frame, setFrame] = useState<0 | 1>(0);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectNote, setRejectNote] = useState('');
+  const [reviewing, setReviewing] = useState(false);
 
   const { data: ex, error, loading, reload } = useAsync(
     () => api.get<Exercise>(`/exercises/${id}`),
@@ -38,6 +50,47 @@ export default function ExerciseDetail() {
       .filter(Boolean)
       .map((s) => s.replace(/^\d+[\.\)]\s*/, ''));
   }, [ex]);
+
+  const handleApprove = async () => {
+    if (!ex) return;
+    setReviewing(true);
+    try {
+      await api.put(`/exercises/${ex.id}/review`, { status: 'APPROVED', note: null });
+      toast.success(t('Đã duyệt bài tập'));
+      void reload();
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setReviewing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!ex) return;
+    setReviewing(true);
+    try {
+      await api.put(`/exercises/${ex.id}/review`, { status: 'NEEDS_REVIEW', note: rejectNote || null });
+      toast.success(t('Đã trả về yêu cầu chỉnh sửa'));
+      setRejecting(false);
+      setRejectNote('');
+      void reload();
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setReviewing(false);
+    }
+  };
+
+  const toggleHidden = async () => {
+    if (!ex) return;
+    try {
+      await api.put(`/exercises/${ex.id}/hidden`, { hidden: !ex.hidden });
+      toast.success(ex.hidden ? t('Đã hiện bài tập') : t('Đã ẩn bài tập'));
+      void reload();
+    } catch (e) {
+      toast.error(errMsg(e));
+    }
+  };
 
   if (loading) return <div className="page"><LoadingBlock rows={8} /></div>;
   if (error || !ex) return <div className="page"><ErrorState message={error || 'Không tìm thấy bài tập'} onRetry={reload} /></div>;
@@ -61,14 +114,63 @@ export default function ExerciseDetail() {
             {ex.primaryGoal && <Badge tone="muted">{ex.primaryGoal}</Badge>}
             {ex.hidden && <Badge tone="amber">{t('Đang ẩn')}</Badge>}
             {ex.reviewStatus === 'PENDING' && <Badge tone="amber">{t('Chờ duyệt')}</Badge>}
+
+            {/* Thao tác dành cho Admin */}
+            {isAdmin && ex.reviewStatus !== 'APPROVED' && (
+              <>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon="checkCircle"
+                  loading={reviewing}
+                  onClick={handleApprove}
+                >
+                  {t('Duyệt bài tập')}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon="alert"
+                  onClick={() => setRejecting(true)}
+                >
+                  {t('Yêu cầu sửa')}
+                </Button>
+              </>
+            )}
+
+            {/* Thao tác ẩn/hiện dành cho Staff */}
+            {isStaff && (
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={ex.hidden ? 'eye' : 'eyeOff'}
+                onClick={toggleHidden}
+              >
+                {ex.hidden ? t('Hiện bài') : t('Ẩn bài')}
+              </Button>
+            )}
+
+            {/* Thao tác dành cho Member */}
+            {isMember && (
+              <>
+                <Link to={`/schedules?exerciseId=${ex.id}`} className="btn btn-primary btn-sm">
+                  <Icon name="calendar" size={14} className="mr-4" />
+                  <span>{t('Thêm vào lịch tập')}</span>
+                </Link>
+                <Link to="/me/plan" className="btn btn-secondary btn-sm">
+                  <Icon name="clipboard" size={14} className="mr-4" />
+                  <span>{t('Giáo án của tôi')}</span>
+                </Link>
+              </>
+            )}
           </div>
         }
       />
 
       <div className="ex-detail-grid mt-16">
         <div className="ex-detail-main">
-          {/* Ảnh minh hoạ tư thế đầu / cuối */}
-          {ex.imageKey && (
+          {/* Ảnh minh hoạ tư thế đầu / cuối nếu có */}
+          {ex.imageKey ? (
             <div className="card p-16 mb-16">
               <div className="row between wrap mb-10" style={{ alignItems: 'center' }}>
                 <span className="tiny faint uppercase font-bold">{t('Tư thế động tác (Bấm ảnh để chuyển tư thế)')}</span>
@@ -101,6 +203,30 @@ export default function ExerciseDetail() {
                   alt={`${ex.name} frame ${frame}`}
                   style={{ width: '100%', maxHeight: 440, objectFit: 'contain', display: 'block' }}
                 />
+              </div>
+            </div>
+          ) : (
+            <div className="card p-20 mb-16 ex-hero-neutral">
+              <div className="row gap-16 wrap" style={{ alignItems: 'center' }}>
+                <div className="ex-thumb-map" style={{ width: 140, height: 100, flexShrink: 0 }}>
+                  <MuscleMap size="sm" primary={primaryMuscles} secondary={secondaryMuscles} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="tiny font-bold uppercase mb-4" style={{ color: 'var(--primary-bright)' }}>
+                    {t('Minh họa giải phẫu cơ bắp')}
+                  </div>
+                  <p className="small muted mb-8" style={{ margin: 0 }}>
+                    {t('Bài tập tác động tập trung vào các vùng cơ được tô sáng. Dữ liệu chuẩn hóa tuân thủ bản quyền mở.')}
+                  </p>
+                  <div className="row gap-6 wrap">
+                    {primaryMuscles.map((m) => (
+                      <span key={m} className="chip chip-primary tiny">{MUSCLE_BY_KEY.get(m)?.label ?? m}</span>
+                    ))}
+                    {secondaryMuscles.map((m) => (
+                      <span key={m} className="chip tiny">{MUSCLE_BY_KEY.get(m)?.label ?? m}</span>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -212,7 +338,7 @@ export default function ExerciseDetail() {
 
           {/* Bài tập thay thế */}
           {ex.alternatives && ex.alternatives.length > 0 && (
-            <section className="mt-24">
+            <section className="mt-24 mb-16">
               <h2 className="section-title mb-12">
                 <Icon name="refresh" size={18} className="primary" />
                 <span>{t('Bài tập thay thế tương đương')}</span>
@@ -221,13 +347,17 @@ export default function ExerciseDetail() {
                 {ex.alternatives.map((alt) => (
                   <Link key={alt.id} to={`/exercises/${alt.id}`} className="card kb-card p-12 text-decoration-none">
                     <div className="row gap-12" style={{ alignItems: 'center' }}>
-                      {alt.imageKey && (
+                      {alt.imageKey ? (
                         <div style={{ width: 68, height: 50, borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
                           <img
                             src={`/exercise-img/${alt.imageKey}/0.jpg`}
                             alt={alt.name}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
+                        </div>
+                      ) : (
+                        <div className="ex-list-thumb">
+                          <Icon name="dumbbell" size={20} />
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
@@ -241,6 +371,18 @@ export default function ExerciseDetail() {
               </div>
             </section>
           )}
+
+          {/* Nguồn tham khảo & Giấy phép minh bạch */}
+          <section className="card p-20 mb-16">
+            <h2 className="section-title mb-12">
+              <Icon name="shield" size={18} className="primary" />
+              <span>{t('Nguồn tham khảo & Bản quyền nội dung')}</span>
+            </h2>
+            <SourceList sources={ex.sources} origin={ex.contentOrigin} />
+            <div className="mt-14">
+              <HealthDisclaimer pending={ex.reviewStatus === 'PENDING'} />
+            </div>
+          </section>
         </div>
 
         {/* Cột phải: MuscleMap và Dụng cụ */}
@@ -301,6 +443,30 @@ export default function ExerciseDetail() {
       </div>
 
       <p className="tiny faint mt-24">{mediaCredit()}</p>
+
+      {/* Modal Yêu cầu chỉnh sửa */}
+      {rejecting && (
+        <Modal
+          title={t('Yêu cầu chỉnh sửa bài tập')}
+          onClose={() => setRejecting(false)}
+          footer={
+            <div className="row end gap-8">
+              <Button variant="ghost" onClick={() => setRejecting(false)}>{t('Hủy')}</Button>
+              <Button variant="danger" loading={reviewing} onClick={handleReject}>{t('Xác nhận trả về')}</Button>
+            </div>
+          }
+        >
+          <p className="small muted mb-12">
+            {t('Vui lòng nêu rõ các điểm cần bổ sung hoặc hiệu chỉnh để huấn luyện viên/tác giả hoàn thiện trước khi phê duyệt.')}
+          </p>
+          <Textarea
+            value={rejectNote}
+            onChange={(e) => setRejectNote(e.target.value)}
+            placeholder={t('Nhập ghi chú phản hồi…')}
+            rows={4}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
