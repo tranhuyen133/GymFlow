@@ -196,11 +196,6 @@ export function ChatWidget() {
             )}
             {messages.map((message) => (
               <div key={message.id} className={`chat-message ${message.sender.toLowerCase()}`}>
-                {message.sender === 'ASSISTANT' && message.provider && message.provider !== 'RULE' && message.provider !== 'USER' && (
-                  <span className="chat-provider-badge">
-                    {message.provider === 'GEMINI' ? 'Gemini AI' : 'AI Assistant'}
-                  </span>
-                )}
                 {renderRichContent(message.content)}
               </div>
             ))}
