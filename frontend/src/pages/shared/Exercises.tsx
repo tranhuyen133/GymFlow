@@ -9,7 +9,7 @@ import { MuscleMap } from '../../components/MuscleMap';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, SearchInput, Segmented, Select, StatusBadge, Textarea } from '../../components/ui';
-import { fmtDateTime, goalLabel, levelLabel, locationLabel, muscleLabel, reviewLabel } from '../../lib/format';
+import { fmtDateTime, formatEquipment, goalLabel, levelLabel, locationLabel, muscleLabel, reviewLabel } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync, useDebounced, usePaged } from '../../lib/hooks';
 import { t } from '../../i18n';
 import './exercises.css';
@@ -238,7 +238,7 @@ export default function Exercises() {
                   </div>
                   <div className="row gap-4 flex-shrink-0">
                     <span className="badge badge-sm">{muscleLabel[item.muscleGroup]}</span>
-                    {item.equipment && <span className="tiny faint">{item.equipment}</span>}
+                    {item.equipment && <span className="tiny faint">{formatEquipment(item.equipment)}</span>}
                   </div>
                 </button>
               ))}
@@ -366,7 +366,7 @@ export default function Exercises() {
                       <div>
                         <button type="button" className="ex-title" onClick={() => setViewingId(e.id)}>{e.name}</button>
                         {e.nameEn && <div className="tiny faint">{e.nameEn}</div>}
-                        <div className="tiny muted">{muscleLabel[e.muscleGroup]} · {e.equipment ?? t('Không dụng cụ')}{e.location && ` · ${locationLabel[e.location]}`}</div>
+                        <div className="tiny muted">{muscleLabel[e.muscleGroup]} · {e.equipment ? formatEquipment(e.equipment) : t('Không dụng cụ')}{e.location && ` · ${locationLabel[e.location]}`}</div>
                       </div>
                     </div>
                     <StatusBadge map={levelLabel} value={e.level} />
@@ -431,7 +431,7 @@ export default function Exercises() {
                         <span className="badge badge-sm">{muscleLabel[e.muscleGroup]}</span>
                         {targetOf(e).length > 0 && <div className="tiny faint mt-2">{targetOf(e).slice(0, 2).map(muscleName).join(', ')}</div>}
                       </td>
-                      <td className="small">{e.equipment ?? t('Không dụng cụ')}</td>
+                      <td className="small">{e.equipment ? formatEquipment(e.equipment) : t('Không dụng cụ')}</td>
                       <td><StatusBadge map={levelLabel} value={e.level} /></td>
                       {staff && <td><StatusBadge map={reviewLabel} value={e.reviewStatus} /></td>}
                       <td style={{ textAlign: 'right' }}>
@@ -554,15 +554,15 @@ function ExerciseDetail({ exercise: e, canReview, queue, onClose, onEdit, onRevi
         {e.description ? <p className="muted">{e.description}</p> : <p className="small"><Missing /></p>}
 
         <div className="info-grid">
-          <InfoRow label="Tên tiếng Anh" value={e.nameEn} />
-          <InfoRow label="Tên gọi khác" value={e.aliases} />
-          <InfoRow label="Dụng cụ" value={e.equipment ?? (equipOf(e).map((k) => t(EQUIPMENT_BY_KEY.get(k as EquipmentKey)?.label ?? k)).join(', ') || null)} />
-          <InfoRow label="Cơ phụ trợ" value={e.secondaryMuscles} />
+          <InfoRow label={t('Tên tiếng Anh')} value={e.nameEn} />
+          <InfoRow label={t('Tên gọi khác')} value={e.aliases} />
+          <InfoRow label={t('Dụng cụ')} value={e.equipment ? formatEquipment(e.equipment) : (equipOf(e).map((k) => t(EQUIPMENT_BY_KEY.get(k as EquipmentKey)?.label ?? k)).join(', ') || null)} />
+          <InfoRow label={t('Cơ phụ trợ')} value={e.secondaryMuscles} />
         </div>
 
-        <TextBlock title="Hướng dẫn thực hiện" text={e.instructions} />
+        <TextBlock title={t('Hướng dẫn thực hiện')} text={e.instructions} />
         <div className="grid grid-2" style={{ gap: 16 }}>
-          <TextBlock title="Hơi thở" text={e.breathing} />
+          <TextBlock title={t('Hơi thở')} text={e.breathing} />
           <TextBlock title="Liều gợi ý" text={e.suggestedDose} />
           <TextBlock title="Lỗi thường gặp" text={e.commonMistakes} />
           <TextBlock title="Biến thể" text={e.variations} />

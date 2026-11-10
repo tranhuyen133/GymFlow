@@ -175,3 +175,17 @@ export const actionLabel: Record<string, string> = new Proxy(actionLabel_VI, {
     return target[prop] ?? prop;
   },
 });
+
+/** Định dạng dụng cụ tập song ngữ: tra nguyên cụm hoặc tách phẩy dịch từng món */
+export function formatEquipment(eq: string | null | undefined): string {
+  if (!eq) return '';
+  const trimmed = eq.trim();
+  if (!trimmed) return '';
+  const direct = t(trimmed);
+  if (direct !== trimmed) return direct;
+  return trimmed
+    .split(',')
+    .map((s) => t(s.trim()))
+    .join(', ');
+}
+

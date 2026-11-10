@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { t } from '../i18n';
 import type { PlanItem } from '../api/types';
-import { DAYS, DAY_NAMES, muscleColor, muscleLabel } from '../lib/format';
+import { DAYS, DAY_NAMES, formatEquipment, muscleColor, muscleLabel } from '../lib/format';
 import { Icon } from './Icon';
 import { Empty } from './ui';
 
@@ -36,8 +36,8 @@ export function PlanView({ items }: { items: PlanItem[] }) {
               <div className="num faint" style={{ width: 22, textAlign: 'center' }}>{idx + 1}</div>
               <div className="muscle-ic" style={{ ['--c' as string]: it.muscleGroup ? muscleColor[it.muscleGroup] : '#00d95b' }}><Icon name="dumbbell" /></div>
               <div className="grow">
-                <b>{it.exerciseName}</b>
-                <div className="tiny muted">{it.muscleGroup ? muscleLabel[it.muscleGroup] : ''}{it.equipment ? ` · ${it.equipment}` : ''}{it.note ? ` · ${it.note}` : ''}</div>
+                <b>{t(it.exerciseName ?? '')}</b>
+                <div className="tiny muted">{it.muscleGroup ? muscleLabel[it.muscleGroup] : ''}{it.equipment ? ` · ${formatEquipment(it.equipment)}` : ''}{it.note ? ` · ${t(it.note)}` : ''}</div>
               </div>
               <div className="row row-wrap" style={{ gap: 6, justifyContent: 'flex-end' }}>
                 {it.durationMinutes ? <span className="chip on">{t('{n} phút', { n: it.durationMinutes })}</span> : <span className="chip on">{it.sets} × {it.reps}</span>}

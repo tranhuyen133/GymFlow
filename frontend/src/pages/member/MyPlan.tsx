@@ -195,12 +195,12 @@ export default function MyPlan() {
                   <div className="stack">
                     <div>
                       <div className="tiny faint">{t('Mục tiêu')}</div>
-                      <b>{data.summary.goal ?? '—'}</b>
+                      <b>{data.summary.goal ? t(data.summary.goal) : '—'}</b>
                     </div>
                     {data.note && (
                       <div>
                         <div className="tiny faint">{data.summary.trainerId == null ? t('Ghi chú') : t('Lời dặn của HLV')}</div>
-                        <p className="small muted mt-4" style={{ whiteSpace: 'pre-line' }}>{data.note}</p>
+                        <p className="small muted mt-4" style={{ whiteSpace: 'pre-line' }}>{t(data.note)}</p>
                       </div>
                     )}
                     <div className="divider" />

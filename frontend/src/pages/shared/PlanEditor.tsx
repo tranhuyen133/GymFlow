@@ -10,7 +10,7 @@ import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, SearchInput, Select, StatusBadge, Textarea } from '../../components/ui';
 import { t, tn } from '../../i18n';
-import { addDays, DAYS, DAY_NAMES, levelLabel, muscleColor, muscleLabel, planStatus, toIsoDate } from '../../lib/format';
+import { addDays, DAYS, DAY_NAMES, formatEquipment, levelLabel, muscleColor, muscleLabel, planStatus, toIsoDate } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { checkPlanName, itemProblems, type ItemField } from '../../lib/validation';
 import { isMuscleKey, MUSCLE_BY_KEY, type MuscleKey } from '../../lib/anatomy';
@@ -421,8 +421,8 @@ export default function PlanEditor() {
                   <div style={{ minWidth: 0 }}>
                     <div className="row" style={{ gap: 6 }}>
                       <i style={{ width: 8, height: 8, borderRadius: 2, background: it.muscleGroup ? muscleColor[it.muscleGroup] : 'var(--faint)', flex: 'none' }} />
-                      <b className="ellipsis small">{it.exerciseName}</b>
-                      {notApproved && <span title={t('Bài này không còn ở trạng thái đã duyệt. Vẫn giữ được trong giáo án, nhưng không thêm mới được.')}><Badge tone="amber">{ex?.hidden ? 'Đã ẩn' : 'Chờ duyệt lại'}</Badge></span>}
+                      <b className="ellipsis small">{t(it.exerciseName ?? '')}</b>
+                      {notApproved && <span title={t('Bài này không còn ở trạng thái đã duyệt. Vẫn giữ được trong giáo án, nhưng không thêm mới được.')}><Badge tone="amber">{ex?.hidden ? t('Đã ẩn') : t('Chờ duyệt lại')}</Badge></span>}
                     </div>
                     <input className="input" style={{ height: 28, marginTop: 4, fontSize: 12 }} maxLength={255} placeholder={t('Ghi chú…')} value={it.note ?? ''} onChange={(e) => update(it.key, { note: e.target.value })} />
                     {msgs.length > 0 && <div className="tiny" style={{ color: 'var(--bad)', marginTop: 4 }}>{msgs.map((m) => t(m)).join(' · ')}</div>}
@@ -442,9 +442,9 @@ export default function PlanEditor() {
                   <input className={`input hide-sm ${errOf(it, 'restSeconds') ? 'has-err' : ''}`} type="number" inputMode="numeric" min={0} max={900} step={15} value={it.restSeconds ?? ''}
                     onChange={(e) => update(it.key, { restSeconds: e.target.value === '' ? null : Number(e.target.value) })} aria-label={t('Nghỉ')} aria-invalid={!!errOf(it, 'restSeconds')} />
                   <div className="stack-sm" style={{ gap: 2 }}>
-                    <Button size="sm" variant="ghost" icon="chevronDown" style={{ transform: 'rotate(180deg)' }} aria-label="Lên" disabled={idx === 0} onClick={() => move(it.key, -1)} />
-                    <Button size="sm" variant="ghost" icon="x" aria-label="Bỏ bài" onClick={() => remove(it.key)} />
-                    <Button size="sm" variant="ghost" icon="chevronDown" aria-label="Xuống" disabled={idx === arr.length - 1} onClick={() => move(it.key, 1)} />
+                    <Button size="sm" variant="ghost" icon="chevronDown" style={{ transform: 'rotate(180deg)' }} aria-label={t('Lên')} disabled={idx === 0} onClick={() => move(it.key, -1)} />
+                    <Button size="sm" variant="ghost" icon="x" aria-label={t('Bỏ bài')} onClick={() => remove(it.key)} />
+                    <Button size="sm" variant="ghost" icon="chevronDown" aria-label={t('Xuống')} disabled={idx === arr.length - 1} onClick={() => move(it.key, 1)} />
                   </div>
                 </div>
               );
@@ -506,8 +506,8 @@ export default function PlanEditor() {
                       <ExerciseMedia imageKey={e.imageKey} alt="" playOnHover className="lib-thumb"
                         fallback={<span className="lib-thumb ex-media-empty"><Icon name="dumbbell" size={14} /></span>} />
                       <span className="lib-name">
-                        <b className="small ellipsis">{e.name}</b>
-                        <span className="tiny faint ellipsis">{targetOf(e).map((k) => t(MUSCLE_BY_KEY.get(k)?.label ?? k)).join(', ') || muscleLabel[e.muscleGroup]}{e.equipment ? ` · ${e.equipment}` : ''}</span>
+                        <b className="small ellipsis">{t(e.name)}</b>
+                        <span className="tiny faint ellipsis">{targetOf(e).map((k) => t(MUSCLE_BY_KEY.get(k)?.label ?? k)).join(', ') || muscleLabel[e.muscleGroup]}{e.equipment ? ` · ${formatEquipment(e.equipment)}` : ''}</span>
                       </span>
                       {inDay ? <Badge tone="green">{t('Đã có')}</Badge> : <Icon name="plus" size={16} />}
                     </button>
@@ -522,7 +522,7 @@ export default function PlanEditor() {
             </div>
           </Card>
           {items.length > 0 && (
-            <Card title="Nhóm cơ cả tuần" icon="target">
+            <Card title={t('Nhóm cơ cả tuần')} icon="target">
               <div className="stack-sm">
                 <MuscleMap size="sm" counts={weekLoad} className="lib-map" />
                 <span className="tiny muted">{t('Màu càng đậm, vùng đó càng nhiều hiệp trong tuần.')}</span>
