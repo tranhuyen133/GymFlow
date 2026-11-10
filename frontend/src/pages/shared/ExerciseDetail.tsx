@@ -153,7 +153,7 @@ export default function ExerciseDetail() {
             {/* Thao tác dành cho Member */}
             {isMember && (
               <>
-                <Link to={`/schedules?exerciseId=${ex.id}`} className="btn btn-primary btn-sm">
+                <Link to={`/me/schedule?exerciseId=${ex.id}`} className="btn btn-primary btn-sm">
                   <Icon name="calendar" size={14} className="mr-4" />
                   <span>{t('Thêm vào lịch tập')}</span>
                 </Link>

@@ -77,6 +77,24 @@ function Dashboard() {
   return <MemberDashboard />;
 }
 
+function SchedulesRoute() {
+  const { user } = useAuth();
+  const location = useLocation();
+  if (user?.role === 'MEMBER') {
+    return <Navigate to={`/me/schedule${location.search}`} replace />;
+  }
+  return <Schedules />;
+}
+
+function MeScheduleRoute() {
+  const { user } = useAuth();
+  const location = useLocation();
+  if (user && user.role !== 'MEMBER') {
+    return <Navigate to={`/schedules${location.search}`} replace />;
+  }
+  return <Schedules />;
+}
+
 const STAFF: Role[] = ['ADMIN', 'TRAINER'];
 const ADMIN: Role[] = ['ADMIN'];
 const MEMBER: Role[] = ['MEMBER'];
@@ -101,7 +119,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         {/* Gõ nhầm kiểu /dashboard/login thì về trang tổng quan (chưa đăng nhập sẽ được chuyển sang đăng nhập trước) */}
         <Route path="/dashboard/*" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/me/schedule" element={<Only roles={MEMBER}><Schedules /></Only>} />
+        <Route path="/me/schedule" element={<MeScheduleRoute />} />
         <Route path="/me/plan" element={<Only roles={MEMBER}><MyPlan /></Only>} />
         <Route path="/me/plan/new" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
         <Route path="/me/plan/:id" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
@@ -117,7 +135,7 @@ export default function App() {
         <Route path="/community" element={<ForumList embedded />} />
         <Route path="/community/:id" element={<ForumTopicPage embedded />} />
         <Route path="/me/knowledge/*" element={<Navigate to="/community" replace />} />
-        <Route path="/schedules" element={<Only roles={STAFF}><Schedules /></Only>} />
+        <Route path="/schedules" element={<SchedulesRoute />} />
         <Route path="/members" element={<Only roles={STAFF}><Members /></Only>} />
         <Route path="/members/:id" element={<Only roles={STAFF}><MemberDetail /></Only>} />
         <Route path="/workout-plans" element={<Only roles={STAFF}><WorkoutPlans /></Only>} />

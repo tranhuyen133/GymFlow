@@ -267,7 +267,9 @@ export function ChatWidget() {
 
 function renderRichContent(content: string) {
   if (!content) return null;
-  const rawHtml = marked.parse(content, { async: false }) as string;
+  // Loại bỏ các đường dẫn kỹ thuật trong ngoặc đơn (ví dụ: (/schedules), (`/schedules`), (/programs)) để văn bản sạch, chuẩn docs tự nhiên
+  const cleanedContent = content.replace(/\s*\(`?\/[a-zA-Z0-9_\-/]+`?(?:(?:\s+hoặc\s+|\s*,\s*|\s*\/\s*)`?\/[a-zA-Z0-9_\-/]+`?)*\)/g, '');
+  const rawHtml = marked.parse(cleanedContent, { async: false }) as string;
   const cleanHtml = DOMPurify.sanitize(rawHtml);
   return (
     <div

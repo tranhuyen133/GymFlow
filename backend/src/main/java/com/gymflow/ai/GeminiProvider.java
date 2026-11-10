@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Triển khai trợ lý thông minh kết nối với Google Gemini API (sử dụng API key).
@@ -147,7 +148,7 @@ public class GeminiProvider implements AssistantProvider {
             // Thêm câu hỏi hiện tại
             contents.add(new GeminiContent("user", List.of(new GeminiTextPart(text.trim()))));
 
-            GeminiGenerationConfig config = new GeminiGenerationConfig(0.2, 800);
+            GeminiGenerationConfig config = new GeminiGenerationConfig(0.2, 2048);
             GeminiGenerateRequest payload = new GeminiGenerateRequest(systemInstruction, contents, config);
 
             String model = (aiConfig.getGeminiModel() != null && !aiConfig.getGeminiModel().isBlank())
@@ -165,8 +166,12 @@ public class GeminiProvider implements AssistantProvider {
 
             if (response != null && response.candidates() != null && !response.candidates().isEmpty()) {
                 var candidate = response.candidates().get(0);
+                log.info("Gemini [{}] finishReason: {}", model, candidate.finishReason());
                 if (candidate.content() != null && candidate.content().parts() != null && !candidate.content().parts().isEmpty()) {
-                    String reply = candidate.content().parts().get(0).text();
+                    String reply = candidate.content().parts().stream()
+                            .map(GeminiTextPart::text)
+                            .filter(t -> t != null && !t.isBlank())
+                            .collect(Collectors.joining(""));
                     if (reply != null && !reply.isBlank()) {
                         return reply.trim();
                     }
