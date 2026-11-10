@@ -9,9 +9,11 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import type { Gender, Me, Member, MemberTimeSlot, TimeSlot, Trainer } from '../../api/types';
 import { useAuth, useMe } from '../../auth/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AvatarEditor, MyAvatar } from '../../components/AvatarEditor';
 import { Icon, type IconName } from '../../components/Icon';
+import { ProgressPanel } from '../../components/ProgressPanel';
+import MyJourney from '../member/MyJourney';
 import { useToast } from '../../components/Toast';
 import { WeekSlots } from '../../components/WeekSlots';
 import { Alert, Badge, Button, Card, Confirm, ErrorState, Field, Input, LoadingBlock, PasswordInput, Select, StatusBadge, Textarea } from '../../components/ui';
@@ -21,10 +23,13 @@ import { covered, GYM_CLOSE, GYM_OPEN, hm, mergeSlots, slotError, type WeekSlot 
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { checkDateOfBirth, checkFullName, checkHeight, checkPhone, HAS_DIGIT, NOT_NUMBER, NOT_PHONE, toNumber, useLiveErrors } from '../../lib/validation';
 
-type Section = 'info' | 'training' | 'security';
+type Section = 'info' | 'training' | 'progress' | 'journey' | 'security';
 
 export default function Profile() {
   const me = useMe();
+  const [params, setParams] = useSearchParams();
+  const requestedTab = (params.get('tab') as Section) || 'info';
+
   const [editAvatar, setEditAvatar] = useState(false);
   const [askLogout, setAskLogout] = useState(false);
   const { logout } = useAuth();
@@ -33,11 +38,20 @@ export default function Profile() {
   const member = useAsync<Member | null>(() => (me.role === 'MEMBER' ? api.get<Member>('/members/me') : Promise.resolve(null)), [me.role]);
   const sections: { id: Section; label: string; icon: IconName }[] = [
     { id: 'info', label: 'Thông tin cá nhân', icon: 'user' },
-    ...(me.role === 'MEMBER' ? [{ id: 'training' as Section, label: 'Hồ sơ tập luyện', icon: 'heart' as IconName }] : []),
+    ...(me.role === 'MEMBER' ? [
+      { id: 'training' as Section, label: 'Thể trạng & Mục tiêu', icon: 'heart' as IconName },
+      { id: 'progress' as Section, label: 'Tiến độ & Cân nặng', icon: 'chart' as IconName },
+      { id: 'journey' as Section, label: 'Hành trình', icon: 'trophy' as IconName },
+    ] : []),
     ...(me.role === 'TRAINER' && me.trainerId ? [{ id: 'training' as Section, label: 'Chuyên môn & ca làm', icon: 'badge' as IconName }] : []),
-    { id: 'security', label: 'Bảo mật', icon: 'shield' },
+    { id: 'security', label: 'Bảo mật & Cài đặt', icon: 'shield' },
   ];
-  const [section, setSection] = useState<Section>('info');
+
+  const section = sections.some((s) => s.id === requestedTab) ? requestedTab : 'info';
+  const setSection = (s: Section) => {
+    params.set('tab', s);
+    setParams(params);
+  };
   const m = member.data;
 
   return (
@@ -71,15 +85,6 @@ export default function Profile() {
         </dl>
       </section>
 
-      {me.role === 'MEMBER' && (
-        <div className="profile-links">
-          <Link to="/me/schedule" className="profile-link"><Icon name="calendar" /><span>{t('Lịch tập của tôi')}</span><Icon name="chevronRight" size={16} /></Link>
-          <Link to="/me/progress" className="profile-link"><Icon name="chart" /><span>{t('Tiến độ')}</span><Icon name="chevronRight" size={16} /></Link>
-          <Link to="/me/journey" className="profile-link"><Icon name="trophy" /><span>{t('Hành trình của tôi')}</span><Icon name="chevronRight" size={16} /></Link>
-          <Link to="/me/packages" className="profile-link"><Icon name="ticket" /><span>{t('Gói tập của tôi')}</span><Icon name="chevronRight" size={16} /></Link>
-        </div>
-      )}
-
       <div className="profile-tabs" role="tablist" aria-label={t('Các mục hồ sơ')}>
         {sections.map((s) => (
           <button key={s.id} type="button" role="tab" aria-selected={section === s.id} className={`profile-tab ${section === s.id ? 'on' : ''}`} onClick={() => setSection(s.id)}>
@@ -105,6 +110,16 @@ export default function Profile() {
         )}
         {section === 'training' && me.role === 'MEMBER' && (m ? <div className="stack" style={{ gap: 18 }}><MemberSelfCard data={m} onSaved={member.reload} /><TimePreferenceCard /></div> : member.error ? <Alert kind="error">{member.error}</Alert> : <Card><LoadingBlock /></Card>)}
         {section === 'training' && me.role === 'TRAINER' && me.trainerId && <div className="stack" style={{ gap: 18 }}><TrainerSelfCard trainerId={me.trainerId} /></div>}
+        {section === 'progress' && me.role === 'MEMBER' && (
+          <div>
+            {me.memberId ? <ProgressPanel memberId={me.memberId} /> : <Alert kind="warning">{t('Tài khoản chưa có hồ sơ hội viên')}</Alert>}
+          </div>
+        )}
+        {section === 'journey' && me.role === 'MEMBER' && (
+          <div>
+            <MyJourney embedded />
+          </div>
+        )}
         {section === 'security' && (
           <div className="grid grid-main" style={{ alignItems: 'start' }}>
             <PasswordCard />

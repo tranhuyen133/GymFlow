@@ -9,7 +9,7 @@ import { DAYS } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import { t } from '../../i18n';
 
-export default function Coaches() {
+export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const toast = useToast();
   const { data, error, loading, reload } = useAsync(() => api.get<TrainerPublic[]>('/trainers/public'), []);
@@ -65,12 +65,14 @@ export default function Coaches() {
   })();
 
   return (
-    <div className="page">
-      <PageHead
-        eyebrow="Dịch vụ"
-        title="Đội ngũ huấn luyện viên"
-        desc="Gặp gỡ và trao đổi trực tiếp với các huấn luyện viên chuyên nghiệp để chọn lộ trình phù hợp."
-      />
+    <div className={embedded ? undefined : 'page'}>
+      {!embedded && (
+        <PageHead
+          eyebrow="Dịch vụ"
+          title="Đội ngũ huấn luyện viên"
+          desc="Gặp gỡ và trao đổi trực tiếp với các huấn luyện viên chuyên nghiệp để chọn lộ trình phù hợp."
+        />
+      )}
 
       <div className="card mb-16" style={{ padding: '16px 20px' }}>
         <div className="row wrap between" style={{ gap: 12 }}>

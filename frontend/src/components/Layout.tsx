@@ -26,24 +26,35 @@ interface NavItem { to: string; label: string; icon: IconName; roles: Role[]; gr
  * Thứ tự ở đây là thứ tự trên menu. tab: hiện ở tab bar điện thoại (4 mục đầu theo vai trò).
  */
 export const NAV: NavItem[] = [
-  { to: '/getting-started', label: 'Bắt đầu', icon: 'sparkle', roles: ['MEMBER'], tab: true },
-  { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard', roles: ['ADMIN', 'TRAINER', 'MEMBER'], tab: true },
-  { to: '/messages', label: 'Tin nhắn', icon: 'message', roles: ['TRAINER', 'MEMBER'] },
-  { to: '/me/schedule', label: 'Lịch tập của tôi', icon: 'calendar', roles: ['MEMBER'], tab: true },
-  { to: '/me/plan', label: 'Giáo án của tôi', icon: 'clipboard', roles: ['MEMBER'], tab: true },
-  { to: '/me/packages', label: 'Gói tập của tôi', icon: 'ticket', roles: ['MEMBER'], group: 'Dịch vụ' },
-  { to: '/packages', label: 'Bảng giá & Gói tập', icon: 'sparkle', roles: ['MEMBER'], group: 'Dịch vụ' },
-  { to: '/me/entitlements', label: 'Quyền lợi của tôi', icon: 'zap', roles: ['MEMBER'], group: 'Dịch vụ' },
-  { to: '/coaches', label: 'Huấn luyện viên', icon: 'badge', roles: ['MEMBER'], group: 'Dịch vụ' },
-  { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['ADMIN', 'TRAINER'], tab: true },
-  { to: '/me/progress', label: 'Tiến độ', icon: 'chart', roles: ['MEMBER'], group: 'Sức khoẻ & tiến độ', tab: true },
-  { to: '/me/journey', label: 'Hành trình của tôi', icon: 'trophy', roles: ['MEMBER'], group: 'Sức khoẻ & tiến độ' },
-  { to: '/members', label: 'Hội viên', icon: 'users', roles: ['ADMIN', 'TRAINER'], group: 'Huấn luyện', tab: true },
-  { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['ADMIN', 'TRAINER'], group: 'Huấn luyện', tab: true },
-  { to: '/exercises', label: 'Thư viện bài tập', icon: 'dumbbell', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Kiến thức' },
-  { to: '/equipment', label: 'Dụng cụ tập', icon: 'zap', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Kiến thức' },
-  { to: '/programs', label: 'Lịch tập mẫu', icon: 'layers', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Kiến thức' },
-  { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Kiến thức' },
+  // --- Member: 5 mục chính tối giản, chuẩn mobile & desktop ---
+  { to: '/dashboard', label: 'Trang chủ', icon: 'dashboard', roles: ['MEMBER'], tab: true },
+  { to: '/me/schedule', label: 'Lịch tập', icon: 'calendar', roles: ['MEMBER'], tab: true },
+  { to: '/me/plan', label: 'Giáo án', icon: 'clipboard', roles: ['MEMBER'], tab: true },
+  { to: '/me/packages', label: 'Gói & Dịch vụ', icon: 'ticket', roles: ['MEMBER'], tab: true },
+  { to: '/profile', label: 'Tài khoản', icon: 'user', roles: ['MEMBER'], tab: true },
+
+  // --- Huấn luyện viên (PT) ---
+  { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard', roles: ['TRAINER'], tab: true },
+  { to: '/messages', label: 'Tin nhắn', icon: 'message', roles: ['TRAINER'], tab: true },
+  { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['TRAINER'], tab: true },
+  { to: '/members', label: 'Hội viên', icon: 'users', roles: ['TRAINER'], group: 'Huấn luyện', tab: true },
+  { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['TRAINER'], group: 'Huấn luyện' },
+  { to: '/exercises', label: 'Thư viện bài tập', icon: 'dumbbell', roles: ['TRAINER'], group: 'Kiến thức' },
+  { to: '/equipment', label: 'Dụng cụ tập', icon: 'zap', roles: ['TRAINER'], group: 'Kiến thức' },
+  { to: '/programs', label: 'Lịch tập mẫu', icon: 'layers', roles: ['TRAINER'], group: 'Kiến thức' },
+  { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['TRAINER'], group: 'Kiến thức' },
+  { to: '/profile', label: 'Hồ sơ cá nhân', icon: 'user', roles: ['TRAINER'], group: 'Tài khoản' },
+  { to: '/help', label: 'Trợ giúp', icon: 'info', roles: ['TRAINER'], group: 'Tài khoản' },
+
+  // --- Quản trị viên (Admin) ---
+  { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard', roles: ['ADMIN'], tab: true },
+  { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['ADMIN'], tab: true },
+  { to: '/members', label: 'Hội viên', icon: 'users', roles: ['ADMIN'], group: 'Huấn luyện', tab: true },
+  { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['ADMIN'], group: 'Huấn luyện' },
+  { to: '/exercises', label: 'Thư viện bài tập', icon: 'dumbbell', roles: ['ADMIN'], group: 'Kiến thức' },
+  { to: '/equipment', label: 'Dụng cụ tập', icon: 'zap', roles: ['ADMIN'], group: 'Kiến thức' },
+  { to: '/programs', label: 'Lịch tập mẫu', icon: 'layers', roles: ['ADMIN'], group: 'Kiến thức' },
+  { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['ADMIN'], group: 'Kiến thức' },
   { to: '/trainers', label: 'Huấn luyện viên', icon: 'badge', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/plans', label: 'Gói tập', icon: 'ticket', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/services', label: 'Dịch vụ', icon: 'sparkle', roles: ['ADMIN'], group: 'Kinh doanh' },
@@ -54,9 +65,9 @@ export const NAV: NavItem[] = [
   { to: '/reports', label: 'Báo cáo', icon: 'chart', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/users', label: 'Tài khoản & quyền', icon: 'userCog', roles: ['ADMIN'], group: 'Hệ thống' },
   { to: '/audit-logs', label: 'Nhật ký hệ thống', icon: 'scroll', roles: ['ADMIN'], group: 'Hệ thống' },
-  { to: '/profile', label: 'Hồ sơ cá nhân', icon: 'user', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Tài khoản' },
-  { to: '/help', label: 'Trợ giúp', icon: 'info', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Tài khoản' },
-  { to: '/', label: 'Trang giới thiệu', icon: 'home', roles: ['ADMIN', 'TRAINER', 'MEMBER'], group: 'Tài khoản' },
+  { to: '/profile', label: 'Hồ sơ cá nhân', icon: 'user', roles: ['ADMIN'], group: 'Tài khoản' },
+  { to: '/help', label: 'Trợ giúp', icon: 'info', roles: ['ADMIN'], group: 'Tài khoản' },
+  { to: '/', label: 'Trang giới thiệu', icon: 'home', roles: ['ADMIN', 'TRAINER'], group: 'Tài khoản' },
 ];
 
 const GROUPS_KEY = 'gf.nav.groups';
@@ -178,7 +189,7 @@ function AccountMenu({ onLogout }: { onLogout: () => void }) {
           </div>
           <Link to="/profile" role="menuitem" className="menu-item"><Icon name="user" />{t('Hồ sơ cá nhân')}</Link>
           {user.role === 'MEMBER' && <Link to="/me/packages" role="menuitem" className="menu-item"><Icon name="ticket" />{t('Gói tập của tôi')}</Link>}
-          {user.role === 'MEMBER' && <Link to="/me/progress" role="menuitem" className="menu-item"><Icon name="chart" />{t('Tiến độ')}</Link>}
+          {user.role === 'MEMBER' && <Link to="/profile?tab=progress" role="menuitem" className="menu-item"><Icon name="chart" />{t('Tiến độ')}</Link>}
           <Link to="/help" role="menuitem" className="menu-item"><Icon name="info" />{t('Trợ giúp')}</Link>
           <div className="menu-prefs"><span className="tiny muted">{t('Giao diện & ngôn ngữ')}</span><ThemeToggle /></div>
           <button type="button" role="menuitem" className="menu-item danger" onClick={() => { setOpen(false); onLogout(); }}><Icon name="logout" />{t('Đăng xuất')}</button>
@@ -249,7 +260,7 @@ export function Layout() {
 
   const items = NAV.filter((n) => n.roles.includes(user.role));
   const current = items.find((n) => pathname === n.to || pathname.startsWith(n.to + '/'));
-  const tabs = items.filter((n) => n.tab).slice(0, 4);
+  const tabs = user.role === 'MEMBER' ? items : items.filter((n) => n.tab).slice(0, 4);
   const doLogout = () => { logout(); navigate('/login'); };
 
   // Gom các mục liền nhau cùng group thành một khối
@@ -281,7 +292,7 @@ export function Layout() {
       title={mini ? t(n.label) : undefined} data-tour={`nav:${n.to}`}>
       <Icon name={n.icon} /><span>{t(n.label)}</span>
       {n.to === '/messages' && unreadMessages > 0 && <span className="nav-badge">{unreadMessages}</span>}
-      {n.to === '/getting-started' && readyToTrain === false && <span className="nav-badge dot-remind" />}
+      {n.to === '/dashboard' && user.role === 'MEMBER' && readyToTrain === false && <span className="nav-badge dot-remind" />}
     </NavLink>
   );
 
@@ -336,6 +347,14 @@ export function Layout() {
           <div className="spacer" />
           <Clock />
           <ThemeToggle className="top-theme" />
+          {user.role === 'MEMBER' && (
+            <div className="bell">
+              <Link to="/messages" className="btn btn-ghost btn-icon" aria-label={t('Tin nhắn')} title={t('Tin nhắn')}>
+                <Icon name="message" />
+              </Link>
+              {unreadMessages > 0 && <span className="dot">{unreadMessages}</span>}
+            </div>
+          )}
           <Link to="/help" className="btn btn-ghost btn-icon top-help" aria-label={t('Trợ giúp')} title={t('Trợ giúp')} data-tour="help"><Icon name="info" /></Link>
           <Notifications userId={user.id} />
           <AccountMenu onLogout={() => setAskLogout(true)} />
@@ -350,10 +369,12 @@ export function Layout() {
           <NavLink key={n.to} to={n.to} className={({ isActive }) => (isActive ? 'active' : '')} data-tour={`nav:${n.to}`}>
             <Icon name={n.icon} /><span>{t(n.label.replace(' của tôi', ''))}</span>
             {n.to === '/messages' && unreadMessages > 0 && <span className="nav-badge">{unreadMessages}</span>}
-            {n.to === '/getting-started' && readyToTrain === false && <span className="nav-badge dot-remind" />}
+            {n.to === '/dashboard' && readyToTrain === false && <span className="nav-badge dot-remind" />}
           </NavLink>
         ))}
-        <a href="#menu" aria-controls="app-sidebar" aria-expanded={open} onClick={(e) => { e.preventDefault(); setOpen(true); }}><Icon name="more" /><span>{t('Thêm')}</span></a>
+        {user.role !== 'MEMBER' && (
+          <a href="#menu" aria-controls="app-sidebar" aria-expanded={open} onClick={(e) => { e.preventDefault(); setOpen(true); }}><Icon name="more" /><span>{t('Thêm')}</span></a>
+        )}
       </nav>
 
       <Tour onNav={onTourNav} />

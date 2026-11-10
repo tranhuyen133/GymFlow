@@ -4,7 +4,7 @@
  * ĐÓNG GÓP: Hồ Khánh Linh — SCRUM-196 · Form hoàn thành buổi
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Member, Schedule, ScheduleCreated, ScheduleStatus, Subscription, TimeSlot, Trainer, WorkoutPlanSummary } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
@@ -56,7 +56,8 @@ export default function Schedules() {
           : selfTrain ? 'Gói tự tập: tự xếp buổi theo giáo án của bạn, dời hoặc huỷ trước giờ tập, tập xong thì đánh dấu hoàn thành.'
           : 'Bấm vào buổi tập để xem chi tiết và đánh dấu hoàn thành.'}
         actions={staff ? <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Xếp lịch</Button>
-          : selfTrain && <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>{t('Tự xếp buổi tập')}</Button>} />
+          : selfTrain ? <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>{t('Tự xếp buổi tập')}</Button>
+          : member.data?.trainerName ? <Link to="/messages" className="btn btn-secondary"><Icon name="message" size={16} /><span>{t('Nhắn HLV')}</span></Link> : undefined} />
 
       <div className="toolbar">
         <div className="row">
@@ -84,6 +85,30 @@ export default function Schedules() {
       {error ? <ErrorState message={error} onRetry={reload} /> : (
         <div style={{ opacity: loading ? 0.55 : 1, transition: 'opacity .2s' }}>
           <WeekCalendar weekStart={week} events={events} onSelect={setOpen} showMember={staff} />
+          {events.length === 0 && !loading && !staff && (
+            <div className="card mt-16 text-center" style={{ padding: '24px 16px' }}>
+              <Icon name="calendar" size={32} style={{ color: 'var(--muted)', margin: '0 auto 8px' }} />
+              <div className="bold">{t('Chưa có buổi tập nào trong tuần này')}</div>
+              {selfTrain ? (
+                <>
+                  <div className="small muted mt-4">{t('Bạn có thể tự xếp buổi tập hoặc sinh lịch theo các thứ trong giáo án.')}</div>
+                  <div className="mt-12">
+                    <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>{t('Xếp buổi tập ngay')}</Button>
+                  </div>
+                </>
+              ) : member.data?.trainerName ? (
+                <>
+                  <div className="small muted mt-4">{t('Huấn luyện viên {name} sẽ xếp lịch tập cho bạn. Bạn có thể nhắn tin trao đổi về thời gian tập thuận tiện.', { name: member.data.trainerName })}</div>
+                  <div className="mt-12">
+                    <Link to="/messages" className="btn btn-secondary">
+                      <Icon name="message" size={16} />
+                      <span>{t('Nhắn HLV {name}', { name: member.data.trainerName })}</span>
+                    </Link>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          )}
         </div>
       )}
       <div className="legend mt-16">
