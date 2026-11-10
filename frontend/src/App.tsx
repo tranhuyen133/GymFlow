@@ -24,8 +24,6 @@ import Login from './pages/Login';
 import MemberDashboard from './pages/member/MemberDashboard';
 import MyPackages from './pages/member/MyPackages';
 import MyPlan from './pages/member/MyPlan';
-import MyJourney from './pages/member/MyJourney';
-import MyProgress from './pages/member/MyProgress';
 import Policies from './pages/Policies';
 import Register from './pages/Register';
 import { Forbidden, NotFound } from './pages/Errors';
@@ -107,8 +105,8 @@ export default function App() {
         <Route path="/me/plan" element={<Only roles={MEMBER}><MyPlan /></Only>} />
         <Route path="/me/plan/new" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
         <Route path="/me/plan/:id" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
-        <Route path="/me/progress" element={<Only roles={MEMBER}><MyProgress /></Only>} />
-        <Route path="/me/journey" element={<Only roles={MEMBER}><MyJourney /></Only>} />
+        <Route path="/me/progress" element={<Navigate to="/profile?tab=progress" replace />} />
+        <Route path="/me/journey" element={<Navigate to="/profile?tab=journey" replace />} />
         <Route path="/me/packages" element={<Only roles={MEMBER}><MyPackages /></Only>} />
         <Route path="/packages" element={<Navigate to="/me/packages?tab=catalog" replace />} />
         <Route path="/me/entitlements" element={<Navigate to="/me/packages?tab=entitlements" replace />} />

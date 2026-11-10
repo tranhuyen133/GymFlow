@@ -67,7 +67,7 @@ function buildMilestones(member: Member, progress: Progress, sessions: Schedule[
   return out.sort((a, b) => b.date.localeCompare(a.date));
 }
 
-export default function MyJourney() {
+export default function MyJourney({ embedded = false }: { embedded?: boolean } = {}) {
   const me = useMe();
   const data = useAsync(async () => {
     if (!me.memberId) return null;
@@ -99,12 +99,14 @@ export default function MyJourney() {
     };
   }, [data.data]);
 
-  if (!me.memberId) return <div className="page"><ErrorState message="Tài khoản chưa có hồ sơ hội viên" /></div>;
+  if (!me.memberId) return <div className={embedded ? 'embedded-view' : 'page'}><ErrorState message="Tài khoản chưa có hồ sơ hội viên" /></div>;
 
   return (
-    <div className="page">
-      <PageHead eyebrow="Tập luyện" title="Hành trình của tôi"
-        desc="Bạn bắt đầu từ đâu, đã đi được bao xa. Mọi con số được tính từ buổi tập đã hoàn thành và cân nặng bạn đã ghi." />
+    <div className={embedded ? 'embedded-view' : 'page'}>
+      {!embedded && (
+        <PageHead eyebrow="Tập luyện" title="Hành trình của tôi"
+          desc="Bạn bắt đầu từ đâu, đã đi được bao xa. Mọi con số được tính từ buổi tập đã hoàn thành và cân nặng bạn đã ghi." />
+      )}
 
       {data.error ? <ErrorState message={data.error} onRetry={data.reload} /> : !data.data || !view ? <LoadingBlock rows={6} /> : (() => {
         const { member, progress, sessions } = data.data;
@@ -151,7 +153,7 @@ export default function MyJourney() {
                         {view.weights.length > 1 && <LineChart points={view.weights.map((w) => ({ label: fmtDateShort(w.recordedDate), value: w.weightKg }))} format={(n) => `${fmtNum(n, 1)} kg`} height={200} />}
                         <p className="tiny faint mt-8">{t('Thay đổi cân nặng chỉ là một chỉ số; mục tiêu phù hợp nên được trao đổi với huấn luyện viên hoặc nhân viên y tế.')}</p>
                       </>
-                    ) : <Empty icon="scale" title="Chưa ghi cân nặng" action={<Link className="btn btn-secondary" to="/me/progress"><span>{t('Ghi cân nặng')}</span></Link>} />}
+                    ) : <Empty icon="scale" title="Chưa ghi cân nặng" action={<Link className="btn btn-secondary" to="/profile?tab=progress"><span>{t('Ghi cân nặng')}</span></Link>} />}
                   </Card>
                   <Card title="Số buổi tập 12 tháng gần nhất" icon="chart">
                     <div className="journey-months" role="img" aria-label={t('Biểu đồ số buổi tập theo tháng')}>
@@ -178,7 +180,7 @@ export default function MyJourney() {
                       </li>
                     ))}
                   </ol>
-                  <div className="mt-16"><Link className="btn btn-ghost btn-sm" to="/me/progress"><Icon name="chart" /><span>{t('Xem chi tiết tiến độ')}</span></Link></div>
+                  <div className="mt-16"><Link className="btn btn-ghost btn-sm" to="/profile?tab=progress"><Icon name="chart" /><span>{t('Xem chi tiết tiến độ')}</span></Link></div>
                 </Card>
               </div>
             )}

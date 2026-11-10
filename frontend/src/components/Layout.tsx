@@ -189,7 +189,7 @@ function AccountMenu({ onLogout }: { onLogout: () => void }) {
           </div>
           <Link to="/profile" role="menuitem" className="menu-item"><Icon name="user" />{t('Hồ sơ cá nhân')}</Link>
           {user.role === 'MEMBER' && <Link to="/me/packages" role="menuitem" className="menu-item"><Icon name="ticket" />{t('Gói tập của tôi')}</Link>}
-          {user.role === 'MEMBER' && <Link to="/me/progress" role="menuitem" className="menu-item"><Icon name="chart" />{t('Tiến độ')}</Link>}
+          {user.role === 'MEMBER' && <Link to="/profile?tab=progress" role="menuitem" className="menu-item"><Icon name="chart" />{t('Tiến độ')}</Link>}
           <Link to="/help" role="menuitem" className="menu-item"><Icon name="info" />{t('Trợ giúp')}</Link>
           <div className="menu-prefs"><span className="tiny muted">{t('Giao diện & ngôn ngữ')}</span><ThemeToggle /></div>
           <button type="button" role="menuitem" className="menu-item danger" onClick={() => { setOpen(false); onLogout(); }}><Icon name="logout" />{t('Đăng xuất')}</button>
