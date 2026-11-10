@@ -58,7 +58,7 @@ public class GeminiProvider implements AssistantProvider {
     public void init() {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(4));
-        requestFactory.setReadTimeout(Duration.ofSeconds(aiConfig.getOllamaTimeoutSeconds() > 0 ? aiConfig.getOllamaTimeoutSeconds() : 15));
+        requestFactory.setReadTimeout(Duration.ofSeconds(aiConfig.getTimeoutSeconds() > 0 ? aiConfig.getTimeoutSeconds() : 15));
 
         this.restClient = RestClient.builder()
                 .baseUrl("https://generativelanguage.googleapis.com")

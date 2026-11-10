@@ -6,12 +6,12 @@ import com.gymflow.service.ChatTopic;
 
 /**
  * Giao diện nhà cung cấp câu trả lời cho Trợ lý GymFlow.
- * Hỗ trợ chuyển đổi giữa RuleBasedProvider (câu hỏi sẵn) và OllamaProvider (AI local).
+ * Hỗ trợ chuyển đổi linh hoạt giữa RuleBasedProvider (câu hỏi sẵn) và GeminiProvider (Google Gemini AI).
  */
 public interface AssistantProvider {
 
     /**
-     * Tên định danh của provider (ví dụ: "rule", "ollama").
+     * Tên định danh của provider (ví dụ: "rule", "gemini").
      */
     String getProviderName();
 

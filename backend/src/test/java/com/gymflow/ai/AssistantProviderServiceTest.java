@@ -14,7 +14,6 @@ class AssistantProviderServiceTest {
 
     @Mock AiConfig aiConfig;
     @Mock RuleBasedProvider ruleBasedProvider;
-    @Mock OllamaProvider ollamaProvider;
     @Mock GeminiProvider geminiProvider;
 
     @Test
@@ -22,31 +21,18 @@ class AssistantProviderServiceTest {
         when(aiConfig.isGeminiEnabled()).thenReturn(true);
         when(aiConfig.isFreeTextEnabled()).thenReturn(true);
 
-        AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, ollamaProvider, geminiProvider);
+        AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, geminiProvider);
 
         assertThat(service.getActiveProvider()).isSameAs(geminiProvider);
         assertThat(service.isFreeTextEnabled()).isTrue();
     }
 
     @Test
-    void selectsOllamaProviderWhenOllamaIsEnabledAndGeminiIsDisabled() {
+    void selectsRuleBasedProviderWhenGeminiIsDisabled() {
         when(aiConfig.isGeminiEnabled()).thenReturn(false);
-        when(aiConfig.isOllamaEnabled()).thenReturn(true);
         when(aiConfig.isFreeTextEnabled()).thenReturn(true);
 
-        AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, ollamaProvider, geminiProvider);
-
-        assertThat(service.getActiveProvider()).isSameAs(ollamaProvider);
-        assertThat(service.isFreeTextEnabled()).isTrue();
-    }
-
-    @Test
-    void selectsRuleBasedProviderWhenExternalAiIsDisabled() {
-        when(aiConfig.isGeminiEnabled()).thenReturn(false);
-        when(aiConfig.isOllamaEnabled()).thenReturn(false);
-        when(aiConfig.isFreeTextEnabled()).thenReturn(true);
-
-        AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, ollamaProvider, geminiProvider);
+        AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, geminiProvider);
 
         assertThat(service.getActiveProvider()).isSameAs(ruleBasedProvider);
         assertThat(service.isFreeTextEnabled()).isTrue();

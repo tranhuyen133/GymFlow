@@ -57,9 +57,7 @@ services:
       AI_FREE_TEXT_ENABLED: ${AI_FREE_TEXT_ENABLED:-true}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
-      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-15}
+      AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-15}
       AI_MAX_INPUT_CHARS: ${AI_MAX_INPUT_CHARS:-500}
       TZ: Asia/Ho_Chi_Minh
     depends_on:
@@ -86,16 +84,5 @@ services:
     ports:
       - "${FRONTEND_PORT:-8081}:80"
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: gymflow-ollama
-    profiles: ["ai"]
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - gymflow_ollama_data:/root/.ollama
-
 volumes:
   gymflow_mysql_data:
-  gymflow_ollama_data:

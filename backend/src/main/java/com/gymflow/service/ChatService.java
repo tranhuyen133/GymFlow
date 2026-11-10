@@ -131,11 +131,11 @@ public class ChatService {
     public AiHealthResponse aiHealth() {
         AssistantProvider active = assistantProviderService.getActiveProvider();
         return new AiHealthResponse(
-                aiConfig.isOllamaEnabled(),
+                aiConfig.isGeminiEnabled(),
                 active.isAvailable(),
                 aiConfig.getProvider(),
-                aiConfig.getOllamaModel(),
-                aiConfig.getOllamaBaseUrl()
+                aiConfig.getGeminiModel(),
+                active.getProviderName()
         );
     }
 

@@ -1,4 +1,4 @@
-# Cấu hình Email OTP và Trợ lý AI GymFlow (Ollama Local)
+# Cấu hình Email OTP và Trợ lý AI GymFlow (Google Gemini API)
 
 Tính năng nằm trong backend/frontend hiện có của GymFlow. Không tạo project hoặc lưu mật khẩu SMTP/OTP dạng rõ trong repository.
 
@@ -24,91 +24,55 @@ Sao chép `.env.example` thành `.env` ở thư mục gốc. Dùng secret từ n
 
 ---
 
-### Trợ lý AI GymFlow (Google Gemini API & Mô hình AI Cục bộ Ollama)
+### Trợ lý AI GymFlow (Google Gemini API)
 
-Hệ thống trợ lý hỗ trợ 3 chế độ triển khai:
+Hệ thống trợ lý hỗ trợ 2 chế độ triển khai:
 
-1. **Chế độ Google Gemini API (`AI_PROVIDER=gemini`)** *(Khuyên dùng trên Cloud / VPS)*:
-   * Sử dụng API Key miễn phí hoặc có phí từ Google AI Studio ([aistudio.google.com](https://aistudio.google.com/)).
-   * Model khuyến nghị: `gemini-1.5-flash` (tốc độ cao, chi phí rẻ hoặc miễn phí theo hạn ngạch Google, khả năng hiểu tiếng Việt cực kỳ xuất sắc).
-   * **Cơ chế neo dữ liệu thật (Grounding)**: Toàn bộ thông tin lịch tập, gói tập, bài tập được backend truy vấn nội bộ rồi truyền vào `system_instruction`. Gemini chỉ tổng hợp câu trả lời dựa trên dữ liệu thật này.
-   * **Cơ chế dự phòng (Fallback)**: Khi mất mạng, hết hạn ngạch hoặc lỗi API key, hệ thống tự động chuyển về chế độ nội bộ `rule` mà không làm gián đoạn trải nghiệm người dùng.
+1. **Chế độ Google Gemini API (`AI_PROVIDER=gemini`)** *(Mặc định)*:
+   * Sử dụng API Key từ Google AI Studio ([aistudio.google.com](https://aistudio.google.com/)).
+   * Model khuyến nghị: `gemini-3.5-flash-lite` (tốc độ cao < 1s, phản hồi tiếng Việt xuất sắc, tối ưu chi phí).
+   * **Cơ chế neo dữ liệu thật (Grounding)**: Toàn bộ thông tin lịch tập, gói tập, bài tập, thiết bị được backend tự động truy vấn theo đúng quyền hạn người dùng rồi truyền vào `system_instruction`. Gemini chỉ tổng hợp câu trả lời dựa trên dữ liệu thật này, tuyệt đối không truy vấn DB trực tiếp hay sinh SQL.
+   * **Cơ chế dự phòng an toàn (Fallback)**: Khi mất mạng, lỗi hạn ngạch API hoặc lỗi key, hệ thống tự động chuyển về chế độ `RuleBasedProvider` mà không bao giờ làm gián đoạn trải nghiệm người dùng hay gây lỗi 500.
 
-2. **Chế độ hỏi tự do bằng AI Local (`AI_PROVIDER=ollama`)**:
-   * Chạy mô hình mã nguồn mở (vd: `qwen2.5:3b`) trực tiếp trên máy qua **Ollama**, không cần Internet, hoàn toàn miễn phí và bảo mật tuyệt đối.
-
-3. **Chế độ nút bấm sẵn (`AI_PROVIDER=rule`)**:
-   * Backend trả lời từ dữ liệu thật nội bộ theo các nút câu hỏi có sẵn, không gọi bất kỳ mô hình AI nào.
+2. **Chế độ nút bấm sẵn (`AI_PROVIDER=rule`)**:
+   * Backend trả lời từ dữ liệu thật nội bộ theo các nút câu hỏi có sẵn, không gọi ra dịch vụ bên ngoài.
 
 #### Bảng biến môi trường Trợ lý AI:
 
 | Biến | Mặc định | Ý nghĩa & Tùy chọn |
 | --- | --- | --- |
-| `AI_PROVIDER` | `gemini` | `gemini` (Google Gemini API), `ollama` (AI local) hoặc `rule` (chỉ nút bấm) |
+| `AI_PROVIDER` | `gemini` | `gemini` (Google Gemini API) hoặc `rule` (chỉ nút bấm) |
 | `GEMINI_API_KEY` | *(trống)* | API Key lấy từ Google AI Studio |
-| `GEMINI_MODEL` | `gemini-1.5-flash` | Tên model Gemini (`gemini-1.5-flash` hoặc `gemini-2.0-flash`) |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Tên model Gemini (`gemini-3.5-flash-lite` hoặc `gemini-3.8-flash`) |
 | `AI_FREE_TEXT_ENABLED` | `true` | Bật/tắt thanh nhập câu hỏi tự do trên giao diện |
-| `OLLAMA_BASE_URL` | `http://ollama:11434` | URL dịch vụ Ollama khi dùng `AI_PROVIDER=ollama` |
-| `OLLAMA_MODEL` | `qwen2.5:3b` | Tên mô hình Ollama (khuyên dùng: `qwen2.5:3b`) |
-| `OLLAMA_TIMEOUT_SECONDS` | `15` | Thời gian chờ tối đa khi gọi mô hình (giây) |
+| `AI_TIMEOUT_SECONDS` | `15` | Thời gian chờ tối đa khi gọi API (giây) |
 | `AI_MAX_INPUT_CHARS` | `500` | Giới hạn ký tự tối đa cho mỗi câu hỏi |
-
-#### Yêu cầu phần cứng tối thiểu cho mô hình:
-
-* **Mô hình khuyến nghị `qwen2.5:3b`** (Alibaba Qwen 2.5 3B):
-  * **RAM tối thiểu:** 4 GB khả dụng (Mô hình chiếm ~2.0 GB - 2.5 GB RAM).
-  * **CPU:** 4 cores trở lên (chạy tốt trên CPU Intel/AMD thông thường hoặc Apple Silicon M1/M2/M3).
-  * **Lý do chọn:** Đọc hiểu và diễn đạt tiếng Việt tự nhiên nhất trong phân khúc mô hình nhỏ dưới 4 tỷ tham số, tuân thủ nghiêm ngặt chỉ dẫn không bịa đặt dữ liệu (anti-hallucination).
-* **Mô hình siêu nhẹ `qwen2.5:1.5b`** (Dành cho máy RAM khiêm tốn):
-  * **RAM tối thiểu:** 2 GB khả dụng (Mô hình chiếm ~1.0 GB - 1.2 GB RAM).
 
 ---
 
-## 2. Hướng dẫn cài đặt & Chạy Trợ lý AI với Ollama
+## 2. Hướng dẫn cấu hình Google Gemini API
 
-### Cách 1: Chạy Ollama trực tiếp bằng Docker Compose (Khuyên dùng)
-
-1. Bật profile `ai` trong Docker Compose:
-   ```sh
-   docker compose --profile ai up -d
+1. Lấy API Key miễn phí từ [Google AI Studio](https://aistudio.google.com/).
+2. Điền vào file `.env`:
+   ```properties
+   AI_PROVIDER=gemini
+   GEMINI_API_KEY=your_gemini_api_key_here
+   GEMINI_MODEL=gemini-3.5-flash-lite
+   AI_FREE_TEXT_ENABLED=true
+   AI_TIMEOUT_SECONDS=15
+   AI_MAX_INPUT_CHARS=500
    ```
-2. Tải mô hình vào container Ollama:
-   ```sh
-   docker exec -it gymflow-ollama ollama pull qwen2.5:3b
+3. Khởi động lại ứng dụng:
+   ```bash
+   docker compose up -d backend
    ```
-3. Cập nhật file `.env` ở máy local:
-   ```ini
-   AI_PROVIDER=ollama
-   OLLAMA_BASE_URL=http://ollama:11434
-   OLLAMA_MODEL=qwen2.5:3b
-   ```
-4. Khởi động lại backend để nhận cấu hình:
-   ```sh
-   docker compose restart backend
-   ```
-
-### Cách 2: Chạy Ollama trực tiếp trên máy Host
-
-1. Cài đặt Ollama từ [ollama.com](https://ollama.com) hoặc bằng Homebrew trên macOS:
-   ```sh
-   brew install ollama
-   ```
-2. Kéo và chạy thử mô hình:
-   ```sh
-   ollama run qwen2.5:3b
-   ```
-3. Cập nhật `.env`:
-   * Nếu backend chạy trên máy host: `OLLAMA_BASE_URL=http://localhost:11434`
-   * Nếu backend chạy trong Docker: `OLLAMA_BASE_URL=http://host.docker.internal:11434`
-   * `AI_PROVIDER=ollama`
-4. Khởi động ứng dụng.
 
 ### Cách tắt AI để quay về chế độ nút bấm mặc định:
-Chỉ cần chỉnh trong file `.env`:
-```ini
+Chỉnh trong file `.env`:
+```properties
 AI_PROVIDER=rule
 ```
-Ứng dụng sẽ tắt ô nhập tự do trên giao diện và chỉ hiển thị các nút câu hỏi sẵn.
+Ứng dụng sẽ tự động chuyển về các nút gợi ý câu hỏi truyền thống.
 
 ---
 
@@ -123,7 +87,7 @@ Tất cả các API trợ lý yêu cầu xác thực Bearer JWT:
 | `POST` | `/api/chat/conversations` | Tất cả | Tạo cuộc hội thoại mới |
 | `GET` | `/api/chat/conversations/{id}` | Chủ sở hữu | Xem toàn bộ tin nhắn trong hội thoại |
 | `POST` | `/api/chat/messages` | Tất cả | Gửi tin nhắn: nhận `{ conversationId, topic }` HOẶC `{ conversationId, text }` |
-| `GET` | `/api/chat/ai-health` | Chỉ ADMIN | Kiểm tra trạng thái sẵn sàng và kết nối của Ollama |
+| `GET` | `/api/chat/ai-health` | Chỉ ADMIN | Kiểm tra trạng thái sẵn sàng của AI Provider |
 
 ---
 
@@ -137,9 +101,9 @@ npm --prefix frontend run build
 gradle -p backend test
 ```
 
-### Kịch bản kiểm thử thủ công với Ollama:
+### Kịch bản kiểm thử thủ công với Gemini:
 
-1. **Hỏi lịch tập:** Nhập *"Hôm nay tôi tập gì?"* $\rightarrow$ Trợ lý phản hồi chính xác buổi tập trong ngày của tài khoản dựa trên dữ liệu thật.
+1. **Hỏi lịch tập:** Nhập *"Hôm nay tôi tập gì?"* $\rightarrow$ Trợ lý phản hồi chính xác buổi tập trong ngày hoặc buổi kế tiếp gần nhất của tài khoản dựa trên dữ liệu thật.
 2. **Hỏi gói tập:** Nhập *"Gói của tôi còn bao lâu?"* $\rightarrow$ Trợ lý kiểm tra hạn gói tập và số ngày/buổi PT còn lại.
 3. **Hỏi buổi tiếp theo:** Nhập *"Buổi tập tiếp theo khi nào?"* $\rightarrow$ Trợ lý trả về thời gian buổi tập gần nhất sắp tới.
 4. **Hỏi về chấn thương/đau nhức:** Nhập *"Tôi bị đau gối có tập được không?"* $\rightarrow$ Trợ lý từ chối chẩn đoán, khuyên dừng tập ngay và đến gặp bác sĩ/chuyên gia y tế.

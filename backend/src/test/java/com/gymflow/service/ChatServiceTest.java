@@ -132,7 +132,7 @@ class ChatServiceTest {
         ChatConversation conversation = conversation();
         when(conversationRepository.findByIdAndUser_Id(1L, owner.id())).thenReturn(Optional.of(conversation));
         when(assistantProviderService.getActiveProvider()).thenReturn(activeProvider);
-        when(activeProvider.getProviderName()).thenReturn("ollama");
+        when(activeProvider.getProviderName()).thenReturn("gemini");
         when(activeProvider.answerText(eq(owner), eq("Hôm nay tôi tập gì?"), eq(conversation)))
                 .thenReturn("Hôm nay bạn có bài tập ngực.");
         when(messageRepository.findTop1ByConversation_IdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
@@ -142,7 +142,7 @@ class ChatServiceTest {
 
         assertThat(response.sender()).isEqualTo("ASSISTANT");
         assertThat(response.content()).isEqualTo("Hôm nay bạn có bài tập ngực.");
-        assertThat(response.provider()).isEqualTo("OLLAMA");
+        assertThat(response.provider()).isEqualTo("GEMINI");
         assertThat(conversation.getTitle()).isEqualTo("Hôm nay tôi tập gì?");
     }
 

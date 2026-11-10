@@ -13,15 +13,11 @@ public class AssistantProviderService {
 
     private final AiConfig aiConfig;
     private final RuleBasedProvider ruleBasedProvider;
-    private final OllamaProvider ollamaProvider;
     private final GeminiProvider geminiProvider;
 
     public AssistantProvider getActiveProvider() {
         if (aiConfig.isGeminiEnabled()) {
             return geminiProvider;
-        }
-        if (aiConfig.isOllamaEnabled()) {
-            return ollamaProvider;
         }
         return ruleBasedProvider;
     }

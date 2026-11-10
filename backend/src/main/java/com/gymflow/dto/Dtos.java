@@ -118,7 +118,7 @@ public final class Dtos {
         }
     }
 
-    public record AiHealthResponse(boolean ollamaEnabled, boolean ollamaReachable, String provider, String model, String baseUrl) {
+    public record AiHealthResponse(boolean aiEnabled, boolean aiReachable, String provider, String model, String info) {
     }
 
     public record ChatConversationResponse(Long id, String title, LocalDateTime createdAt,
