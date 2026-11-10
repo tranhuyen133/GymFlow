@@ -80,9 +80,9 @@ export default function EquipmentPage() {
   return (
     <div className="page">
       <PageHead
-        eyebrow="Kho kiến thức"
-        title="Dụng cụ tập"
-        desc="Danh mục dụng cụ tại phòng tập, công dụng, cách sử dụng chuẩn và các bài tập đi kèm. Bấm vào từng dụng cụ để xem chi tiết."
+        eyebrow={t('Kho kiến thức')}
+        title={t('Dụng cụ tập')}
+        desc={t('Danh mục dụng cụ tại phòng tập, công dụng, cách sử dụng chuẩn và các bài tập đi kèm. Bấm vào từng dụng cụ để xem chi tiết.')}
         actions={isStaff ? (
           <div className="row wrap" style={{ gap: 8, alignItems: 'center' }}>
             <label className="checkbox-label small" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -175,11 +175,11 @@ export default function EquipmentPage() {
                           <Link
                             to={`/equipment/${x.key}`}
                             className="kb-cover"
-                            aria-label={t('Xem chi tiết {name}', { name: x.name })}
+                            aria-label={t('Xem chi tiết {name}', { name: t(x.name) })}
                           >
                             <ExerciseMedia
                               imageKey={x.imageKey}
-                              alt={x.name}
+                              alt={t(x.name)}
                               playOnHover
                               tag={t('{n} bài tập', { n: x.exerciseCount ?? 0 })}
                             />
@@ -189,7 +189,7 @@ export default function EquipmentPage() {
                               <div>
                                 <h3 className="kb-title">
                                   <Link to={`/equipment/${x.key}`} className="plain-link">
-                                    {x.name}
+                                    {t(x.name)}
                                   </Link>
                                 </h3>
                                 <div className="tiny faint">{x.key}</div>
@@ -199,13 +199,13 @@ export default function EquipmentPage() {
                               </div>
                             </div>
 
-                            <p className="small muted kb-desc line-clamp-3">{x.shortDesc}</p>
+                            <p className="small muted kb-desc line-clamp-3">{x.shortDesc ? t(x.shortDesc) : ''}</p>
 
                             {x.targetMuscleKeys && x.targetMuscleKeys.length > 0 && (
                               <div className="chips mt-6 mb-8">
                                 {x.targetMuscleKeys.slice(0, 3).map((k) => (
                                   <span key={k} className="chip tiny">
-                                    {MUSCLE_BY_KEY.get(k as MuscleKey)?.label ?? k}
+                                    {t(MUSCLE_BY_KEY.get(k as MuscleKey)?.label ?? k)}
                                   </span>
                                 ))}
                               </div>
@@ -331,7 +331,7 @@ function EquipmentModal({
   };
 
   return (
-    <Modal title={isNew ? t('Thêm dụng cụ tập mới') : t('Chỉnh sửa dụng cụ: {name}', { name: equipment.name })} onClose={onClose} size="wide">
+    <Modal title={isNew ? t('Thêm dụng cụ tập mới') : t('Chỉnh sửa dụng cụ: {name}', { name: t(equipment.name) })} onClose={onClose} size="wide">
       <form onSubmit={handleSubmit} className="form-grid">
         <div className="row wrap" style={{ gap: 12 }}>
           <div className="form-group flex-1">

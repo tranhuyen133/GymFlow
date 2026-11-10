@@ -7,7 +7,7 @@ import { Icon } from '../../components/Icon';
 import { MuscleMap } from '../../components/MuscleMap';
 import { Badge, Empty, ErrorState, LoadingBlock, PageHead } from '../../components/ui';
 import { t } from '../../i18n';
-import { parseMuscles } from '../../lib/anatomy';
+import { MUSCLE_BY_KEY, parseMuscles, type MuscleKey } from '../../lib/anatomy';
 import { useAsync } from '../../lib/hooks';
 import './kb.css';
 
@@ -62,12 +62,12 @@ export default function EquipmentDetail() {
       </div>
 
       <PageHead
-        eyebrow={CATEGORY_LABELS[eq.category] || eq.category}
-        title={eq.name}
-        desc={eq.shortDesc || ''}
+        eyebrow={t(CATEGORY_LABELS[eq.category] || eq.category)}
+        title={t(eq.name)}
+        desc={eq.shortDesc ? t(eq.shortDesc) : ''}
         actions={
           <div className="row wrap" style={{ gap: 8, alignItems: 'center' }}>
-            <Badge tone="blue">{CATEGORY_LABELS[eq.category] || eq.category}</Badge>
+            <Badge tone="blue">{t(CATEGORY_LABELS[eq.category] || eq.category)}</Badge>
             {eq.hidden && <Badge tone="amber">{t('Đang ẩn')}</Badge>}
             <span className="tiny faint" style={{ alignSelf: 'center' }}>
               {t('{n} bài tập sử dụng', { n: eq.exerciseCount ?? 0 })}
@@ -105,7 +105,7 @@ export default function EquipmentDetail() {
           <section className="mt-24">
             <div className="row between wrap mb-12" style={{ alignItems: 'center', gap: 12 }}>
               <h2 className="section-title" style={{ margin: 0 }}>
-                <span>{t('Bài tập sử dụng {name}', { name: eq.name })}</span>
+                <span>{t('Bài tập sử dụng {name}', { name: t(eq.name) })}</span>
                 <span className="tiny faint ml-8">({filteredExercises.length})</span>
               </h2>
 
@@ -131,7 +131,7 @@ export default function EquipmentDetail() {
                   >
                     <option value="">{t('Tất cả nhóm cơ')}</option>
                     {muscles.map((m) => (
-                      <option key={m} value={m}>{m}</option>
+                      <option key={m} value={m}>{t(MUSCLE_BY_KEY.get(m as MuscleKey)?.label ?? m)}</option>
                     ))}
                   </select>
                 )}
@@ -148,19 +148,19 @@ export default function EquipmentDetail() {
               <div className="kb-grid mt-12">
                 {filteredExercises.map((e) => (
                   <article key={e.id} className="kb-card">
-                    <Link to={`/exercises/${e.id}`} className="kb-cover" aria-label={e.name}>
+                    <Link to={`/exercises/${e.id}`} className="kb-cover" aria-label={t(e.name)}>
                       <ExerciseMedia
                         imageKey={e.imageKey}
-                        alt={e.name}
+                        alt={t(e.name)}
                         playOnHover
-                        tag={LEVEL_LABELS[e.level] || e.level}
+                        tag={t(LEVEL_LABELS[e.level] || e.level)}
                       />
                     </Link>
                     <div className="kb-body">
                       <div>
                         <h3 className="kb-title">
                           <Link to={`/exercises/${e.id}`} className="plain-link">
-                            {e.name}
+                            {t(e.name)}
                           </Link>
                         </h3>
                         {e.nameEn && <div className="tiny faint">{e.nameEn}</div>}
@@ -173,7 +173,7 @@ export default function EquipmentDetail() {
                       )}
 
                       <div className="row between mt-auto pt-8" style={{ borderTop: '1px solid var(--hairline-soft)' }}>
-                        <span className="badge badge-sm">{LEVEL_LABELS[e.level] || e.level}</span>
+                        <span className="badge badge-sm">{t(LEVEL_LABELS[e.level] || e.level)}</span>
                         <Link to={`/exercises/${e.id}`} className="btn btn-secondary btn-sm">
                           <span>{t('Chi tiết')}</span>
                           <Icon name="arrowRight" size={13} />
@@ -207,7 +207,7 @@ export default function EquipmentDetail() {
                     className={`chip ${selectedMuscle === m ? 'active' : ''}`}
                     onClick={() => setSelectedMuscle(selectedMuscle === m ? '' : m)}
                   >
-                    {m}
+                    {t(MUSCLE_BY_KEY.get(m as MuscleKey)?.label ?? m)}
                   </button>
                 ))}
               </div>
