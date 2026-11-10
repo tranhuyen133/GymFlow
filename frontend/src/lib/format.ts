@@ -41,6 +41,7 @@ const reviewLabel_VI: Record<ReviewStatus, [string, Tone]> = {
 const locationLabel_VI: Record<ExerciseLocation, string> = { GYM: 'Phòng tập', HOME: 'Tại nhà', ANY: 'Ở đâu cũng được' };
 const goalLabel_VI: Record<ExerciseGoal, string> = {
   STRENGTH: 'Sức mạnh', ENDURANCE: 'Sức bền', MOBILITY: 'Linh hoạt', BALANCE: 'Thăng bằng', FAT_LOSS: 'Giảm mỡ',
+  HYPERTROPHY: 'Tăng cơ (phì đại)', TONE: 'Săn chắc',
 };
 const articleCategoryLabel_VI: Record<ArticleCategory, string> = {
   NUTRITION: 'Dinh dưỡng', HYDRATION: 'Nước uống', SLEEP: 'Giấc ngủ', ACTIVITY: 'Vận động', RECOVERY: 'Hồi phục',

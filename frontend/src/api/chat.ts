@@ -27,10 +27,16 @@ export interface ChatHistory {
   messages: ChatMessage[];
 }
 
+export interface ChatSuggestion {
+  key: string;
+  label: string;
+}
+
 export const chatApi = {
+  suggestions: () => api.get<ChatSuggestion[]>('/chat/suggestions'),
   conversations: () => api.get<ChatConversation[]>('/chat/conversations'),
   createConversation: () => api.post<ChatConversationCreated>('/chat/conversations', {}),
   history: (id: number) => api.get<ChatHistory>(`/chat/conversations/${id}`),
-  send: (conversationId: number, content: string) =>
-    api.post<ChatMessage>('/chat/messages', { conversationId, content }),
+  send: (conversationId: number, topic: string) =>
+    api.post<ChatMessage>('/chat/messages', { conversationId, topic }),
 };

@@ -14,8 +14,10 @@
 .chat-message.assistant { align-self: flex-start; background: var(--surface-2); border-bottom-left-radius: 4px; }
 .chat-typing { color: var(--muted); font-size: .82rem; }
 .chat-error { margin: 0 12px 8px; color: var(--alert-error-ink); font-size: .85rem; }
-.chat-composer { display: flex; gap: 8px; align-items: center; padding: 10px; border-top: 1px solid var(--hairline); }
-.chat-composer input { min-width: 0; }
+.chat-suggestions { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; border-top: 1px solid var(--hairline); max-height: 150px; overflow: auto; }
+.chat-suggestion { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--hairline); border-radius: 999px; padding: 7px 11px; color: var(--ink); background: var(--surface-2); font: inherit; font-size: .85rem; cursor: pointer; }
+.chat-suggestion:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.chat-suggestion:disabled { opacity: .55; cursor: not-allowed; }
 @media (max-width: 640px) {
   .chat-widget { right: 12px; bottom: calc(var(--tabbar-h) + 10px); }
   .chat-panel { height: min(600px, calc(100dvh - var(--tabbar-h) - 92px)); }

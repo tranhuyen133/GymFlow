@@ -140,7 +140,6 @@ export default function EquipmentPage() {
                             </div>
                             <div className="row" style={{ gap: 4 }}>
                               {x.hidden && <Badge tone="amber">{t('Đang ẩn')}</Badge>}
-                              {x.reviewStatus === 'PENDING' && <Badge tone="amber">{t('Chờ duyệt')}</Badge>}
                             </div>
                           </div>
 
@@ -241,7 +240,7 @@ function EquipmentModal({
 
       if (isNew) {
         await api.post('/equipment', payload);
-        toast.success(t('Đã thêm dụng cụ mới (trạng thái Chờ duyệt)'));
+        toast.success(t('Đã thêm dụng cụ mới'));
       } else {
         await api.put(`/equipment/${equipment.key}`, payload);
         toast.success(t('Đã cập nhật dụng cụ'));

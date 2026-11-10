@@ -48,7 +48,7 @@ class ExerciseAndEquipmentTest {
     void setUp() {
         mappers = new Mappers(null, null, planItemRepository, null, null, null);
         equipmentService = new EquipmentService(equipmentRepository, exerciseRepository, auditService, mappers);
-        exerciseService = new ExerciseService(exerciseRepository, sourceRepository, planItemRepository, userRepository, auditService, mappers);
+        exerciseService = new ExerciseService(exerciseRepository, equipmentRepository, sourceRepository, planItemRepository, userRepository, auditService, mappers);
     }
 
     private Equipment createEquipment(String key, String name, EquipmentCategory category, boolean hidden, ReviewStatus status) {
@@ -83,14 +83,13 @@ class ExerciseAndEquipmentTest {
     class EquipmentQueryTests {
 
         @Test
-        @DisplayName("Hội viên chỉ thấy dụng cụ đã duyệt và không ẩn, số lượng bài tập đếm đúng bài hợp lệ")
-        void list_memberOnlySeesApprovedAndVisibleEquipment_withCorrectExerciseCount() {
+        @DisplayName("Hội viên thấy mọi dụng cụ không ẩn (kể cả PENDING); số lượng bài tập đếm bài không ẩn")
+        void list_memberSeesVisibleEquipmentRegardlessOfReview_withCorrectExerciseCount() {
             Equipment eqBarbell = createEquipment("barbell", "Đòn tạ", EquipmentCategory.FREE_WEIGHT, false, ReviewStatus.APPROVED);
             Equipment eqPending = createEquipment("smith-machine", "Máy Smith", EquipmentCategory.MACHINE, false, ReviewStatus.PENDING);
-            Equipment eqHidden = createEquipment("foam-roller", "Con lăn xốp", EquipmentCategory.RECOVERY, true, ReviewStatus.APPROVED);
 
-            when(equipmentRepository.findByHiddenFalseAndReviewStatusOrderBySortOrderAscNameAsc(ReviewStatus.APPROVED))
-                    .thenReturn(List.of(eqBarbell));
+            when(equipmentRepository.findByHiddenFalseOrderBySortOrderAscNameAsc())
+                    .thenReturn(List.of(eqBarbell, eqPending));
 
             Exercise e1 = createExercise(1L, "Đẩy ngực đòn tạ", "barbell", false, ReviewStatus.APPROVED);
             Exercise e2 = createExercise(2L, "Deadlift", "barbell", false, ReviewStatus.APPROVED);
@@ -102,11 +101,10 @@ class ExerciseAndEquipmentTest {
 
             List<EquipmentResponse> result = equipmentService.list(MEMBER, false);
 
-            assertThat(result).hasSize(1);
-            EquipmentResponse item = result.get(0);
-            assertThat(item.key()).isEqualTo("barbell");
+            assertThat(result).hasSize(2);
+            EquipmentResponse item = result.stream().filter(x -> x.key().equals("barbell")).findFirst().orElseThrow();
             assertThat(item.name()).isEqualTo("Đòn tạ");
-            assertThat(item.exerciseCount()).isEqualTo(2L); // eHidden and ePending are not counted!
+            assertThat(item.exerciseCount()).isEqualTo(3L); // e1, e2, ePending; eHidden không tính
         }
 
         @Test
@@ -127,8 +125,15 @@ class ExerciseAndEquipmentTest {
         }
 
         @Test
-        @DisplayName("Hội viên xem chi tiết dụng cụ ẩn hoặc chưa duyệt sẽ bị 404, quản lý xem được bình thường")
-        void get_hiddenOrPendingEquipment_memberGets404_staffCanView() {
+        @DisplayName("Hội viên xem được dụng cụ chờ duyệt, chỉ dụng cụ ẩn mới bị 404; quản lý xem được cả dụng cụ ẩn")
+        void get_pendingEquipment_memberCanView_onlyHiddenGets404() {
+            Equipment pendingEq = createEquipment("smith-machine", "Máy Smith", EquipmentCategory.MACHINE, false, ReviewStatus.PENDING);
+            when(equipmentRepository.findById("smith-machine")).thenReturn(Optional.of(pendingEq));
+            when(exerciseRepository.findAllByOrderByNameAsc()).thenReturn(List.of());
+
+            EquipmentDetailResponse memberDetail = equipmentService.get(MEMBER, "smith-machine");
+            assertThat(memberDetail.key()).isEqualTo("smith-machine");
+
             Equipment hiddenEq = createEquipment("foam-roller", "Con lăn xốp", EquipmentCategory.RECOVERY, true, ReviewStatus.APPROVED);
             when(equipmentRepository.findById("foam-roller")).thenReturn(Optional.of(hiddenEq));
 
@@ -136,10 +141,20 @@ class ExerciseAndEquipmentTest {
                     .isInstanceOf(ApiException.class)
                     .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.NOT_FOUND));
 
-            when(exerciseRepository.findAllByOrderByNameAsc()).thenReturn(List.of());
             EquipmentDetailResponse staffDetail = equipmentService.get(TRAINER, "foam-roller");
             assertThat(staffDetail.key()).isEqualTo("foam-roller");
             assertThat(staffDetail.hidden()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Tạo dụng cụ mới được duyệt ngay, không chờ duyệt")
+        void create_newEquipment_isApprovedImmediately() {
+            EquipmentRequest req = new EquipmentRequest("new-tool", "Dụng cụ mới", EquipmentCategory.ACCESSORY,
+                    null, null, null, List.of(), null, 0, false);
+
+            EquipmentResponse created = equipmentService.create(ADMIN, req);
+
+            assertThat(created.reviewStatus()).isEqualTo(ReviewStatus.APPROVED);
         }
     }
 
@@ -295,7 +310,24 @@ class ExerciseAndEquipmentTest {
     }
 
     @Nested
-    @DisplayName("5. Quan hệ bài tập thay thế (Alternative Exercises)")
+    @DisplayName("5. Mã dụng cụ lấy động từ kho dụng cụ")
+    class EquipmentKeyValidationTests {
+
+        @Test
+        @DisplayName("Chấp nhận mã dụng cụ có trong kho, từ chối mã không tồn tại")
+        void joinEquipmentKeys_usesEquipmentCatalog() {
+            when(equipmentRepository.existsById("new-tool")).thenReturn(true);
+            when(equipmentRepository.existsById("missing-tool")).thenReturn(false);
+
+            assertThat(exerciseService.joinEquipmentKeys(List.of("new-tool"))).isEqualTo("new-tool");
+            assertThatThrownBy(() -> exerciseService.joinEquipmentKeys(List.of("missing-tool")))
+                    .isInstanceOf(ApiException.class)
+                    .hasMessageContaining("kho dụng cụ");
+        }
+    }
+
+    @Nested
+    @DisplayName("6. Quan hệ bài tập thay thế (Alternative Exercises)")
     class AlternativeExercisesTests {
 
         @Test
@@ -323,6 +355,7 @@ class ExerciseAndEquipmentTest {
 
             Exercise alt = createExercise(11L, "Dumbbell Press", "dumbbell", false, ReviewStatus.APPROVED);
             when(exerciseRepository.findAllById(List.of(11L))).thenReturn(List.of(alt));
+            when(equipmentRepository.existsById("barbell")).thenReturn(true);
 
             // Gửi id của chính bài tập (10L) và trùng lặp id (11L, 11L)
             ExerciseRequest req = new ExerciseRequest("Bench Press Sửa", MuscleGroup.CHEST, "Barbell",
@@ -340,7 +373,7 @@ class ExerciseAndEquipmentTest {
     }
 
     @Nested
-    @DisplayName("6. Phân trang danh sách bài tập (Pagination)")
+    @DisplayName("7. Phân trang danh sách bài tập (Pagination)")
     class PaginationTests {
 
         @Test

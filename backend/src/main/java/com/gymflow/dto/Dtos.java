@@ -99,8 +99,10 @@ public final class Dtos {
     }
 
     public record ChatSendRequest(@NotNull(message = "Thiếu mã hội thoại") Long conversationId,
-                                  @NotBlank(message = "Vui lòng nhập câu hỏi")
-                                  @Size(max = 2000, message = "Câu hỏi tối đa 2.000 ký tự") String content) {
+                                  @NotBlank(message = "Vui lòng chọn câu hỏi") String topic) {
+    }
+
+    public record ChatSuggestion(String key, String label) {
     }
 
     public record ChatMessageResponse(Long id, String sender, String content, LocalDateTime createdAt) {

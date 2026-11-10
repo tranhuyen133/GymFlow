@@ -8,6 +8,7 @@ import com.gymflow.common.ApiException;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.ExerciseResponse;
 import com.gymflow.repository.ContentSourceRepository;
+import com.gymflow.repository.EquipmentRepository;
 import com.gymflow.repository.ExerciseRepository;
 import com.gymflow.repository.UserRepository;
 import com.gymflow.repository.WorkoutPlanItemRepository;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.*;
 class ExerciseServiceTest {
 
     @Mock ExerciseRepository exerciseRepository;
+    @Mock EquipmentRepository equipmentRepository;
     @Mock ContentSourceRepository sourceRepository;
     @Mock WorkoutPlanItemRepository planItemRepository;
     @Mock UserRepository userRepository;
@@ -48,7 +50,7 @@ class ExerciseServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ExerciseService(exerciseRepository, sourceRepository, planItemRepository, userRepository, auditService, mappers);
+        service = new ExerciseService(exerciseRepository, equipmentRepository, sourceRepository, planItemRepository, userRepository, auditService, mappers);
 
         lenient().when(mappers.exercise(any(Exercise.class))).thenAnswer(inv -> {
             Exercise e = inv.getArgument(0);
