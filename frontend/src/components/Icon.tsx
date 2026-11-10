@@ -47,6 +47,7 @@ const P = {
   chevronRight: <><path d="m9 18 6-6-6-6" /></>,
   chevronDown: <><path d="m6 9 6 6 6-6" /></>,
   arrowRight: <><path d="M5 12h14M13 5l7 7-7 7" /></>,
+  send: <><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></>,
   arrowLeft: <><path d="M19 12H5M11 19l-7-7 7-7" /></>,
   refresh: <><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" /></>,
   repeat: <><path d="m17 2 4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3" /></>,
