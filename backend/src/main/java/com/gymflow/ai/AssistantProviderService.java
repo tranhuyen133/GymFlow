@@ -23,7 +23,6 @@ public class AssistantProviderService {
     }
 
     public boolean isFreeTextEnabled() {
-        // Cho phép hỏi tự do khi bật Ollama
-        return aiConfig.isOllamaEnabled();
+        return aiConfig.isFreeTextEnabled();
     }
 }

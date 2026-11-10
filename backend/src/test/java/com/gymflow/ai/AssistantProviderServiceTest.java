@@ -19,16 +19,18 @@ class AssistantProviderServiceTest {
     @Test
     void selectsRuleBasedProviderWhenOllamaIsDisabled() {
         when(aiConfig.isOllamaEnabled()).thenReturn(false);
+        when(aiConfig.isFreeTextEnabled()).thenReturn(true);
 
         AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, ollamaProvider);
 
         assertThat(service.getActiveProvider()).isSameAs(ruleBasedProvider);
-        assertThat(service.isFreeTextEnabled()).isFalse();
+        assertThat(service.isFreeTextEnabled()).isTrue();
     }
 
     @Test
     void selectsOllamaProviderWhenOllamaIsEnabled() {
         when(aiConfig.isOllamaEnabled()).thenReturn(true);
+        when(aiConfig.isFreeTextEnabled()).thenReturn(true);
 
         AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, ollamaProvider);
 

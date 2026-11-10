@@ -10,7 +10,7 @@ export function ChatWidget() {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [suggestions, setSuggestions] = useState<ChatSuggestion[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-  const [freeTextEnabled, setFreeTextEnabled] = useState(false);
+  const [freeTextEnabled, setFreeTextEnabled] = useState(true);
   const [inputText, setInputText] = useState('');
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -30,8 +30,13 @@ export function ChatWidget() {
     setSuggestionsLoading(true);
     try {
       const res = await chatApi.suggestions();
-      setSuggestions(res.suggestions);
-      setFreeTextEnabled(res.freeTextEnabled);
+      if (Array.isArray(res)) {
+        setSuggestions(res);
+        setFreeTextEnabled(true);
+      } else if (res && typeof res === 'object') {
+        setSuggestions(Array.isArray(res.suggestions) ? res.suggestions : []);
+        setFreeTextEnabled(res.freeTextEnabled !== false);
+      }
     } catch (e) {
       setError(errMsg(e));
     } finally {
@@ -218,7 +223,7 @@ export function ChatWidget() {
               <input
                 type="text"
                 className="chat-input"
-                placeholder="Nhập câu hỏi cho trợ lý (vd: Lịch hôm nay...)"
+                placeholder="Nhập câu hỏi (vd: Lịch hôm nay, gói tập...)"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 disabled={busy}
