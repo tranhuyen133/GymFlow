@@ -383,6 +383,18 @@ public final class Dtos {
     public record BulkApproveResponse(int approved, List<String> skipped) {
     }
 
+    public record ExerciseImportReport(
+            int totalRead,
+            int validCount,
+            int createdCount,
+            int updatedCount,
+            int skippedCount,
+            int errorCount,
+            boolean dryRun,
+            List<String> sampleCreated,
+            List<String> messages) {
+    }
+
     /** Chỉ ADMIN. NEEDS_REVIEW bắt buộc kèm ghi chú để người biên soạn biết cần sửa gì. */
     public record ReviewRequest(
             @NotNull(message = "Vui lòng chọn trạng thái duyệt") ReviewStatus status,

@@ -19,6 +19,10 @@ public class Exercise {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Mã định danh từ dataset mở (nếu có) phục vụ đồng bộ dữ liệu idempotent. */
+    @Column(name = "external_id", length = 40)
+    private String externalId;
+
     @Column(nullable = false, length = 120)
     private String name;
 

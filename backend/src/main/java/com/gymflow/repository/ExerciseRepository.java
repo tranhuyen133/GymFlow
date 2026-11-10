@@ -14,6 +14,10 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
 
     Optional<Exercise> findFirstByNameIgnoreCase(String name);
 
+    Optional<Exercise> findFirstByNameEnIgnoreCase(String nameEn);
+
+    Optional<Exercise> findByExternalId(String externalId);
+
     boolean existsByNameIgnoreCase(String name);
 
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
