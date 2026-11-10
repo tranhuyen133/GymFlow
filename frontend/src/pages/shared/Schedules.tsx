@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Member, Schedule, ScheduleCreated, ScheduleStatus, Subscription, TimeSlot, Trainer, WorkoutPlanSummary } from '../../api/types';
+import type { Exercise, Member, Schedule, ScheduleCreated, ScheduleStatus, Subscription, TimeSlot, Trainer, WorkoutPlanSummary } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
 import { MemberSelect } from '../../components/MemberSelect';
@@ -32,7 +32,8 @@ export default function Schedules() {
   const [filter, setFilter] = useState<Filter>('ALL');
   const [trainerId, setTrainerId] = useState<string>('');
   const [open, setOpen] = useState<Schedule | null>(null);
-  const [creating, setCreating] = useState(params.get('new') === '1');
+  const exIdParam = params.get('exerciseId');
+  const [creating, setCreating] = useState(params.get('new') === '1' || !!exIdParam);
 
   const trainers = useAsync(() => (me.role === 'ADMIN' ? api.get<Trainer[]>('/trainers') : Promise.resolve([] as Trainer[])), [me.role]);
   const { data, error, loading, reload } = useAsync(
@@ -46,7 +47,13 @@ export default function Schedules() {
     return c;
   }, [data]);
 
-  const closeCreate = () => { setCreating(false); if (params.get('new')) { params.delete('new'); setParams(params, { replace: true }); } };
+  const closeCreate = () => {
+    setCreating(false);
+    let changed = false;
+    if (params.get('new')) { params.delete('new'); changed = true; }
+    if (params.get('exerciseId')) { params.delete('exerciseId'); changed = true; }
+    if (changed) setParams(params, { replace: true });
+  };
   const label = `${week.getDate()}/${week.getMonth() + 1} – ${addDays(week, 6).getDate()}/${addDays(week, 6).getMonth() + 1}/${addDays(week, 6).getFullYear()}`;
 
   return (
@@ -118,7 +125,7 @@ export default function Schedules() {
       </div>
 
       {open && <SessionModal session={open} onClose={() => setOpen(null)} onChanged={(d) => { setOpen(null); if (d) setWeek(startOfWeek(d)); void reload(); }} />}
-      {creating && (staff || selfTrain) && <ScheduleForm presetMemberId={staff ? undefined : me.memberId ?? undefined} onClose={closeCreate} onSaved={(firstDay) => { closeCreate(); if (firstDay) setWeek(startOfWeek(firstDay)); void reload(); }} />}
+      {creating && (staff || selfTrain) && <ScheduleForm presetMemberId={staff ? undefined : me.memberId ?? undefined} presetExerciseId={exIdParam ? Number(exIdParam) : undefined} onClose={closeCreate} onSaved={(firstDay) => { closeCreate(); if (firstDay) setWeek(startOfWeek(firstDay)); void reload(); }} />}
     </div>
   );
 }
@@ -280,7 +287,7 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
 // Giờ bắt đầu: bước 15 phút trong giờ mở cửa, muộn nhất 21:30 để còn 30 phút tập
 const START_TIMES = timeOptions(15, GYM_OPEN, fromMin(toMin(GYM_CLOSE) - 30));
 const withCurrent = (list: string[], v: string) => (list.includes(v) ? list : [...list, v].sort((a, b) => toMin(a) - toMin(b)));
-export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?: Schedule; presetMemberId?: number; onClose: () => void; onSaved: (firstDay?: Date) => void }) {
+export function ScheduleForm({ edit, presetMemberId, presetExerciseId, onClose, onSaved }: { edit?: Schedule; presetMemberId?: number; presetExerciseId?: number; onClose: () => void; onSaved: (firstDay?: Date) => void }) {
   const me = useMe();
   const toast = useToast();
   // Hội viên tự xếp buổi tự tập cho chính mình: không chọn hội viên / HLV, không cần đối chiếu giờ HLV
@@ -303,6 +310,16 @@ export function ScheduleForm({ edit, presetMemberId, onClose, onSaved }: { edit?
   const [skipped, setSkipped] = useState<{ created: number; reasons: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<Member | null>(null);
+
+  useEffect(() => {
+    if (!presetExerciseId) return;
+    api.get<Exercise>(`/exercises/${presetExerciseId}`).then((ex) => {
+      if (ex) {
+        setTitle(`Tập bài: ${ex.name}`);
+        setNote(`Bài tập: ${ex.name}${ex.nameEn ? ` (${ex.nameEn})` : ''} · Dụng cụ: ${ex.equipment || 'Tự do'}`);
+      }
+    }).catch(() => {});
+  }, [presetExerciseId]);
 
   const trainers = useAsync(() => (me.role === 'ADMIN' ? api.get<Trainer[]>('/trainers') : Promise.resolve([] as Trainer[])), []);
   const plans = useAsync(

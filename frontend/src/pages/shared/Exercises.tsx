@@ -37,6 +37,7 @@ const equipOf = (e: Exercise): string[] => e.equipmentKeys ?? [];
 const muscleName = (k: MuscleKey) => t(MUSCLE_BY_KEY.get(k)?.label ?? k);
 
 const byName = (a: Exercise, b: Exercise) => a.name.localeCompare(b.name, 'vi');
+const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
 const SORTERS: Record<Sort, (a: Exercise, b: Exercise) => number> = {
   name: byName,
   updated: (a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '') || byName(a, b),
@@ -60,6 +61,9 @@ export default function Exercises() {
   const [editing, setEditing] = useState<{ exercise?: Exercise; copyOf?: Exercise } | null>(null);
   const [viewingId, setViewingId] = useState<number | null>(null);
   const [removing, setRemoving] = useState<Exercise | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showSuggest, setShowSuggest] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   const dq = useDebounced(q);
   const { data, error, loading, reload } = useAsync(
     () => api.get<Exercise[]>('/exercises', { q: dq, muscleGroup: group, level, location, goal, reviewStatus: review, includeHidden: showHidden }),
@@ -96,7 +100,28 @@ export default function Exercises() {
     if (equip) next.set('equipment', equip);
     setParams(next, { replace: true });
   }, [dq, group, level, location, goal, review, showHidden, muscle, equip, setParams]);
-  const byEquip = useMemo(() => (data ?? []).filter((e) => !equip || equipOf(e).includes(equip)), [data, equip]);
+
+  useEffect(() => {
+    const handler = (ev: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(ev.target as Node)) {
+        setShowSuggest(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const suggestions = useMemo(() => {
+    const norm = fold(q.trim());
+    if (!norm || norm.length < 2 || !data) return [];
+    return data
+      .filter((e) => fold(e.name).includes(norm) || (e.nameEn && fold(e.nameEn).includes(norm)) || (e.aliases && fold(e.aliases).includes(norm)))
+      .slice(0, 6);
+  }, [data, q]);
+
+  // Hội viên chỉ hiển thị bài đã duyệt; Quản lý/HLV xem được mọi trạng thái duyệt
+  const byRole = useMemo(() => (data ?? []).filter((e) => staff || e.reviewStatus === 'APPROVED'), [data, staff]);
+  const byEquip = useMemo(() => byRole.filter((e) => !equip || equipOf(e).includes(equip)), [byRole, equip]);
   const muscleCounts = useMemo(() => {
     const c: Partial<Record<MuscleKey, number>> = {};
     byEquip.forEach((e) => new Set([...targetOf(e), ...(withSecondary ? secondaryOf(e) : [])]).forEach((k) => { c[k] = (c[k] ?? 0) + 1; }));
@@ -187,8 +212,39 @@ export default function Exercises() {
         </Alert>
       )}
 
-      <div className="toolbar mt-16">
-        <SearchInput value={q} onChange={setQ} placeholder="Tìm tên Việt/Anh, tên khác, dụng cụ…" />
+      <div className="toolbar mt-16" style={{ alignItems: 'center' }}>
+        <div className="ex-search-wrapper" ref={searchRef}>
+          <SearchInput
+            value={q}
+            onChange={(v) => { setQ(v); setShowSuggest(true); }}
+            placeholder="Tìm tên Việt/Anh, tên khác, dụng cụ…"
+          />
+          {showSuggest && suggestions.length > 0 && (
+            <div className="ex-autocomplete-dropdown">
+              <div className="tiny faint px-10 py-4 font-bold">{t('Gợi ý bài tập ({n})', { n: suggestions.length })}</div>
+              {suggestions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="ex-autocomplete-item"
+                  onClick={() => {
+                    setQ(item.name);
+                    setShowSuggest(false);
+                  }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="ex-autocomplete-title">{item.name}</div>
+                    {item.nameEn && <div className="ex-autocomplete-sub">{item.nameEn}</div>}
+                  </div>
+                  <div className="row gap-4 flex-shrink-0">
+                    <span className="badge badge-sm">{muscleLabel[item.muscleGroup]}</span>
+                    {item.equipment && <span className="tiny faint">{item.equipment}</span>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <Select value={level} onChange={(e) => setLevel(e.target.value as Level | '')} aria-label="Cấp độ">
           <option value="">{t('Mọi cấp độ')}</option>
           {(Object.keys(levelLabel) as Level[]).map((l) => <option key={l} value={l}>{levelLabel[l][0]}</option>)}
@@ -210,6 +266,26 @@ export default function Exercises() {
         <Select value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sắp xếp">
           {SORTS.filter((s) => staff || s.value !== 'review').map((s) => <option key={s.value} value={s.value}>{t(s.label)}</option>)}
         </Select>
+        <div className="ex-view-toggle">
+          <button
+            type="button"
+            className={`ex-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+            onClick={() => setViewMode('grid')}
+            title={t('Xem dạng lưới thẻ')}
+            aria-label={t('Xem dạng lưới')}
+          >
+            <Icon name="grid" size={16} />
+          </button>
+          <button
+            type="button"
+            className={`ex-view-btn ${viewMode === 'list' ? 'active' : ''}`}
+            onClick={() => setViewMode('list')}
+            title={t('Xem dạng danh sách')}
+            aria-label={t('Xem dạng danh sách')}
+          >
+            <Icon name="list" size={16} />
+          </button>
+        </div>
         {staff && <label className="check"><input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />{t('Hiện cả bài đã ẩn')}</label>}
         {filtered && <Button variant="ghost" size="sm" icon="x" onClick={clearFilters}>Xoá bộ lọc</Button>}
       </div>
@@ -276,46 +352,104 @@ export default function Exercises() {
           action={filtered ? <Button onClick={clearFilters}>Xoá bộ lọc</Button> : undefined} /></Card>
       ) : (
         <>
-          <div className="grid grid-3" aria-busy={loading}>
-            {paged.items.map((e) => (
-              <Card key={e.id} className={`hoverable ex-card ${e.hidden ? 'is-hidden' : ''}`}>
-                <button type="button" className="ex-thumb-btn" onClick={() => setViewingId(e.id)} aria-label={t('Xem {name}', { name: e.name })}>
-                  <ExerciseMedia imageKey={e.imageKey} alt={e.name} playOnHover className="ex-thumb"
-                    tag={targetOf(e).slice(0, 2).map(muscleName).join(' · ') || undefined}
-                    fallback={<div className="ex-thumb ex-thumb-map"><MuscleMap size="sm" primary={targetOf(e)} secondary={secondaryOf(e)} /></div>} />
-                </button>
-                <div className="top">
-                  <div className="row" style={{ alignItems: 'flex-start' }}>
-                    <div>
-                      <button type="button" className="ex-title" onClick={() => setViewingId(e.id)}>{e.name}</button>
-                      {e.nameEn && <div className="tiny faint">{e.nameEn}</div>}
-                      <div className="tiny muted">{muscleLabel[e.muscleGroup]} · {e.equipment ?? t('Không dụng cụ')}{e.location && ` · ${locationLabel[e.location]}`}</div>
+          {viewMode === 'grid' ? (
+            <div className="grid grid-3" aria-busy={loading}>
+              {paged.items.map((e) => (
+                <Card key={e.id} className={`hoverable ex-card ${e.hidden ? 'is-hidden' : ''}`}>
+                  <button type="button" className="ex-thumb-btn" onClick={() => setViewingId(e.id)} aria-label={t('Xem {name}', { name: e.name })}>
+                    <ExerciseMedia imageKey={e.imageKey} alt={e.name} playOnHover className="ex-thumb"
+                      tag={targetOf(e).slice(0, 2).map(muscleName).join(' · ') || undefined}
+                      fallback={<div className="ex-thumb ex-thumb-map"><MuscleMap size="sm" primary={targetOf(e)} secondary={secondaryOf(e)} /></div>} />
+                  </button>
+                  <div className="top">
+                    <div className="row" style={{ alignItems: 'flex-start' }}>
+                      <div>
+                        <button type="button" className="ex-title" onClick={() => setViewingId(e.id)}>{e.name}</button>
+                        {e.nameEn && <div className="tiny faint">{e.nameEn}</div>}
+                        <div className="tiny muted">{muscleLabel[e.muscleGroup]} · {e.equipment ?? t('Không dụng cụ')}{e.location && ` · ${locationLabel[e.location]}`}</div>
+                      </div>
+                    </div>
+                    <StatusBadge map={levelLabel} value={e.level} />
+                  </div>
+                  {e.description && <p className="small muted" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.description}</p>}
+                  <div className="row row-wrap" style={{ gap: 6 }}>
+                    <StatusBadge map={reviewLabel} value={e.reviewStatus} />
+                    <span className="tiny faint">{e.sources.length > 0 ? t('{n} nguồn', { n: e.sources.length }) : t('Chưa có nguồn')}</span>
+                    {e.updatedAt && <span className="tiny faint">· {t('Sửa lần cuối')} {fmtDateTime(e.updatedAt)}</span>}
+                  </div>
+                  <div className="row between">
+                    <span className="tiny faint">{e.usageCount > 0 ? t('Dùng trong {n} giáo án', { n: e.usageCount }) : t('Chưa dùng')}{e.hidden && ' · '}{e.hidden && <Badge tone="muted">Đã ẩn</Badge>}</span>
+                    <div className="row" style={{ gap: 2 }}>
+                      <Link to={`/exercises/${e.id}`} className="btn btn-sm btn-ghost" title={t('Xem trang chi tiết')} aria-label={t('Trang chi tiết')}>
+                        <Icon name="arrowRight" size={13} />
+                      </Link>
+                      <Button size="sm" variant="ghost" icon="eye" aria-label="Xem nhanh" title="Xem nhanh" onClick={() => setViewingId(e.id)} />
+                      {staff && <Button size="sm" variant="ghost" icon="edit" aria-label="Sửa" title="Sửa" onClick={() => setEditing({ exercise: e })} />}
+                      {staff && <Button size="sm" variant="ghost" icon="copy" aria-label="Nhân bản" title="Nhân bản" onClick={() => setEditing({ copyOf: e })} />}
+                      {staff && <Button size="sm" variant="ghost" icon={e.hidden ? 'eye' : 'eyeOff'} aria-label={e.hidden ? 'Hiện' : 'Ẩn'} title={e.hidden ? 'Hiện' : 'Ẩn'} onClick={() => void toggleHidden(e)} />}
+                      {me.role === 'ADMIN' && e.usageCount === 0 && <Button size="sm" variant="ghost" icon="trash" aria-label="Xoá" title="Xoá" onClick={() => setRemoving(e)} />}
                     </div>
                   </div>
-                  <StatusBadge map={levelLabel} value={e.level} />
-                </div>
-                {e.description && <p className="small muted" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.description}</p>}
-                <div className="row row-wrap" style={{ gap: 6 }}>
-                  <StatusBadge map={reviewLabel} value={e.reviewStatus} />
-                  <span className="tiny faint">{e.sources.length > 0 ? t('{n} nguồn', { n: e.sources.length }) : t('Chưa có nguồn')}</span>
-                  {e.updatedAt && <span className="tiny faint">· {t('Sửa lần cuối')} {fmtDateTime(e.updatedAt)}</span>}
-                </div>
-                <div className="row between">
-                  <span className="tiny faint">{e.usageCount > 0 ? t('Dùng trong {n} giáo án', { n: e.usageCount }) : t('Chưa dùng')}{e.hidden && ' · '}{e.hidden && <Badge tone="muted">Đã ẩn</Badge>}</span>
-                  <div className="row" style={{ gap: 2 }}>
-                    <Link to={`/exercises/${e.id}`} className="btn btn-sm btn-ghost" title={t('Xem trang chi tiết')} aria-label={t('Trang chi tiết')}>
-                      <Icon name="arrowRight" size={13} />
-                    </Link>
-                    <Button size="sm" variant="ghost" icon="eye" aria-label="Xem nhanh" title="Xem nhanh" onClick={() => setViewingId(e.id)} />
-                    {staff && <Button size="sm" variant="ghost" icon="edit" aria-label="Sửa" title="Sửa" onClick={() => setEditing({ exercise: e })} />}
-                    {staff && <Button size="sm" variant="ghost" icon="copy" aria-label="Nhân bản" title="Nhân bản" onClick={() => setEditing({ copyOf: e })} />}
-                    {staff && <Button size="sm" variant="ghost" icon={e.hidden ? 'eye' : 'eyeOff'} aria-label={e.hidden ? 'Hiện' : 'Ẩn'} title={e.hidden ? 'Hiện' : 'Ẩn'} onClick={() => void toggleHidden(e)} />}
-                    {me.role === 'ADMIN' && e.usageCount === 0 && <Button size="sm" variant="ghost" icon="trash" aria-label="Xoá" title="Xoá" onClick={() => setRemoving(e)} />}
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card flush className="overflow-auto" aria-busy={loading}>
+              <table className="ex-list-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 56 }}>{t('Hình')}</th>
+                    <th>{t('Tên bài tập')}</th>
+                    <th>{t('Nhóm cơ')}</th>
+                    <th>{t('Dụng cụ')}</th>
+                    <th>{t('Cấp độ')}</th>
+                    {staff && <th>{t('Trạng thái')}</th>}
+                    <th style={{ textAlign: 'right' }}>{t('Thao tác')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paged.items.map((e) => (
+                    <tr key={e.id} className="ex-list-row">
+                      <td>
+                        <button type="button" className="ex-list-thumb border-0 cursor-pointer p-0" onClick={() => setViewingId(e.id)} aria-label={e.name}>
+                          {e.imageKey ? (
+                            <img src={`/exercise-img/${e.imageKey}/0.jpg`} alt="" />
+                          ) : (
+                            <div style={{ width: 44, height: 36, display: 'grid', placeItems: 'center' }}>
+                              <Icon name="dumbbell" size={18} />
+                            </div>
+                          )}
+                        </button>
+                      </td>
+                      <td>
+                        <button type="button" className="ex-title font-bold text-left border-0 bg-transparent p-0 cursor-pointer" onClick={() => setViewingId(e.id)}>
+                          {e.name}
+                        </button>
+                        {e.nameEn && <div className="tiny faint">{e.nameEn}</div>}
+                      </td>
+                      <td>
+                        <span className="badge badge-sm">{muscleLabel[e.muscleGroup]}</span>
+                        {targetOf(e).length > 0 && <div className="tiny faint mt-2">{targetOf(e).slice(0, 2).map(muscleName).join(', ')}</div>}
+                      </td>
+                      <td className="small">{e.equipment ?? t('Không dụng cụ')}</td>
+                      <td><StatusBadge map={levelLabel} value={e.level} /></td>
+                      {staff && <td><StatusBadge map={reviewLabel} value={e.reviewStatus} /></td>}
+                      <td style={{ textAlign: 'right' }}>
+                        <div className="row end" style={{ gap: 4 }}>
+                          <Link to={`/exercises/${e.id}`} className="btn btn-sm btn-ghost" title={t('Xem trang chi tiết')} aria-label={t('Trang chi tiết')}>
+                            <Icon name="arrowRight" size={13} />
+                          </Link>
+                          <Button size="sm" variant="ghost" icon="eye" aria-label="Xem nhanh" title="Xem nhanh" onClick={() => setViewingId(e.id)} />
+                          {staff && <Button size="sm" variant="ghost" icon="edit" aria-label="Sửa" title="Sửa" onClick={() => setEditing({ exercise: e })} />}
+                          {staff && <Button size="sm" variant="ghost" icon={e.hidden ? 'eye' : 'eyeOff'} aria-label={e.hidden ? 'Hiện' : 'Ẩn'} title={e.hidden ? 'Hiện' : 'Ẩn'} onClick={() => void toggleHidden(e)} />}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
           <Card flush className="mt-16">
             <Pager page={paged.page} totalPages={paged.totalPages} total={paged.total} onPage={(p) => { paged.setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               size={paged.size} sizes={[12, 24, 50]} onSize={paged.setSize} />

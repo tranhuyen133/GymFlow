@@ -3,6 +3,7 @@ package com.gymflow.web;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.security.CurrentUser;
+import com.gymflow.service.ExerciseImporterService;
 import com.gymflow.service.ExerciseService;
 import com.gymflow.service.WorkoutPlanService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,6 +23,7 @@ public class TrainingController {
 
     private final ExerciseService exerciseService;
     private final WorkoutPlanService planService;
+    private final ExerciseImporterService exerciseImporterService;
 
     // ---------- Thư viện bài tập ----------
     @GetMapping("/api/exercises")
@@ -65,6 +67,13 @@ public class TrainingController {
     @PreAuthorize("hasRole('ADMIN')")
     public BulkApproveResponse approveExercises(@Valid @RequestBody BulkApproveRequest req) {
         return exerciseService.approveMany(CurrentUser.get(), req);
+    }
+
+    @PostMapping({"/api/admin/exercises/import", "/api/exercises/import"})
+    @PreAuthorize("hasRole('ADMIN')")
+    public ExerciseImportReport importExercises(@RequestParam(defaultValue = "true") boolean dryRun,
+                                               @RequestParam(defaultValue = "0") int limit) {
+        return exerciseImporterService.importDataset(dryRun, limit);
     }
 
     @PostMapping("/api/exercises")

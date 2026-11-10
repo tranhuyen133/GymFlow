@@ -16,6 +16,9 @@ public enum ChatTopic {
     NEXT_SESSION("Buổi tập kế tiếp", true, true, true),
     MY_PACKAGE("Gói tập còn hạn", false, false, true),
     TODAY_EXERCISES("Bài tập hôm nay", false, false, true),
+    EXERCISE_TIPS("Gợi ý bài tập & nhóm cơ", true, true, true),
+    EQUIPMENT_GUIDE("Hướng dẫn sử dụng thiết bị", true, true, true),
+    WORKOUT_PLANS("Gợi ý lịch tập mẫu", true, true, true),
     HELP("Hướng dẫn & an toàn", true, true, true);
 
     private final String label;

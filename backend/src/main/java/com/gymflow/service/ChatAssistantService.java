@@ -54,6 +54,9 @@ public class ChatAssistantService {
             case NEXT_SESSION -> nextSession(user);
             case MY_PACKAGE -> myPackage(user);
             case TODAY_EXERCISES -> todayExercises(user);
+            case EXERCISE_TIPS -> exerciseTips();
+            case EQUIPMENT_GUIDE -> equipmentGuide();
+            case WORKOUT_PLANS -> workoutPlansGuide();
             case HELP -> help();
         };
     }
@@ -194,6 +197,40 @@ public class ChatAssistantService {
             out.append('\n');
         }
         return out.toString().trim();
+    }
+
+    private static String exerciseTips() {
+        return """
+                Gợi ý các bài tập cơ bản theo nhóm cơ chính tại GymFlow:
+                • Ngực: Đẩy ngực đòn ngang (Bench Press), Đẩy ngực tạ đơn dốc lên (Incline Dumbbell Press), Hít đất (Push-up).
+                • Lưng & Xô: Kéo xô (Lat Pulldown), Chèo thuyền cáp ngồi (Seated Cable Row), Hít xà đơn (Pull-up).
+                • Đùi & Mông: Gánh tạ (Back Squat), Deadlift chân thẳng (Romanian Deadlift), Đạp đùi (Leg Press).
+                • Vai: Đẩy vai tạ đơn (Overhead Press), Nâng tạ ngang (Lateral Raise).
+                • Tay & Bụng: Cuốn tạ đơn (Bicep Curl), Ép cáp tay sau (Triceps Pushdown), Plank và Gập bụng (Crunch).
+
+                💡 Mẹo: Bạn có thể vào "Thư viện bài tập" (/exercises) để xem kỹ thuật từng bước, nhịp thở và bản đồ giải phẫu cơ bắp chi tiết!""";
+    }
+
+    private static String equipmentGuide() {
+        return """
+                Hướng dẫn an toàn khi sử dụng thiết bị tại phòng gym:
+                • Tạ tự do (Dumbbell, Barbell): Luôn kẹp khóa an toàn (collars) trên thanh đòn. Bắt đầu với mức tạ nhẹ để khởi động khớp.
+                • Máy tập khối tạ (Pin-selected Machines): Chỉnh vị trí ghế và đệm tỳ trước khi cắm chốt tạ. Đặt mức tạ kiểm soát được trọn vẹn đường đi.
+                • Dàn kéo cáp (Cable Station): Đảm bảo ròng rọc đã vào đúng khớp chốt nấc trước khi móc phụ kiện (dây thừng, tay cầm).
+                • Máy Cardio (Treadmill, Bike): Kẹp dây dừng khẩn cấp vào áo khi chạy bộ; bấm Stop và chờ băng tải dừng hẳn trước khi bước xuống.
+
+                💡 Bạn có thể tra cứu toàn bộ danh mục thiết bị và bài tập tương ứng tại "Dụng cụ tập" (/equipment).""";
+    }
+
+    private static String workoutPlansGuide() {
+        return """
+                Các khung lịch tập mẫu chuẩn khoa học được tích hợp trong GymFlow:
+                • Toàn thân (Full Body) 3 buổi/tuần: T2 – T4 – T6. Rất phù hợp cho người mới bắt đầu hoặc người bận rộn.
+                • Thân trên / Thân dưới (Upper/Lower) 4 buổi/tuần: T2, T3 và T5, T6. Cân bằng tối ưu giữa kích thích cơ và thời gian phục hồi.
+                • Đẩy – Kéo – Chân (Push/Pull/Legs) 6 buổi/tuần: Tối ưu khối lượng tập luyện cho người đã có nền tảng thể lực.
+                • Thể hình tại nhà không tạ (Bodyweight HIIT) 3 buổi/tuần: Tập luyện linh hoạt với trọng lượng cơ thể.
+
+                💡 Bấm vào mục "Lịch tập mẫu" (/programs) để xem chi tiết từng buổi tập và chọn "Dùng làm giáo án"!""";
     }
 
     private static String help() {

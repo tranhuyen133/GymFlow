@@ -67,7 +67,14 @@ class ChatAssistantServiceTest {
     void suggestionsForMemberOnlyContainMemberTopics() {
         assertThat(assistant.suggestions(MEMBER_USER))
                 .extracting(ChatSuggestion::key)
-                .containsExactly("SCHEDULE_TODAY", "NEXT_SESSION", "MY_PACKAGE", "TODAY_EXERCISES", "HELP");
+                .containsExactly("SCHEDULE_TODAY", "NEXT_SESSION", "MY_PACKAGE", "TODAY_EXERCISES", "EXERCISE_TIPS", "EQUIPMENT_GUIDE", "WORKOUT_PLANS", "HELP");
+    }
+
+    @Test
+    void answersFitnessKnowledgeTopicsCorrectly() {
+        assertThat(assistant.answer(MEMBER_USER, ChatTopic.EXERCISE_TIPS)).contains("Bench Press", "Squat", "/exercises");
+        assertThat(assistant.answer(MEMBER_USER, ChatTopic.EQUIPMENT_GUIDE)).contains("Dumbbell", "Cable", "/equipment");
+        assertThat(assistant.answer(MEMBER_USER, ChatTopic.WORKOUT_PLANS)).contains("Full Body", "Upper/Lower", "/programs");
     }
 
     @Test
