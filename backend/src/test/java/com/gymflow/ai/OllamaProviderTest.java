@@ -40,7 +40,7 @@ class OllamaProviderTest {
         conversation = new ChatConversation();
         conversation.setId(5L);
 
-        lenient().when(aiConfig.getOllamaBaseUrl()).thenReturn("http://localhost:11434");
+        lenient().when(aiConfig.getOllamaBaseUrl()).thenReturn("http://127.0.0.1:59999");
         lenient().when(aiConfig.getOllamaModel()).thenReturn("qwen2.5:3b");
         lenient().when(aiConfig.getOllamaTimeoutSeconds()).thenReturn(15);
         lenient().when(aiConfig.getMaxInputChars()).thenReturn(500);

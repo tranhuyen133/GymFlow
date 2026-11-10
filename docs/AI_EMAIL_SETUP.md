@@ -24,27 +24,32 @@ Sao chép `.env.example` thành `.env` ở thư mục gốc. Dùng secret từ n
 
 ---
 
-### Trợ lý AI GymFlow (Chế độ Luật & Mô hình AI Cục bộ Ollama)
+### Trợ lý AI GymFlow (Google Gemini API & Mô hình AI Cục bộ Ollama)
 
-Hệ thống trợ lý hỗ trợ 2 chế độ triển khai (không gửi dữ liệu ra bên ngoài, không cần API key thương mại):
+Hệ thống trợ lý hỗ trợ 3 chế độ triển khai:
 
-1. **Chế độ nút bấm sẵn (`AI_PROVIDER=rule`)** *(Mặc định)*:
-   * Backend trả lời từ dữ liệu thật nội bộ theo vai trò của người dùng.
-   * Hoạt động độc lập, không yêu cầu cài thêm phần mềm hay tải mô hình AI.
+1. **Chế độ Google Gemini API (`AI_PROVIDER=gemini`)** *(Khuyên dùng trên Cloud / VPS)*:
+   * Sử dụng API Key miễn phí hoặc có phí từ Google AI Studio ([aistudio.google.com](https://aistudio.google.com/)).
+   * Model khuyến nghị: `gemini-1.5-flash` (tốc độ cao, chi phí rẻ hoặc miễn phí theo hạn ngạch Google, khả năng hiểu tiếng Việt cực kỳ xuất sắc).
+   * **Cơ chế neo dữ liệu thật (Grounding)**: Toàn bộ thông tin lịch tập, gói tập, bài tập được backend truy vấn nội bộ rồi truyền vào `system_instruction`. Gemini chỉ tổng hợp câu trả lời dựa trên dữ liệu thật này.
+   * **Cơ chế dự phòng (Fallback)**: Khi mất mạng, hết hạn ngạch hoặc lỗi API key, hệ thống tự động chuyển về chế độ nội bộ `rule` mà không làm gián đoạn trải nghiệm người dùng.
 
 2. **Chế độ hỏi tự do bằng AI Local (`AI_PROVIDER=ollama`)**:
-   * Cho phép người dùng gõ câu hỏi tự do bằng tiếng Việt trên giao diện chat.
-   * Mô hình ngôn ngữ lớn (LLM) chạy hoàn toàn trên máy local thông qua **Ollama**.
-   * **Cơ chế neo dữ liệu thật (Grounding)**: Backend tự động nhận diện ý định câu hỏi, kiểm tra quyền hạn của tài khoản, truy vấn dữ liệu thực tế từ CSDL GymFlow và đưa vào Prompt để AI tổng hợp câu trả lời. AI **không kết nối trực tiếp CSDL**, **không sinh SQL**.
-   * **Cơ chế dự phòng tự động (Fallback)**: Nếu Ollama chưa được bật, lỗi mạng hoặc phản hồi quá thời gian (`OLLAMA_TIMEOUT_SECONDS`), hệ thống tự động chuyển về chế độ `rule` mà không làm gián đoạn trải nghiệm người dùng.
+   * Chạy mô hình mã nguồn mở (vd: `qwen2.5:3b`) trực tiếp trên máy qua **Ollama**, không cần Internet, hoàn toàn miễn phí và bảo mật tuyệt đối.
+
+3. **Chế độ nút bấm sẵn (`AI_PROVIDER=rule`)**:
+   * Backend trả lời từ dữ liệu thật nội bộ theo các nút câu hỏi có sẵn, không gọi bất kỳ mô hình AI nào.
 
 #### Bảng biến môi trường Trợ lý AI:
 
 | Biến | Mặc định | Ý nghĩa & Tùy chọn |
 | --- | --- | --- |
-| `AI_PROVIDER` | `rule` | `rule` (nút bấm gợi ý) hoặc `ollama` (hỏi tự do + nút bấm) |
-| `OLLAMA_BASE_URL` | `http://ollama:11434` | URL dịch vụ Ollama (`http://ollama:11434` khi dùng docker compose, hoặc `http://host.docker.internal:11434` / `http://localhost:11434` khi chạy máy host) |
-| `OLLAMA_MODEL` | `qwen2.5:3b` | Tên mô hình trong thư viện Ollama (khuyên dùng: `qwen2.5:3b` hoặc `qwen2.5:1.5b`) |
+| `AI_PROVIDER` | `gemini` | `gemini` (Google Gemini API), `ollama` (AI local) hoặc `rule` (chỉ nút bấm) |
+| `GEMINI_API_KEY` | *(trống)* | API Key lấy từ Google AI Studio |
+| `GEMINI_MODEL` | `gemini-1.5-flash` | Tên model Gemini (`gemini-1.5-flash` hoặc `gemini-2.0-flash`) |
+| `AI_FREE_TEXT_ENABLED` | `true` | Bật/tắt thanh nhập câu hỏi tự do trên giao diện |
+| `OLLAMA_BASE_URL` | `http://ollama:11434` | URL dịch vụ Ollama khi dùng `AI_PROVIDER=ollama` |
+| `OLLAMA_MODEL` | `qwen2.5:3b` | Tên mô hình Ollama (khuyên dùng: `qwen2.5:3b`) |
 | `OLLAMA_TIMEOUT_SECONDS` | `15` | Thời gian chờ tối đa khi gọi mô hình (giây) |
 | `AI_MAX_INPUT_CHARS` | `500` | Giới hạn ký tự tối đa cho mỗi câu hỏi |
 

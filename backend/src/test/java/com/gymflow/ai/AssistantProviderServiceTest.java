@@ -15,26 +15,40 @@ class AssistantProviderServiceTest {
     @Mock AiConfig aiConfig;
     @Mock RuleBasedProvider ruleBasedProvider;
     @Mock OllamaProvider ollamaProvider;
+    @Mock GeminiProvider geminiProvider;
 
     @Test
-    void selectsRuleBasedProviderWhenOllamaIsDisabled() {
-        when(aiConfig.isOllamaEnabled()).thenReturn(false);
+    void selectsGeminiProviderWhenGeminiIsEnabled() {
+        when(aiConfig.isGeminiEnabled()).thenReturn(true);
         when(aiConfig.isFreeTextEnabled()).thenReturn(true);
 
-        AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, ollamaProvider);
+        AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, ollamaProvider, geminiProvider);
 
-        assertThat(service.getActiveProvider()).isSameAs(ruleBasedProvider);
+        assertThat(service.getActiveProvider()).isSameAs(geminiProvider);
         assertThat(service.isFreeTextEnabled()).isTrue();
     }
 
     @Test
-    void selectsOllamaProviderWhenOllamaIsEnabled() {
+    void selectsOllamaProviderWhenOllamaIsEnabledAndGeminiIsDisabled() {
+        when(aiConfig.isGeminiEnabled()).thenReturn(false);
         when(aiConfig.isOllamaEnabled()).thenReturn(true);
         when(aiConfig.isFreeTextEnabled()).thenReturn(true);
 
-        AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, ollamaProvider);
+        AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, ollamaProvider, geminiProvider);
 
         assertThat(service.getActiveProvider()).isSameAs(ollamaProvider);
+        assertThat(service.isFreeTextEnabled()).isTrue();
+    }
+
+    @Test
+    void selectsRuleBasedProviderWhenExternalAiIsDisabled() {
+        when(aiConfig.isGeminiEnabled()).thenReturn(false);
+        when(aiConfig.isOllamaEnabled()).thenReturn(false);
+        when(aiConfig.isFreeTextEnabled()).thenReturn(true);
+
+        AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, ollamaProvider, geminiProvider);
+
+        assertThat(service.getActiveProvider()).isSameAs(ruleBasedProvider);
         assertThat(service.isFreeTextEnabled()).isTrue();
     }
 }
