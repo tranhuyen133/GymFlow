@@ -1,11 +1,13 @@
 package com.gymflow.web;
 
+import com.gymflow.common.ApiException;
+import com.gymflow.dto.Dtos.AiHealthResponse;
 import com.gymflow.dto.Dtos.ChatConversationResponse;
 import com.gymflow.dto.Dtos.ChatCreateConversationResponse;
 import com.gymflow.dto.Dtos.ChatHistoryResponse;
 import com.gymflow.dto.Dtos.ChatMessageResponse;
 import com.gymflow.dto.Dtos.ChatSendRequest;
-import com.gymflow.dto.Dtos.ChatSuggestion;
+import com.gymflow.dto.Dtos.ChatSuggestionsResponse;
 import com.gymflow.security.CurrentUser;
 import com.gymflow.service.ChatService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,7 +25,7 @@ public class ChatController {
     private final ChatService chatService;
 
     @GetMapping("/suggestions")
-    public List<ChatSuggestion> suggestions() {
+    public ChatSuggestionsResponse suggestions() {
         return chatService.suggestions(CurrentUser.get());
     }
 
@@ -45,5 +47,14 @@ public class ChatController {
     @PostMapping("/messages")
     public ChatMessageResponse send(@Valid @RequestBody ChatSendRequest request) {
         return chatService.send(CurrentUser.get(), request);
+    }
+
+    @GetMapping("/ai-health")
+    public AiHealthResponse aiHealth() {
+        var user = CurrentUser.get();
+        if (user == null || !user.isAdmin()) {
+            throw ApiException.forbidden("Chỉ quản trị viên mới có quyền kiểm tra trạng thái AI");
+        }
+        return chatService.aiHealth();
     }
 }

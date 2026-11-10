@@ -1,15 +1,19 @@
 package com.gymflow.service;
 
+import com.gymflow.ai.AssistantProvider;
+import com.gymflow.ai.AssistantProviderService;
 import com.gymflow.common.ApiException;
+import com.gymflow.config.AiConfig;
 import com.gymflow.domain.ChatConversation;
 import com.gymflow.domain.ChatMessage;
 import com.gymflow.domain.User;
+import com.gymflow.dto.Dtos.AiHealthResponse;
 import com.gymflow.dto.Dtos.ChatConversationResponse;
 import com.gymflow.dto.Dtos.ChatCreateConversationResponse;
 import com.gymflow.dto.Dtos.ChatHistoryResponse;
 import com.gymflow.dto.Dtos.ChatMessageResponse;
 import com.gymflow.dto.Dtos.ChatSendRequest;
-import com.gymflow.dto.Dtos.ChatSuggestion;
+import com.gymflow.dto.Dtos.ChatSuggestionsResponse;
 import com.gymflow.repository.ChatConversationRepository;
 import com.gymflow.repository.ChatMessageRepository;
 import com.gymflow.repository.UserRepository;
@@ -21,10 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 /**
- * Trợ lý GymFlow dạng câu trả lời sẵn. Không dùng API key, không gọi dịch vụ AI bên ngoài.
- * Câu trả lời được tạo từ dữ liệu nội bộ qua {@link ChatAssistantService}.
+ * Quản lý Trợ lý GymFlow: lịch sử hội thoại, điều phối câu trả lời qua AssistantProviderService.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,11 +38,15 @@ public class ChatService {
     private final ChatMessageRepository messageRepository;
     private final UserRepository userRepository;
     private final ChatAssistantService assistant;
+    private final AssistantProviderService assistantProviderService;
+    private final AiConfig aiConfig;
     private final Clock clock;
 
     @Transactional(readOnly = true)
-    public List<ChatSuggestion> suggestions(AuthUser principal) {
-        return assistant.suggestions(principal);
+    public ChatSuggestionsResponse suggestions(AuthUser principal) {
+        var items = assistant.suggestions(principal);
+        boolean freeText = assistantProviderService.isFreeTextEnabled();
+        return new ChatSuggestionsResponse(freeText, items);
     }
 
     @Transactional(readOnly = true)
@@ -75,20 +83,43 @@ public class ChatService {
 
     @Transactional
     public ChatMessageResponse send(AuthUser principal, ChatSendRequest request) {
-        ChatTopic topic = ChatTopic.parse(request.topic())
-                .orElseThrow(() -> ApiException.badRequest("Câu hỏi không hợp lệ"));
-        if (!topic.allowedFor(principal)) {
-            throw ApiException.forbidden("Bạn không có quyền dùng câu hỏi này");
+        boolean hasTopic = request.topic() != null && !request.topic().isBlank();
+        boolean hasText = request.text() != null && !request.text().isBlank();
+        if (!hasTopic && !hasText) {
+            throw ApiException.badRequest("Vui lòng chọn câu hỏi có sẵn hoặc nhập nội dung câu hỏi");
         }
 
         ChatConversation conversation = ownedConversation(principal, request.conversationId());
-        if (messageRepository.findTop1ByConversation_IdOrderByCreatedAtDesc(conversation.getId()).isEmpty()) {
-            conversation.setTitle(topic.label());
-        }
-        messageRepository.save(message(conversation, ChatMessage.Sender.USER, topic.label()));
+        AssistantProvider provider = assistantProviderService.getActiveProvider();
 
-        String answer = assistant.answer(principal, topic);
-        ChatMessage assistantMessage = message(conversation, ChatMessage.Sender.ASSISTANT, answer);
+        String userContent;
+        String answer;
+        String usedProviderName;
+
+        if (hasTopic) {
+            ChatTopic topic = ChatTopic.parse(request.topic())
+                    .orElseThrow(() -> ApiException.badRequest("Câu hỏi không hợp lệ"));
+            if (!topic.allowedFor(principal)) {
+                throw ApiException.forbidden("Bạn không có quyền dùng câu hỏi này");
+            }
+            userContent = topic.label();
+            answer = provider.answerTopic(principal, topic);
+            usedProviderName = "RULE";
+        } else {
+            userContent = request.text().trim();
+            answer = provider.answerText(principal, userContent, conversation);
+            usedProviderName = provider.getProviderName().toUpperCase(Locale.ROOT);
+        }
+
+        if (messageRepository.findTop1ByConversation_IdOrderByCreatedAtDesc(conversation.getId()).isEmpty()) {
+            String title = userContent.length() > 60 ? userContent.substring(0, 57) + "..." : userContent;
+            conversation.setTitle(title);
+        }
+
+        ChatMessage userMessage = message(conversation, ChatMessage.Sender.USER, userContent, "USER");
+        messageRepository.save(userMessage);
+
+        ChatMessage assistantMessage = message(conversation, ChatMessage.Sender.ASSISTANT, answer, usedProviderName);
         messageRepository.save(assistantMessage);
 
         conversation.setUpdatedAt(LocalDateTime.now(clock));
@@ -96,21 +127,40 @@ public class ChatService {
         return toResponse(assistantMessage);
     }
 
+    @Transactional(readOnly = true)
+    public AiHealthResponse aiHealth() {
+        AssistantProvider active = assistantProviderService.getActiveProvider();
+        return new AiHealthResponse(
+                aiConfig.isOllamaEnabled(),
+                active.isAvailable(),
+                aiConfig.getProvider(),
+                aiConfig.getOllamaModel(),
+                aiConfig.getOllamaBaseUrl()
+        );
+    }
+
     private ChatConversation ownedConversation(AuthUser principal, Long id) {
         return conversationRepository.findByIdAndUser_Id(id, principal.id())
                 .orElseThrow(() -> ApiException.notFound("hội thoại"));
     }
 
-    private ChatMessage message(ChatConversation conversation, ChatMessage.Sender sender, String content) {
+    private ChatMessage message(ChatConversation conversation, ChatMessage.Sender sender, String content, String provider) {
         ChatMessage message = new ChatMessage();
         message.setConversation(conversation);
         message.setSender(sender);
         message.setContent(content);
+        message.setProvider(provider != null ? provider : "RULE");
         message.setCreatedAt(LocalDateTime.now(clock));
         return message;
     }
 
     private static ChatMessageResponse toResponse(ChatMessage message) {
-        return new ChatMessageResponse(message.getId(), message.getSender().name(), message.getContent(), message.getCreatedAt());
+        return new ChatMessageResponse(
+                message.getId(),
+                message.getSender().name(),
+                message.getContent(),
+                message.getCreatedAt(),
+                message.getProvider()
+        );
     }
 }

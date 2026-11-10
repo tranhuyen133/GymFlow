@@ -1,6 +1,9 @@
 package com.gymflow.service;
 
+import com.gymflow.ai.AssistantProvider;
+import com.gymflow.ai.AssistantProviderService;
 import com.gymflow.common.ApiException;
+import com.gymflow.config.AiConfig;
 import com.gymflow.domain.ChatConversation;
 import com.gymflow.domain.ChatMessage;
 import com.gymflow.domain.Role;
@@ -35,6 +38,9 @@ class ChatServiceTest {
     @Mock ChatMessageRepository messageRepository;
     @Mock UserRepository userRepository;
     @Mock ChatAssistantService assistant;
+    @Mock AssistantProviderService assistantProviderService;
+    @Mock AssistantProvider activeProvider;
+    @Mock AiConfig aiConfig;
 
     ChatService service;
     AuthUser owner;
@@ -42,6 +48,7 @@ class ChatServiceTest {
     @BeforeEach
     void setUp() {
         service = new ChatService(conversationRepository, messageRepository, userRepository, assistant,
+                assistantProviderService, aiConfig,
                 Clock.fixed(Instant.parse("2026-11-10T10:00:00Z"), ZoneOffset.UTC));
         owner = new AuthUser(7L, "owner@example.test", Role.MEMBER, "Owner");
     }
@@ -75,26 +82,35 @@ class ChatServiceTest {
 
     @Test
     void unknownTopicIsRejectedBeforePersistence() {
+        ChatConversation conversation = conversation();
+        when(conversationRepository.findByIdAndUser_Id(1L, owner.id())).thenReturn(Optional.of(conversation));
+        when(assistantProviderService.getActiveProvider()).thenReturn(activeProvider);
+
         assertThatThrownBy(() -> service.send(owner, new ChatSendRequest(1L, "KHONG_TON_TAI")))
                 .isInstanceOf(ApiException.class)
                 .hasMessageContaining("không hợp lệ");
-        verifyNoInteractions(conversationRepository, messageRepository, assistant);
+        verifyNoInteractions(messageRepository, assistant);
     }
 
     @Test
     void topicOutsideMemberRoleIsRejected() {
+        ChatConversation conversation = conversation();
+        when(conversationRepository.findByIdAndUser_Id(1L, owner.id())).thenReturn(Optional.of(conversation));
+        when(assistantProviderService.getActiveProvider()).thenReturn(activeProvider);
+
         assertThatThrownBy(() -> service.send(owner, new ChatSendRequest(1L, "WHO_TODAY")))
                 .isInstanceOf(ApiException.class)
                 .hasMessageContaining("quyền");
-        verifyNoInteractions(conversationRepository, messageRepository, assistant);
+        verifyNoInteractions(messageRepository, assistant);
     }
 
     @Test
     void sendStoresQuestionLabelAndRuleBasedAnswer() {
         ChatConversation conversation = conversation();
         when(conversationRepository.findByIdAndUser_Id(1L, owner.id())).thenReturn(Optional.of(conversation));
+        when(assistantProviderService.getActiveProvider()).thenReturn(activeProvider);
+        when(activeProvider.answerTopic(owner, ChatTopic.SCHEDULE_TODAY)).thenReturn("Hôm nay bạn có 1 buổi tập.");
         when(messageRepository.findTop1ByConversation_IdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
-        when(assistant.answer(owner, ChatTopic.SCHEDULE_TODAY)).thenReturn("Hôm nay bạn có 1 buổi tập.");
         when(messageRepository.save(any(ChatMessage.class))).thenAnswer(inv -> inv.getArgument(0));
 
         var response = service.send(owner, new ChatSendRequest(1L, "SCHEDULE_TODAY"));
@@ -112,10 +128,32 @@ class ChatServiceTest {
     }
 
     @Test
-    void suggestionsAreDelegatedToAssistant() {
-        when(assistant.suggestions(owner)).thenReturn(List.of(new ChatSuggestion("HELP", "Hướng dẫn & an toàn")));
+    void sendFreeTextInvokesActiveProvider() {
+        ChatConversation conversation = conversation();
+        when(conversationRepository.findByIdAndUser_Id(1L, owner.id())).thenReturn(Optional.of(conversation));
+        when(assistantProviderService.getActiveProvider()).thenReturn(activeProvider);
+        when(activeProvider.getProviderName()).thenReturn("ollama");
+        when(activeProvider.answerText(eq(owner), eq("Hôm nay tôi tập gì?"), eq(conversation)))
+                .thenReturn("Hôm nay bạn có bài tập ngực.");
+        when(messageRepository.findTop1ByConversation_IdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
+        when(messageRepository.save(any(ChatMessage.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        assertThat(service.suggestions(owner))
+        var response = service.send(owner, new ChatSendRequest(1L, null, "Hôm nay tôi tập gì?"));
+
+        assertThat(response.sender()).isEqualTo("ASSISTANT");
+        assertThat(response.content()).isEqualTo("Hôm nay bạn có bài tập ngực.");
+        assertThat(response.provider()).isEqualTo("OLLAMA");
+        assertThat(conversation.getTitle()).isEqualTo("Hôm nay tôi tập gì?");
+    }
+
+    @Test
+    void suggestionsAreDelegatedToAssistantWithFreeTextFlag() {
+        when(assistant.suggestions(owner)).thenReturn(List.of(new ChatSuggestion("HELP", "Hướng dẫn & an toàn")));
+        when(assistantProviderService.isFreeTextEnabled()).thenReturn(true);
+
+        var res = service.suggestions(owner);
+        assertThat(res.freeTextEnabled()).isTrue();
+        assertThat(res.suggestions())
                 .extracting(ChatSuggestion::key)
                 .containsExactly("HELP");
     }

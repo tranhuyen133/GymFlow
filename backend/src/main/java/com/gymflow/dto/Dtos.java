@@ -99,13 +99,26 @@ public final class Dtos {
     }
 
     public record ChatSendRequest(@NotNull(message = "Thiếu mã hội thoại") Long conversationId,
-                                  @NotBlank(message = "Vui lòng chọn câu hỏi") String topic) {
+                                  String topic,
+                                  String text) {
+        public ChatSendRequest(Long conversationId, String topic) {
+            this(conversationId, topic, null);
+        }
     }
 
     public record ChatSuggestion(String key, String label) {
     }
 
-    public record ChatMessageResponse(Long id, String sender, String content, LocalDateTime createdAt) {
+    public record ChatSuggestionsResponse(boolean freeTextEnabled, List<ChatSuggestion> suggestions) {
+    }
+
+    public record ChatMessageResponse(Long id, String sender, String content, LocalDateTime createdAt, String provider) {
+        public ChatMessageResponse(Long id, String sender, String content, LocalDateTime createdAt) {
+            this(id, sender, content, createdAt, "RULE");
+        }
+    }
+
+    public record AiHealthResponse(boolean ollamaEnabled, boolean ollamaReachable, String provider, String model, String baseUrl) {
     }
 
     public record ChatConversationResponse(Long id, String title, LocalDateTime createdAt,

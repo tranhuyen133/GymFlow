@@ -27,6 +27,9 @@ public class ChatMessage {
     @Column(nullable = false, length = 10)
     private Sender sender;
 
+    @Column(nullable = false, length = 20)
+    private String provider = "RULE";
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
@@ -35,6 +38,11 @@ public class ChatMessage {
 
     @PrePersist
     void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (provider == null || provider.isBlank()) {
+            provider = "RULE";
+        }
     }
 }
