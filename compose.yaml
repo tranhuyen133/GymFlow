@@ -53,6 +53,11 @@ services:
       EMAIL_OTP_RESEND_COOLDOWN_SECONDS: ${EMAIL_OTP_RESEND_COOLDOWN_SECONDS:-60}
       EMAIL_OTP_MAX_SENDS_PER_HOUR: ${EMAIL_OTP_MAX_SENDS_PER_HOUR:-5}
       DEMO_PASSWORD: ${DEMO_PASSWORD:-}
+      AI_PROVIDER: ${AI_PROVIDER:-rule}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-15}
+      AI_MAX_INPUT_CHARS: ${AI_MAX_INPUT_CHARS:-500}
       TZ: Asia/Ho_Chi_Minh
     depends_on:
       mysql:
@@ -78,5 +83,16 @@ services:
     ports:
       - "${FRONTEND_PORT:-8081}:80"
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: gymflow-ollama
+    profiles: ["ai"]
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - gymflow_ollama_data:/root/.ollama
+
 volumes:
   gymflow_mysql_data:
+  gymflow_ollama_data:
