@@ -1,7 +1,7 @@
 .chat-widget { position: fixed; right: 22px; bottom: 82px; z-index: 70; display: grid; justify-items: end; gap: 12px; }
 .chat-launcher { display: flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 12px 18px; color: var(--on-primary); background: var(--primary); box-shadow: var(--shadow-float); font: inherit; font-weight: 750; cursor: pointer; }
 .chat-launcher:hover { background: var(--primary-press); }
-.chat-panel { width: min(390px, calc(100vw - 28px)); height: min(600px, calc(100dvh - 120px)); display: flex; flex-direction: column; overflow: hidden; color: var(--ink); background: var(--rail); border: 1px solid var(--hairline); border-radius: var(--r-lg); box-shadow: var(--shadow-float); }
+.chat-panel { width: min(420px, calc(100vw - 28px)); height: min(620px, calc(100dvh - 120px)); display: flex; flex-direction: column; overflow: hidden; color: var(--ink); background: var(--rail); border: 1px solid var(--hairline); border-radius: var(--r-lg); box-shadow: var(--shadow-float); }
 .chat-header { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--hairline); }
 .chat-header .tiny { margin-top: 3px; color: var(--muted); }
 .chat-history { flex-shrink: 0; display: flex; gap: 6px; overflow-x: auto; padding: 8px 10px; border-bottom: 1px solid var(--hairline-soft); }
@@ -9,47 +9,47 @@
 .chat-history button.active { color: var(--ink); border-color: var(--primary); }
 .chat-messages { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding: 14px; }
 .chat-empty { margin: auto; max-width: 270px; color: var(--muted); text-align: center; font-size: .9rem; }
-.chat-message { max-width: 88%; padding: 10px 14px; border-radius: 14px; overflow-wrap: anywhere; font-size: .92rem; line-height: 1.5; }
+
+.chat-message { max-width: 90%; padding: 10px 14px; border-radius: 14px; overflow-wrap: anywhere; font-size: .92rem; line-height: 1.5; }
 .chat-message.user { align-self: flex-end; color: var(--on-primary); background: var(--primary-press); border-bottom-right-radius: 4px; }
-.chat-message.assistant { align-self: flex-start; background: var(--surface-2); border-bottom-left-radius: 4px; }
+.chat-message.assistant { align-self: flex-start; background: var(--surface-2); border-bottom-left-radius: 4px; border: 1px solid var(--hairline-soft); }
+.chat-provider-badge { display: block; font-size: .68rem; font-weight: 750; color: var(--primary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
 
-/* Document Card / DOCX Style Layout */
-.chat-message.assistant.doc-card { max-width: 95%; padding: 0; background: var(--surface-1); border: 1px solid var(--hairline); border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06); overflow: hidden; }
-.doc-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 12px; background: var(--surface-2); border-bottom: 1px solid var(--hairline); }
-.doc-card-title-group { display: flex; align-items: center; gap: 6px; font-size: .75rem; font-weight: 750; color: var(--ink); text-transform: uppercase; letter-spacing: .4px; }
-.doc-card-icon { color: var(--primary); }
-.doc-card-badge { font-size: .65rem; font-weight: 700; padding: 2px 6px; border-radius: 999px; background: rgba(0, 178, 75, 0.12); color: var(--primary); text-transform: uppercase; letter-spacing: .4px; }
-.doc-card-body { padding: 11px 13px; }
-.doc-flow { display: flex; flex-direction: column; gap: 9px; }
-.doc-intro-box { color: var(--ink); }
-.doc-paragraph { margin: 0 0 6px; line-height: 1.55; font-size: .88rem; }
-.doc-paragraph:last-child { margin-bottom: 0; }
+/* Trình bày văn bản đa dạng như Google Docs (Rich Text: in đậm, gạch đầu dòng, bảng biểu) */
+.chat-rich-text { font-size: .91rem; line-height: 1.56; color: inherit; overflow-wrap: break-word; }
+.chat-rich-text p { margin: 0 0 7px; }
+.chat-rich-text p:last-child { margin-bottom: 0; }
 
-/* Bảng dữ liệu 2 cột chuẩn văn bản (Document Key-Value Table) */
-.doc-table-container { border-radius: 6px; overflow: hidden; border: 1px solid var(--hairline); margin: 3px 0; background: var(--surface-1); }
-.doc-table { width: 100%; border-collapse: collapse; font-size: .83rem; text-align: left; }
-.doc-table thead th { background: var(--surface-2); color: var(--muted); font-weight: 700; padding: 5px 9px; border-bottom: 1px solid var(--hairline); font-size: .72rem; text-transform: uppercase; letter-spacing: .3px; }
-.doc-table tbody tr { border-bottom: 1px solid var(--hairline-soft); }
-.doc-table tbody tr:last-child { border-bottom: none; }
-.doc-table tbody tr:nth-child(even) { background: rgba(0, 0, 0, 0.02); }
-.doc-table-key { padding: 6px 9px; font-weight: 700; color: var(--ink); vertical-align: top; border-right: 1px solid var(--hairline-soft); white-space: nowrap; width: 38%; }
-.doc-table-val { padding: 6px 9px; color: var(--ink); vertical-align: top; width: 62%; line-height: 1.45; }
+/* In đậm nổi bật chuẩn Docs */
+.chat-rich-text strong,
+.chat-rich-text b { font-weight: 750; }
+.chat-message.assistant .chat-rich-text strong,
+.chat-message.assistant .chat-rich-text b { color: var(--ink); }
 
-/* Khung lưu ý / Hướng dẫn kiểu tài liệu */
-.doc-guidance-callout { padding: 8px 10px; background: rgba(0, 178, 75, 0.06); border-left: 3px solid var(--primary); border-radius: 0 6px 6px 0; }
-.doc-guidance-head { display: flex; align-items: center; gap: 5px; font-size: .76rem; font-weight: 750; color: var(--primary); margin-bottom: 3px; }
-.doc-guidance-text { font-size: .85rem; line-height: 1.5; color: var(--ink); }
+/* Gạch đầu dòng / Danh sách thụt dòng chuẩn Docs */
+.chat-rich-text ul,
+.chat-rich-text ol { margin: 5px 0 8px; padding-left: 20px; }
+.chat-rich-text ul:last-child,
+.chat-rich-text ol:last-child { margin-bottom: 0; }
+.chat-rich-text li { margin-bottom: 4px; line-height: 1.5; }
+.chat-rich-text li:last-child { margin-bottom: 0; }
 
-/* Thanh tác vụ dưới chân tài liệu (Tải Word .docx & Sao chép) */
-.doc-card-footer { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 5px 10px; background: var(--surface-2); border-top: 1px solid var(--hairline); }
-.doc-footer-btn { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; font-size: .72rem; font-weight: 650; color: var(--muted); background: transparent; border: 1px solid var(--hairline); border-radius: 5px; cursor: pointer; transition: all .15s; }
-.doc-footer-btn:hover { color: var(--ink); border-color: var(--primary); background: var(--surface-1); }
-.doc-footer-btn.doc-download-btn { color: var(--primary); border-color: rgba(0, 178, 75, 0.4); background: rgba(0, 178, 75, 0.06); }
-.doc-footer-btn.doc-download-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+/* Bảng biểu hiển thị chuẩn Docs (có khung, header xám nhẹ, viền nét rõ) */
+.chat-rich-text table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: .83rem; background: var(--surface-1); border: 1px solid var(--hairline); border-radius: 6px; overflow: hidden; }
+.chat-rich-text thead th { background: var(--surface-2); color: var(--ink); font-weight: 750; padding: 6px 9px; border: 1px solid var(--hairline); text-align: left; font-size: .78rem; text-transform: uppercase; letter-spacing: .3px; }
+.chat-rich-text tbody td { padding: 6px 9px; border: 1px solid var(--hairline-soft); color: var(--ink); vertical-align: top; line-height: 1.45; }
+.chat-rich-text tbody tr:nth-child(even) { background: rgba(0, 0, 0, 0.02); }
 
-.chat-strong { font-weight: 750; }
-.chat-code { font-family: inherit; font-size: .88em; padding: 1px 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.08); font-weight: 600; }
-.chat-provider-badge { display: block; font-size: .68rem; font-weight: 700; color: var(--primary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
+/* Tiêu đề mục nếu có */
+.chat-rich-text h1,
+.chat-rich-text h2,
+.chat-rich-text h3,
+.chat-rich-text h4 { margin: 7px 0 4px; font-size: .95rem; font-weight: 750; color: var(--ink); }
+
+/* Code & pre */
+.chat-rich-text code { font-family: inherit; font-size: .88em; padding: 1px 5px; border-radius: 4px; background: rgba(0, 0, 0, 0.07); font-weight: 600; }
+.chat-rich-text pre { margin: 6px 0; padding: 8px; border-radius: 6px; background: var(--surface-1); overflow-x: auto; }
+
 .chat-typing { color: var(--muted); font-size: .82rem; }
 .chat-error { flex-shrink: 0; margin: 0 12px 8px; color: var(--alert-error-ink); font-size: .85rem; }
 .chat-suggestions { flex-shrink: 0; display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--hairline); max-height: 100px; overflow-y: auto; }

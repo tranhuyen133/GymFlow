@@ -97,7 +97,7 @@ public class AiDataGroundingService {
         }
 
         sb.append("--- HẾT DỮ LIỆU HỆ THỐNG ---\n");
-        sb.append("CHỈ DẪN TRÌNH BÀY: Dựa vào các thông tin hệ thống trên, hãy soạn một câu trả lời hoàn chỉnh bằng văn xuôi tiếng Việt tự nhiên, thân thiện, đầy đủ ngữ cảnh và lịch sự. TUYỆT ĐỐI KHÔNG dùng cấu trúc liệt kê thô kiểu '* **Tiêu đề:** Nội dung' hoặc để lộ các ký tự '* **'.");
+        sb.append("CHỈ DẪN TRÌNH BÀY: Dựa vào các thông tin hệ thống trên, hãy soạn câu trả lời bằng tiếng Việt tự nhiên, thân thiện và mạch lạc. Sử dụng định dạng văn bản trực quan (in đậm các thông tin then chốt, gạch đầu dòng danh sách, hoặc bảng tóm tắt nếu cần) để người dùng dễ theo dõi.");
         return sb.toString();
     }
 
