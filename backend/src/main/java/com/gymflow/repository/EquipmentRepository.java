@@ -10,5 +10,7 @@ public interface EquipmentRepository extends JpaRepository<Equipment, String> {
 
     List<Equipment> findByHiddenFalseAndReviewStatusOrderBySortOrderAscNameAsc(ReviewStatus reviewStatus);
 
+    List<Equipment> findByHiddenFalseOrderBySortOrderAscNameAsc();
+
     List<Equipment> findAllByOrderBySortOrderAscNameAsc();
 }

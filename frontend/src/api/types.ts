@@ -255,7 +255,7 @@ export interface ServiceRequest {
 export type ReviewStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'NEEDS_REVIEW';
 export type ContentOrigin = 'SELF_AUTHORED' | 'ADAPTED';
 export type ExerciseLocation = 'GYM' | 'HOME' | 'ANY';
-export type ExerciseGoal = 'STRENGTH' | 'ENDURANCE' | 'MOBILITY' | 'BALANCE' | 'FAT_LOSS';
+export type ExerciseGoal = 'STRENGTH' | 'ENDURANCE' | 'MOBILITY' | 'BALANCE' | 'FAT_LOSS' | 'HYPERTROPHY' | 'TONE';
 export interface Source {
   id: number; code: string; publisher: string; title: string; url: string; license: string | null; licenseUrl: string | null;
   licenseVerified: boolean; attribution: string | null; publisherReviewed: string | null; accessedAt: string;

@@ -185,6 +185,7 @@ export const EN: Record<string, string> = {
   'Đã xuất bản': 'Published', 'Đã gỡ': 'Unpublished',
   'Phòng tập': 'Gym', 'Tại nhà': 'Home', 'Ở đâu cũng được': 'Anywhere',
   'Sức mạnh': 'Strength', 'Sức bền': 'Endurance', 'Linh hoạt': 'Mobility', 'Thăng bằng': 'Balance', 'Giảm mỡ': 'Fat loss',
+  'Tăng cơ (phì đại)': 'Hypertrophy', 'Săn chắc': 'Toning',
   'Dinh dưỡng': 'Nutrition', 'Nước uống': 'Hydration', 'Giấc ngủ': 'Sleep', 'Vận động': 'Activity', 'Hồi phục': 'Recovery',
 
   // ---------- Nhật ký hệ thống ----------

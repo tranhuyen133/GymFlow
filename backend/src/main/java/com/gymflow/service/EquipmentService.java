@@ -26,7 +26,7 @@ public class EquipmentService {
         boolean showAll = includeHidden && user != null && !user.isMember();
         List<Equipment> items = showAll
                 ? equipmentRepository.findAllByOrderBySortOrderAscNameAsc()
-                : equipmentRepository.findByHiddenFalseAndReviewStatusOrderBySortOrderAscNameAsc(ReviewStatus.APPROVED);
+                : equipmentRepository.findByHiddenFalseOrderBySortOrderAscNameAsc();
 
         Map<String, Long> countMap = computeExerciseCounts();
 
@@ -41,12 +41,12 @@ public class EquipmentService {
                 .orElseThrow(() -> ApiException.notFound("dụng cụ"));
 
         boolean isStaff = user != null && !user.isMember();
-        if (!isStaff && (eq.isHidden() || eq.getReviewStatus() != ReviewStatus.APPROVED)) {
+        if (!isStaff && eq.isHidden()) {
             throw ApiException.notFound("dụng cụ");
         }
 
         List<Exercise> relatedExercises = exerciseRepository.findAllByOrderByNameAsc().stream()
-                .filter(e -> !e.isHidden() && e.getReviewStatus() == ReviewStatus.APPROVED)
+                .filter(e -> !e.isHidden())
                 .filter(e -> hasEquipmentKey(e, eq.getKey()))
                 .toList();
 
@@ -71,7 +71,7 @@ public class EquipmentService {
         Equipment eq = new Equipment();
         eq.setKey(key);
         apply(eq, req);
-        eq.setReviewStatus(ReviewStatus.PENDING);
+        eq.setReviewStatus(ReviewStatus.APPROVED);
         eq.setOrigin(ContentOrigin.SELF_AUTHORED);
         equipmentRepository.save(eq);
 
@@ -88,12 +88,9 @@ public class EquipmentService {
                 .orElseThrow(() -> ApiException.notFound("dụng cụ"));
 
         apply(eq, req);
-        if (!user.isAdmin() && eq.getReviewStatus() == ReviewStatus.APPROVED) {
-            eq.setReviewStatus(ReviewStatus.PENDING);
-        }
 
         auditService.log("EQUIPMENT_UPDATE", "EQUIPMENT", null, eq.getKey() + ": " + eq.getName());
-        long count = countApprovedExercises(eq.getKey());
+        long count = countVisibleExercises(eq.getKey());
         return mappers.equipmentResponse(eq, count);
     }
 
@@ -107,7 +104,7 @@ public class EquipmentService {
 
         eq.setHidden(hidden);
         auditService.log(hidden ? "EQUIPMENT_HIDE" : "EQUIPMENT_SHOW", "EQUIPMENT", null, eq.getKey() + ": " + eq.getName());
-        long count = countApprovedExercises(eq.getKey());
+        long count = countVisibleExercises(eq.getKey());
         return mappers.equipmentResponse(eq, count);
     }
 
@@ -121,7 +118,7 @@ public class EquipmentService {
 
         eq.setReviewStatus(req.status());
         auditService.log("EQUIPMENT_REVIEW", "EQUIPMENT", null, eq.getKey() + " → " + req.status());
-        long count = countApprovedExercises(eq.getKey());
+        long count = countVisibleExercises(eq.getKey());
         return mappers.equipmentResponse(eq, count);
     }
 
@@ -147,11 +144,11 @@ public class EquipmentService {
 
     private Map<String, Long> computeExerciseCounts() {
         Map<String, Long> map = new HashMap<>();
-        List<Exercise> approved = exerciseRepository.findAllByOrderByNameAsc().stream()
-                .filter(e -> !e.isHidden() && e.getReviewStatus() == ReviewStatus.APPROVED)
+        List<Exercise> visible = exerciseRepository.findAllByOrderByNameAsc().stream()
+                .filter(e -> !e.isHidden())
                 .toList();
 
-        for (Exercise e : approved) {
+        for (Exercise e : visible) {
             if (e.getEquipmentKeys() != null) {
                 for (String k : e.getEquipmentKeys().split(",")) {
                     String cleanKey = k.trim().toLowerCase(Locale.ROOT);
@@ -164,9 +161,9 @@ public class EquipmentService {
         return map;
     }
 
-    private long countApprovedExercises(String key) {
+    private long countVisibleExercises(String key) {
         return exerciseRepository.findAllByOrderByNameAsc().stream()
-                .filter(e -> !e.isHidden() && e.getReviewStatus() == ReviewStatus.APPROVED)
+                .filter(e -> !e.isHidden())
                 .filter(e -> hasEquipmentKey(e, key))
                 .count();
     }

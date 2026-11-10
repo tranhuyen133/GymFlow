@@ -24,6 +24,7 @@ import static org.mockito.Mockito.*;
 class ContentReviewTest {
 
     @Mock ExerciseRepository exerciseRepository;
+    @Mock EquipmentRepository equipmentRepository;
     @Mock ContentSourceRepository sourceRepository;
     @Mock WorkoutPlanItemRepository planItemRepository;
     @Mock ArticleRepository articleRepository;
@@ -39,7 +40,7 @@ class ContentReviewTest {
 
     @BeforeEach
     void setUp() {
-        exercises = new ExerciseService(exerciseRepository, sourceRepository, planItemRepository, userRepository, auditService, mappers);
+        exercises = new ExerciseService(exerciseRepository, equipmentRepository, sourceRepository, planItemRepository, userRepository, auditService, mappers);
         articles = new ArticleService(articleRepository, sourceRepository, userRepository, auditService, mappers);
     }
 

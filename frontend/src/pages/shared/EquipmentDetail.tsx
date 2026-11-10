@@ -69,7 +69,6 @@ export default function EquipmentDetail() {
           <div className="row wrap" style={{ gap: 8, alignItems: 'center' }}>
             <Badge tone="blue">{CATEGORY_LABELS[eq.category] || eq.category}</Badge>
             {eq.hidden && <Badge tone="amber">{t('Đang ẩn')}</Badge>}
-            {eq.reviewStatus === 'PENDING' && <Badge tone="amber">{t('Chờ duyệt')}</Badge>}
             <span className="tiny faint" style={{ alignSelf: 'center' }}>
               {t('{n} bài tập sử dụng', { n: eq.exerciseCount ?? 0 })}
             </span>

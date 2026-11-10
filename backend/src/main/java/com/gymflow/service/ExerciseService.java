@@ -5,6 +5,7 @@ import com.gymflow.common.PageResponse;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.repository.ContentSourceRepository;
+import com.gymflow.repository.EquipmentRepository;
 import com.gymflow.repository.ExerciseRepository;
 import com.gymflow.repository.UserRepository;
 import com.gymflow.repository.WorkoutPlanItemRepository;
@@ -28,6 +29,7 @@ import java.util.regex.Pattern;
 public class ExerciseService {
 
     private final ExerciseRepository exerciseRepository;
+    private final EquipmentRepository equipmentRepository;
     private final ContentSourceRepository sourceRepository;
     private final WorkoutPlanItemRepository planItemRepository;
     private final UserRepository userRepository;
@@ -284,7 +286,7 @@ public class ExerciseService {
         if (req.sourceIds() != null) e.setSources(resolveSources(sourceRepository, req.sourceIds()));
         if (req.targetMuscles() != null) e.setTargetMuscles(joinKeys(req.targetMuscles(), MUSCLE_KEYS, "vùng cơ"));
         if (req.secondaryMuscleKeys() != null) e.setSecondaryMuscleKeys(joinKeys(req.secondaryMuscleKeys(), MUSCLE_KEYS, "vùng cơ"));
-        if (req.equipmentKeys() != null) e.setEquipmentKeys(joinKeys(req.equipmentKeys(), EQUIPMENT_KEYS, "dụng cụ"));
+        if (req.equipmentKeys() != null) e.setEquipmentKeys(joinEquipmentKeys(req.equipmentKeys()));
         if (req.imageKey() != null) e.setImageKey(Mappers.blankToNull(req.imageKey()));
         if (req.alternativeIds() != null) {
             List<Long> distinctIds = req.alternativeIds().stream()
@@ -300,13 +302,24 @@ public class ExerciseService {
     static final Set<String> MUSCLE_KEYS = Set.of("chest", "front-deltoids", "back-deltoids", "biceps", "triceps", "forearm",
             "abs", "obliques", "trapezius", "upper-back", "lower-back", "gluteal", "quadriceps", "hamstring", "adductor",
             "abductors", "calves", "neck");
-    static final Set<String> EQUIPMENT_KEYS = Set.of("barbell", "dumbbell", "kettlebell", "machine", "cable", "bench",
-            "pullup-bar", "bodyweight", "band", "ball", "cardio-machine", "other",
-            "dip-bars", "ez-bar", "plate", "smith-machine", "foam-roller");
-
     static String joinKeys(List<String> keys, Set<String> allowed, String what) {
         List<String> clean = keys.stream().filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).distinct().toList();
         for (String k : clean) if (!allowed.contains(k)) throw ApiException.badRequest("Mã " + what + " không hợp lệ: " + k);
+        return clean.isEmpty() ? null : String.join(",", clean);
+    }
+
+    /**
+     * Mã dụng cụ lấy trực tiếp từ bảng equipment, không dùng danh sách cứng.
+     * Nhờ vậy dụng cụ mới thêm ở kho dụng cụ có thể gắn vào bài tập ngay mà không cần sửa code.
+     */
+    String joinEquipmentKeys(List<String> keys) {
+        List<String> clean = keys.stream().filter(Objects::nonNull).map(String::trim)
+                .filter(s -> !s.isEmpty()).distinct().toList();
+        for (String k : clean) {
+            if (!equipmentRepository.existsById(k)) {
+                throw ApiException.badRequest("Mã dụng cụ không tồn tại trong kho dụng cụ: " + k);
+            }
+        }
         return clean.isEmpty() ? null : String.join(",", clean);
     }
 

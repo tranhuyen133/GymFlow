@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api } from '../../api/client';
-import type { BulkApproveResult, ContentOrigin, Exercise, ExerciseGoal, ExerciseLocation, Level, MuscleGroup, ReviewStatus, Source } from '../../api/types';
+import type { BulkApproveResult, ContentOrigin, Equipment, Exercise, ExerciseGoal, ExerciseLocation, Level, MuscleGroup, ReviewStatus, Source } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { Link, useSearchParams } from 'react-router-dom';
 import { HealthDisclaimer, InfoRow, Missing, SourceList } from '../../components/Content';
@@ -32,7 +32,8 @@ const SORTS: { value: Sort; label: string }[] = [
 const REVIEW_ORDER: Record<ReviewStatus, number> = { NEEDS_REVIEW: 0, PENDING: 1, DRAFT: 2, APPROVED: 3 };
 const targetOf = (e: Exercise): MuscleKey[] => (e.targetMuscles ?? []).filter(isMuscleKey);
 const secondaryOf = (e: Exercise): MuscleKey[] => (e.secondaryMuscleKeys ?? []).filter(isMuscleKey);
-const equipOf = (e: Exercise): EquipmentKey[] => (e.equipmentKeys ?? []).filter((k): k is EquipmentKey => EQUIPMENT_BY_KEY.has(k as EquipmentKey));
+// Giữ mọi mã dụng cụ từ API, kể cả dụng cụ mới thêm sau này (không lọc theo danh sách tĩnh).
+const equipOf = (e: Exercise): string[] => e.equipmentKeys ?? [];
 const muscleName = (k: MuscleKey) => t(MUSCLE_BY_KEY.get(k)?.label ?? k);
 
 const byName = (a: Exercise, b: Exercise) => a.name.localeCompare(b.name, 'vi');
@@ -71,7 +72,13 @@ export default function Exercises() {
 
   // Bản đồ cơ + dụng cụ lọc ngay trên dữ liệu đã tải (link từ trang Dụng cụ: ?equipment=dumbbell, ?muscle=chest)
   const [muscle, setMuscle] = useState<MuscleKey | null>(() => { const m = params.get('muscle'); return m && isMuscleKey(m) ? m : null; });
-  const [equip, setEquip] = useState<'' | EquipmentKey>(() => { const k = params.get('equipment'); return k && EQUIPMENT_BY_KEY.has(k as EquipmentKey) ? k as EquipmentKey : ''; });
+  const [equip, setEquip] = useState<string>(() => params.get('equipment') ?? '');
+  const equipmentLib = useAsync(() => api.get<Equipment[]>('/equipment'), []);
+  const equipmentOptions = useMemo(() => {
+    const list = (equipmentLib.data ?? []).map((e) => ({ key: e.key, label: e.name }));
+    return list.length > 0 ? list : EQUIPMENT.map((e) => ({ key: e.key as string, label: e.label }));
+  }, [equipmentLib.data]);
+  const equipmentLabel = useMemo(() => new Map(equipmentOptions.map((e) => [e.key, e.label])), [equipmentOptions]);
   const [withSecondary, setWithSecondary] = useState(false);
   const [mapOpen, setMapOpen] = useState(true);
 
@@ -96,7 +103,7 @@ export default function Exercises() {
     return c;
   }, [byEquip, withSecondary]);
   const equipCounts = useMemo(() => {
-    const c: Partial<Record<EquipmentKey, number>> = {};
+    const c: Record<string, number> = {};
     data?.forEach((e) => equipOf(e).forEach((k) => { c[k] = (c[k] ?? 0) + 1; }));
     return c;
   }, [data]);
@@ -247,7 +254,7 @@ export default function Exercises() {
                   <span className="tiny muted">{t('Dụng cụ')}</span>
                   <div className="chips mt-8">
                     <button type="button" className={`chip ${equip === '' ? 'on' : ''}`} onClick={() => setEquip('')}>{t('Mọi dụng cụ')}</button>
-                    {EQUIPMENT.filter((x) => equipCounts[x.key] || equip === x.key).map((x) => (
+                    {equipmentOptions.filter((x) => equipCounts[x.key] || equip === x.key).map((x) => (
                       <button key={x.key} type="button" className={`chip ${equip === x.key ? 'on' : ''}`} aria-pressed={equip === x.key}
                         onClick={() => setEquip(equip === x.key ? '' : x.key)}>{t(x.label)} · {equipCounts[x.key] ?? 0}</button>
                     ))}
@@ -258,7 +265,7 @@ export default function Exercises() {
           ) : (muscle || equip) ? (
             <div className="row row-wrap" style={{ gap: 6 }}>
               {muscle && <button type="button" className="chip on" onClick={() => pickMuscle(null)}>{muscleName(muscle)} <Icon name="x" size={12} /></button>}
-              {equip && <button type="button" className="chip on" onClick={() => setEquip('')}>{t(EQUIPMENT_BY_KEY.get(equip)?.label ?? equip)} <Icon name="x" size={12} /></button>}
+              {equip && <button type="button" className="chip on" onClick={() => setEquip('')}>{t(equipmentLabel.get(equip) ?? equip)} <Icon name="x" size={12} /></button>}
             </div>
           ) : null}
         </Card>
@@ -415,7 +422,7 @@ function ExerciseDetail({ exercise: e, canReview, queue, onClose, onEdit, onRevi
         <div className="info-grid">
           <InfoRow label="Tên tiếng Anh" value={e.nameEn} />
           <InfoRow label="Tên gọi khác" value={e.aliases} />
-          <InfoRow label="Dụng cụ" value={e.equipment ?? (equipOf(e).map((k) => t(EQUIPMENT_BY_KEY.get(k)?.label ?? k)).join(', ') || null)} />
+          <InfoRow label="Dụng cụ" value={e.equipment ?? (equipOf(e).map((k) => t(EQUIPMENT_BY_KEY.get(k as EquipmentKey)?.label ?? k)).join(', ') || null)} />
           <InfoRow label="Cơ phụ trợ" value={e.secondaryMuscles} />
         </div>
 
@@ -558,9 +565,14 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
     videoUrl: base?.videoUrl ?? '', alternativeIds: base?.alternatives?.map((a) => a.id) ?? ([] as number[]),
     contentOrigin: base?.contentOrigin ?? ('SELF_AUTHORED' as ContentOrigin), sourceIds: base?.sources.map((s) => s.id) ?? ([] as number[]),
     targetMuscles: base ? targetOf(base) : ([] as MuscleKey[]), secondaryMuscleKeys: base ? secondaryOf(base) : ([] as MuscleKey[]),
-    equipmentKeys: base ? equipOf(base) : ([] as EquipmentKey[]), imageKey: base?.imageKey ?? '',
+    equipmentKeys: base ? equipOf(base) : ([] as string[]), imageKey: base?.imageKey ?? '',
   }), [base, copyOf, exercise]);
   const [f, setF] = useState(initial);
+  const equipmentLib = useAsync(() => api.get<Equipment[]>('/equipment'), []);
+  const equipmentOptions = useMemo(() => {
+    const list = (equipmentLib.data ?? []).map((e) => ({ key: e.key, label: e.name }));
+    return list.length > 0 ? list : EQUIPMENT.map((e) => ({ key: e.key as string, label: e.label }));
+  }, [equipmentLib.data]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -769,7 +781,7 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
             <div className="span-2">
               <span className="tiny muted">{t('Loại dụng cụ')} · {t('dùng cho trang Dụng cụ và bộ lọc')}</span>
               <div className="chips mt-8" role="group" aria-label={t('Loại dụng cụ')}>
-                {EQUIPMENT.map((x) => {
+                {equipmentOptions.map((x) => {
                   const on = f.equipmentKeys.includes(x.key);
                   return (
                     <button type="button" key={x.key} className={`chip chip-toggle ${on ? 'on' : ''}`} aria-pressed={on}

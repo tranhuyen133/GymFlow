@@ -64,11 +64,6 @@ app:
   app-base-url: ${APP_BASE_URL:http://localhost:5173}
   mail:
     from: ${MAIL_FROM:no-reply@gymflow.local}
-  ai:
-    base-url: ${AI_BASE_URL:https://api.openai.com/v1}
-    model: ${AI_MODEL:gpt-4o-mini}
-    api-key: ${AI_API_KEY:}
-    timeout-seconds: ${AI_TIMEOUT_SECONDS:20}
   email-otp:
     valid-minutes: ${EMAIL_OTP_VALID_MINUTES:10}
     max-attempts: ${EMAIL_OTP_MAX_ATTEMPTS:5}

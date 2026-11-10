@@ -47,9 +47,9 @@ VPS chỉ có khoảng 2 GB RAM. Nếu build bị `Killed`, chạy `docker compo
 
 Trước buổi bảo vệ, tắt các cờ demo trong `.env` của VPS: `DEMO_QUICK_LOGIN=false`.
 
-## AI Chatbot và xác thực email
+## Trợ lý GymFlow và xác thực email
 
-Xem [hướng dẫn cấu hình AI/SMTP và kiểm thử](docs/AI_EMAIL_SETUP.md). API key AI và thông tin SMTP chỉ cấu hình qua `.env`/secret của môi trường; không đưa giá trị thật vào Git.
+Xem [hướng dẫn cấu hình SMTP và kiểm thử](docs/AI_EMAIL_SETUP.md). Trợ lý dùng các nút câu trả lời sẵn và dữ liệu nội bộ, **không cần API key AI**. Thông tin SMTP chỉ cấu hình qua `.env`/secret của môi trường; không đưa giá trị thật vào Git.
 
 ## Quy tắc làm việc
 1. Mỗi task một nhánh tách từ `develop`: `feat/SCRUM-xxx-mo-ta-ngan`.
