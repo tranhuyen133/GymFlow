@@ -172,7 +172,14 @@ export default function PlanEditor() {
   const missedBig = (['chest', 'upper-back', 'quadriceps', 'hamstring', 'gluteal', 'front-deltoids', 'abs'] as MuscleKey[]).filter((k) => !weekLoad[k]);
 
   // Áp lịch tập mẫu: chỉ lấy bài đã duyệt, bài nào chưa có thì báo lại để HLV tự chọn bài thay
-  const approvedByName = useMemo(() => new Map(approvedLib.map((e) => [e.name.toLowerCase(), e])), [approvedLib]);
+  const approvedByName = useMemo(() => {
+    const map = new Map<string, Exercise>();
+    approvedLib.forEach((e) => {
+      map.set(e.name.toLowerCase(), e);
+      if (e.nameEn) map.set(e.nameEn.toLowerCase(), e);
+    });
+    return map;
+  }, [approvedLib]);
   const applyTemplate = (p: Program) => {
     const skipped: string[] = [];
     const next: Draft[] = [];

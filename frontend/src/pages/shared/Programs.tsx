@@ -27,8 +27,24 @@ export default function Programs({ embedded = false }: { embedded?: boolean } = 
   const [level, setLevel] = useState<LevelFilter>('');
   const [open, setOpen] = useState<Program | null>(null);
 
-  const approved = useMemo(() => new Map((lib.data ?? []).filter((e) => e.reviewStatus === 'APPROVED' && !e.hidden).map((e) => [e.name.toLowerCase(), e])), [lib.data]);
-  const anyByName = useMemo(() => new Map((lib.data ?? []).map((e) => [e.name.toLowerCase(), e])), [lib.data]);
+  const approved = useMemo(() => {
+    const map = new Map<string, Exercise>();
+    (lib.data ?? []).forEach((e) => {
+      if (e.reviewStatus === 'APPROVED' && !e.hidden) {
+        map.set(e.name.toLowerCase(), e);
+        if (e.nameEn) map.set(e.nameEn.toLowerCase(), e);
+      }
+    });
+    return map;
+  }, [lib.data]);
+  const anyByName = useMemo(() => {
+    const map = new Map<string, Exercise>();
+    (lib.data ?? []).forEach((e) => {
+      map.set(e.name.toLowerCase(), e);
+      if (e.nameEn) map.set(e.nameEn.toLowerCase(), e);
+    });
+    return map;
+  }, [lib.data]);
   const shown = PROGRAMS.filter((p) => !level || p.level === level);
 
   // Hội viên có HLV phụ trách thì giáo án do HLV soạn: chỉ xem lịch mẫu và gợi ý cho HLV
