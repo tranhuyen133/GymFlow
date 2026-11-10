@@ -152,24 +152,24 @@ function TopicEditor({ initial, onClose, onSaved }: { initial?: TopicDetail; onC
   };
 
   return (
-    <Modal title={initial ? 'Sửa chủ đề' : 'Tạo chủ đề mới'} onClose={onClose} size="medium" footer={<>
-      <Button variant="ghost" onClick={onClose}>Huỷ</Button>
-      <Button variant="primary" icon="check" loading={busy} onClick={() => void submit()}>{initial ? 'Lưu thay đổi' : 'Đăng chủ đề'}</Button>
+    <Modal title={initial ? t('Sửa chủ đề') : t('Tạo chủ đề mới')} onClose={onClose} size="medium" footer={<>
+      <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
+      <Button variant="primary" icon="check" loading={busy} onClick={() => void submit()}>{initial ? t('Lưu thay đổi') : t('Đăng chủ đề')}</Button>
     </>}>
       <div className="stack">
         {error && <Alert kind="error">{error}</Alert>}
-        <Field label="Tiêu đề" required error={errors.title} hint="Nói rõ bạn muốn hỏi hay chia sẻ điều gì (5–200 ký tự)">
-          <Input value={f.title} maxLength={TITLE_MAX} invalid={!!errors.title} placeholder="VD: Tập chân 2 buổi mỗi tuần có đủ không?"
+        <Field label={t('Tiêu đề')} required error={errors.title} hint={t('Nói rõ bạn muốn hỏi hay chia sẻ điều gì (5–200 ký tự)')}>
+          <Input value={f.title} maxLength={TITLE_MAX} invalid={!!errors.title} placeholder={t('VD: Tập chân 2 buổi mỗi tuần có đủ không?')}
             onChange={(e) => set('title', e.target.value)} onBlur={() => blur('title')} />
         </Field>
-        <Field label="Nhóm chủ đề" required>
+        <Field label={t('Nhóm chủ đề')} required>
           <Select value={f.category} onChange={(e) => set('category', e.target.value as ForumCategory)}>
-            {FORUM_CATEGORIES.map((c) => <option key={c} value={c}>{FORUM_CATEGORY_VI[c]}</option>)}
+            {FORUM_CATEGORIES.map((c) => <option key={c} value={c}>{t(FORUM_CATEGORY_VI[c])}</option>)}
           </Select>
         </Field>
-        <Field label="Nội dung" required error={errors.body} hint="Dòng bắt đầu bằng ## là tiêu đề nhỏ, - là gạch đầu dòng">
+        <Field label={t('Nội dung')} required error={errors.body} hint={t('Dòng bắt đầu bằng ## là tiêu đề nhỏ, - là gạch đầu dòng')}>
           <Textarea rows={9} value={f.body} maxLength={BODY_MAX} invalid={!!errors.body}
-            placeholder="Mô tả tình huống, mục tiêu và những gì bạn đã thử…"
+            placeholder={t('Mô tả tình huống, mục tiêu và những gì bạn đã thử…')}
             onChange={(e) => set('body', e.target.value)} onBlur={() => blur('body')} />
         </Field>
         <span className="tiny faint right">{f.body.trim().length.toLocaleString()}/{BODY_MAX.toLocaleString()}</span>
@@ -193,11 +193,11 @@ function ReasonDialog({ title, label, hint, confirmText, danger, min, onSubmit, 
     try { await onSubmit(r); onClose(); } catch (e) { setErr(errMsg(e)); } finally { setBusy(false); }
   };
   return (
-    <Modal title={title} onClose={onClose} size="narrow" footer={<>
-      <Button variant="ghost" onClick={onClose}>Huỷ</Button>
-      <Button variant={danger ? 'danger' : 'primary'} loading={busy} onClick={() => void submit()}>{confirmText}</Button>
+    <Modal title={t(title)} onClose={onClose} size="narrow" footer={<>
+      <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
+      <Button variant={danger ? 'danger' : 'primary'} loading={busy} onClick={() => void submit()}>{t(confirmText)}</Button>
     </>}>
-      <Field label={label} required error={err ?? undefined} hint={hint}>
+      <Field label={t(label)} required error={err ?? undefined} hint={hint ? t(hint) : undefined}>
         <Textarea rows={3} maxLength={255} value={reason} invalid={!!err} onChange={(e) => { setReason(e.target.value); setErr(null); }} />
       </Field>
     </Modal>
@@ -230,21 +230,21 @@ export function ForumList({ embedded }: { embedded?: boolean }) {
           <h1 className="display-sm">{t('Cùng tập, cùng hỏi, cùng tiến bộ')}</h1>
           <p className="lead">{t('Hỏi đáp và chia sẻ kinh nghiệm tập luyện giữa hội viên, huấn luyện viên và phòng tập.')}</p>
         </div>
-        {user && <Button variant="primary" icon="plus" onClick={() => setComposing(true)}>Tạo chủ đề</Button>}
+        {user && <Button variant="primary" icon="plus" onClick={() => setComposing(true)}>{t('Tạo chủ đề')}</Button>}
       </div>
 
-      {!user && <JoinPrompt text="Đăng nhập để đặt câu hỏi và trả lời trong diễn đàn." />}
+      {!user && <JoinPrompt text={t('Đăng nhập để đặt câu hỏi và trả lời trong diễn đàn.')} />}
 
       {staff && (
         <div className="mt-16">
-          <Segmented value={tab} onChange={setTab} options={[{ value: 'topics', label: 'Danh sách chủ đề' }, { value: 'reports', label: 'Báo cáo vi phạm' }]} />
+          <Segmented value={tab} onChange={setTab} options={[{ value: 'topics', label: t('Danh sách chủ đề') }, { value: 'reports', label: t('Báo cáo vi phạm') }]} />
         </div>
       )}
 
       {tab === 'reports' && staff ? <ReportsPanel base={base} /> : (
         <>
           <div className="toolbar mt-16">
-            <SearchInput value={q} onChange={(v) => { setQ(v); setPage(0); }} placeholder="Tìm chủ đề…" />
+            <SearchInput value={q} onChange={(v) => { setQ(v); setPage(0); }} placeholder={t('Tìm chủ đề…')} />
           </div>
           <div className="chips" style={{ marginBottom: 18 }}>
             <button className={`chip ${cat === '' ? 'on' : ''}`} onClick={() => { setCat(''); setPage(0); }}>{t('Tất cả')}</button>
@@ -255,21 +255,21 @@ export function ForumList({ embedded }: { embedded?: boolean }) {
 
           {error ? <ErrorState message={error} onRetry={reload} /> : !data ? <LoadingBlock rows={5} /> : data.content.length === 0 ? (
             filtered
-              ? <Empty icon="search" title="Không tìm thấy chủ đề phù hợp" desc="Thử từ khoá khác hoặc chọn Tất cả." />
-              : <Empty icon="message" title="Chưa có chủ đề nào" desc="Hãy là người mở đầu cuộc trò chuyện."
-                  action={user ? <Button variant="primary" icon="plus" onClick={() => setComposing(true)}>Tạo chủ đề</Button> : undefined} />
+              ? <Empty icon="search" title={t('Không tìm thấy chủ đề phù hợp')} desc={t('Thử từ khoá khác hoặc chọn Tất cả.')} />
+              : <Empty icon="message" title={t('Chưa có chủ đề nào')} desc={t('Hãy là người mở đầu cuộc trò chuyện.')}
+                  action={user ? <Button variant="primary" icon="plus" onClick={() => setComposing(true)}>{t('Tạo chủ đề')}</Button> : undefined} />
           ) : (
             <div className="stack" aria-busy={loading}>
               {data.content.map((x) => (
                 <Link key={x.id} to={`${base}/${x.id}`} className={`card hoverable forum-topic ${x.pinned ? 'is-pinned' : ''} ${x.hidden ? 'is-hidden' : ''}`}>
                   <div className="row row-wrap" style={{ gap: 6 }}>
-                    {x.pinned && <Badge tone="green">Đã ghim</Badge>}
+                    {x.pinned && <Badge tone="green">{t('Đã ghim')}</Badge>}
                     <span className="chip">{t(FORUM_CATEGORY_VI[x.category])}</span>
-                    {x.locked && <Badge tone="muted">Đã khoá</Badge>}
-                    {x.hidden && <Badge tone="red">Đã ẩn</Badge>}
+                    {x.locked && <Badge tone="muted">{t('Đã khoá')}</Badge>}
+                    {x.hidden && <Badge tone="red">{t('Đã ẩn')}</Badge>}
                   </div>
-                  <h3>{x.title}</h3>
-                  <p className="small muted">{x.excerpt}</p>
+                  <h3>{t(x.title)}</h3>
+                  <p className="small muted">{t(x.excerpt)}</p>
                   <div className="row between row-wrap" style={{ gap: 8 }}>
                     <AuthorLine author={x.author} at={x.createdAt} />
                     <span className="tiny muted row" style={{ gap: 6 }}>
@@ -288,7 +288,7 @@ export function ForumList({ embedded }: { embedded?: boolean }) {
       {composing && (
         <TopicEditor onClose={() => setComposing(false)} onSaved={(d) => {
           setComposing(false);
-          toast.success('Đã đăng chủ đề');
+          toast.success(t('Đã đăng chủ đề'));
           navigate(`${base}/${d.id}`);
         }} />
       )}
@@ -302,21 +302,21 @@ function ReportsPanel({ base }: { base: string }) {
   const [busy, setBusy] = useState<number | null>(null);
   const resolve = async (r: ForumReport) => {
     setBusy(r.id);
-    try { await api.put(`/forum/reports/${r.id}/resolve`); toast.success('Đã đánh dấu xử lý xong'); await reload(); }
+    try { await api.put(`/forum/reports/${r.id}/resolve`); toast.success(t('Đã đánh dấu xử lý xong')); await reload(); }
     catch (e) { toast.error(errMsg(e)); }
     finally { setBusy(null); }
   };
   if (error) return <div className="mt-16"><ErrorState message={error} onRetry={reload} /></div>;
   if (!data) return <div className="mt-16"><LoadingBlock rows={3} /></div>;
-  if (data.length === 0) return <Empty icon="checkCircle" title="Không có báo cáo nào cần xử lý" />;
+  if (data.length === 0) return <Empty icon="checkCircle" title={t('Không có báo cáo nào cần xử lý')} />;
   return (
     <div className="stack mt-16">
       {data.map((r) => (
         <div key={r.id} className="card forum-report">
           <div className="row between row-wrap" style={{ gap: 8 }}>
             <div className="row row-wrap" style={{ gap: 6 }}>
-              <Badge tone="amber">{r.replyId ? 'Trả lời' : 'Chủ đề'}</Badge>
-              {r.targetHidden && <Badge tone="muted">Đã ẩn</Badge>}
+              <Badge tone="amber">{r.replyId ? t('Trả lời') : t('Chủ đề')}</Badge>
+              {r.targetHidden && <Badge tone="muted">{t('Đã ẩn')}</Badge>}
               <b className="small">{r.topicTitle}</b>
             </div>
             <span className="tiny faint">{relativeTime(r.createdAt)}</span>
@@ -326,7 +326,7 @@ function ReportsPanel({ base }: { base: string }) {
           <p className="tiny faint">{t('Người viết: {a} · Người báo cáo: {b}', { a: r.targetAuthor, b: r.reporter })}</p>
           <div className="row row-wrap" style={{ gap: 8 }}>
             <Link className="btn btn-secondary btn-sm" to={`${base}/${r.topicId}${r.replyId ? `#reply-${r.replyId}` : ''}`}><Icon name="eye" /><span>{t('Xem bài')}</span></Link>
-            <Button size="sm" icon="check" loading={busy === r.id} onClick={() => void resolve(r)}>Đã xử lý</Button>
+            <Button size="sm" icon="check" loading={busy === r.id} onClick={() => void resolve(r)}>{t('Đã xử lý')}</Button>
           </div>
         </div>
       ))}
@@ -377,7 +377,7 @@ export function ForumTopicPage({ embedded }: { embedded?: boolean }) {
         {back}
         <div className="mt-24">
           {status === 404
-            ? <Empty icon="message" title="Không tìm thấy chủ đề" desc="Chủ đề không tồn tại hoặc đã bị ẩn." />
+            ? <Empty icon="message" title={t('Không tìm thấy chủ đề')} desc={t('Chủ đề không tồn tại hoặc đã bị ẩn.')} />
             : <ErrorState message={error} onRetry={reload} />}
         </div>
       </Frame>
@@ -392,26 +392,26 @@ export function ForumTopicPage({ embedded }: { embedded?: boolean }) {
       {back}
       <article className="card forum-post mt-16">
         <div className="row row-wrap" style={{ gap: 6 }}>
-          {data.pinned && <Badge tone="green">Đã ghim</Badge>}
+          {data.pinned && <Badge tone="green">{t('Đã ghim')}</Badge>}
           <span className="chip">{t(FORUM_CATEGORY_VI[data.category])}</span>
-          {data.locked && <Badge tone="muted">Đã khoá</Badge>}
-          {data.hidden && <Badge tone="red">Đã ẩn</Badge>}
+          {data.locked && <Badge tone="muted">{t('Đã khoá')}</Badge>}
+          {data.hidden && <Badge tone="red">{t('Đã ẩn')}</Badge>}
         </div>
-        <h1 className="forum-title">{data.title}</h1>
+        <h1 className="forum-title">{t(data.title)}</h1>
         <AuthorLine author={data.author} at={data.createdAt} edited={data.updatedAt} />
         {data.hidden && data.hiddenReason && <Alert kind="warning">{t('Chủ đề đang bị ẩn: {r}', { r: data.hiddenReason })}</Alert>}
-        <Prose text={data.body} />
+        <Prose text={t(data.body)} />
         <div className="row row-wrap forum-actions">
-          {data.mine && !data.hidden && <Button size="sm" variant="ghost" icon="edit" onClick={() => setEditing(true)}>Sửa</Button>}
-          {(data.mine || user?.role === 'ADMIN') && <Button size="sm" variant="ghost" icon="trash" onClick={() => setAskDelete(true)}>Xoá</Button>}
-          {user && !data.mine && <Button size="sm" variant="ghost" icon="alert" onClick={() => setReportTarget({ kind: 'topic', id: data.id })}>Báo vi phạm</Button>}
+          {data.mine && !data.hidden && <Button size="sm" variant="ghost" icon="edit" onClick={() => setEditing(true)}>{t('Sửa')}</Button>}
+          {(data.mine || user?.role === 'ADMIN') && <Button size="sm" variant="ghost" icon="trash" onClick={() => setAskDelete(true)}>{t('Xoá')}</Button>}
+          {user && !data.mine && <Button size="sm" variant="ghost" icon="alert" onClick={() => setReportTarget({ kind: 'topic', id: data.id })}>{t('Báo vi phạm')}</Button>}
           {data.canModerate && <>
             <span className="forum-sep" aria-hidden />
-            <Button size="sm" variant="ghost" icon="star" onClick={() => void moderateTopic(data.pinned ? 'UNPIN' : 'PIN').catch(() => undefined)}>{data.pinned ? 'Bỏ ghim' : 'Ghim'}</Button>
-            <Button size="sm" variant="ghost" icon={data.locked ? 'unlock' : 'lock'} onClick={() => void moderateTopic(data.locked ? 'UNLOCK' : 'LOCK').catch(() => undefined)}>{data.locked ? 'Mở khoá' : 'Khoá'}</Button>
+            <Button size="sm" variant="ghost" icon="star" onClick={() => void moderateTopic(data.pinned ? 'UNPIN' : 'PIN').catch(() => undefined)}>{data.pinned ? t('Bỏ ghim') : t('Ghim')}</Button>
+            <Button size="sm" variant="ghost" icon={data.locked ? 'unlock' : 'lock'} onClick={() => void moderateTopic(data.locked ? 'UNLOCK' : 'LOCK').catch(() => undefined)}>{data.locked ? t('Mở khoá') : t('Khoá')}</Button>
             {data.hidden
-              ? <Button size="sm" variant="ghost" icon="eye" onClick={() => void moderateTopic('SHOW').catch(() => undefined)}>Hiện lại</Button>
-              : <Button size="sm" variant="ghost" icon="eyeOff" onClick={() => setHideTarget({ kind: 'topic', id: data.id })}>Ẩn</Button>}
+              ? <Button size="sm" variant="ghost" icon="eye" onClick={() => void moderateTopic('SHOW').catch(() => undefined)}>{t('Hiện lại')}</Button>
+              : <Button size="sm" variant="ghost" icon="eyeOff" onClick={() => setHideTarget({ kind: 'topic', id: data.id })}>{t('Ẩn')}</Button>}
           </>}
         </div>
       </article>
@@ -434,43 +434,43 @@ export function ForumTopicPage({ embedded }: { embedded?: boolean }) {
           {canReply
             ? <ReplyComposer topicId={data.id} onPosted={() => void reload()} />
             : !user
-              ? <JoinPrompt text="Đăng nhập để trả lời chủ đề này." />
+              ? <JoinPrompt text={t('Đăng nhập để trả lời chủ đề này.')} />
               : <p className="muted small">{t(data.hidden ? 'Chủ đề đang bị ẩn nên không nhận thêm trả lời.' : 'Chủ đề đã khoá, không nhận thêm trả lời.')}</p>}
         </div>
       </section>
 
-      {editing && <TopicEditor initial={data} onClose={() => setEditing(false)} onSaved={(d) => { setData(d); setEditing(false); toast.success('Đã lưu thay đổi'); }} />}
+      {editing && <TopicEditor initial={data} onClose={() => setEditing(false)} onSaved={(d) => { setData(d); setEditing(false); toast.success(t('Đã lưu thay đổi')); }} />}
       {askDelete && (
-        <Confirm title="Xoá chủ đề?" danger confirmText="Xoá chủ đề"
+        <Confirm title={t('Xoá chủ đề?')} danger confirmText={t('Xoá chủ đề')}
           message={t('Chủ đề và mọi trả lời sẽ bị xoá vĩnh viễn, không khôi phục được.')}
           onClose={() => setAskDelete(false)}
           onConfirm={async () => {
-            try { await api.del(`/forum/topics/${data.id}`); toast.success('Đã xoá chủ đề'); navigate(base, { replace: true }); }
+            try { await api.del(`/forum/topics/${data.id}`); toast.success(t('Đã xoá chủ đề')); navigate(base, { replace: true }); }
             catch (e) { toast.error(errMsg(e)); throw e; }
           }} />
       )}
       {deleteReply && (
-        <Confirm title="Xoá trả lời?" danger confirmText="Xoá"
+        <Confirm title={t('Xoá trả lời?')} danger confirmText={t('Xoá')}
           message={t('Trả lời này sẽ bị xoá vĩnh viễn.')}
           onClose={() => setDeleteReply(null)}
           onConfirm={async () => {
-            try { await api.del(`/forum/replies/${deleteReply.id}`); toast.success('Đã xoá trả lời'); await reload(); }
+            try { await api.del(`/forum/replies/${deleteReply.id}`); toast.success(t('Đã xoá trả lời')); await reload(); }
             catch (e) { toast.error(errMsg(e)); throw e; }
           }} />
       )}
       {hideTarget && (
-        <ReasonDialog title={hideTarget.kind === 'topic' ? 'Ẩn chủ đề' : 'Ẩn trả lời'} label="Lý do ẩn" min={5} danger confirmText="Ẩn bài"
-          hint="Người viết sẽ thấy lý do này. Bài bị ẩn không hiện với người khác."
+        <ReasonDialog title={hideTarget.kind === 'topic' ? t('Ẩn chủ đề') : t('Ẩn trả lời')} label={t('Lý do ẩn')} min={5} danger confirmText={t('Ẩn bài')}
+          hint={t('Người viết sẽ thấy lý do này. Bài bị ẩn không hiện với người khác.')}
           onClose={() => setHideTarget(null)}
           onSubmit={(reason) => (hideTarget.kind === 'topic' ? moderateTopic('HIDE', reason) : moderateReply(hideTarget.id, 'HIDE', reason))} />
       )}
       {reportTarget && (
-        <ReasonDialog title="Báo cáo bài vi phạm" label="Lý do báo cáo" min={5} confirmText="Gửi báo cáo"
-          hint="VD: quảng cáo, công kích cá nhân, thông tin sức khoẻ sai lệch nguy hiểm…"
+        <ReasonDialog title={t('Báo cáo bài vi phạm')} label={t('Lý do báo cáo')} min={5} confirmText={t('Gửi báo cáo')}
+          hint={t('VD: quảng cáo, công kích cá nhân, thông tin sức khoẻ sai lệch nguy hiểm…')}
           onClose={() => setReportTarget(null)}
           onSubmit={async (reason) => {
             await api.post(reportTarget.kind === 'topic' ? `/forum/topics/${reportTarget.id}/report` : `/forum/replies/${reportTarget.id}/report`, { reason });
-            toast.success('Đã gửi báo cáo. Huấn luyện viên hoặc quản lý sẽ xem xét.');
+            toast.success(t('Đã gửi báo cáo. Huấn luyện viên hoặc quản lý sẽ xem xét.'));
           }} />
       )}
     </Frame>
@@ -501,28 +501,28 @@ function ReplyItem({ r, canModerate, isAdmin, loggedIn, onUpdated, onDelete, onR
     <div id={`reply-${r.id}`} className={`card forum-reply ${staffReply ? 'is-staff' : ''} ${r.hidden ? 'is-hidden' : ''}`}>
       <div className="row between row-wrap" style={{ gap: 8 }}>
         <AuthorLine author={r.author} at={r.createdAt} edited={r.updatedAt} />
-        {r.hidden && <Badge tone="red">Đã ẩn</Badge>}
+        {r.hidden && <Badge tone="red">{t('Đã ẩn')}</Badge>}
       </div>
       {r.hidden && r.hiddenReason && <p className="tiny warn">{t('Lý do ẩn: {r}', { r: r.hiddenReason })}</p>}
       {editing ? (
         <div className="stack-sm">
-          <Field label="Sửa trả lời" error={err ?? undefined}>
+          <Field label={t('Sửa trả lời')} error={err ?? undefined}>
             <Textarea rows={4} maxLength={REPLY_MAX} value={text} invalid={!!err} onChange={(e) => { setText(e.target.value); setErr(null); }} />
           </Field>
           <div className="row" style={{ gap: 8 }}>
-            <Button size="sm" variant="primary" loading={busy} onClick={() => void save()}>Lưu</Button>
-            <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setText(r.body); setErr(null); }}>Huỷ</Button>
+            <Button size="sm" variant="primary" loading={busy} onClick={() => void save()}>{t('Lưu')}</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setText(r.body); setErr(null); }}>{t('Huỷ')}</Button>
           </div>
         </div>
       ) : <Prose text={r.body} />}
       {!editing && (
         <div className="row row-wrap forum-actions">
-          {r.mine && !r.hidden && <Button size="sm" variant="ghost" icon="edit" onClick={() => setEditing(true)}>Sửa</Button>}
-          {(r.mine || isAdmin) && <Button size="sm" variant="ghost" icon="trash" onClick={onDelete}>Xoá</Button>}
-          {loggedIn && !r.mine && <Button size="sm" variant="ghost" icon="alert" onClick={onReport}>Báo vi phạm</Button>}
+          {r.mine && !r.hidden && <Button size="sm" variant="ghost" icon="edit" onClick={() => setEditing(true)}>{t('Sửa')}</Button>}
+          {(r.mine || isAdmin) && <Button size="sm" variant="ghost" icon="trash" onClick={onDelete}>{t('Xoá')}</Button>}
+          {loggedIn && !r.mine && <Button size="sm" variant="ghost" icon="alert" onClick={onReport}>{t('Báo vi phạm')}</Button>}
           {canModerate && (r.hidden
-            ? <Button size="sm" variant="ghost" icon="eye" onClick={onShow}>Hiện lại</Button>
-            : <Button size="sm" variant="ghost" icon="eyeOff" onClick={onHide}>Ẩn</Button>)}
+            ? <Button size="sm" variant="ghost" icon="eye" onClick={onShow}>{t('Hiện lại')}</Button>
+            : <Button size="sm" variant="ghost" icon="eyeOff" onClick={onHide}>{t('Ẩn')}</Button>)}
         </div>
       )}
     </div>
@@ -542,7 +542,7 @@ function ReplyComposer({ topicId, onPosted }: { topicId: number; onPosted: () =>
     try {
       await api.post<ForumReply>(`/forum/topics/${topicId}/replies`, { body: text.trim() });
       setText('');
-      toast.success('Đã gửi trả lời');
+      toast.success(t('Đã gửi trả lời'));
       onPosted();
     } catch (e) {
       const f = fieldErrs(e);
@@ -551,14 +551,14 @@ function ReplyComposer({ topicId, onPosted }: { topicId: number; onPosted: () =>
   };
   return (
     <div className="card stack-sm">
-      <Field label="Trả lời của bạn" error={err ?? undefined}>
-        <Textarea rows={4} maxLength={REPLY_MAX} value={text} invalid={!!err} placeholder="Chia sẻ kinh nghiệm hoặc góp ý của bạn…"
+      <Field label={t('Trả lời của bạn')} error={err ?? undefined}>
+        <Textarea rows={4} maxLength={REPLY_MAX} value={text} invalid={!!err} placeholder={t('Chia sẻ kinh nghiệm hoặc góp ý của bạn…')}
           onChange={(e) => { setText(e.target.value); setErr(null); }}
           onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') void submit(); }} />
       </Field>
       <div className="row between row-wrap" style={{ gap: 8 }}>
         <span className="tiny faint">{t('Ctrl/⌘ + Enter để gửi')}</span>
-        <Button variant="primary" icon="arrowRight" loading={busy} onClick={() => void submit()}>Gửi trả lời</Button>
+        <Button variant="primary" icon="arrowRight" loading={busy} onClick={() => void submit()}>{t('Gửi trả lời')}</Button>
       </div>
     </div>
   );

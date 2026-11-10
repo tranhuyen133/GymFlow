@@ -333,8 +333,8 @@ export default function Landing() {
             {latest.map((x) => (
               <Link key={x.id} to={`${user ? '/community' : '/forum'}/${x.id}`} className="article-card spot reveal">
                 <span className="kicker">{t(FORUM_CATEGORY_VI[x.category])}</span>
-                <h3>{x.title}</h3>
-                <p className="small muted">{x.excerpt}</p>
+                <h3>{t(x.title)}</h3>
+                <p className="small muted">{t(x.excerpt)}</p>
                 <span className="link-btn small">{t('{n} trả lời', { n: x.replyCount })} · {relativeTime(x.lastActivityAt)} <Icon name="arrowRight" size={14} /></span>
               </Link>
             ))}

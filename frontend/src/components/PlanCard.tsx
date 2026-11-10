@@ -103,7 +103,7 @@ export function PlanCard({ plan, best, saving, badge, compact, className = '', f
               <li key={idx}>
                 {t('Tặng {q} lượt {s} (hạn {d} ngày)', {
                   q: g.quantity,
-                  s: g.serviceName || t('Dịch vụ'),
+                  s: g.serviceName ? t(g.serviceName) : t('Dịch vụ'),
                   d: g.validDays,
                 })}
               </li>

@@ -34,9 +34,24 @@ export function t(vi: string, vars?: Vars): string {
         const m2 = vi.match(/^Buổi (\d+)$/);
         if (m2) {
           s = `Session ${m2[1]}`;
-        } else if (import.meta.env.DEV && vi && !missing.has(vi)) {
-          missing.add(vi);
-          console.debug('[i18n] thiếu bản dịch:', vi);
+        } else {
+          const mInBody = vi.match(/^(\d+)\s+buổi đo InBody$/i);
+          if (mInBody) {
+            s = `${mInBody[1]} InBody assessment${mInBody[1] === '1' ? '' : 's'}`;
+          } else {
+            const mPt = vi.match(/^(\d+)\s+buổi PT$/i);
+            if (mPt) {
+              s = `${mPt[1]} PT session${mPt[1] === '1' ? '' : 's'}`;
+            } else {
+              const mFullPt = vi.match(/^Toàn bộ quyền lợi \+ (\d+)\s+buổi PT$/i);
+              if (mFullPt) {
+                s = `Full benefits + ${mFullPt[1]} PT sessions`;
+              } else if (import.meta.env.DEV && vi && !missing.has(vi)) {
+                missing.add(vi);
+                console.debug('[i18n] thiếu bản dịch:', vi);
+              }
+            }
+          }
         }
       }
     }
