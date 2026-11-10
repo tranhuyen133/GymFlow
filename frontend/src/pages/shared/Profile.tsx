@@ -77,7 +77,7 @@ export default function Profile() {
           {m && (
             <div>
               <dt>{t('Gói hiện tại')}</dt>
-              <dd>{m.currentPlanName ? <>{m.currentPlanName} <StatusBadge map={subState} value={m.subscriptionState} /></> : <span className="faint">{t('Chưa có gói')}</span>}</dd>
+              <dd>{m.currentPlanName ? <>{t(m.currentPlanName)} <StatusBadge map={subState} value={m.subscriptionState} /></> : <span className="faint">{t('Chưa có gói')}</span>}</dd>
             </div>
           )}
           {m?.daysLeft != null && m.currentPlanName && <div><dt>{t('Còn lại')}</dt><dd>{t('{n} ngày', { n: m.daysLeft })}</dd></div>}
@@ -97,12 +97,12 @@ export default function Profile() {
         {section === 'info' && (
           <div className="grid grid-main" style={{ alignItems: 'start' }}>
             <AccountCard onAvatar={() => setEditAvatar(true)} />
-            <Card title="Ảnh đại diện" icon="user">
+            <Card title={t('Ảnh đại diện')} icon="user">
               <div className="row" style={{ gap: 14 }}>
                 <MyAvatar size="lg" />
                 <div className="grow">
                   <p className="small muted" style={{ margin: 0 }}>{me.avatarUpdatedAt ? t('Cập nhật lần cuối {d}', { d: fmtDateTime(me.avatarUpdatedAt) }) : t('Đang dùng ảnh mặc định (chữ viết tắt tên).')}</p>
-                  <Button size="sm" icon="upload" className="mt-8" onClick={() => setEditAvatar(true)}>{me.avatarUpdatedAt ? 'Đổi ảnh' : 'Tải ảnh lên'}</Button>
+                  <Button size="sm" icon="upload" className="mt-8" onClick={() => setEditAvatar(true)}>{me.avatarUpdatedAt ? t('Đổi ảnh') : t('Tải ảnh lên')}</Button>
                 </div>
               </div>
             </Card>
@@ -123,20 +123,20 @@ export default function Profile() {
         {section === 'security' && (
           <div className="grid grid-main" style={{ alignItems: 'start' }}>
             <PasswordCard />
-            <Card title="Phiên đăng nhập" icon="shield">
+            <Card title={t('Phiên đăng nhập')} icon="shield">
               <dl className="kv small">
                 <dt>{t('Vai trò')}</dt><dd><Badge tone="green">{roleLabel[me.role]}</Badge></dd>
                 <dt>{t('Lần đăng nhập')}</dt><dd>{fmtDateTime(me.lastLoginAt)}</dd>
               </dl>
               <p className="tiny faint mt-16">{t('Tài khoản bị khoá sẽ mất quyền truy cập ngay cả khi đang đăng nhập.')}</p>
-              <Button variant="danger" icon="logout" block className="mt-16" onClick={() => setAskLogout(true)}>Đăng xuất</Button>
+              <Button variant="danger" icon="logout" block className="mt-16" onClick={() => setAskLogout(true)}>{t('Đăng xuất')}</Button>
             </Card>
           </div>
         )}
       </div>
 
       {editAvatar && <AvatarEditor onClose={() => setEditAvatar(false)} />}
-      {askLogout && <Confirm title="Đăng xuất?" message={t('Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng GymFlow.')} confirmText="Đăng xuất"
+      {askLogout && <Confirm title={t('Đăng xuất?')} message={t('Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng GymFlow.')} confirmText={t('Đăng xuất')}
         onClose={() => setAskLogout(false)} onConfirm={() => { logout(); navigate('/login'); }} />}
     </div>
   );

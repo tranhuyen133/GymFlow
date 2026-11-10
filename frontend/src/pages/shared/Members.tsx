@@ -109,14 +109,14 @@ export default function Members() {
                         <tr key={m.id} className="clickable" onClick={() => navigate(`/members/${m.id}`)}>
                           <td><Person name={m.fullName} sub={m.code} /></td>
                           <td><div className="small">{m.phone ?? '—'}</div><div className="tiny faint">{m.email}</div></td>
-                          <td>{m.trainerName ?? <span className="faint">Chưa phân công</span>}</td>
+                          <td>{m.trainerName ?? <span className="faint">{t('Chưa phân công')}</span>}</td>
                           <td>
                             {m.currentPlanName ? <div className="stack-sm" style={{ gap: 4 }}>
-                              <span className="small">{m.currentPlanName}</span>
-                              <span className="row" style={{ gap: 6 }}><StatusBadge map={subState} value={m.subscriptionState} />{m.subscriptionState !== 'EXPIRED' && m.daysLeft != null && <span className="tiny faint">{m.daysLeft} ngày</span>}</span>
-                            </div> : <Badge tone="muted">Chưa có gói</Badge>}
+                              <span className="small">{t(m.currentPlanName)}</span>
+                              <span className="row" style={{ gap: 6 }}><StatusBadge map={subState} value={m.subscriptionState} />{m.subscriptionState !== 'EXPIRED' && m.daysLeft != null && <span className="tiny faint">{t('{n} ngày', { n: m.daysLeft })}</span>}</span>
+                            </div> : <Badge tone="muted">{t('Chưa có gói')}</Badge>}
                           </td>
-                          <td><StatusBadge map={memberStatus} value={m.status} />{m.accountStatus === 'LOCKED' && <div className="mt-4"><Badge tone="red">TK khoá</Badge></div>}</td>
+                          <td><StatusBadge map={memberStatus} value={m.status} />{m.accountStatus === 'LOCKED' && <div className="mt-4"><Badge tone="red">{t('TK khoá')}</Badge></div>}</td>
                           <td className="nowrap muted">{fmtDate(m.joinedAt)}</td>
                         </tr>
                       ))}

@@ -74,24 +74,24 @@ export default function MemberDetail() {
         {tab === 'overview' && (
           <div className="stack" style={{ gap: 18 }}>
             <div className="grid grid-4">
-              <Stat icon="ticket" label="Gói hiện tại" value={m.daysLeft ?? '—'} unit={m.daysLeft != null ? 'ngày' : undefined} foot={m.currentPlanName ?? 'Chưa có gói'} />
-              <Stat icon="checkCircle" label="Buổi hoàn thành" value={data.completedSessions} accent="#3d97ff" foot={t('/{n} buổi đã xếp', { n: data.totalSessions })} />
-              <Stat icon="target" label="Tỉ lệ hoàn thành" value={rate ?? '—'} unit={rate != null ? '%' : undefined} accent="#8b7cff" foot="Không tính buổi đã huỷ" />
-              <Stat icon="scale" label="Cân nặng gần nhất" value={data.latestWeight?.weightKg ?? '—'} unit={data.latestWeight ? 'kg' : undefined} accent="#ffb020" foot={data.latestWeight ? fmtDate(data.latestWeight.recordedDate) : '—'} />
+              <Stat icon="ticket" label={t('Gói hiện tại')} value={m.daysLeft ?? '—'} unit={m.daysLeft != null ? t('ngày') : undefined} foot={m.currentPlanName ? t(m.currentPlanName) : t('Chưa có gói')} />
+              <Stat icon="checkCircle" label={t('Buổi hoàn thành')} value={data.completedSessions} accent="#3d97ff" foot={t('/{n} buổi đã xếp', { n: data.totalSessions })} />
+              <Stat icon="target" label={t('Tỉ lệ hoàn thành')} value={rate ?? '—'} unit={rate != null ? '%' : undefined} accent="#8b7cff" foot={t('Không tính buổi đã huỷ')} />
+              <Stat icon="scale" label={t('Cân nặng gần nhất')} value={data.latestWeight?.weightKg ?? '—'} unit={data.latestWeight ? 'kg' : undefined} accent="#ffb020" foot={data.latestWeight ? fmtDate(data.latestWeight.recordedDate) : '—'} />
             </div>
             <div className="grid grid-main">
-              <Card title="Lịch sử gói tập" icon="card" flush>
-                {data.subscriptions.length === 0 ? <Empty icon="ticket" title="Chưa đăng ký gói nào" action={admin && <Button variant="primary" size="sm" onClick={() => setModal('subscribe')}>Đăng ký ngay</Button>} /> : (
-                  <Table caption="Lịch sử gói tập">
-                    <thead><tr><th>Gói</th><th>Thời gian</th><th>Số tiền</th><th>Trạng thái</th>{admin && <th />}</tr></thead>
+              <Card title={t('Lịch sử gói tập')} icon="card" flush>
+                {data.subscriptions.length === 0 ? <Empty icon="ticket" title={t('Chưa đăng ký gói nào')} action={admin && <Button variant="primary" size="sm" onClick={() => setModal('subscribe')}>{t('Đăng ký ngay')}</Button>} /> : (
+                  <Table caption={t('Lịch sử gói tập')}>
+                    <thead><tr><th>{t('Gói')}</th><th>{t('Thời gian')}</th><th>{t('Số tiền')}</th><th>{t('Trạng thái')}</th>{admin && <th />}</tr></thead>
                     <tbody>
                       {data.subscriptions.map((s) => (
                         <tr key={s.id}>
                           <td><b>{t(s.planName)}</b>{s.note && <div className="tiny faint ellipsis" style={{ maxWidth: 220 }}>{s.note}</div>}</td>
                           <td className="nowrap small">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</td>
                           <td className="num">{fmtMoney(s.pricePaid)}</td>
-                          <td><StatusBadge map={subState} value={s.state} />{(s.state === 'ACTIVE' || s.state === 'EXPIRING') && <div className="tiny faint mt-4">còn {s.daysLeft} ngày</div>}</td>
-                          {admin && <td className="actions">{!s.cancelled && s.state !== 'EXPIRED' && <Button size="sm" variant="ghost" icon="ban" aria-label="Huỷ gói" title="Huỷ gói" onClick={() => setCancelling(s)} />}</td>}
+                          <td><StatusBadge map={subState} value={s.state} />{(s.state === 'ACTIVE' || s.state === 'EXPIRING') && <div className="tiny faint mt-4">{t('còn {n} ngày', { n: s.daysLeft })}</div>}</td>
+                          {admin && <td className="actions">{!s.cancelled && s.state !== 'EXPIRED' && <Button size="sm" variant="ghost" icon="ban" aria-label={t('Huỷ gói')} title={t('Huỷ gói')} onClick={() => setCancelling(s)} />}</td>}
                         </tr>
                       ))}
                     </tbody>
