@@ -45,7 +45,7 @@ import '../../components/packages.css';
 
 type FilterTab = 'ALL' | 'GYM' | 'GYM_PT' | 'SERVICE';
 
-export default function PackagesCatalog() {
+export default function PackagesCatalog({ embedded }: { embedded?: boolean } = {}) {
   const toast = useToast();
   const plans = useAsync(() => api.get<MembershipPlan[]>('/plans'), []);
   const subs = useAsync(() => api.get<Subscription[]>('/subscriptions/me'), []);
@@ -105,19 +105,21 @@ export default function PackagesCatalog() {
   };
 
   return (
-    <div className="page">
-      <PageHead
-        eyebrow={t('Dịch vụ & Gói tập')}
-        title={t('Chọn gói tập phù hợp')}
-        desc={t('Khám phá các gói tập Gym tự do và gói Gym kèm huấn luyện viên riêng (PT) với số buổi và thời hạn minh bạch.')}
-        actions={
-          <div className="row" style={{ gap: 8 }}>
-            <Link to="/me/packages" className="btn btn-ghost btn-sm">
-              <Icon name="ticket" size={15} /> {t('Gói của tôi')}
-            </Link>
-          </div>
-        }
-      />
+    <div className={embedded ? undefined : 'page'}>
+      {!embedded && (
+        <PageHead
+          eyebrow={t('Dịch vụ & Gói tập')}
+          title={t('Chọn gói tập phù hợp')}
+          desc={t('Khám phá các gói tập Gym tự do và gói Gym kèm huấn luyện viên riêng (PT) với số buổi và thời hạn minh bạch.')}
+          actions={
+            <div className="row" style={{ gap: 8 }}>
+              <Link to="/me/packages" className="btn btn-ghost btn-sm">
+                <Icon name="ticket" size={15} /> {t('Gói của tôi')}
+              </Link>
+            </div>
+          }
+        />
+      )}
 
       {pending && (
         <div style={{ marginBottom: 16 }}>

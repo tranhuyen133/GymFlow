@@ -8,7 +8,7 @@ import { t } from '../../i18n';
 import { fmtDate, fmtDateTime, todayIso } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 
-export default function MyEntitlements() {
+export default function MyEntitlements({ embedded }: { embedded?: boolean } = {}) {
   const { data, error, loading, reload } = useAsync(() => api.get<MemberServiceEntitlement[]>('/me/entitlements'), []);
   const [selectedEntitlement, setSelectedEntitlement] = useState<MemberServiceEntitlement | null>(null);
 
@@ -20,19 +20,21 @@ export default function MyEntitlements() {
   const totalRemaining = activeEntitlements.reduce((sum, e) => sum + e.remainingQty, 0);
 
   return (
-    <div className="page">
-      <PageHead
-        eyebrow={t('Dịch vụ')}
-        title={t('Quyền lợi & Dịch vụ của tôi')}
-        desc={t('Theo dõi số lượt dịch vụ tặng kèm theo gói tập, mua thêm hoặc nhận từ các chương trình ưu đãi.')}
-        actions={
-          <div className="row" style={{ gap: 8 }}>
-            <Link to="/packages" className="btn btn-ghost btn-sm">
-              <Icon name="sparkle" size={15} /> {t('Khám phá dịch vụ & gói')}
-            </Link>
-          </div>
-        }
-      />
+    <div className={embedded ? undefined : 'page'}>
+      {!embedded && (
+        <PageHead
+          eyebrow={t('Dịch vụ')}
+          title={t('Quyền lợi & Dịch vụ của tôi')}
+          desc={t('Theo dõi số lượt dịch vụ tặng kèm theo gói tập, mua thêm hoặc nhận từ các chương trình ưu đãi.')}
+          actions={
+            <div className="row" style={{ gap: 8 }}>
+              <Link to="/packages" className="btn btn-ghost btn-sm">
+                <Icon name="sparkle" size={15} /> {t('Khám phá dịch vụ & gói')}
+              </Link>
+            </div>
+          }
+        />
+      )}
 
       {error ? (
         <ErrorState message={error} onRetry={reload} />

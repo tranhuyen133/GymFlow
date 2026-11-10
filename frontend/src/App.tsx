@@ -22,9 +22,7 @@ import { ForumList, ForumTopicPage } from './pages/Forum';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import MemberDashboard from './pages/member/MemberDashboard';
-import MyEntitlements from './pages/member/MyEntitlements';
 import MyPackages from './pages/member/MyPackages';
-import PackagesCatalog from './pages/member/PackagesCatalog';
 import MyPlan from './pages/member/MyPlan';
 import MyJourney from './pages/member/MyJourney';
 import MyProgress from './pages/member/MyProgress';
@@ -46,7 +44,6 @@ import Schedules from './pages/shared/Schedules';
 import PlanEditor from './pages/shared/PlanEditor';
 import WorkoutPlans from './pages/shared/WorkoutPlans';
 import TrainerDashboard from './pages/trainer/TrainerDashboard';
-import Coaches from './pages/member/Coaches';
 import CoachDetail from './pages/member/CoachDetail';
 import Messages from './pages/shared/Messages';
 
@@ -113,9 +110,9 @@ export default function App() {
         <Route path="/me/progress" element={<Only roles={MEMBER}><MyProgress /></Only>} />
         <Route path="/me/journey" element={<Only roles={MEMBER}><MyJourney /></Only>} />
         <Route path="/me/packages" element={<Only roles={MEMBER}><MyPackages /></Only>} />
-        <Route path="/packages" element={<Only roles={MEMBER}><PackagesCatalog /></Only>} />
-        <Route path="/me/entitlements" element={<Only roles={MEMBER}><MyEntitlements /></Only>} />
-        <Route path="/coaches" element={<Only roles={MEMBER}><Coaches /></Only>} />
+        <Route path="/packages" element={<Navigate to="/me/packages?tab=catalog" replace />} />
+        <Route path="/me/entitlements" element={<Navigate to="/me/packages?tab=entitlements" replace />} />
+        <Route path="/coaches" element={<Navigate to="/me/packages?tab=coaches" replace />} />
         <Route path="/coaches/:id" element={<Only roles={MEMBER}><CoachDetail /></Only>} />
         <Route path="/messages" element={<Only roles={CHAT_ROLES}><Messages /></Only>} />
         <Route path="/messages/:id" element={<Only roles={CHAT_ROLES}><Messages /></Only>} />

@@ -6,8 +6,11 @@
  * V12: trả tại quầy hoặc chuyển khoản theo mã QR (nội dung = mã đơn); gói có HLV kèm thì chọn HLV khi gửi đơn.
  */
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
+import PackagesCatalog from './PackagesCatalog';
+import MyEntitlements from './MyEntitlements';
+import Coaches from './Coaches';
 import type {
   Member,
   MembershipPlan,
@@ -44,6 +47,10 @@ function overlaps(subs: Subscription[], start: string, end: string) {
 
 export default function MyPackages() {
   const toast = useToast();
+  const [params, setParams] = useSearchParams();
+  const activeTab = (params.get('tab') as 'my' | 'catalog' | 'entitlements' | 'coaches') || 'my';
+  const setTab = (t: string) => setParams({ tab: t });
+
   const subs = useAsync(() => api.get<Subscription[]>('/subscriptions/me'), []);
   const plans = useAsync(() => api.get<MembershipPlan[]>('/plans/upgrades'), []);
   const reqs = useAsync(() => api.get<PackageRequest[]>('/package-requests/me'), []);
@@ -57,7 +64,7 @@ export default function MyPackages() {
   if (subs.error) return <ErrorState message={subs.error} onRetry={subs.reload} />;
   if (subs.loading || !subs.data) return (
     <div className="page">
-      <PageHead title="Gói tập của tôi" />
+      <PageHead title={t('Gói tập & Dịch vụ')} />
       <LoadingBlock rows={6} />
     </div>
   );
@@ -87,9 +94,29 @@ export default function MyPackages() {
     <div className="page">
       <PageHead
         eyebrow={t('Thành viên')}
-        title={t('Gói tập của tôi')}
-        desc={t('Chọn gói và gửi đăng ký ngay trên ứng dụng. Gói có hiệu lực sau khi bạn thanh toán tại quầy lễ tân và quản lý xác nhận.')}
+        title={t('Gói tập & Dịch vụ')}
+        desc={t('Quản lý gói tập hiện tại, đăng ký gói mới, kiểm tra lượt quà tặng và kết nối với huấn luyện viên.')}
       />
+
+      <div className="mb-20">
+        <Segmented
+          value={activeTab}
+          onChange={setTab}
+          options={[
+            { value: 'my', label: t('Gói của tôi') },
+            { value: 'catalog', label: t('Tất cả gói tập') },
+            { value: 'entitlements', label: t('Lượt quà tặng') },
+            { value: 'coaches', label: t('Huấn luyện viên') },
+          ]}
+        />
+      </div>
+
+      {activeTab === 'catalog' && <PackagesCatalog embedded />}
+      {activeTab === 'entitlements' && <MyEntitlements embedded />}
+      {activeTab === 'coaches' && <Coaches embedded />}
+
+      {activeTab === 'my' && (
+        <>
 
       <div className="stack" style={{ gap: 12, marginBottom: 18 }}>
         {pending && pending.paymentMethod === 'BANK_TRANSFER' && (
@@ -276,7 +303,7 @@ export default function MyPackages() {
         <Card
           title={current ? t('Gói đề xuất nâng cấp') : t('Các gói đang mở bán')}
           icon="sparkle"
-          actions={<Link to="/packages" className="btn btn-sm btn-ghost">{t('Xem tất cả gói tập')}</Link>}
+          actions={<Button size="sm" variant="ghost" onClick={() => setTab('catalog')}>{t('Xem tất cả gói tập')}</Button>}
         >
           <div className="plan-stack">
             {plans.error && <ErrorState message={plans.error} onRetry={plans.reload} />}
@@ -288,9 +315,9 @@ export default function MyPackages() {
                     {t('Bạn đang dùng gói cao nhất.')}
                   </Alert>
                   <div>
-                    <Link to="/packages" className="btn btn-sm btn-secondary">
+                    <Button size="sm" variant="secondary" onClick={() => setTab('catalog')}>
                       {t('Xem tất cả gói tập')}
-                    </Link>
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -325,6 +352,8 @@ export default function MyPackages() {
           </div>
         </Card>
       </div>
+      </>
+      )}
 
       {picked && <RegisterPlanModal plan={picked} subs={subs.data} payment={pay.data} currentTrainerId={me.data?.trainerId ?? null}
         onClose={() => setPicked(null)}
