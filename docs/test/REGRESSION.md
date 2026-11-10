@@ -91,7 +91,67 @@ Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
 ---
 
 ## 2. SCRUM-199: Đối Chiếu Số Liệu Dashboard Giữa 3 Vai Trò (Hạn: 10/11/2026)
-<!-- TODO(Linh): Chạy kiểm thử đối chiếu số liệu Dashboard giữa Admin, Trainer, Member -->
+
+### 2.1 Mục tiêu và trạng thái
+- Đối chiếu các số liệu trên dashboard ADMIN, TRAINER và MEMBER với API dashboard, lịch tập, hội viên, gói tập, cân nặng và dữ liệu mẫu tương ứng.
+- Xác nhận các phép tính, phạm vi dữ liệu theo vai trò, trạng thái dữ liệu rỗng và cập nhật sau khi dữ liệu thay đổi.
+- **Trạng thái báo cáo: Chưa chạy.** Các giá trị ở cột kết quả thực tế phải được điền trong lúc thực thi; không coi dữ liệu kỳ vọng là kết quả đã quan sát.
+
+### 2.2 Môi trường và dữ liệu chuẩn bị
+- Môi trường ưu tiên: Docker Local theo `docs/test/TEST_PLAN.md` (frontend `http://localhost:8081`, API `http://localhost:8080`, Swagger `http://localhost:8080/swagger-ui/index.html`). Không thực hiện thao tác tạo/xoá dữ liệu kiểm thử trên VPS.
+- Xác nhận phiên bản đã merge vào `develop`, CI xanh, API hoạt động và đồng hồ nghiệp vụ đang theo `Asia/Ho_Chi_Minh`.
+- Dùng dữ liệu mẫu chỉ khi DB trống và `SEED_DEMO_DATA=true`. `DataSeeder` chỉ seed khi DB chưa có user; không xoá volume hoặc reset DB đang có dữ liệu chỉ để làm cho số liệu khớp.
+- Dữ liệu baseline của seeder: 12 hội viên, 3 HLV, 6 gói tập; 1 hội viên ở trạng thái `PAUSED`; các lịch tập, gói, cân nặng và nhật ký được tạo tương đối theo ngày hiện tại. Do đó số buổi hôm nay, doanh thu, gói sắp hết hạn và các chỉ số theo thời gian cần đối chiếu theo DB ở lần chạy, không dùng một con số cố định qua các ngày.
+- Tài khoản mẫu: `admin@gymflow.vn`, `trainer@gymflow.vn`, `member@gymflow.vn`. Lấy mật khẩu qua cấu hình/kênh bảo mật hiện hành, không ghi vào báo cáo hoặc repository.
+- Chuẩn bị thêm/kiểm tra hồ sơ hội viên do HLV demo phụ trách, lịch của họ trong tuần với trạng thái `COMPLETED`, `MISSED`, `CANCELLED`, `SCHEDULED`, và dữ liệu cân nặng; dùng dữ liệu thật đã seed, không sửa trực tiếp production.
+
+### 2.3 Nguồn đối chiếu và quy tắc tính
+
+| Dashboard | API nguồn | Nguồn đối chiếu | Quy tắc cần xác nhận |
+| --- | --- | --- | --- |
+| ADMIN | `GET /api/dashboard/admin` | Danh sách hội viên/HLV, đăng ký gói, lịch hôm nay, báo cáo doanh thu, nhật ký hệ thống | `totalMembers` là tổng hội viên; `activeMembers` chỉ trạng thái ACTIVE; `newMembersThisMonth` theo ngày tham gia; `membersWithActivePackage` theo gói hiệu lực hôm nay; gói hết hạn trong 7 ngày; doanh thu theo tháng thu tiền; danh sách biểu đồ gồm 6 tháng; lịch hôm nay không tính buổi huỷ. |
+| TRAINER | `GET /api/dashboard/trainer` | Hồ sơ HLV, danh sách hội viên được giao, lịch tuần/hôm nay, giáo án ACTIVE và gói sắp hết hạn của hội viên thuộc HLV | Chỉ tính dữ liệu thuộc HLV đăng nhập; tuần tính từ Thứ 2 đến hết Chủ nhật; loại lịch CANCELLED khỏi số buổi; `completionRate = completed / (completed + missed) × 100`, làm tròn 1 chữ số; lịch SCHEDULED chưa diễn ra không nằm trong mẫu số; `null` nếu chưa có buổi COMPLETED/MISSED. |
+| MEMBER | `GET /api/dashboard/member` | Hồ sơ của chính hội viên, gói, lịch, nhật ký hoàn thành, cân nặng và giáo án | Chỉ trả dữ liệu của hội viên đăng nhập; `completedThisMonth` đếm buổi COMPLETED theo tháng hiện tại; `nextSession` là buổi SCHEDULED gần nhất trong tương lai; `weekSessions` thuộc tuần hiện tại; BMI dùng cân nặng mới nhất và chiều cao, làm tròn 1 chữ số; BMI và phân loại là `null` khi thiếu cân nặng hoặc chiều cao. |
+
+### 2.4 Các bước chạy chung
+1. Ghi thời điểm kiểm thử, môi trường, commit/nhánh, vai trò đăng nhập và xác nhận nguồn dữ liệu mẫu.
+2. Với từng vai trò, mở dashboard và lưu các giá trị hiển thị (ảnh chụp hoặc ghi vào bảng 2.5).
+3. Gọi endpoint dashboard tương ứng bằng phiên đăng nhập cùng vai trò; so sánh response với giao diện.
+4. Đối chiếu các giá trị với màn hình/module nguồn hoặc dữ liệu kiểm thử đã chuẩn bị; dùng cùng khoảng ngày và múi giờ.
+5. Thực hiện kiểm tra phân quyền bằng cách gọi endpoint của vai trò khác. Ghi nhận mã HTTP; mong đợi 403, không trả dữ liệu dashboard ngoài quyền.
+6. Ghi kết quả thực tế, trạng thái `Đạt` / `Không đạt` / `Chặn`, và mã BUG nếu có sai khác tái hiện được. Không đánh dấu đạt chỉ vì UI và API khớp nhau nếu cả hai cùng sai so với nguồn dữ liệu.
+
+### 2.5 Checklist đối chiếu dashboard
+
+| Mã | Vai trò / hạng mục | Dữ liệu và thao tác đối chiếu | Kết quả mong đợi | Kết quả thực tế | Trạng thái | Bug |
+| --- | --- | --- | --- | --- | --- | --- |
+| **TC-199-01** | ADMIN — số hội viên | Đăng nhập ADMIN; đối chiếu `totalMembers`, `activeMembers`, `newMembersThisMonth` với danh sách hội viên và điều kiện trạng thái/ngày tham gia tương ứng. Với DB mới seed, xác nhận baseline 12 hội viên, 11 ACTIVE, 1 PAUSED. | Số trên API và dashboard bằng số đếm nguồn sau khi áp dụng đúng điều kiện; baseline seed mới khớp 12/11/1. | Chưa chạy | Chưa chạy | |
+| **TC-199-02** | ADMIN — gói và doanh thu | Đối chiếu `membersWithActivePackage`, `expiringSoon`, `expiring`, `planDistribution`, `revenueThisMonth`, `revenuePrevMonth`, `revenueByMonth` với danh sách đăng ký gói và báo cáo doanh thu trong cùng kỳ. | Gói hiệu lực tính theo ngày hiện tại; danh sách sắp hết hạn tối đa 8 mục và trong 7 ngày; biểu đồ doanh thu có đúng 6 tháng gần nhất, nhãn `MM/yyyy`, số tiền theo ngày thu tiền. Giá trị phụ thuộc ngày seed nên ghi số thực tế, không áp số cố định. | Chưa chạy | Chưa chạy | |
+| **TC-199-03** | ADMIN — lịch, HLV và hoạt động | Đối chiếu `activeTrainers`, `sessionsToday`, `recentActivity` với danh sách HLV, lịch trong ngày và 8 audit log mới nhất. | Số HLV là HLV đang hoạt động; số lịch hôm nay bỏ `CANCELLED`; hoạt động hiển thị tối đa 8 bản ghi mới nhất và nội dung/actor/thời gian khớp nguồn. | Chưa chạy | Chưa chạy | |
+| **TC-199-04** | TRAINER — phạm vi và số liệu tuần | Đăng nhập HLV demo; đối chiếu `memberCount`, `sessionsToday`, `sessionsThisWeek`, `completedThisWeek`, `missedThisWeek`, `completionRate` với lịch và danh sách hội viên do HLV phụ trách. | Chỉ tính hội viên/lịch của HLV hiện tại; lịch `CANCELLED` bị loại; buổi `SCHEDULED` không ảnh hưởng tỷ lệ; với dữ liệu có 2 COMPLETED và 1 MISSED, tỷ lệ là 66.7%; không có buổi kết thúc thì tỷ lệ là `null`/hiển thị `—`. | Chưa chạy | Chưa chạy | |
+| **TC-199-05** | TRAINER — biểu đồ và danh sách | Đối chiếu `weekLoad`, `todaySessions`, `activePlans`, `expiringMembers`, `assignedMembers` với lịch tuần, giáo án ACTIVE, hội viên và gói của họ. | `weekLoad` có đúng 7 nhãn T2–CN và số buổi mỗi ngày; danh sách hôm nay và hội viên/gói thuộc đúng HLV; giáo án chỉ đếm ACTIVE; hội viên phụ trách sắp tăng dần theo tỷ lệ, giá trị null ở cuối. | Chưa chạy | Chưa chạy | |
+| **TC-199-06** | MEMBER — thông tin cá nhân và gói | Đăng nhập MEMBER; so sánh `member`, `currentSubscription`, `currentPlan` với hồ sơ, gói hiệu lực và giáo án của tài khoản đó. | Hồ sơ và các tài nguyên khớp chính hội viên đăng nhập; trường không có dữ liệu là `null`, không hiển thị dữ liệu hội viên khác. | Chưa chạy | Chưa chạy | |
+| **TC-199-07** | MEMBER — lịch, chuyên cần và BMI | Đối chiếu `nextSession`, `weekSessions`, `completedThisMonth`, `streakWeeks`, `latestWeight`, `bmi`, `bmiCategory` với lịch, cân nặng và hồ sơ chiều cao. Tính BMI độc lập bằng `kg / (cm / 100)^2`. | Buổi tiếp theo là SCHEDULED gần nhất còn trong tương lai; lịch tuần thuộc tuần hiện tại; buổi hoàn thành tháng này đếm theo tháng của ngày bắt đầu; cân nặng là bản ghi mới nhất; BMI khớp phép tính làm tròn 1 chữ số và phân loại theo ngưỡng đã ghi trong `weights-progress.md`. | Chưa chạy | Chưa chạy | |
+| **TC-199-08** | MEMBER — dữ liệu rỗng / thiếu | Dùng tài khoản kiểm thử riêng chưa có gói, lịch, giáo án, cân nặng hoặc thiếu chiều cao; mở dashboard và đối chiếu response. | Không lỗi trang; giá trị/collection rỗng hoặc null theo DTO; không hiển thị số giả (ví dụ BMI khi thiếu cân nặng/chiều cao). Không sửa/xoá dữ liệu mẫu dùng chung để tạo ca này. | Chưa chạy | Chưa chạy | |
+| **TC-199-09** | Phân quyền endpoint | Gọi cả 3 endpoint dashboard lần lượt bằng token ADMIN, TRAINER, MEMBER; thử endpoint không đúng vai trò và gọi khi chưa đăng nhập. | Endpoint đúng vai trò trả 200; sai vai trò trả 403; chưa đăng nhập trả 401; không trả payload dữ liệu dashboard trái quyền. | Chưa chạy | Chưa chạy | |
+| **TC-199-10** | Đối chiếu UI với API | Với từng tài khoản, so sánh toàn bộ chỉ số hiển thị trên dashboard với JSON endpoint, chú ý định dạng tiền, phần trăm, làm tròn và trạng thái loading/error. | UI biểu diễn đúng giá trị API; tiền tệ/đơn vị/nhãn đúng; dữ liệu null hiển thị dấu hoặc trạng thái rỗng phù hợp, không hiển thị `null`, `NaN` hay lỗi định dạng. | Chưa chạy | Chưa chạy | |
+
+### 2.6 Tổng hợp kết quả thực thi
+
+| Chỉ số | Giá trị |
+| --- | ---: |
+| Tổng số test case | 10 |
+| Đạt | 0 |
+| Không đạt | 0 |
+| Bị chặn | 0 |
+| Chưa chạy | 10 |
+| Bug được xác nhận trong lần chạy | 0 |
+
+| Test case không đạt / bị chặn | Giá trị thực tế và bằng chứng (response, ảnh, dữ liệu nguồn) | Mã bug | Người phụ trách |
+| --- | --- | --- | --- |
+| Chưa có | Chưa chạy | — | — |
+
+> Chỉ cập nhật tổng kết và chuyển trạng thái test case sau khi thực chạy. Khi UI/API lệch nguồn hoặc vi phạm phân quyền, ghi bug vào `docs/test/BUGS.md`, điền file liên quan và người sửa theo `docs/OWNERS.md`; không suy đoán bug chỉ từ việc chưa chạy.
 
 ---
 
