@@ -7,6 +7,7 @@ import { Icon } from '../../components/Icon';
 import { Badge, Empty, ErrorState, LoadingBlock, Modal, PageHead } from '../../components/ui';
 import { t } from '../../i18n';
 import { MUSCLE_BY_KEY, type MuscleKey } from '../../lib/anatomy';
+import { exTitle, exSub } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 import './kb.css';
 
@@ -191,10 +192,10 @@ export default function BeginnerExercises() {
           <div className="kb-grid mt-12">
             {filteredExercises.map((e) => (
               <article key={e.id} className="kb-card">
-                <Link to={`/exercises/${e.id}`} className="kb-cover" aria-label={e.name}>
+                <Link to={`/exercises/${e.id}`} className="kb-cover" aria-label={exTitle(e)}>
                   <ExerciseMedia
                     imageKey={e.imageKey}
-                    alt={e.name}
+                    alt={exTitle(e)}
                     playOnHover
                     tag={t('Người mới')}
                   />
@@ -203,10 +204,10 @@ export default function BeginnerExercises() {
                   <div>
                     <h3 className="kb-title">
                       <Link to={`/exercises/${e.id}`} className="plain-link">
-                        {e.name}
+                        {exTitle(e)}
                       </Link>
                     </h3>
-                    {e.nameEn && <div className="tiny faint">{e.nameEn}</div>}
+                    {exSub(e) && <div className="tiny faint" lang="vi">{exSub(e)}</div>}
                   </div>
 
                   {e.description && (

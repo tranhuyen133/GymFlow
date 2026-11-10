@@ -14,7 +14,7 @@ import { useToast } from '../../components/Toast';
 import { WeekCalendar } from '../../components/WeekCalendar';
 import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
 import { t, tn } from '../../i18n';
-import { addDays, DAY_NAMES, fmtDate, fmtDateTime, fmtTime, fmtWeekday, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
+import { addDays, DAY_NAMES, fmtDate, fmtDateTime, fmtTime, fmtWeekday, formatEquipment, exTitle, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
 import { covered, fromMin, GYM_CLOSE, GYM_OPEN, hm, timeOptions, toMin, type WeekSlot } from '../../lib/hours';
 import '../../components/week-slots.css';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
@@ -315,8 +315,11 @@ export function ScheduleForm({ edit, presetMemberId, presetExerciseId, onClose, 
     if (!presetExerciseId) return;
     api.get<Exercise>(`/exercises/${presetExerciseId}`).then((ex) => {
       if (ex) {
-        setTitle(`Tập bài: ${ex.name}`);
-        setNote(`Bài tập: ${ex.name}${ex.nameEn ? ` (${ex.nameEn})` : ''} · Dụng cụ: ${ex.equipment || 'Tự do'}`);
+        setTitle(t('Tập bài: {name}', { name: exTitle(ex) }));
+        setNote(t('Bài tập: {name} · Dụng cụ: {equip}', {
+          name: exTitle(ex),
+          equip: ex.equipment ? formatEquipment(ex.equipment) : t('Tự do'),
+        }));
       }
     }).catch(() => {});
   }, [presetExerciseId]);

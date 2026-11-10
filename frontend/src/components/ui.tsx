@@ -92,11 +92,11 @@ export function CountUp({ value, format = (n) => n.toLocaleString(locale()) }: {
 }
 
 // ---------- Page header ----------
-export function PageHead({ eyebrow, title, desc, actions }: { eyebrow?: string; title: ReactNode; desc?: ReactNode; actions?: ReactNode }) {
+export function PageHead({ eyebrow, title, desc, actions }: { eyebrow?: ReactNode; title: ReactNode; desc?: ReactNode; actions?: ReactNode }) {
   return (
     <div className="page-head">
       <div>
-        {eyebrow && <div className="eyebrow">{t(eyebrow)}</div>}
+        {eyebrow && <div className="eyebrow">{tx(eyebrow)}</div>}
         <h1>{tx(title)}</h1>
         {desc && <p>{tx(desc)}</p>}
       </div>

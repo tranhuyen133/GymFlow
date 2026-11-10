@@ -189,3 +189,25 @@ export function formatEquipment(eq: string | null | undefined): string {
     .join(', ');
 }
 
+/** Tên chính của bài tập song ngữ: EN ưu tiên t(name) hoặc nameEn; VI giữ name */
+export function exTitle(e: { name: string; nameEn?: string | null } | null | undefined): string {
+  if (!e) return '';
+  if (getLang() === 'en') {
+    const tr = t(e.name);
+    if (tr !== e.name) return tr;
+    if (e.nameEn && e.nameEn.trim()) return e.nameEn.trim();
+  }
+  return e.name;
+}
+
+/** Tên phụ của bài tập: EN hiện tên tiếng Việt đối chiếu; VI hiện tên tiếng Anh nameEn */
+export function exSub(e: { name: string; nameEn?: string | null } | null | undefined): string | null {
+  if (!e) return null;
+  const title = exTitle(e);
+  if (getLang() === 'en') {
+    return e.name !== title ? e.name : (e.nameEn && e.nameEn !== title ? e.nameEn : null);
+  }
+  return e.nameEn || null;
+}
+
+

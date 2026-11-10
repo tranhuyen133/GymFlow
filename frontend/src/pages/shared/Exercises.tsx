@@ -9,7 +9,7 @@ import { MuscleMap } from '../../components/MuscleMap';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, SearchInput, Segmented, Select, StatusBadge, Textarea } from '../../components/ui';
-import { fmtDateTime, formatEquipment, goalLabel, levelLabel, locationLabel, muscleLabel, reviewLabel } from '../../lib/format';
+import { exSub, exTitle, fmtDateTime, formatEquipment, goalLabel, levelLabel, locationLabel, muscleLabel, reviewLabel } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync, useDebounced, usePaged } from '../../lib/hooks';
 import { t } from '../../i18n';
 import './exercises.css';
@@ -233,8 +233,8 @@ export default function Exercises() {
                   }}
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="ex-autocomplete-title">{item.name}</div>
-                    {item.nameEn && <div className="ex-autocomplete-sub">{item.nameEn}</div>}
+                    <div className="ex-autocomplete-title">{exTitle(item)}</div>
+                    {exSub(item) && <div className="ex-autocomplete-sub" lang="vi">{exSub(item)}</div>}
                   </div>
                   <div className="row gap-4 flex-shrink-0">
                     <span className="badge badge-sm">{muscleLabel[item.muscleGroup]}</span>
@@ -356,16 +356,16 @@ export default function Exercises() {
             <div className="grid grid-3" aria-busy={loading}>
               {paged.items.map((e) => (
                 <Card key={e.id} className={`hoverable ex-card ${e.hidden ? 'is-hidden' : ''}`}>
-                  <button type="button" className="ex-thumb-btn" onClick={() => setViewingId(e.id)} aria-label={t('Xem {name}', { name: e.name })}>
-                    <ExerciseMedia imageKey={e.imageKey} alt={e.name} playOnHover className="ex-thumb"
+                  <button type="button" className="ex-thumb-btn" onClick={() => setViewingId(e.id)} aria-label={t('Xem {name}', { name: exTitle(e) })}>
+                    <ExerciseMedia imageKey={e.imageKey} alt={exTitle(e)} playOnHover className="ex-thumb"
                       tag={targetOf(e).slice(0, 2).map(muscleName).join(' · ') || undefined}
                       fallback={<div className="ex-thumb ex-thumb-map"><MuscleMap size="sm" primary={targetOf(e)} secondary={secondaryOf(e)} /></div>} />
                   </button>
                   <div className="top">
                     <div className="row" style={{ alignItems: 'flex-start' }}>
                       <div>
-                        <button type="button" className="ex-title" onClick={() => setViewingId(e.id)}>{e.name}</button>
-                        {e.nameEn && <div className="tiny faint">{e.nameEn}</div>}
+                        <button type="button" className="ex-title" onClick={() => setViewingId(e.id)}>{exTitle(e)}</button>
+                        {exSub(e) && <div className="tiny faint" lang="vi">{exSub(e)}</div>}
                         <div className="tiny muted">{muscleLabel[e.muscleGroup]} · {e.equipment ? formatEquipment(e.equipment) : t('Không dụng cụ')}{e.location && ` · ${locationLabel[e.location]}`}</div>
                       </div>
                     </div>
@@ -411,7 +411,7 @@ export default function Exercises() {
                   {paged.items.map((e) => (
                     <tr key={e.id} className="ex-list-row">
                       <td>
-                        <button type="button" className="ex-list-thumb border-0 cursor-pointer p-0" onClick={() => setViewingId(e.id)} aria-label={e.name}>
+                        <button type="button" className="ex-list-thumb border-0 cursor-pointer p-0" onClick={() => setViewingId(e.id)} aria-label={exTitle(e)}>
                           {e.imageKey ? (
                             <img src={`/exercise-img/${e.imageKey}/0.jpg`} alt="" />
                           ) : (
@@ -423,9 +423,9 @@ export default function Exercises() {
                       </td>
                       <td>
                         <button type="button" className="ex-title font-bold text-left border-0 bg-transparent p-0 cursor-pointer" onClick={() => setViewingId(e.id)}>
-                          {e.name}
+                          {exTitle(e)}
                         </button>
-                        {e.nameEn && <div className="tiny faint">{e.nameEn}</div>}
+                        {exSub(e) && <div className="tiny faint" lang="vi">{exSub(e)}</div>}
                       </td>
                       <td>
                         <span className="badge badge-sm">{muscleLabel[e.muscleGroup]}</span>
@@ -464,7 +464,7 @@ export default function Exercises() {
       {bulk && <Confirm title={t('Duyệt {n} bài?', { n: ready.length })} confirmText="Duyệt tất cả"
         message={<div className="stack-sm">
           <p className="small" style={{ margin: 0 }}>{t('Các bài dưới đây đã đủ phần máy kiểm tra (nguồn, mô tả, các bước, lưu ý an toàn, nơi tập, mục tiêu). Chỉ duyệt nhanh khi bạn đã đối chiếu chúng với trang nguồn.')}</p>
-          <ul className="tiny muted" style={{ margin: 0, paddingLeft: 18, maxHeight: 200, overflow: 'auto' }}>{ready.map((e) => <li key={e.id}>{e.name}</li>)}</ul>
+          <ul className="tiny muted" style={{ margin: 0, paddingLeft: 18, maxHeight: 200, overflow: 'auto' }}>{ready.map((e) => <li key={e.id}>{exTitle(e)}</li>)}</ul>
         </div>}
         onClose={() => setBulk(false)}
         onConfirm={async () => {
@@ -477,7 +477,7 @@ export default function Exercises() {
         }} />}
       {editing && <ExerciseForm exercise={editing.exercise} copyOf={editing.copyOf} isAdmin={me.role === 'ADMIN'} onClose={() => setEditing(null)}
         onSaved={() => { setEditing(null); void reload(); }} />}
-      {removing && <Confirm danger title="Xoá bài tập?" message={t('"{name}" sẽ bị xoá vĩnh viễn.', { name: removing.name })} confirmText="Xoá" onClose={() => setRemoving(null)}
+      {removing && <Confirm danger title="Xoá bài tập?" message={t('"{name}" sẽ bị xoá vĩnh viễn.', { name: exTitle(removing) })} confirmText="Xoá" onClose={() => setRemoving(null)}
         onConfirm={async () => { try { await api.del(`/exercises/${removing.id}`); toast.success('Đã xoá'); void reload(); } catch (e) { toast.error(errMsg(e)); throw e; } }} />}
     </div>
   );
@@ -523,11 +523,20 @@ function ExerciseDetail({ exercise: e, canReview, queue, onClose, onEdit, onRevi
   const suggestNote = () => setNote(missing.map((c) => `- ${t(c.label)}`).join('\n'));
 
   return (
-    <Modal title={e.name} size="medium" onClose={onClose} footer={queue && <>
-      <span className="tiny faint modal-foot-hint">{t('Hàng chờ: bài {i}/{n}', { i: queue.index + 1, n: queue.total })}</span>
-      <Button variant="ghost" icon="chevronLeft" disabled={queue.index === 0} onClick={queue.prev}>Bài trước</Button>
-      <Button icon="chevronRight" onClick={queue.next}>{queue.index === queue.total - 1 ? 'Kết thúc' : 'Bỏ qua, bài sau'}</Button>
-    </>}>
+    <Modal
+      title={
+        <div>
+          <div>{exTitle(e)}</div>
+          {exSub(e) && <div className="tiny faint font-normal" lang="vi" style={{ marginTop: 2 }}>{exSub(e)}</div>}
+        </div>
+      }
+      size="medium"
+      onClose={onClose}
+      footer={queue && <>
+        <span className="tiny faint modal-foot-hint">{t('Hàng chờ: bài {i}/{n}', { i: queue.index + 1, n: queue.total })}</span>
+        <Button variant="ghost" icon="chevronLeft" disabled={queue.index === 0} onClick={queue.prev}>Bài trước</Button>
+        <Button icon="chevronRight" onClick={queue.next}>{queue.index === queue.total - 1 ? 'Kết thúc' : 'Bỏ qua, bài sau'}</Button>
+      </>}>
       <div className="stack">
         <div className="row row-wrap">
           <StatusBadge map={reviewLabel} value={e.reviewStatus} />
@@ -539,7 +548,7 @@ function ExerciseDetail({ exercise: e, canReview, queue, onClose, onEdit, onRevi
         <div className={`ex-hero ${e.imageKey ? '' : 'no-media'}`}>
           {e.imageKey && (
             <figure className="ex-hero-media">
-              <ExerciseMedia imageKey={e.imageKey} alt={e.name} play tag={t('Tư thế đầu ⇄ cuối')} />
+              <ExerciseMedia imageKey={e.imageKey} alt={exTitle(e)} play tag={t('Tư thế đầu ⇄ cuối')} />
               <figcaption className="tiny faint">{mediaCredit()}</figcaption>
             </figure>
           )}
@@ -796,7 +805,7 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
   }, []);
 
   const noSource = f.sourceIds.length === 0;
-  const title = exercise ? t('Sửa bài tập: {name}', { name: exercise.name }) : copyOf ? t('Nhân bản bài tập') : t('Thêm bài tập');
+  const title = exercise ? t('Sửa bài tập: {name}', { name: exTitle(exercise) }) : copyOf ? t('Nhân bản bài tập') : t('Thêm bài tập');
   const tabHasError = (id: Tab) => Object.entries(errors).some(([k, m]) => !!m && FIELD_TAB[k] === id);
   const tabIndex = TABS.findIndex((x) => x.id === tab);
 
@@ -823,7 +832,7 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
           {error && <Alert kind="error">{error}</Alert>}
           {!isAdmin && exercise?.reviewStatus === 'APPROVED' && <Alert kind="info">Sau khi lưu, bài sẽ quay về trạng thái "Chờ duyệt".</Alert>}
           {exercise?.reviewStatus === 'NEEDS_REVIEW' && exercise.reviewNote && <Alert kind="warning">{t('Quản lý yêu cầu chỉnh sửa:')} {exercise.reviewNote}</Alert>}
-          {copyOf && <Alert kind="info">{t('Đang tạo bài mới từ "{name}". Hãy đổi tên – tên bài tập không được trùng.', { name: copyOf.name })}</Alert>}
+          {copyOf && <Alert kind="info">{t('Đang tạo bài mới từ "{name}". Hãy đổi tên – tên bài tập không được trùng.', { name: exTitle(copyOf) })}</Alert>}
           <details className="ready-box" open={readiness.some((c) => !c.ok)}>
             <summary>
               <Icon name={readiness.every((c) => c.ok) ? 'checkCircle' : 'clipboard'} size={15} />
@@ -949,7 +958,7 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
                       onClick={() => set('alternativeIds', toggle(f.alternativeIds, ex.id))}
                     >
                       <Icon name={on ? 'check' : 'plus'} size={12} />
-                      {ex.name}
+                      {exTitle(ex)}
                     </button>
                   );
                 })}

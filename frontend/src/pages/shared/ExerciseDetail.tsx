@@ -9,8 +9,9 @@ import { Icon } from '../../components/Icon';
 import { MuscleMap } from '../../components/MuscleMap';
 import { useToast } from '../../components/Toast';
 import { Badge, Button, ErrorState, LoadingBlock, Modal, PageHead, Textarea } from '../../components/ui';
-import { t } from '../../i18n';
+import { getLang, t } from '../../i18n';
 import { EQUIPMENT_BY_KEY, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey } from '../../lib/anatomy';
+import { exTitle, exSub } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import './kb.css';
 
@@ -105,12 +106,12 @@ export default function ExerciseDetail() {
       </div>
 
       <PageHead
-        eyebrow={ex.nameEn || t('Chi tiết bài tập')}
-        title={ex.name}
+        eyebrow={getLang() === 'en' ? (ex.name ? <span lang="vi">{ex.name}</span> : null) : (ex.nameEn || t('Chi tiết bài tập'))}
+        title={exTitle(ex)}
         desc={ex.description || ''}
         actions={
           <div className="row wrap" style={{ gap: 8, alignItems: 'center' }}>
-            <Badge tone="blue">{LEVEL_LABELS[ex.level] || ex.level}</Badge>
+            <Badge tone="blue">{t(LEVEL_LABELS[ex.level] || ex.level)}</Badge>
             {ex.primaryGoal && <Badge tone="muted">{ex.primaryGoal}</Badge>}
             {ex.hidden && <Badge tone="amber">{t('Đang ẩn')}</Badge>}
             {ex.reviewStatus === 'PENDING' && <Badge tone="amber">{t('Chờ duyệt')}</Badge>}
@@ -200,7 +201,7 @@ export default function ExerciseDetail() {
               >
                 <img
                   src={`/exercise-img/${ex.imageKey}/${frame}.jpg`}
-                  alt={`${ex.name} frame ${frame}`}
+                  alt={`${exTitle(ex)} frame ${frame}`}
                   style={{ width: '100%', maxHeight: 440, objectFit: 'contain', display: 'block' }}
                 />
               </div>
@@ -220,10 +221,10 @@ export default function ExerciseDetail() {
                   </p>
                   <div className="row gap-6 wrap">
                     {primaryMuscles.map((m) => (
-                      <span key={m} className="chip chip-primary tiny">{MUSCLE_BY_KEY.get(m)?.label ?? m}</span>
+                      <span key={m} className="chip chip-primary tiny">{t(MUSCLE_BY_KEY.get(m)?.label ?? m)}</span>
                     ))}
                     {secondaryMuscles.map((m) => (
-                      <span key={m} className="chip tiny">{MUSCLE_BY_KEY.get(m)?.label ?? m}</span>
+                      <span key={m} className="chip tiny">{t(MUSCLE_BY_KEY.get(m)?.label ?? m)}</span>
                     ))}
                   </div>
                 </div>
@@ -241,7 +242,7 @@ export default function ExerciseDetail() {
               <div className="video-embed-container">
                 <iframe
                   src={ex.videoUrl}
-                  title={`Video hướng dẫn ${ex.name}`}
+                  title={t('Video hướng dẫn: {name}', { name: exTitle(ex) })}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   loading="lazy"
@@ -351,7 +352,7 @@ export default function ExerciseDetail() {
                         <div style={{ width: 68, height: 50, borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
                           <img
                             src={`/exercise-img/${alt.imageKey}/0.jpg`}
-                            alt={alt.name}
+                            alt={exTitle(alt)}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         </div>
@@ -361,9 +362,9 @@ export default function ExerciseDetail() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="font-bold small line-clamp-1">{alt.name}</div>
-                        {alt.nameEn && <div className="tiny faint line-clamp-1">{alt.nameEn}</div>}
-                        <span className="badge badge-sm mt-4">{LEVEL_LABELS[alt.level] || alt.level}</span>
+                        <div className="font-bold small line-clamp-1">{exTitle(alt)}</div>
+                        {exSub(alt) && <div className="tiny faint line-clamp-1" lang="vi">{exSub(alt)}</div>}
+                        <span className="badge badge-sm mt-4">{t(LEVEL_LABELS[alt.level] || alt.level)}</span>
                       </div>
                     </div>
                   </Link>
