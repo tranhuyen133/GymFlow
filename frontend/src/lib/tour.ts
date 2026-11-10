@@ -54,47 +54,35 @@ export const JOURNEY_STEPS: TourStep[] = [
   {
     target: 'account',
     title: 'Bước 1: Hoàn thiện hồ sơ cá nhân',
-    body: 'Bấm vào ảnh đại diện góc phải để vào Hồ sơ cá nhân. Điền đầy đủ họ tên, số điện thoại và ngày sinh để đủ điều kiện đăng ký gói.',
-  },
-  {
-    target: 'nav:/coaches',
-    nav: '/coaches',
-    title: 'Bước 2: Tìm hiểu Huấn luyện viên & Nhắn tin tư vấn',
-    body: 'Mục "Huấn luyện viên" giúp bạn xem hồ sơ, chuyên môn, ca trực và nhắn tin trò chuyện miễn phí với HLV để chọn lộ trình tập phù hợp.',
+    body: 'Bấm vào ảnh đại diện góc phải hoặc mục Tài khoản để vào Hồ sơ cá nhân. Điền đầy đủ họ tên, số điện thoại và ngày sinh để đủ điều kiện đăng ký gói.',
   },
   {
     target: 'nav:/me/packages',
     nav: '/me/packages',
-    title: 'Bước 3: Chọn gói tập và gửi đăng ký',
-    body: 'Vào "Gói tập của tôi" để xem các gói đang bán. Bạn có thể chọn gói tự tập hoặc gói kèm HLV (PT), chọn ngày bắt đầu và phương thức thanh toán.',
+    title: 'Bước 2: Tìm hiểu Huấn luyện viên & Gói tập',
+    body: 'Mục "Gói & Dịch vụ" giúp bạn xem bảng giá, quyền lợi gói tập, danh sách HLV chuyên nghiệp và nhắn tin tư vấn trực tiếp.',
   },
   {
-    target: 'nav:/getting-started',
-    nav: '/getting-started',
-    title: 'Bước 4: Thanh toán & Chờ duyệt đơn',
-    body: 'Bạn có thể thanh toán tại quầy lễ tân hoặc quét mã QR chuyển khoản. Quản lý sẽ đối chiếu sao kê và duyệt kích hoạt gói cho bạn.',
+    target: 'nav:/dashboard',
+    nav: '/dashboard',
+    title: 'Bước 3: Kiểm tra tiến trình tại Trang chủ',
+    body: 'Trang chủ hiển thị danh sách checklist cho người mới, nhắc nhở thanh toán và trạng thái sẵn sàng vào phòng tập.',
   },
   {
-    target: 'nav:/getting-started',
-    nav: '/getting-started',
-    title: 'Bước 5: Kiểm tra trạng thái sẵn sàng tập',
-    body: 'Trang "Bắt đầu cùng GymFlow" hiển thị rõ tiến trình 7 bước, lý do cụ thể và thông báo khi bạn đã đủ điều kiện bước vào phòng tập.',
-  },
-  {
-    target: 'nav:/exercises',
-    nav: '/exercises',
-    title: 'Bước 6: Xem nội quy và bài tập cho người mới',
-    body: 'Đọc kỹ Nội quy phòng tập (/policies) và xem Thư viện bài tập mức độ Cơ bản (Beginner) để chuẩn bị cho buổi tập đầu tiên.',
+    target: 'nav:/me/plan',
+    nav: '/me/plan',
+    title: 'Bước 4: Giáo án tập luyện',
+    body: 'Xem giáo án do HLV soạn hoặc tự chọn giáo án mẫu, xem danh mục bài tập và kỹ thuật thực hiện trước khi tập.',
   },
   {
     target: 'nav:/me/schedule',
     nav: '/me/schedule',
-    title: 'Bước 7: Lịch tập của bạn',
-    body: 'Sau khi gói có hiệu lực, bạn có thể tự xếp lịch hoặc xem lịch do HLV xếp tại "Lịch tập của tôi". Hoàn thành buổi tập nhớ bấm đánh dấu nhé!',
+    title: 'Bước 5: Lịch tập của bạn',
+    body: 'Theo dõi lịch các buổi tập trong tuần, tự xếp lịch hoặc dời buổi. Hoàn thành buổi tập nhớ bấm đánh dấu nhé!',
   },
   {
     title: 'Chúc bạn có hành trình tập luyện tuyệt vời!',
-    body: 'Bạn đã sẵn sàng! Bất cứ khi nào cần xem lại quy trình, bạn có thể mở trang "Bắt đầu cùng GymFlow" hoặc mục "Trợ giúp".',
+    body: 'Bạn đã sẵn sàng! Mọi chức năng chính đều nằm trên thanh điều hướng bên dưới.',
   },
 ];
 
@@ -109,16 +97,10 @@ export const PT_INTRO_STEPS: TourStep[] = [
     body: 'Gói tự tập: bạn tự chọn bài và tự xếp lịch. Gói có PT: HLV sẽ soạn giáo án chuyên sâu, xếp lịch và đồng hành sát sao trong phòng tập.',
   },
   {
-    target: 'nav:/coaches',
-    nav: '/coaches',
+    target: 'nav:/me/packages',
+    nav: '/me/packages',
     title: 'Xem đội ngũ huấn luyện viên',
-    body: 'Mục "Huấn luyện viên" liệt kê danh sách HLV chuyên nghiệp cùng chuyên môn, số năm kinh nghiệm, bằng cấp và lịch ca trực trong tuần.',
-  },
-  {
-    target: 'nav:/messages',
-    nav: '/messages',
-    title: 'Nhắn tin tư vấn trực tiếp',
-    body: 'Mọi hội viên đều có thể nhắn tin tư vấn miễn phí với HLV. Lưu ý: nhắn tin trò chuyện không đồng nghĩa với việc bạn đã mua gói PT.',
+    body: 'Mục "Gói & Dịch vụ" (tab Huấn luyện viên) liệt kê danh sách HLV chuyên nghiệp cùng chuyên môn, kinh nghiệm và lịch ca trực trong tuần.',
   },
   {
     target: 'nav:/me/packages',
@@ -128,7 +110,7 @@ export const PT_INTRO_STEPS: TourStep[] = [
   },
   {
     title: 'Bắt đầu kết nối với HLV',
-    body: 'Bạn có thể vào mục "Huấn luyện viên" để chọn HLV và gửi tin nhắn tư vấn ngay hôm nay!',
+    body: 'Bạn có thể vào mục "Gói & Dịch vụ" để chọn HLV và gửi tin nhắn tư vấn ngay hôm nay!',
   },
 ];
 
