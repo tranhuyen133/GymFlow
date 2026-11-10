@@ -151,7 +151,7 @@ public class GeminiProvider implements AssistantProvider {
             GeminiGenerateRequest payload = new GeminiGenerateRequest(systemInstruction, contents, config);
 
             String model = (aiConfig.getGeminiModel() != null && !aiConfig.getGeminiModel().isBlank())
-                    ? aiConfig.getGeminiModel() : "gemini-1.5-flash";
+                    ? aiConfig.getGeminiModel() : "gemini-3.5-flash-lite";
 
             // 5. Gọi Google Gemini API
             GeminiGenerateResponse response = restClient.post()

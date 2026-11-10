@@ -41,7 +41,7 @@ class GeminiProviderTest {
         conversation.setId(8L);
 
         lenient().when(aiConfig.getGeminiApiKey()).thenReturn("test-gemini-key");
-        lenient().when(aiConfig.getGeminiModel()).thenReturn("gemini-1.5-flash");
+        lenient().when(aiConfig.getGeminiModel()).thenReturn("gemini-3.5-flash-lite");
         lenient().when(aiConfig.getOllamaTimeoutSeconds()).thenReturn(15);
         lenient().when(aiConfig.getMaxInputChars()).thenReturn(500);
         lenient().when(rateLimiter.tryAcquire(user.id())).thenReturn(true);
