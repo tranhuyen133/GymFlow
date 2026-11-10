@@ -52,7 +52,7 @@ export default function MyPlan() {
     if (!confirmSwitch) return;
     try {
       await api.post('/workout-plans/switch', { newPlanId: confirmSwitch.id });
-      toast.success(t('Đã chuyển sang giáo án {name}', { name: confirmSwitch.name }));
+      toast.success(t('Đã chuyển sang giáo án {name}', { name: t(confirmSwitch.name) }));
       setConfirmSwitch(null);
       setSwitchModalOpen(false);
       reloadAll();
@@ -91,7 +91,7 @@ export default function MyPlan() {
     <div className="page">
       <PageHead
         eyebrow={t('Tập luyện')}
-        title={data ? data.summary.name : t('Giáo án của tôi')}
+        title={data ? t(data.summary.name) : t('Giáo án của tôi')}
         desc={
           data
             ? data.summary.trainerId == null
@@ -306,7 +306,7 @@ export default function MyPlan() {
                   <option value="">{t('-- Chọn giáo án --')}</option>
                   {otherPlans.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({p.trainingDays} {t('buổi/tuần')} · {fmtDate(p.startDate)} → {fmtDate(p.endDate)})
+                      {t(p.name)} ({p.trainingDays} {t('buổi/tuần')} · {fmtDate(p.startDate)} → {fmtDate(p.endDate)})
                     </option>
                   ))}
                 </Select>
@@ -321,7 +321,7 @@ export default function MyPlan() {
         <Confirm
           title={t('Xác nhận đổi giáo án?')}
           message={tn('Khi đổi sang giáo án "{name}", các buổi tập trong tương lai của giáo án cũ sẽ bị hủy. Các buổi đã tập trong quá khứ vẫn được giữ nguyên. Bạn có chắc chắn muốn đổi?', {
-            name: <b>{confirmSwitch.name}</b>,
+            name: <b>{t(confirmSwitch.name)}</b>,
           })}
           confirmText={t('Đổi giáo án')}
           onConfirm={handleSwitch}

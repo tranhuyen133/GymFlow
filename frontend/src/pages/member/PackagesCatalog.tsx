@@ -125,7 +125,7 @@ export default function PackagesCatalog({ embedded }: { embedded?: boolean } = {
         <div style={{ marginBottom: 16 }}>
           <Alert kind="info">
             {tn('Bạn đang có đơn đăng ký gói {plan} chờ xử lý. Để chọn gói khác, vui lòng vào trang Gói của tôi để huỷ đơn hiện tại.', {
-              plan: <b>{pending.planName}</b>,
+              plan: <b>{t(pending.planName)}</b>,
             })}
           </Alert>
         </div>

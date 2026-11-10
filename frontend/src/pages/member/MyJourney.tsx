@@ -55,12 +55,12 @@ function buildMilestones(member: Member, progress: Progress, sessions: Schedule[
   const out: Milestone[] = [{ date: member.joinedAt, kind: 'join', title: t('Gia nhập GymFlow'), detail: member.code }];
   SESSION_MILESTONES.forEach((n) => {
     const s = sessions[n - 1];
-    if (s) out.push({ date: (s.log?.completedAt ?? s.startTime).slice(0, 10), kind: 'session', title: n === 1 ? t('Buổi tập đầu tiên') : t('Hoàn thành {n} buổi tập', { n }), detail: s.title });
+    if (s) out.push({ date: (s.log?.completedAt ?? s.startTime).slice(0, 10), kind: 'session', title: n === 1 ? t('Buổi tập đầu tiên') : t('Hoàn thành {n} buổi tập', { n }), detail: t(s.title) });
   });
   const weights = [...progress.weights].sort((a, b) => a.recordedDate.localeCompare(b.recordedDate));
   if (weights[0]) out.push({ date: weights[0].recordedDate, kind: 'weight', title: t('Ghi cân nặng lần đầu'), detail: `${fmtNum(weights[0].weightKg, 1)} kg` });
   subs.filter((s) => !s.cancelled).sort((a, b) => a.startDate.localeCompare(b.startDate)).forEach((s, i) => {
-    if (parseDate(s.startDate) <= new Date()) out.push({ date: s.startDate, kind: 'plan', title: i === 0 ? t('Bắt đầu gói {name}', { name: s.planName }) : t('Gia hạn gói {name}', { name: s.planName }) });
+    if (parseDate(s.startDate) <= new Date()) out.push({ date: s.startDate, kind: 'plan', title: i === 0 ? t('Bắt đầu gói {name}', { name: t(s.planName) }) : t('Gia hạn gói {name}', { name: t(s.planName) }) });
   });
   const streak = longestStreak(sessions);
   if (streak.weeks >= 2 && streak.endWeek) out.push({ date: streak.endWeek, kind: 'streak', title: t('Chuỗi {n} tuần tập liên tiếp', { n: streak.weeks }), detail: t('Kỷ lục cá nhân') });

@@ -40,7 +40,7 @@ export function SubscriptionForm({ memberId: preset, onClose, onSaved }: { membe
     setBusy(true); setError(null);
     try {
       const s = await api.post<Subscription>('/subscriptions', { memberId: Number(memberId), planId: Number(planId), startDate: startDate || null, pricePaid: p, note: note || null });
-      toast.success(t('Đã đăng ký {plan} cho {member}', { plan: s.planName, member: s.memberName }));
+      toast.success(t('Đã đăng ký {plan} cho {member}', { plan: t(s.planName), member: s.memberName }));
       onSaved(s);
     } catch (e) { setError(errMsg(e)); } finally { setBusy(false); }
   };

@@ -24,8 +24,22 @@ export function t(vi: string, vars?: Vars): string {
   let s = vi;
   if (current === 'en') {
     const en = DICT[vi];
-    if (en !== undefined) s = en;
-    else if (import.meta.env.DEV && vi && !missing.has(vi)) { missing.add(vi); console.debug('[i18n] thiếu bản dịch:', vi); }
+    if (en !== undefined) {
+      s = en;
+    } else {
+      const m1 = vi.match(/^Buổi (\d+) – (.+)$/);
+      if (m1) {
+        s = `Session ${m1[1]} – ${t(m1[2])}`;
+      } else {
+        const m2 = vi.match(/^Buổi (\d+)$/);
+        if (m2) {
+          s = `Session ${m2[1]}`;
+        } else if (import.meta.env.DEV && vi && !missing.has(vi)) {
+          missing.add(vi);
+          console.debug('[i18n] thiếu bản dịch:', vi);
+        }
+      }
+    }
   }
   return vars ? s.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? '')) : s;
 }

@@ -152,7 +152,7 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
 
   return (
     <>
-      <Modal title={session.title} onClose={onClose} footer={<>
+      <Modal title={t(session.title)} onClose={onClose} footer={<>
         {manage && session.status === 'SCHEDULED' && <>
           <Button variant="danger" icon="ban" onClick={() => setConfirm('cancel')}>{t('Huỷ buổi')}</Button>
           {staff && started && <Button icon="x" onClick={() => setConfirm('missed')}>{t('Đánh vắng')}</Button>}
@@ -169,7 +169,7 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
           <dl className="kv">
             <dt>{t('Hội viên')}</dt><dd><Person name={session.memberName} size="sm" /></dd>
             <dt>{t('Huấn luyện viên')}</dt><dd>{session.trainerName ?? <span className="faint">{t('Tự tập')}</span>}</dd>
-            <dt>{t('Giáo án')}</dt><dd>{session.planName ?? <span className="faint">{t('Không gắn')}</span>}</dd>
+            <dt>{t('Giáo án')}</dt><dd>{session.planName ? t(session.planName) : <span className="faint">{t('Không gắn')}</span>}</dd>
             {session.note && <><dt>{t('Ghi chú')}</dt><dd>{session.note}</dd></>}
           </dl>
           {!started && session.status === 'SCHEDULED' && <Alert kind="info">{t('Chỉ đánh dấu hoàn thành được khi đã đến giờ tập.')}</Alert>}
@@ -243,7 +243,7 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
       <Button variant="primary" icon="check" loading={busy} onClick={submit}>{t('Lưu kết quả')}</Button>
     </>}>
       <div className="stack">
-        <div className="muted small">{session.title} · {fmtTime(session.startTime)}–{fmtTime(session.endTime)}</div>
+        <div className="muted small">{t(session.title)} · {fmtTime(session.startTime)}–{fmtTime(session.endTime)}</div>
         {isPt && (
           activePtSub ? (
             <Alert kind={activePtSub.ptSessionsRemaining && activePtSub.ptSessionsRemaining > 0 ? 'info' : 'warning'}>

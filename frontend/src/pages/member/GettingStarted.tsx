@@ -130,7 +130,7 @@ export default function GettingStarted() {
               <p className="small muted" style={{ margin: 0 }}>
                 {data.entitlements
                   ? t('Gói "{plan}" của bạn đang có hiệu lực (còn {days} ngày, hạn đến {date}).', {
-                      plan: data.entitlements.planName,
+                      plan: t(data.entitlements.planName),
                       days: data.entitlements.daysLeft,
                       date: data.entitlements.endDate,
                     })

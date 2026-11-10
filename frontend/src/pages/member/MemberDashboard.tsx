@@ -80,7 +80,7 @@ export default function MemberDashboard() {
                 </div>
                 <p className="tiny muted" style={{ margin: 0, flex: 1 }}>
                   {step1Done
-                    ? t('Gói: {name}', { name: sub.planName })
+                    ? t('Gói: {name}', { name: t(sub.planName) })
                     : t('Chọn gói tự tập hoặc có HLV kèm và thanh toán tại quầy hoặc QR.')}
                 </p>
                 {!step1Done && (
@@ -108,7 +108,7 @@ export default function MemberDashboard() {
                 </div>
                 <p className="tiny muted" style={{ margin: 0, flex: 1 }}>
                   {step2Done
-                    ? t('Giáo án: {name}', { name: data.currentPlan!.name })
+                    ? t('Giáo án: {name}', { name: t(data.currentPlan!.name) })
                     : t('Chọn một giáo án mẫu phù hợp mục tiêu hoặc tự soạn giáo án của bạn.')}
                 </p>
                 {!step2Done && (
@@ -160,7 +160,7 @@ export default function MemberDashboard() {
             <h2 className="mt-8">{t('Chào {name}, sẵn sàng tập chưa?', { name: firstName })}</h2>
             <p className="muted mt-8">
               {data.nextSession
-                ? tn('Buổi tiếp theo: {time} · {title}', { time: <b style={{ color: 'var(--ink)' }}>{fmtWeekday(data.nextSession.startTime)} {t('lúc')} {fmtTime(data.nextSession.startTime)}</b>, title: data.nextSession.title })
+                ? tn('Buổi tiếp theo: {time} · {title}', { time: <b style={{ color: 'var(--ink)' }}>{fmtWeekday(data.nextSession.startTime)} {t('lúc')} {fmtTime(data.nextSession.startTime)}</b>, title: t(data.nextSession.title) })
                 : t('Bạn chưa có buổi tập sắp tới. Hãy lên lịch tập để duy trì chuỗi tuần nhé.')}
             </p>
           </div>
@@ -188,7 +188,7 @@ export default function MemberDashboard() {
       {toComplete && (
         <div className="mt-16">
           <Alert kind="success" action={<Button size="sm" variant="primary" onClick={() => setOpen(toComplete)}>{t('Đánh dấu hoàn thành')}</Button>}>
-            {tn('Bạn đã tập xong {title} lúc {time}? Ghi lại để giữ chuỗi tuần tập.', { title: <b>{toComplete.title}</b>, time: fmtTime(toComplete.startTime) })}
+            {tn('Bạn đã tập xong {title} lúc {time}? Ghi lại để giữ chuỗi tuần tập.', { title: <b>{t(toComplete.title)}</b>, time: fmtTime(toComplete.startTime) })}
           </Alert>
         </div>
       )}
@@ -198,7 +198,7 @@ export default function MemberDashboard() {
         <div className="mt-16">
           <Alert kind="warning" action={<Link to="/me/packages" className="btn btn-sm btn-secondary"><span>{t('Gia hạn gói')}</span></Link>}>
             {sub.state === 'EXPIRING'
-              ? tn('Gói {plan} còn {days} ngày, hết hạn {date}. Gia hạn ngay để không gián đoạn tập luyện.', { plan: <b>{sub.planName}</b>, days: sub.daysLeft, date: fmtDate(sub.endDate) })
+              ? tn('Gói {plan} còn {days} ngày, hết hạn {date}. Gia hạn ngay để không gián đoạn tập luyện.', { plan: <b>{t(sub.planName)}</b>, days: sub.daysLeft, date: fmtDate(sub.endDate) })
               : t('Gói tập của bạn đã hết hạn ngày {date}.', { date: fmtDate(sub.endDate) })}
           </Alert>
         </div>
@@ -207,7 +207,7 @@ export default function MemberDashboard() {
       {/* 4 Thẻ chỉ số nhanh */}
       <div className="grid grid-4 mt-24">
         <Stat icon="ticket" label="Gói hiện tại" value={sub ? <CountUp value={sub.daysLeft} /> : '—'} unit={sub ? t('ngày') : undefined}
-          foot={sub ? <>{sub.planName} · <StatusBadge map={subState} value={sub.state} /></> : t('Chưa đăng ký gói')} />
+          foot={sub ? <>{t(sub.planName)} · <StatusBadge map={subState} value={sub.state} /></> : t('Chưa đăng ký gói')} />
         <Stat icon="checkCircle" label="Buổi hoàn thành tháng này" value={<CountUp value={data.completedThisMonth} />} accent="#3d97ff" foot={t('{n} buổi trong tuần này', { n: data.weekSessions.length })} />
         <Stat icon="scale" label="Cân nặng gần nhất" value={data.latestWeight ? <CountUp value={data.latestWeight.weightKg} /> : '—'} unit={data.latestWeight ? 'kg' : undefined} accent="#8b7cff"
           foot={data.latestWeight ? t('Ngày {d}', { d: fmtDate(data.latestWeight.recordedDate) }) : t('Chưa có số liệu')} />
@@ -248,7 +248,7 @@ export default function MemberDashboard() {
                       <div className="num" style={{ fontSize: 20 }}>{d.getDate()}</div>
                     </div>
                     <div className="grow" style={{ textAlign: 'left' }}>
-                      <div>{s.title}</div>
+                      <div>{t(s.title)}</div>
                       <div className="tiny muted">{fmtTime(s.startTime)}–{fmtTime(s.endTime)} · {s.trainerName ?? t('Tự tập')}</div>
                     </div>
                     <StatusBadge map={scheduleStatus} value={s.status} />
@@ -262,7 +262,7 @@ export default function MemberDashboard() {
         <Card title="Gói tập & Giáo án" icon="ticket" actions={<Link to="/me/packages" className="btn btn-sm btn-ghost">{t('Chi tiết gói')}</Link>}>
           {sub ? (
             <div className="stack">
-              <div className="row between"><b style={{ fontSize: 18 }}>{sub.planName}</b><StatusBadge map={subState} value={sub.state} /></div>
+              <div className="row between"><b style={{ fontSize: 18 }}>{t(sub.planName)}</b><StatusBadge map={subState} value={sub.state} /></div>
               <Meter value={Math.max(0, totalDays - sub.daysLeft)} max={totalDays} color={sub.state === 'EXPIRING' ? 'var(--warning)' : undefined} />
               <div className="row between small muted"><span>{fmtDate(sub.startDate)}</span><span>{fmtDate(sub.endDate)}</span></div>
               <div className="divider" />
@@ -272,7 +272,7 @@ export default function MemberDashboard() {
                     <span className="tiny faint">{t('Giáo án đang áp dụng')}</span>
                     <Link to="/me/plan" className="link tiny">{t('Xem bài tập')}</Link>
                   </div>
-                  <b>{data.currentPlan.name}</b>
+                  <b>{t(data.currentPlan.name)}</b>
                   <span className="small muted">{t('{days} ngày/tuần · {items} bài · HLV {trainer}', { days: data.currentPlan.trainingDays, items: data.currentPlan.itemCount, trainer: data.currentPlan.trainerName ?? '—' })}</span>
                   <Badge tone="green">{t('Đến {date}', { date: fmtDate(data.currentPlan.endDate) })}</Badge>
                 </div>

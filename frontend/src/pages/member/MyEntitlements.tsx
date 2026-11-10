@@ -94,13 +94,13 @@ export default function MyEntitlements({ embedded }: { embedded?: boolean } = {}
                             fontSize: 18,
                           }}
                         >
-                          {e.serviceName}
+                          {t(e.serviceName)}
                         </h3>
                         <div className="row row-wrap mt-4" style={{ gap: 6 }}>
                           {e.source === 'PLAN' && (
                             <span className="chip on">
                               <Icon name="ticket" size={12} />
-                              {t('Tặng kèm gói {plan}', { plan: e.planName ?? '' })}
+                              {t('Tặng kèm gói {plan}', { plan: e.planName ? t(e.planName) : '' })}
                             </span>
                           )}
                           {e.source === 'PURCHASE' && (

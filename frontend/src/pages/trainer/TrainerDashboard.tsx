@@ -75,7 +75,7 @@ export default function TrainerDashboard() {
               {data.expiringMembers.map((s) => (
                 <tr key={s.id} className="clickable" onClick={() => navigate(`/members/${s.memberId}`)}>
                   <td><Person name={s.memberName} sub={s.memberCode} size="sm" /></td>
-                  <td>{s.planName}</td>
+                  <td>{t(s.planName)}</td>
                   <td>{fmtDate(s.endDate)}</td>
                   <td className="right"><Badge tone="amber">{s.daysLeft} ngày</Badge></td>
                 </tr>

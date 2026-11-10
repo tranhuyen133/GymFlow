@@ -15,7 +15,7 @@ export function CancelSubscriptionModal({ sub, onClose, onDone }: { sub: Subscri
   return (
     <Confirm
       danger
-      title={t('Huỷ gói {name}?', { name: sub.planName })}
+      title={t('Huỷ gói {name}?', { name: t(sub.planName) })}
       confirmText="Huỷ gói"
       onClose={onClose}
       message={

@@ -71,7 +71,7 @@ export default function PackageRequests() {
                   <tr key={r.id}>
                     <td><Link to={`/members/${r.memberId}`}><Person name={r.memberName} sub={[r.memberCode, r.memberPhone].filter(Boolean).join(' · ')} size="sm" /></Link></td>
                     <td>
-                      <b>{r.planName}</b>
+                      <b>{t(r.planName)}</b>
                       <div className="tiny faint">{durationLabel(r.durationDays)}</div>
                       {r.status === 'PENDING' && !r.planStillOnSale && <Badge tone="red">{t('Gói đã ngừng bán')}</Badge>}
                       {r.trainerName ? <div className="tiny">{t('HLV {name}', { name: r.trainerName })}</div>
@@ -152,7 +152,7 @@ function ApproveModal({ req, onClose, onDone }: { req: PackageRequest; onClose: 
       <div className="stack">
         <div className="plan-summary">
           <div><span className="tiny muted">{t('Hội viên')}</span><b>{req.memberName}</b><span className="tiny faint">{req.memberCode}</span></div>
-          <div><span className="tiny muted">{t('Gói')}</span><b>{req.planName}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
+          <div><span className="tiny muted">{t('Gói')}</span><b>{t(req.planName)}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
           <div><span className="tiny muted">{transfer ? t('Số tiền phải nhận') : t('Số tiền cần thu')}</span><b className="num">{fmtMoney(req.price)}</b>
             <span className="tiny faint">{transfer ? t('Chuyển khoản · {code}', { code: req.paymentCode ?? '' }) : t('Tại quầy')}</span></div>
         </div>
@@ -223,7 +223,7 @@ function RejectModal({ req, onClose, onDone }: { req: PackageRequest; onClose: (
       <Button variant="danger" icon="x" loading={busy} disabled={touched && !!error} onClick={submit}>{t('Từ chối đơn')}</Button>
     </>}>
       <div className="stack">
-        <p className="small" style={{ margin: 0 }}>{tn('Đơn {plan} của {name}. Hội viên sẽ thấy lý do trong mục Gói tập của tôi.', { plan: <b>{req.planName}</b>, name: <b>{req.memberName}</b> })}</p>
+        <p className="small" style={{ margin: 0 }}>{tn('Đơn {plan} của {name}. Hội viên sẽ thấy lý do trong mục Gói tập của tôi.', { plan: <b>{t(req.planName)}</b>, name: <b>{req.memberName}</b> })}</p>
         <Field htmlFor="reject-reason" label={t('Lý do')} required error={touched ? error : undefined} hint={t('{n}/255', { n: reason.length })}>
           <Textarea id="reject-reason" maxLength={255} value={reason} invalid={touched && !!error} placeholder={t('VD: chưa thanh toán sau 3 ngày, vui lòng gửi lại đơn khi đến quầy')}
             onChange={(e) => { setReason(e.target.value); setTouched(true); }} onBlur={() => setTouched(true)} />

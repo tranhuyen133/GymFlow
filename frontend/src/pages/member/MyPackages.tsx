@@ -126,17 +126,17 @@ export default function MyPackages() {
           </div>}>
             {pending.memberPaidAt
               ? tn('Bạn đã báo chuyển khoản {price} cho đơn {plan} lúc {at}. Quản lý sẽ đối chiếu tài khoản và kích hoạt gói.', {
-                price: <b>{fmtMoney(pending.price)}</b>, plan: <b>{pending.planName}</b>, at: fmtDateTime(pending.memberPaidAt),
+                price: <b>{fmtMoney(pending.price)}</b>, plan: <b>{t(pending.planName)}</b>, at: fmtDateTime(pending.memberPaidAt),
               })
               : tn('Đơn {plan} đang chờ thanh toán. Chuyển khoản {price} với nội dung {code}, rồi bấm "Tôi đã chuyển khoản".', {
-                plan: <b>{pending.planName}</b>, price: <b>{fmtMoney(pending.price)}</b>, code: <b className="num">{pending.paymentCode}</b>,
+                plan: <b>{t(pending.planName)}</b>, price: <b>{fmtMoney(pending.price)}</b>, code: <b className="num">{pending.paymentCode}</b>,
               })}
           </Alert>
         )}
         {pending && pending.paymentMethod !== 'BANK_TRANSFER' && (
           <Alert kind="info" action={<Button size="sm" variant="ghost" onClick={() => setCancelling(pending)}>{t('Huỷ đơn')}</Button>}>
             {tn('Đơn đăng ký {plan} ({price}) đang chờ xác nhận. Vui lòng thanh toán tại quầy lễ tân để được kích hoạt gói.', {
-              plan: <b>{pending.planName}</b>, price: fmtMoney(pending.price),
+              plan: <b>{t(pending.planName)}</b>, price: fmtMoney(pending.price),
             })}
           </Alert>
         )}
@@ -168,7 +168,7 @@ export default function MyPackages() {
                     <span>{Math.round((current.daysLeft / total) * 100)}%</span>
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <h2 style={{ margin: 0 }}>{current.planName}</h2>
+                    <h2 style={{ margin: 0 }}>{t(current.planName)}</h2>
                     <div className="row" style={{ alignItems: 'baseline', gap: 8, marginTop: 6 }}>
                       <span className="pkg-days" key={current.daysLeft}>{current.daysLeft}</span>
                       <span className="muted">{t('ngày còn lại')}</span>
@@ -209,7 +209,7 @@ export default function MyPackages() {
                 {upcoming.map((s) => (
                   <div key={s.id} className="row between row-wrap" style={{ padding: '10px 16px', gap: 8 }}>
                     <div>
-                      <b className="small">{s.planName}</b>
+                      <b className="small">{t(s.planName)}</b>
                       <div className="tiny faint">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</div>
                     </div>
                     <div className="row" style={{ gap: 8, alignItems: 'center' }}>
@@ -235,7 +235,7 @@ export default function MyPackages() {
                     {reqs.data.map((r) => (
                       <tr key={r.id}>
                         <td>
-                          <b>{r.planName}</b>
+                          <b>{t(r.planName)}</b>
                           <div className="tiny faint">
                             {durationLabel(r.durationDays)} · {r.desiredStartDate ? t('Bắt đầu mong muốn {d}', { d: fmtDate(r.desiredStartDate) }) : t('Bắt đầu sớm nhất')}
                           </div>
@@ -274,7 +274,7 @@ export default function MyPackages() {
                   {subs.data.map((s) => (
                     <tr key={s.id}>
                       <td>
-                        <b>{s.planName}</b>{s.note && <div className="tiny faint">{s.note}</div>}
+                        <b>{t(s.planName)}</b>{s.note && <div className="tiny faint">{s.note}</div>}
                         {s.ptSessionsTotal != null && (
                           <div className="tiny faint">
                             {t('PT: còn {rem}/{tot} buổi', { rem: s.ptSessionsRemaining ?? 0, tot: s.ptSessionsTotal })}
@@ -362,7 +362,7 @@ export default function MyPackages() {
       {viewUsagesSubId && <PtUsagesModal subscriptionId={viewUsagesSubId} onClose={() => setViewUsagesSubId(null)} />}
       {cancelling && (
         <Confirm title={t('Huỷ đơn đăng ký?')} danger confirmText={t('Huỷ đơn')}
-          message={tn('Đơn đăng ký {plan} sẽ bị huỷ. Bạn có thể gửi đơn mới bất cứ lúc nào.', { plan: <b>{cancelling.planName}</b> })}
+          message={tn('Đơn đăng ký {plan} sẽ bị huỷ. Bạn có thể gửi đơn mới bất cứ lúc nào.', { plan: <b>{t(cancelling.planName)}</b> })}
           onConfirm={cancelRequest} onClose={() => setCancelling(null)} />
       )}
     </div>
@@ -699,7 +699,7 @@ export function PayModal({ req, settings, onClose, onPaid }: { req: PackageReque
     </>}>
       <div className="stack">
         <div className="plan-summary">
-          <div><span className="tiny muted">{t('Gói')}</span><b>{req.planName}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
+          <div><span className="tiny muted">{t('Gói')}</span><b>{t(req.planName)}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
           {req.discountAmount && req.discountAmount > 0 ? (
             <>
               <div><span className="tiny muted">{t('Giá gốc')}</span><b className="num" style={{ textDecoration: 'line-through' }}>{fmtMoney(req.originalPrice ?? req.price)}</b></div>

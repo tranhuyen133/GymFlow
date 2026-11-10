@@ -57,9 +57,9 @@ export function WeekCalendar({ weekStart, events, onSelect, showMember = true }:
                 return (
                   <div key={e.id} className={`ev ${e.status}`} style={{ top: top(s) + 1, height: h, animationDelay: `${k * 0.04}s` }}
                     role="button" tabIndex={0} onClick={() => onSelect(e)} onKeyDown={(ev) => { if (ev.key === 'Enter') onSelect(e); }}
-                    title={`${e.title} · ${fmtTime(e.startTime)}–${fmtTime(e.endTime)}`}>
-                    <b>{fmtTime(e.startTime)} {showMember ? e.memberName : e.title}</b>
-                    {h > 40 && <span>{showMember ? e.title : e.trainerName ?? t('Tự tập')}</span>}
+                    title={`${t(e.title)} · ${fmtTime(e.startTime)}–${fmtTime(e.endTime)}`}>
+                    <b>{fmtTime(e.startTime)} {showMember ? e.memberName : t(e.title)}</b>
+                    {h > 40 && <span>{showMember ? t(e.title) : e.trainerName ?? t('Tự tập')}</span>}
                   </div>
                 );
               })}
@@ -85,7 +85,7 @@ export function WeekCalendar({ weekStart, events, onSelect, showMember = true }:
                     <button key={e.id} className="row between btn btn-secondary" style={{ height: 'auto', padding: '10px 12px', justifyContent: 'space-between' }} onClick={() => onSelect(e)}>
                       <span style={{ textAlign: 'left' }}>
                         <b>{fmtTime(e.startTime)}–{fmtTime(e.endTime)}</b>
-                        <span className="tiny muted" style={{ display: 'block' }}>{showMember ? e.memberName + ' · ' : ''}{e.title}</span>
+                        <span className="tiny muted" style={{ display: 'block' }}>{showMember ? e.memberName + ' · ' : ''}{t(e.title)}</span>
                       </span>
                       <Badge tone={tone}>{label}</Badge>
                     </button>

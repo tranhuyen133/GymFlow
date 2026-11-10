@@ -87,7 +87,7 @@ export default function MemberDetail() {
                     <tbody>
                       {data.subscriptions.map((s) => (
                         <tr key={s.id}>
-                          <td><b>{s.planName}</b>{s.note && <div className="tiny faint ellipsis" style={{ maxWidth: 220 }}>{s.note}</div>}</td>
+                          <td><b>{t(s.planName)}</b>{s.note && <div className="tiny faint ellipsis" style={{ maxWidth: 220 }}>{s.note}</div>}</td>
                           <td className="nowrap small">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</td>
                           <td className="num">{fmtMoney(s.pricePaid)}</td>
                           <td><StatusBadge map={subState} value={s.state} />{(s.state === 'ACTIVE' || s.state === 'EXPIRING') && <div className="tiny faint mt-4">còn {s.daysLeft} ngày</div>}</td>
@@ -176,7 +176,7 @@ export default function MemberDetail() {
                         <td>
                           {e.source === 'PLAN' && (
                             <span className="chip on">
-                              {t('Gói {name}', { name: e.planName ?? '' })}
+                              {t('Gói {name}', { name: e.planName ? t(e.planName) : '' })}
                             </span>
                           )}
                           {e.source === 'PURCHASE' && (

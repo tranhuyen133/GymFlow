@@ -42,7 +42,7 @@ export default function Subscriptions() {
       <PageHead eyebrow="Kinh doanh" title="Đăng ký gói" desc="Đăng ký mới, gia hạn nối tiếp và huỷ gói. CSDL chặn mọi trường hợp hai gói chồng thời gian."
         actions={<>
           <Button icon="download" onClick={() => downloadCsv('dang-ky-goi', list, [
-            { header: t('Mã HV'), value: (s) => s.memberCode }, { header: t('Hội viên'), value: (s) => s.memberName }, { header: t('Gói'), value: (s) => s.planName },
+            { header: t('Mã HV'), value: (s) => s.memberCode }, { header: t('Hội viên'), value: (s) => s.memberName }, { header: t('Gói'), value: (s) => t(s.planName) },
             { header: t('Bắt đầu'), value: (s) => s.startDate }, { header: t('Kết thúc'), value: (s) => s.endDate }, { header: t('Số tiền'), value: (s) => s.pricePaid },
             { header: t('Trạng thái'), value: (s) => subState[s.state][0] }, { header: t('Ngày thu'), value: (s) => s.createdAt.slice(0, 10) }, { header: t('Người tạo'), value: (s) => s.createdByName },
           ])}>Xuất CSV</Button>
@@ -78,7 +78,7 @@ export default function Subscriptions() {
                 {paged.items.map((s) => (
                   <tr key={s.id}>
                     <td className="clickable" onClick={() => navigate(`/members/${s.memberId}`)}><Person name={s.memberName} sub={s.memberCode} size="sm" /></td>
-                    <td>{s.planName}</td>
+                    <td>{t(s.planName)}</td>
                     <td className="small nowrap">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</td>
                     <td className="num">{fmtMoney(s.pricePaid)}</td>
                     <td><StatusBadge map={subState} value={s.state} />{(s.state === 'ACTIVE' || s.state === 'EXPIRING') && <div className="tiny faint mt-4">{t('còn {n} ngày', { n: s.daysLeft })}</div>}</td>
