@@ -333,7 +333,7 @@ export function Layout() {
               <div className="tiny faint">{roleLabel[user.role]}</div>
             </div>
           </Link>
-          <Button variant="ghost" size="sm" icon="logout" className="side-logout" aria-label="Đăng xuất" title="Đăng xuất" onClick={() => setAskLogout(true)}>
+          <Button variant="ghost" size="sm" icon="logout" className="side-logout" aria-label={t('Đăng xuất')} title={t('Đăng xuất')} onClick={() => setAskLogout(true)}>
             <span className="side-logout-text">{t('Đăng xuất')}</span>
           </Button>
         </div>
@@ -342,7 +342,7 @@ export function Layout() {
 
       <div className="main">
         <header className="topbar">
-          <Button className="menu-btn" variant="ghost" icon="menu" aria-label="Mở menu" aria-controls="app-sidebar" aria-expanded={open} onClick={() => setOpen(true)} />
+          <Button className="menu-btn" variant="ghost" icon="menu" aria-label={t('Mở menu')} aria-controls="app-sidebar" aria-expanded={open} onClick={() => setOpen(true)} />
           <div className="crumb"><span className="crumb-root">GymFlow / </span><b>{t(current?.label ?? 'Chi tiết')}</b></div>
           <div className="spacer" />
           <Clock />
@@ -379,7 +379,7 @@ export function Layout() {
 
       <Tour onNav={onTourNav} />
 
-      {askLogout && <Confirm title="Đăng xuất?" message={t('Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng GymFlow.')} confirmText="Đăng xuất"
+      {askLogout && <Confirm title={t('Đăng xuất?')} message={t('Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng GymFlow.')} confirmText={t('Đăng xuất')}
         onClose={() => setAskLogout(false)} onConfirm={doLogout} />}
       <ChatWidget />
     </div>

@@ -5,6 +5,7 @@ import { chatApi, type ChatConversation, type ChatMessage, type ChatSuggestion }
 import { Icon } from './Icon';
 import { Button } from './ui';
 import { errMsg } from '../lib/hooks';
+import { t } from '../i18n';
 import './chat-widget.css';
 
 marked.setOptions({
@@ -139,7 +140,7 @@ export function ChatWidget() {
       setMessages((current) => [...current, reply]);
       await loadConversations();
     } catch {
-      setError('Trợ lý AI đang bận hoặc quá thời gian phản hồi. Bạn vui lòng thử lại hoặc chọn một trong các câu hỏi gợi ý bên dưới.');
+      setError(t('Trợ lý AI đang bận hoặc quá thời gian phản hồi. Bạn vui lòng thử lại hoặc chọn một trong các câu hỏi gợi ý bên dưới.'));
       if (activeId != null) {
         try {
           const history = await chatApi.history(activeId);
@@ -156,22 +157,22 @@ export function ChatWidget() {
   return (
     <div className="chat-widget">
       {open && (
-        <section className="chat-panel" aria-label="Trợ lý GymFlow">
+        <section className="chat-panel" aria-label={t('Trợ lý GymFlow')}>
           <header className="chat-header">
             <div>
-              <b>Trợ lý GymFlow</b>
+              <b>{t('Trợ lý GymFlow')}</b>
               <div className="tiny">
-                {freeTextEnabled ? 'Hỏi tự do hoặc chọn câu hỏi sẵn · Trả lời từ dữ liệu của bạn' : 'Chọn câu hỏi sẵn · Trả lời từ dữ liệu của bạn'}
+                {freeTextEnabled ? t('Hỏi tự do hoặc chọn câu hỏi sẵn · Trả lời từ dữ liệu của bạn') : t('Chọn câu hỏi sẵn · Trả lời từ dữ liệu của bạn')}
               </div>
             </div>
             <div className="row">
-              <Button variant="ghost" size="sm" icon="plus" aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới" onClick={newConversation} />
-              <Button variant="ghost" size="sm" icon="x" aria-label="Đóng trợ lý" onClick={() => setOpen(false)} />
+              <Button variant="ghost" size="sm" icon="plus" aria-label={t('Cuộc trò chuyện mới')} title={t('Cuộc trò chuyện mới')} onClick={newConversation} />
+              <Button variant="ghost" size="sm" icon="x" aria-label={t('Đóng trợ lý')} onClick={() => setOpen(false)} />
             </div>
           </header>
 
           {conversations.length > 0 && (
-            <div className="chat-history" aria-label="Lịch sử hội thoại">
+            <div className="chat-history" aria-label={t('Lịch sử hội thoại')}>
               {conversations.slice(0, 5).map((item) => (
                 <button
                   key={item.id}
@@ -190,8 +191,8 @@ export function ChatWidget() {
             {messages.length === 0 && (
               <p className="chat-empty">
                 {freeTextEnabled
-                  ? 'Gõ câu hỏi bên dưới hoặc chọn gợi ý nhanh để tra cứu lịch tập, gói tập và bài tập của bạn.'
-                  : 'Chọn một câu hỏi bên dưới để xem lịch tập, gói tập và bài tập của bạn.'}
+                  ? t('Gõ câu hỏi bên dưới hoặc chọn gợi ý nhanh để tra cứu lịch tập, gói tập và bài tập của bạn.')
+                  : t('Chọn một câu hỏi bên dưới để xem lịch tập, gói tập và bài tập của bạn.')}
               </p>
             )}
             {messages.map((message) => (
@@ -199,13 +200,13 @@ export function ChatWidget() {
                 {renderRichContent(message.content)}
               </div>
             ))}
-            {busy && <div className="chat-typing" role="status">Trợ lý đang suy nghĩ và soạn câu trả lời…</div>}
+            {busy && <div className="chat-typing" role="status">{t('Trợ lý đang suy nghĩ và soạn câu trả lời…')}</div>}
             <div ref={bottomRef} />
           </div>
 
           {error && <div className="chat-error" role="alert">{error}</div>}
 
-          <div className="chat-suggestions" aria-label="Câu hỏi sẵn">
+          <div className="chat-suggestions" aria-label={t('Câu hỏi sẵn')}>
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion.key}
@@ -215,11 +216,11 @@ export function ChatWidget() {
                 disabled={busy}
               >
                 <Icon name="message" size={12} />
-                <span>{suggestion.label}</span>
+                <span>{t(suggestion.label)}</span>
               </button>
             ))}
-            {suggestions.length === 0 && suggestionsLoading && <span className="tiny faint">Đang tải câu hỏi…</span>}
-            {suggestions.length === 0 && !suggestionsLoading && !busy && <span className="tiny faint">Chưa tải được câu hỏi.</span>}
+            {suggestions.length === 0 && suggestionsLoading && <span className="tiny faint">{t('Đang tải câu hỏi…')}</span>}
+            {suggestions.length === 0 && !suggestionsLoading && !busy && <span className="tiny faint">{t('Chưa tải được câu hỏi.')}</span>}
           </div>
 
           {freeTextEnabled && (
@@ -227,19 +228,19 @@ export function ChatWidget() {
               <input
                 type="text"
                 className="chat-input"
-                placeholder="Nhập câu hỏi (vd: Lịch hôm nay, gói tập...)"
+                placeholder={t('Nhập câu hỏi (vd: Lịch hôm nay, gói tập...)')}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 disabled={busy}
                 maxLength={500}
-                aria-label="Nhập câu hỏi"
+                aria-label={t('Nhập câu hỏi')}
               />
               <button
                 type="submit"
                 className="chat-send-btn"
                 disabled={busy || !inputText.trim()}
-                aria-label="Gửi câu hỏi"
-                title="Gửi câu hỏi"
+                aria-label={t('Gửi câu hỏi')}
+                title={t('Gửi câu hỏi')}
               >
                 <Icon name="send" size={16} />
               </button>
@@ -247,7 +248,7 @@ export function ChatWidget() {
           )}
 
           <div className="chat-disclaimer">
-            Trợ lý trả lời dựa trên dữ liệu GymFlow, có thể chưa chính xác tuyệt đối.
+            {t('Trợ lý trả lời dựa trên dữ liệu GymFlow, có thể chưa chính xác tuyệt đối.')}
           </div>
         </section>
       )}
@@ -255,11 +256,11 @@ export function ChatWidget() {
         type="button"
         className="chat-launcher"
         aria-expanded={open}
-        aria-label={open ? 'Đóng trợ lý' : 'Mở trợ lý'}
+        aria-label={open ? t('Đóng trợ lý') : t('Mở trợ lý')}
         onClick={() => setOpen((value) => !value)}
       >
         <Icon name={open ? 'x' : 'message'} />
-        <span>{open ? 'Đóng' : 'Trợ lý'}</span>
+        <span>{open ? t('Đóng') : t('Trợ lý')}</span>
       </button>
     </div>
   );

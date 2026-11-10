@@ -58,24 +58,24 @@ export default function Schedules() {
 
   return (
     <div className="page">
-      <PageHead eyebrow={staff ? 'Lịch tập' : 'Lịch của tôi'} title={staff ? 'Lịch tập tuần' : 'Lịch tập của tôi'}
-        desc={staff ? 'Xếp lịch lặp hằng tuần, hệ thống tự chặn trùng giờ HLV và hội viên, chỉ cho xếp khi hội viên còn gói hiệu lực.'
-          : selfTrain ? 'Gói tự tập: tự xếp buổi theo giáo án của bạn, dời hoặc huỷ trước giờ tập, tập xong thì đánh dấu hoàn thành.'
-          : 'Bấm vào buổi tập để xem chi tiết và đánh dấu hoàn thành.'}
-        actions={staff ? <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Xếp lịch</Button>
+      <PageHead eyebrow={staff ? t('Lịch tập') : t('Lịch của tôi')} title={staff ? t('Lịch tập tuần') : t('Lịch tập của tôi')}
+        desc={staff ? t('Xếp lịch lặp hằng tuần, hệ thống tự chặn trùng giờ HLV và hội viên, chỉ cho xếp khi hội viên còn gói hiệu lực.')
+          : selfTrain ? t('Gói tự tập: tự xếp buổi theo giáo án của bạn, dời hoặc huỷ trước giờ tập, tập xong thì đánh dấu hoàn thành.')
+          : t('Bấm vào buổi tập để xem chi tiết và đánh dấu hoàn thành.')}
+        actions={staff ? <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>{t('Xếp lịch')}</Button>
           : selfTrain ? <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>{t('Tự xếp buổi tập')}</Button>
           : member.data?.trainerName ? <Link to="/messages" className="btn btn-secondary"><Icon name="message" size={16} /><span>{t('Nhắn HLV')}</span></Link> : undefined} />
 
       <div className="toolbar">
         <div className="row">
-          <Button icon="chevronLeft" aria-label="Tuần trước" onClick={() => setWeek(addDays(week, -7))} />
-          <Button onClick={() => setWeek(startOfWeek(new Date()))}>Tuần này</Button>
-          <Button icon="chevronRight" aria-label="Tuần sau" onClick={() => setWeek(addDays(week, 7))} />
+          <Button icon="chevronLeft" aria-label={t('Tuần trước')} onClick={() => setWeek(addDays(week, -7))} />
+          <Button onClick={() => setWeek(startOfWeek(new Date()))}>{t('Tuần này')}</Button>
+          <Button icon="chevronRight" aria-label={t('Tuần sau')} onClick={() => setWeek(addDays(week, 7))} />
           <b className="num" style={{ marginLeft: 6 }}>{label}</b>
         </div>
         <div className="spacer" />
         {me.role === 'ADMIN' && (
-          <Select value={trainerId} onChange={(e) => setTrainerId(e.target.value)} aria-label="Lọc theo HLV">
+          <Select value={trainerId} onChange={(e) => setTrainerId(e.target.value)} aria-label={t('Lọc theo HLV')}>
             <option value="">{t('Tất cả HLV')}</option>
             {trainers.data?.map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}</option>)}
           </Select>
@@ -437,17 +437,17 @@ export function ScheduleForm({ edit, presetMemberId, presetExerciseId, onClose, 
 
   return (
     <>
-      <Modal title={edit ? 'Dời lịch buổi tập' : self ? 'Tự xếp buổi tập' : 'Xếp lịch tập'} onClose={onClose} footer={<>
-        <Button variant="ghost" onClick={onClose}>Huỷ</Button>
-        <Button variant="primary" icon="check" loading={busy} onClick={() => submit(false)}>{edit ? 'Lưu thay đổi' : 'Xếp lịch'}</Button>
+      <Modal title={edit ? t('Dời lịch buổi tập') : self ? t('Tự xếp buổi tập') : t('Xếp lịch tập')} onClose={onClose} footer={<>
+        <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
+        <Button variant="primary" icon="check" loading={busy} onClick={() => submit(false)}>{edit ? t('Lưu thay đổi') : t('Xếp lịch')}</Button>
       </>}>
         <div className="stack">
           {error && <Alert kind="error">{error}</Alert>}
           <div className="form-grid">
           {self ? null : edit ? (
-            <Field label="Hội viên" className="span-2"><Person name={edit.memberName} size="sm" /></Field>
+            <Field label={t('Hội viên')} className="span-2"><Person name={edit.memberName} size="sm" /></Field>
           ) : (
-            <Field label="Hội viên" error={errors.memberId} required className="span-2">
+            <Field label={t('Hội viên')} error={errors.memberId} required className="span-2">
               <MemberSelect
                 value={memberId}
                 invalid={!!errors.memberId}
@@ -459,19 +459,19 @@ export function ScheduleForm({ edit, presetMemberId, presetExerciseId, onClose, 
             </Field>
           )}
           {selected && (selected.subscriptionState === 'EXPIRED' || !selected.subscriptionState) && (
-            <div className="span-2"><Alert kind="warning">Hội viên này không có gói hiệu lực, hệ thống sẽ từ chối xếp lịch.</Alert></div>
+            <div className="span-2"><Alert kind="warning">{t('Hội viên này không có gói hiệu lực, hệ thống sẽ từ chối xếp lịch.')}</Alert></div>
           )}
           {me.role === 'ADMIN' && (
-            <Field label="Huấn luyện viên" hint="Để trống = HLV phụ trách của hội viên">
+            <Field label={t('Huấn luyện viên')} hint={t('Để trống = HLV phụ trách của hội viên')}>
               <Select value={trainerId} onChange={(e) => setTrainerId(e.target.value)}>
                 <option value="">{t('Mặc định')}</option>
                 {trainers.data?.filter((tr) => tr.active).map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}</option>)}
               </Select>
             </Field>
           )}
-          <Field label="Giáo án" className={me.role === 'ADMIN' ? '' : 'span-2'}>
+          <Field label={t('Giáo án')} className={me.role === 'ADMIN' ? '' : 'span-2'}>
             <Select value={planId} onChange={(e) => setPlanId(e.target.value)}>
-              <option value="">Không gắn giáo án</option>
+              <option value="">{t('Không gắn giáo án')}</option>
               {(plans.data?.memberId === memberId ? plans.data.list : []).map((p) => <option key={p.id} value={p.id}>{p.name}{p.status !== 'ACTIVE' ? ' (lưu trữ)' : ''}</option>)}
             </Select>
           </Field>
@@ -492,14 +492,14 @@ export function ScheduleForm({ edit, presetMemberId, presetExerciseId, onClose, 
               )}
             </div>
           )}
-          <Field label="Tiêu đề" error={errors.title} required className="span-2"><Input maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
-          <Field label="Ngày" error={errors.date} required><Input type="date" value={date} min={toIsoDate(new Date())} onChange={(e) => setDate(e.target.value)} /></Field>
-          <Field label="Giờ bắt đầu" error={errors.time} required hint={t('Mở cửa {open}–{close}', { open: GYM_OPEN, close: GYM_CLOSE })}>
+          <Field label={t('Tiêu đề')} error={errors.title} required className="span-2"><Input maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
+          <Field label={t('Ngày')} error={errors.date} required><Input type="date" value={date} min={toIsoDate(new Date())} onChange={(e) => setDate(e.target.value)} /></Field>
+          <Field label={t('Giờ bắt đầu')} error={errors.time} required hint={t('Mở cửa {open}–{close}', { open: GYM_OPEN, close: GYM_CLOSE })}>
             <Select value={time} invalid={!!errors.time} onChange={(e) => { setTime(e.target.value); setErrors((x) => ({ ...x, time: '' })); }}>
               {withCurrent(START_TIMES, time).map((v) => <option key={v} value={v}>{v}</option>)}
             </Select>
           </Field>
-          <Field label="Thời lượng (phút)" error={errors.duration} required hint={toMin(time) ? t('Kết thúc lúc {t}', { t: slot.endTime }) : undefined}>
+          <Field label={t('Thời lượng (phút)')} error={errors.duration} required hint={toMin(time) ? t('Kết thúc lúc {t}', { t: slot.endTime }) : undefined}>
             <Select value={duration} onChange={(e) => setDuration(e.target.value)}>
               {[30, 45, 60, 75, 90, 120].map((m) => <option key={m} value={m} disabled={toMin(time) + m > toMin(GYM_CLOSE)}>{t('{n} phút', { n: m })}</option>)}
               {![30, 45, 60, 75, 90, 120].includes(Number(duration)) && <option value={duration}>{t('{n} phút', { n: duration })}</option>}
@@ -533,14 +533,14 @@ export function ScheduleForm({ edit, presetMemberId, presetExerciseId, onClose, 
             </div>
           )}
           {!edit && (
-            <Field label="Lặp lại hằng tuần" hint="Tuần nào trùng giờ / hết gói sẽ được bỏ qua">
+            <Field label={t('Lặp lại hằng tuần')} hint={t('Tuần nào trùng giờ / hết gói sẽ được bỏ qua')}>
               <Select value={repeat} onChange={(e) => setRepeat(e.target.value)}>
                 <option value="0">{t('Không lặp')}</option>
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{t('Thêm {n} tuần ({m} buổi)', { n, m: n + 1 })}</option>)}
               </Select>
             </Field>
           )}
-          <Field label="Ghi chú" className="span-2"><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder={self ? 'VD: chân, 45 phút' : 'VD: tập trung kỹ thuật squat'} /></Field>
+          <Field label={t('Ghi chú')} className="span-2"><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder={self ? 'VD: chân, 45 phút' : 'VD: tập trung kỹ thuật squat'} /></Field>
         </div>
         {!edit && Number(repeat) > 0 && <Badge tone="blue">{t('Sẽ tạo tối đa {n} buổi vào {day} hằng tuần', { n: Number(repeat) + 1, day: fmtWeekday(`${date}T${time}:00`).split(',')[0] })}</Badge>}
       </div>

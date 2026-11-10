@@ -106,8 +106,8 @@ export default function Programs({ embedded = false }: { embedded?: boolean } = 
                 <div className="prog-foot">
                   <span className="tiny faint">{lib.data ? t('{a}/{b} bài đã có trong thư viện (đã duyệt)', { a: r.ok, b: r.total }) : ''}</span>
                   <div className="row" style={{ gap: 6 }}>
-                    <Button size="sm" variant="ghost" icon="eye" onClick={() => setOpen(p)}>Xem chi tiết</Button>
-                    {!lockedByTrainer && <Button size="sm" variant="primary" icon="layers" disabled={r.ok === 0} onClick={() => use(p)}>Dùng làm giáo án</Button>}
+                    <Button size="sm" variant="ghost" icon="eye" onClick={() => setOpen(p)}>{t('Xem chi tiết')}</Button>
+                    {!lockedByTrainer && <Button size="sm" variant="primary" icon="layers" disabled={r.ok === 0} onClick={() => use(p)}>{t('Dùng làm giáo án')}</Button>}
                   </div>
                 </div>
               </article>
