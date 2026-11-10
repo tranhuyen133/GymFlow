@@ -251,10 +251,10 @@ export default function MyPlan() {
                   <tr key={h.id}>
                     <td className="small nowrap">{fmtDateTime(h.appliedAt)}</td>
                     <td>
-                      {h.oldPlanName ? <b>{h.oldPlanName}</b> : <span className="faint">{t('Bắt đầu mới')}</span>}
+                      {h.oldPlanName ? <b>{t(h.oldPlanName)}</b> : <span className="faint">{t('Bắt đầu mới')}</span>}
                     </td>
                     <td>
-                      <b className="ok">{h.newPlanName}</b>
+                      <b className="ok">{t(h.newPlanName)}</b>
                     </td>
                     <td>
                       {h.cancelledFutureSessions > 0 ? (

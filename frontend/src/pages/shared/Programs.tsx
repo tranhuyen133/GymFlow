@@ -11,7 +11,7 @@ import { ExerciseMedia } from '../../components/ExerciseMedia';
 import { Icon } from '../../components/Icon';
 import { MuscleMap } from '../../components/MuscleMap';
 import { Alert, Badge, Button, ErrorState, LoadingBlock, Modal, PageHead, Segmented, StatusBadge } from '../../components/ui';
-import { t } from '../../i18n';
+import { t, getLang } from '../../i18n';
 import { DAYS, DAY_NAMES, levelLabel } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 import { PROGRAMS, programFocus, resolveItem, type Program, type ProgramItem } from '../../lib/programs';
@@ -58,10 +58,10 @@ export default function Programs({ embedded = false }: { embedded?: boolean } = 
   return (
     <div className={embedded ? 'embedded-view' : 'page'}>
       {!embedded ? (
-        <PageHead eyebrow="Kho kiến thức" title="Lịch tập mẫu"
-          desc="Các kiểu chia buổi phổ biến trong phòng gym. Dùng làm khung để soạn giáo án nhanh rồi chỉnh số hiệp, số lần, mức tạ theo từng người."
+        <PageHead eyebrow={t('Kho kiến thức')} title={t('Lịch tập mẫu')}
+          desc={t('Các kiểu chia buổi phổ biến trong phòng gym. Dùng làm khung để soạn giáo án nhanh rồi chỉnh số hiệp, số lần, mức tạ theo từng người.')}
           actions={<Segmented<LevelFilter> value={level} onChange={setLevel} options={[
-            { value: '', label: 'Tất cả' }, { value: 'BEGINNER', label: levelLabel.BEGINNER[0] },
+            { value: '', label: t('Tất cả') }, { value: 'BEGINNER', label: levelLabel.BEGINNER[0] },
             { value: 'INTERMEDIATE', label: levelLabel.INTERMEDIATE[0] }, { value: 'ADVANCED', label: levelLabel.ADVANCED[0] },
           ]} />} />
       ) : (
@@ -70,7 +70,7 @@ export default function Programs({ embedded = false }: { embedded?: boolean } = 
             {t('Các kiểu chia buổi phổ biến trong phòng gym. Chọn một lịch phù hợp để làm khung soạn giáo án nhanh.')}
           </p>
           <Segmented<LevelFilter> value={level} onChange={setLevel} options={[
-            { value: '', label: 'Tất cả' }, { value: 'BEGINNER', label: levelLabel.BEGINNER[0] },
+            { value: '', label: t('Tất cả') }, { value: 'BEGINNER', label: levelLabel.BEGINNER[0] },
             { value: 'INTERMEDIATE', label: levelLabel.INTERMEDIATE[0] }, { value: 'ADVANCED', label: levelLabel.ADVANCED[0] },
           ]} />
         </div>
@@ -87,7 +87,7 @@ export default function Programs({ embedded = false }: { embedded?: boolean } = 
                 <div className="prog-head">
                   <div style={{ minWidth: 0 }}>
                     <h3 className="kb-title">{t(p.name)}</h3>
-                    <div className="tiny faint">{p.short}</div>
+                    <div className="tiny faint">{t(p.short)}</div>
                   </div>
                   <StatusBadge map={levelLabel} value={p.level} />
                 </div>
@@ -119,8 +119,8 @@ export default function Programs({ embedded = false }: { embedded?: boolean } = 
       {open && (
         <Modal title={t(open.name)} size="wide" onClose={() => setOpen(null)} footer={<>
           <span className="tiny faint modal-foot-hint">{t('Bài chưa duyệt sẽ được bỏ qua khi tạo giáo án.')}</span>
-          <Button variant="ghost" onClick={() => setOpen(null)}>Đóng</Button>
-          {!lockedByTrainer && <Button variant="primary" icon="layers" disabled={ready(open).ok === 0} onClick={() => use(open)}>Dùng làm giáo án</Button>}
+          <Button variant="ghost" onClick={() => setOpen(null)}>{t('Đóng')}</Button>
+          {!lockedByTrainer && <Button variant="primary" icon="layers" disabled={ready(open).ok === 0} onClick={() => use(open)}>{t('Dùng làm giáo án')}</Button>}
         </>}>
           <div className="stack">
             <div className="prog-detail-top">
@@ -178,20 +178,21 @@ function ProgramRow({ it, approved, any }: { it: ProgramItem; approved: Map<stri
   const ok = resolveItem(it, approved);
   const ex = ok ?? resolveItem(it, any);
   const dose = it.minutes ? t('{n} phút', { n: it.minutes }) : `${it.sets} × ${it.reps ?? ''}`;
+  const exName = ex ? (getLang() === 'en' && ex.nameEn ? ex.nameEn : t(ex.name)) : t(it.ex[0]);
   return (
     <div className={`prog-row ${ok ? '' : 'missing'}`}>
       <ExerciseMedia imageKey={ex?.imageKey} alt={ex?.name ?? it.ex[0]} playOnHover className="prog-thumb"
         fallback={<div className="prog-thumb ex-media-empty"><Icon name="dumbbell" size={16} /></div>} />
       <div style={{ minWidth: 0 }}>
-        <b className="small ellipsis" style={{ display: 'block' }}>{ex?.name ?? it.ex[0]}</b>
+        <b className="small ellipsis" style={{ display: 'block' }}>{exName}</b>
         <span className="tiny faint">
-          {it.ex.length > 1 && t('Thay bằng: {list}', { list: it.ex.filter((n) => n !== ex?.name).join(', ') })}
+          {it.ex.length > 1 && t('Thay bằng: {list}', { list: it.ex.filter((n) => n !== ex?.name).map((n) => t(n)).join(', ') })}
           {it.note && <>{it.ex.length > 1 && ' · '}{t(it.note)}</>}
         </span>
       </div>
       <span className="prog-dose">{dose}</span>
       <span className="tiny faint hide-sm">{it.rest ? t('nghỉ {n}s', { n: it.rest }) : ''}</span>
-      {!ok && <Badge tone="amber">{ex ? 'Chờ duyệt' : 'Chưa có'}</Badge>}
+      {!ok && <Badge tone="amber">{ex ? t('Chờ duyệt') : t('Chưa có')}</Badge>}
     </div>
   );
 }

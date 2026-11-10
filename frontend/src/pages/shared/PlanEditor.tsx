@@ -543,7 +543,7 @@ export default function PlanEditor() {
       {templateOpen && (
         <Modal title={t('Chọn lịch tập mẫu')} size="medium" onClose={() => setTemplateOpen(false)} footer={<>
           <Link to="/programs" className="btn btn-ghost"><span>{t('Xem chi tiết các lịch')}</span></Link>
-          <Button variant="ghost" onClick={() => setTemplateOpen(false)}>Đóng</Button>
+          <Button variant="ghost" onClick={() => setTemplateOpen(false)}>{t('Đóng')}</Button>
         </>}>
           <div className="stack-sm">
             <p className="tiny muted" style={{ margin: 0 }}>{t('Bài, số hiệp, số lần và thời gian nghỉ được điền sẵn theo từng ngày. Bài chưa duyệt sẽ được bỏ qua; bạn chỉnh lại tuỳ hội viên.')}</p>
@@ -556,7 +556,7 @@ export default function PlanEditor() {
                     <span className="tpl-ic"><Icon name="layers" size={18} /></span>
                     <span style={{ minWidth: 0 }}>
                       <b className="small" style={{ display: 'block' }}>{t(p.name)}</b>
-                      <span className="tiny faint">{p.short} · {t('{a}/{b} bài sẵn sàng', { a: ok, b: all.length })}</span>
+                      <span className="tiny faint">{t(p.short)} · {t('{a}/{b} bài sẵn sàng', { a: ok, b: all.length })}</span>
                     </span>
                     <StatusBadge map={levelLabel} value={p.level} />
                   </button>
@@ -566,7 +566,7 @@ export default function PlanEditor() {
           </div>
         </Modal>
       )}
-      {replaceWith && <Confirm title={t('Thay toàn bộ bài hiện có?')} confirmText="Dùng lịch mẫu"
+      {replaceWith && <Confirm title={t('Thay toàn bộ bài hiện có?')} confirmText={t('Dùng lịch mẫu')}
         message={tn('Giáo án đang có {n} bài. Các bài này sẽ được thay bằng lịch "{name}". Tên, mục tiêu, ghi chú đã nhập được giữ nguyên.', { n: items.length, name: t(replaceWith.name) })}
         onClose={() => setReplaceWith(null)} onConfirm={() => applyTemplate(replaceWith)} />}
 
