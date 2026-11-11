@@ -484,6 +484,65 @@ export const TRAINING_GUIDES: TrainingGuide[] = [
     dos: ['Giãn cơ nhẹ nhàng sau tập', 'Uống đủ nước và ngủ đủ giấc'],
     donts: ['Không tắm nước quá lạnh ngay khi vừa tập xong đầm đìa mồ hôi'],
   },
+  {
+    id: 'home-workout-guide',
+    title: 'Hướng dẫn tập luyện tại nhà hiệu quả',
+    category: 'Tập tại nhà',
+    readTime: '6 phút đọc',
+    icon: 'home',
+    summary: 'Tối ưu hóa thể hình và sức khỏe tại nhà với bài tập trọng lượng cơ thể (Calisthenics), dây kháng lực và không gian tối thiểu.',
+    principles: [
+      'Nguyên tắc chuyển động cơ bản: Đẩy (Push), Kéo (Pull), Chân (Legs) và Cơ lõi (Core) đều có thể tập hoàn hảo tại nhà.',
+      'Tăng tiến độ khó khi không có tạ nặng (Overload via Mechanics): Thay đổi góc độ cơ thể (như hít đất dốc), tăng thời gian chịu áp lực (Tempo chậm) hoặc giảm thời gian nghỉ.',
+      'Sử dụng phụ kiện thông minh: Dây mini-band, dây kháng lực dài (Loop band) và xà đơn gắn cửa là đủ cho một phòng tập thu nhỏ.',
+    ],
+    stepByStep: [
+      '1. Chuẩn bị không gian: Dọn sạch khu vực tối thiểu 2x2m, trải thảm tập chống trơn trượt.',
+      '2. Khởi động 5 phút: Xoay khớp cổ tay, vai, hông và đầu gối, thực hiện Jumping Jacks nhẹ.',
+      '3. Thực hiện theo chuỗi Supersets: Kết hợp 1 bài thân trên (Hít đất) + 1 bài thân dưới (Squat/Lunge) để duy trì nhịp tim.',
+      '4. Ghi chép số lần lặp đạt được vào ứng dụng GymFlow để theo dõi tiến độ.',
+    ],
+    mistakesAndFixes: [
+      { mistake: 'Tập quá nhanh dùng quán tính khiến cơ bắp không đủ kích thích.', fix: 'Áp dụng nhịp tempo 3-1-1: 3 giây hạ người, 1 giây giữ đáy, 1 giây đẩy lên.' },
+      { mistake: 'Bỏ qua các bài tập kéo (Pull) vì ở nhà không có tạ.', fix: 'Dùng xà đơn gắn cửa để hít xà hoặc neo dây kháng lực vào cửa để kéo xô (Band Row).' },
+    ],
+    safetyTips: [
+      'Kiểm tra độ chắc chắn của xà đơn gắn cửa hoặc điểm neo dây kháng lực trước khi dồn toàn bộ trọng lượng.',
+      'Tập chân đất hoặc mang giày thể thao trong nhà, không mang tất/vớ trơn trên sàn gạch.',
+    ],
+    dos: ['Khởi động kỹ dù tập tại nhà', 'Tận dụng dây kháng lực và bàn ghế chắc chắn'],
+    donts: ['Không đứng lên ghế lung lay hoặc đồ nội thất không chịu lực'],
+  },
+  {
+    id: 'gym-workout-etiquette',
+    title: 'Hướng dẫn tập luyện tại phòng Gym & Quy tắc an toàn',
+    category: 'Tại phòng Gym',
+    readTime: '6 phút đọc',
+    icon: 'dumbbell',
+    summary: 'Quy trình chuẩn mực cho hội viên tại phòng Gym: từ chọn mức tạ, cách setup thiết bị đến văn hóa ứng xử chuyên nghiệp.',
+    principles: [
+      'An toàn là số 1: Luôn khóa kẹp bánh tạ (Collar clamp) trên thanh đòn và cài thanh chặn an toàn (Safety bar) trong rack.',
+      'Nhờ người đỡ tạ (Spotting): Khi bench press hoặc squat nặng gần ngưỡng thất bại, luôn nhờ HLV hoặc bạn tập đỡ tạ.',
+      'Văn hóa phòng Gym văn minh: Trả tạ về đúng giá sau khi tập, lau đệm mồ hôi và không chiếm giữ máy tập khi đang ngồi lướt điện thoại.',
+    ],
+    stepByStep: [
+      '1. Bắt đầu buổi tập: Check-in, gửi đồ vào locker và mang theo khăn tập cùng bình nước cá nhân.',
+      '2. Khởi động trên máy cardio (đi bộ dốc 3 phút) rồi đến khu tạ tự do.',
+      '3. Khi sử dụng máy: Quan sát hình hướng dẫn, chỉnh chiều cao ghế sao cho khớp xoay máy trùng với khớp cơ thể.',
+      '4. Giữa các hiệp tập: Đứng dậy đi lại thả lỏng, có thể chia sẻ máy (Work-in) nếu phòng tập đông người.',
+      '5. Kết thúc: Tháo hết bánh tạ trả về giá và dùng khăn lau sạch đệm ngồi.',
+    ],
+    mistakesAndFixes: [
+      { mistake: 'Để nguyên bánh tạ nặng trên thanh đòn sau khi tập xong bỏ đi.', fix: 'Tháo toàn bộ tạ và xếp gọn gàng theo đúng số kg trên giá để người tập sau có thể sử dụng.' },
+      { mistake: 'Thả rơi tạ đơn tự do từ trên cao xuống sàn gây vỡ tạ và nguy hiểm cho người bên cạnh.', fix: 'Hạ tạ về đùi, dùng cơ đùi đỡ rồi đặt tạ xuống sàn một cách có kiểm soát.' },
+    ],
+    safetyTips: [
+      'Không đứng quá gần phía sau hoặc trong tầm vung tạ của người đang nâng nặng.',
+      'Nếu không chắc chắn về cách dùng máy mới, hãy nhờ sự hướng dẫn từ Huấn luyện viên GymFlow trực quầy.',
+    ],
+    dos: ['Mang khăn tập và lau sạch mồ hôi', 'Cất tạ về đúng vị trí sau khi tập'],
+    donts: ['Không ngồi bấm điện thoại chiếm máy quá 5 phút', 'Không thả tạ ầm ĩ xuống sàn'],
+  },
 ];
 
 // -------------------------------------------------------------
@@ -528,15 +587,16 @@ export const CARDIO_SUB_CATEGORIES = [
 export const EQUIPMENT_SUB_CATEGORIES = [
   { key: 'all', label: 'Tất cả dụng cụ' },
   { key: 'dumbbell', label: 'Tạ đơn' },
-  { key: 'barbell', label: 'Tạ đòn' },
-  { key: 'kettlebell', label: 'Kettlebell' },
+  { key: 'barbell', label: 'Tạ đòn & bánh tạ' },
+  { key: 'kettlebell', label: 'Kettlebell (Tạ ấm)' },
   { key: 'cable', label: 'Máy kéo cáp' },
   { key: 'machine-chest', label: 'Máy tập ngực' },
   { key: 'machine-back', label: 'Máy tập lưng' },
   { key: 'machine-shoulder', label: 'Máy tập vai' },
   { key: 'machine-legs', label: 'Máy tập chân' },
   { key: 'treadmill', label: 'Máy chạy bộ' },
-  { key: 'bike', label: 'Xe đạp' },
+  { key: 'bike', label: 'Xe đạp tập' },
   { key: 'band', label: 'Dây kháng lực' },
-  { key: 'bench', label: 'Ghế tập & Thiết bị hỗ trợ' },
+  { key: 'bench', label: 'Ghế tập' },
+  { key: 'other', label: 'Thiết bị hỗ trợ khác' },
 ];

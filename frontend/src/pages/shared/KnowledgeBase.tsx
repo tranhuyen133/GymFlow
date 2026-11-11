@@ -47,9 +47,11 @@ import './kb.css';
 import './exercises.css';
 import {
   EQUIPMENT,
+  EQUIPMENT_BY_KEY,
   isMuscleKey,
   MUSCLE_BY_KEY,
   MUSCLES,
+  type EquipmentKey,
   type MuscleKey,
 } from '../../lib/anatomy';
 import {
@@ -76,9 +78,23 @@ interface KnowledgeBaseProps {
   defaultTab?: KnowledgeTab;
 }
 
+const EQUIPMENT_CATEGORY_LABELS: Record<string, string> = {
+  FREE_WEIGHT: 'Tạ tự do',
+  MACHINE: 'Máy tập khối',
+  CABLE: 'Máy kéo cáp',
+  BODYWEIGHT: 'Trọng lượng cơ thể',
+  CARDIO: 'Máy tim mạch',
+  ACCESSORY: 'Phụ kiện tập luyện',
+  RECOVERY: 'Phục hồi cơ bắp',
+};
+
 const targetOf = (e: Exercise): MuscleKey[] => (e.targetMuscles ?? []).filter(isMuscleKey);
 const secondaryOf = (e: Exercise): MuscleKey[] => (e.secondaryMuscleKeys ?? []).filter(isMuscleKey);
-const equipOf = (e: Exercise): string[] => e.equipmentKeys ?? [];
+const equipOf = (e: Exercise): string[] => {
+  if (e.equipmentKeys && e.equipmentKeys.length > 0) return e.equipmentKeys;
+  if (e.equipment) return e.equipment.split(',').map((s) => s.trim()).filter(Boolean);
+  return [];
+};
 const muscleName = (k: MuscleKey) => t(MUSCLE_BY_KEY.get(k)?.label ?? k);
 const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
 
@@ -113,6 +129,7 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
   const [level, setLevel] = useState<'' | Level>(() => (params.get('level') as Level) || '');
   const [location, setLocation] = useState<'' | ExerciseLocation>(() => (params.get('location') as ExerciseLocation) || '');
   const [goal, setGoal] = useState<'' | ExerciseGoal>(() => (params.get('goal') as ExerciseGoal) || '');
+  const [equipFilter, setEquipFilter] = useState<string>(() => params.get('equipment') ?? '');
   const [sort, setSort] = useState<Sort>('name');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showSuggest, setShowSuggest] = useState(false);
@@ -124,7 +141,7 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
     return m && isMuscleKey(m) ? m : null;
   });
   const [withSecondary, setWithSecondary] = useState(false);
-  const [anatomyView, setAnatomyView] = useState<'front' | 'back'>('front');
+  const [anatomyView, setAnatomyView] = useState<'both' | 'front' | 'back'>('both');
 
   // Selected guide reader modal
   const [readingGuide, setReadingGuide] = useState<TrainingGuide | null>(null);
@@ -291,12 +308,16 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
     if (location) list = list.filter((e) => e.location === location || e.location === 'ANY');
     // Goal
     if (goal) list = list.filter((e) => e.goals?.includes(goal) || e.primaryGoal === goal);
+    // Equipment
+    if (equipFilter) {
+      list = list.filter((e) => equipOf(e).includes(equipFilter) || (e.equipment && fold(e.equipment).includes(fold(equipFilter))));
+    }
     // Specific muscle on MuscleMap
     if (muscle) {
       list = list.filter((e) => targetOf(e).includes(muscle) || (withSecondary && secondaryOf(e).includes(muscle)));
     }
     return list;
-  }, [allExercises, staff, exerciseSub, dq, level, location, goal, muscle, withSecondary]);
+  }, [allExercises, staff, exerciseSub, dq, level, location, goal, equipFilter, muscle, withSecondary]);
 
   // Tab B: Bài tập khởi động (WARMUP)
   const warmupExercises = useMemo(() => {
@@ -336,17 +357,18 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
     let list = allEquipment;
     if (equipSub && equipSub !== 'all') {
       if (equipSub === 'dumbbell') list = list.filter((eq) => eq.key === 'dumbbell');
-      else if (equipSub === 'barbell') list = list.filter((eq) => eq.key === 'barbell' || eq.key === 'ez-bar');
+      else if (equipSub === 'barbell') list = list.filter((eq) => eq.key === 'barbell' || eq.key === 'ez-bar' || eq.key === 'plate');
       else if (equipSub === 'kettlebell') list = list.filter((eq) => eq.key === 'kettlebell');
       else if (equipSub === 'cable') list = list.filter((eq) => eq.key === 'cable');
-      else if (equipSub === 'machine-chest') list = list.filter((eq) => eq.key === 'machine-chest' || (eq.key === 'machine' && eq.targetMuscles?.includes('chest')));
-      else if (equipSub === 'machine-back') list = list.filter((eq) => eq.key === 'machine-back' || (eq.key === 'machine' && eq.targetMuscles?.includes('back')));
-      else if (equipSub === 'machine-shoulder') list = list.filter((eq) => eq.key === 'machine-shoulder' || (eq.key === 'machine' && eq.targetMuscles?.includes('deltoids')));
-      else if (equipSub === 'machine-legs') list = list.filter((eq) => eq.key === 'machine-legs' || (eq.key === 'machine' && eq.targetMuscles?.includes('quadriceps')));
+      else if (equipSub === 'machine-chest') list = list.filter((eq) => eq.key === 'machine-chest' || (eq.category === 'MACHINE' && (eq.targetMuscles?.includes('chest') || eq.name.toLowerCase().includes('ngực'))));
+      else if (equipSub === 'machine-back') list = list.filter((eq) => eq.key === 'machine-back' || (eq.category === 'MACHINE' && (eq.targetMuscles?.includes('back') || eq.name.toLowerCase().includes('lưng') || eq.name.toLowerCase().includes('xô'))));
+      else if (equipSub === 'machine-shoulder') list = list.filter((eq) => eq.key === 'machine-shoulder' || (eq.category === 'MACHINE' && (eq.targetMuscles?.includes('deltoids') || eq.name.toLowerCase().includes('vai'))));
+      else if (equipSub === 'machine-legs') list = list.filter((eq) => eq.key === 'machine-legs' || (eq.category === 'MACHINE' && (eq.targetMuscles?.includes('quadriceps') || eq.targetMuscles?.includes('hamstrings') || eq.name.toLowerCase().includes('chân'))));
       else if (equipSub === 'treadmill') list = list.filter((eq) => eq.key === 'treadmill' || eq.key === 'cardio-machine');
       else if (equipSub === 'bike') list = list.filter((eq) => eq.key === 'bike');
       else if (equipSub === 'band') list = list.filter((eq) => eq.key === 'band');
       else if (equipSub === 'bench') list = list.filter((eq) => eq.key === 'bench' || eq.key === 'dip-bars' || eq.key === 'pullup-bar');
+      else if (equipSub === 'other') list = list.filter((eq) => eq.key === 'other' || eq.key === 'ball' || eq.key === 'foam-roller');
     }
     if (dq.trim()) {
       const norm = fold(dq.trim());
@@ -376,20 +398,21 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
   }, [assignedPlan, allExercises]);
 
   // Pagination for Exercises tab
-  const pagedMain = usePaged(mainExercises, 'kb_main', `${exerciseSub}|${dq}|${level}|${location}|${goal}|${muscle}`, 12);
+  const pagedMain = usePaged(mainExercises, 'kb_main', `${exerciseSub}|${dq}|${level}|${location}|${goal}|${equipFilter}|${muscle}`, 12);
   const pagedWarmup = usePaged(warmupExercises, 'kb_warmup', `${warmupSub}|${dq}|${level}`, 12);
   const pagedCardio = usePaged(cardioExercises, 'kb_cardio', `${cardioSub}|${cardioIntensity}|${dq}|${level}`, 12);
 
   // Muscle counts for MuscleMap
   const muscleCounts = useMemo(() => {
     const c: Partial<Record<MuscleKey, number>> = {};
-    mainExercises.forEach((e) => {
+    const baseList = staff ? allExercises : allExercises.filter((e) => e.reviewStatus === 'APPROVED');
+    baseList.forEach((e) => {
       new Set([...targetOf(e), ...(withSecondary ? secondaryOf(e) : [])]).forEach((k) => {
         c[k] = (c[k] ?? 0) + 1;
       });
     });
     return c;
-  }, [mainExercises, withSecondary]);
+  }, [allExercises, staff, withSecondary]);
 
   // Action: Switch to Exercises filtered by a specific muscle from Anatomy
   const filterByMuscle = (mKey: MuscleKey) => {
@@ -400,9 +423,10 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
 
   // Action: Switch to Exercises filtered by a specific equipment
   const filterByEquipmentKey = (eqKey: string) => {
-    setQ(eqKey);
+    setEquipFilter(eqKey);
     setActiveTab('exercises');
-    toast.info(t('Đang lọc bài tập sử dụng dụng cụ này'));
+    const eqLabel = EQUIPMENT_BY_KEY.get(eqKey as any)?.label ?? eqKey;
+    toast.info(t('Đang lọc bài tập sử dụng {name}', { name: t(eqLabel) }));
   };
 
   return (
@@ -589,6 +613,13 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
               ))}
             </Select>
 
+            <Select value={equipFilter} onChange={(e) => setEquipFilter(e.target.value)} aria-label={t('Thiết bị')}>
+              <option value="">{t('Mọi thiết bị')}</option>
+              {EQUIPMENT.map((eq) => (
+                <option key={eq.key} value={eq.key}>{t(eq.label)}</option>
+              ))}
+            </Select>
+
             <div className="ex-view-toggle">
               <button
                 type="button"
@@ -608,7 +639,7 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
               </button>
             </div>
 
-            {(q || level || location || goal || muscle || exerciseSub !== 'all') && (
+            {(q || level || location || goal || equipFilter || muscle || exerciseSub !== 'all') && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -618,6 +649,7 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
                   setLevel('');
                   setLocation('');
                   setGoal('');
+                  setEquipFilter('');
                   setMuscle(null);
                   setExerciseSub('all');
                 }}
@@ -627,21 +659,35 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
             )}
           </div>
 
-          {/* Active muscle tag indicator if filtered via MuscleMap */}
-          {muscle && (
-            <div className="row gap-8 items-center mt-8">
-              <span className="tiny muted">{t('Đang lọc cơ:')}</span>
-              <span className="badge badge-primary">
-                {muscleName(muscle)}
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-xs ml-4"
-                  onClick={() => setMuscle(null)}
-                  title={t('Bỏ chọn')}
-                >
-                  <Icon name="x" size={11} />
-                </button>
-              </span>
+          {/* Active muscle / equipment tag indicator */}
+          {(muscle || equipFilter) && (
+            <div className="row gap-8 items-center mt-8 flex-wrap">
+              {muscle && (
+                <span className="badge badge-primary">
+                  {t('Nhóm cơ:')} {muscleName(muscle)}
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs ml-4"
+                    onClick={() => setMuscle(null)}
+                    title={t('Bỏ chọn')}
+                  >
+                    <Icon name="x" size={11} />
+                  </button>
+                </span>
+              )}
+              {equipFilter && (
+                <span className="badge badge-primary">
+                  {t('Dụng cụ:')} {t(EQUIPMENT_BY_KEY.get(equipFilter as any)?.label ?? equipFilter)}
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs ml-4"
+                    onClick={() => setEquipFilter('')}
+                    title={t('Bỏ chọn')}
+                  >
+                    <Icon name="x" size={11} />
+                  </button>
+                </span>
+              )}
             </div>
           )}
 
@@ -728,6 +774,24 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
                         <span className="badge badge-sm">{locationLabel[ex.location]}</span>
                       )}
                     </div>
+
+                    {equipOf(ex).length > 0 && (
+                      <div className="row wrap gap-4 mt-6">
+                        {equipOf(ex).map((eqK) => (
+                          <Link
+                            key={eqK}
+                            to={`/equipment/${eqK}`}
+                            className="badge badge-sm"
+                            style={{ textDecoration: 'none', background: 'var(--surface-2)', color: 'var(--muted)' }}
+                            title={t('Xem chi tiết thiết bị')}
+                            onClick={(ev) => ev.stopPropagation()}
+                          >
+                            <Icon name="dumbbell" size={11} className="mr-4" />
+                            <span>{t(EQUIPMENT_BY_KEY.get(eqK as EquipmentKey)?.label ?? eqK)}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
 
                     <div className="row between items-center mt-12 pt-8" style={{ borderTop: '1px solid var(--hairline-soft)' }}>
                       <Link to={`/me/schedule?exerciseId=${ex.id}`} className="btn btn-ghost btn-xs text-primary">
@@ -1116,7 +1180,7 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
                   <article key={eq.key} className="kb-card">
                     <Link to={`/equipment/${eq.key}`} className="kb-cover">
                       <ExerciseMedia
-                        imageKey={eq.coverExerciseKey}
+                        imageKey={eq.imageKey || (eq as any).coverExerciseKey || EQUIPMENT_BY_KEY.get(eq.key as any)?.cover}
                         alt={eq.name}
                         playOnHover
                         className="ex-media"
@@ -1131,6 +1195,9 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
                     <div className="kb-body">
                       <div className="row between items-start">
                         <div>
+                          <div className="mb-4">
+                            <span className="badge badge-sm">{t(EQUIPMENT_CATEGORY_LABELS[eq.category] || eq.category)}</span>
+                          </div>
                           <h3 className="kb-title">
                             <Link to={`/equipment/${eq.key}`} className="text-ink">
                               {eq.name}
@@ -1189,37 +1256,77 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
       {activeTab === 'anatomy' && (
         <section aria-labelledby="anatomy-tab-title">
           <Card className="p-16 mb-20">
-            <div className="row between items-center mb-16">
+            <div className="row between items-center mb-16 flex-wrap gap-12">
               <div>
                 <h3 className="text-lg font-bold">{t('Bản đồ tương tác giải phẫu cơ thể')}</h3>
                 <p className="tiny muted">{t('Bấm vào từng vùng cơ trên mô hình để làm nổi bật thông tin hoặc nhấn "Xem bài tập" để lọc thư viện.')}</p>
               </div>
 
-              <div className="row gap-8">
-                <Button
-                  size="sm"
-                  variant={anatomyView === 'front' ? 'primary' : 'ghost'}
-                  onClick={() => setAnatomyView('front')}
-                >
-                  {t('Mặt trước')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant={anatomyView === 'back' ? 'primary' : 'ghost'}
-                  onClick={() => setAnatomyView('back')}
-                >
-                  {t('Mặt sau')}
-                </Button>
+              <div className="row gap-8 items-center flex-wrap">
+                {muscle && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setMuscle(null)}
+                  >
+                    {t('Bỏ chọn vùng cơ')}
+                  </Button>
+                )}
+                <div className="row gap-4">
+                  <Button
+                    size="sm"
+                    variant={anatomyView === 'both' ? 'primary' : 'ghost'}
+                    onClick={() => setAnatomyView('both')}
+                  >
+                    {t('Cả hai mặt')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={anatomyView === 'front' ? 'primary' : 'ghost'}
+                    onClick={() => setAnatomyView('front')}
+                  >
+                    {t('Mặt trước')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={anatomyView === 'back' ? 'primary' : 'ghost'}
+                    onClick={() => setAnatomyView('back')}
+                  >
+                    {t('Mặt sau')}
+                  </Button>
+                </div>
               </div>
             </div>
 
-            <div style={{ maxWidth: 360, margin: '0 auto' }}>
+            <div style={{ maxWidth: anatomyView === 'both' ? 560 : 320, margin: '0 auto' }}>
               <MuscleMap
                 size="lg"
                 counts={muscleCounts}
                 selected={muscle}
                 onSelect={(mKey) => setMuscle(mKey)}
+                views={anatomyView}
               />
+            </div>
+
+            {/* Visual Heatmap Color Legend */}
+            <div className="row center items-center gap-16 mt-16 pt-12 flex-wrap" style={{ borderTop: '1px solid var(--hairline)' }}>
+              <div className="tiny font-bold uppercase faint">{t('Chú giải màu sắc:')}</div>
+              <div className="row items-center gap-6 tiny text-muted">
+                <span style={{ width: 14, height: 14, borderRadius: 3, background: 'var(--surface-2)', border: '1px solid var(--hairline)' }} />
+                <span>{t('Chưa chọn')}</span>
+              </div>
+              <div className="row items-center gap-6 tiny text-muted">
+                <span style={{ width: 14, height: 14, borderRadius: 3, background: 'color-mix(in srgb, var(--primary-bright) 35%, var(--surface-2))' }} />
+                <span>{t('Mật độ bài tập ít')}</span>
+              </div>
+              <div className="row items-center gap-6 tiny text-muted">
+                <span style={{ width: 14, height: 14, borderRadius: 3, background: 'var(--primary-bright)' }} />
+                <span>{t('Mật độ bài tập cao')}</span>
+              </div>
+              <div className="row items-center gap-6 tiny text-muted">
+                <span style={{ width: 14, height: 14, borderRadius: 3, background: 'var(--primary-bright)', outline: '2px solid #fff', outlineOffset: '-1px' }} />
+                <span>{t('Vùng cơ đang chọn')}</span>
+              </div>
             </div>
           </Card>
 
@@ -1488,7 +1595,7 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
                 <article key={eq.key} className="kb-card">
                   <Link to={`/equipment/${eq.key}`} className="kb-cover">
                     <ExerciseMedia
-                      imageKey={eq.coverExerciseKey}
+                      imageKey={eq.imageKey || (eq as any).coverExerciseKey || EQUIPMENT_BY_KEY.get(eq.key as any)?.cover}
                       alt={eq.name}
                       className="ex-media"
                     />
@@ -1496,6 +1603,9 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
                   <div className="kb-body">
                     <div className="row between items-start">
                       <div>
+                        <div className="mb-4">
+                          <span className="badge badge-sm">{t(EQUIPMENT_CATEGORY_LABELS[eq.category] || eq.category)}</span>
+                        </div>
                         <h4 className="kb-title">
                           <Link to={`/equipment/${eq.key}`} className="text-ink">{eq.name}</Link>
                         </h4>

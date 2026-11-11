@@ -30,7 +30,6 @@ export function MuscleMap({ primary = [], secondary = [], selected = null, count
 
   const pick = (k: MuscleKey) => {
     if (!onSelect) return;
-    if (counts && !(counts[k] ?? 0) && selected !== k) return;
     onSelect(selected === k ? null : k);
   };
   const onKey = (k: MuscleKey) => (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(k); } };
@@ -46,10 +45,9 @@ export function MuscleMap({ primary = [], secondary = [], selected = null, count
             selected === m ? 'selected' : '', hover === m ? 'hover' : '',
             counts ? `lv${level(m)}` : '', interactive ? 'clickable' : ''].filter(Boolean).join(' ');
           const info = MUSCLE_BY_KEY.get(m);
-          const disabled = !!counts && !(counts[m] ?? 0) && selected !== m;
           return (
-            <g key={part} className={cls} data-disabled={disabled || undefined}
-              tabIndex={interactive && !disabled ? 0 : undefined} role={interactive ? 'button' : undefined}
+            <g key={part} className={cls}
+              tabIndex={interactive ? 0 : undefined} role={interactive ? 'button' : undefined}
               aria-pressed={interactive ? selected === m : undefined}
               aria-label={interactive ? `${t(info?.label ?? m)}${counts ? ` · ${t('{n} bài', { n: counts[m] ?? 0 })}` : ''}` : undefined}
               onClick={() => pick(m)} onKeyDown={onKey(m)}
