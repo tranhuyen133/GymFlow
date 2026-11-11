@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Exercise, Member, Schedule, ScheduleCreated, ScheduleStatus, Subscription, TimeSlot, Trainer, WorkoutPlanSummary } from '../../api/types';
+import type { CaloriePreview, Exercise, ExerciseIntensity, Member, Schedule, ScheduleCreated, ScheduleStatus, Subscription, TimeSlot, Trainer, WorkoutPlanSummary } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
 import { MemberSelect } from '../../components/MemberSelect';
@@ -199,12 +199,17 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
   const toast = useToast();
   const planned = Math.round((parseDateTime(session.endTime).getTime() - parseDateTime(session.startTime).getTime()) / 60000);
   const [duration, setDuration] = useState(String(planned));
-  const [calories, setCalories] = useState('');
+  const [intensity, setIntensity] = useState<ExerciseIntensity>('MODERATE');
   const [rating, setRating] = useState(4);
   const [note, setNote] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  const preview = useAsync(
+    () => api.get<CaloriePreview>(`/schedules/${session.id}/calorie-preview`, { intensity }),
+    [session.id, intensity],
+  );
 
   const isPt = session.trainerId != null;
   const subs = useAsync(
@@ -219,14 +224,13 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
 
   const submit = async () => {
     const v: Record<string, string> = {};
-    const d = Number(duration); const c = calories === '' ? null : Number(calories);
+    const d = Number(duration);
     if (!Number.isInteger(d) || d < 1 || d > 600) v.durationMinutes = t('Từ 1 đến 600 phút');
-    if (c != null && (!Number.isInteger(c) || c < 0 || c > 5000)) v.calories = t('Từ 0 đến 5000 kcal');
     setErrors(v); setServerError('');
     if (Object.keys(v).length) return;
     setBusy(true);
     try {
-      await api.post(`/schedules/${session.id}/complete`, { durationMinutes: d, calories: c, rating, note: note || null });
+      await api.post(`/schedules/${session.id}/complete`, { durationMinutes: d, intensity, rating, note: note || null });
       toast.success(t('Tuyệt vời! Đã ghi nhận buổi tập 💪'));
       onDone();
     } catch (e) {
@@ -264,8 +268,42 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
         )}
         <div className="form-grid">
           <Field label={t('Thời lượng (phút)')} error={errors.durationMinutes} required><Input type="number" min={1} max={600} value={duration} onChange={(e) => setDuration(e.target.value)} /></Field>
-          <Field label={t('Calo tiêu thụ (kcal)')} error={errors.calories} hint={t('Xem trên đồng hồ / máy tập')}><Input type="number" min={0} max={5000} value={calories} onChange={(e) => setCalories(e.target.value)} placeholder="VD: 420" /></Field>
+          <Field label={t('Cường độ')}>
+            <Select value={intensity} onChange={(e) => setIntensity(e.target.value as ExerciseIntensity)}>
+              <option value="LIGHT">{t('Nhẹ')}</option>
+              <option value="MODERATE">{t('Vừa')}</option>
+              <option value="VIGOROUS">{t('Cao')}</option>
+            </Select>
+          </Field>
         </div>
+        {preview.loading ? <LoadingBlock rows={2} /> : preview.data && (
+          <div className="card" style={{ background: 'var(--rail)' }}>
+            <div className="row between">
+              <b>{t('Calo ước tính')}</b>
+              <b className="num">{preview.data.totalCalories != null ? t('{n} kcal', { n: preview.data.totalCalories }) : '—'}</b>
+            </div>
+            {preview.data.estimateStatus === 'MISSING_WEIGHT' && (
+              <Alert kind="warning">{t('Chưa có cân nặng để tính calo. Vào Tiến độ để ghi cân nặng; buổi tập vẫn được ghi nhận nhưng calo để trống.')}</Alert>
+            )}
+            {preview.data.estimateQuality === 'COARSE' && (
+              <Alert kind="info">{t('Chưa đủ dữ liệu bài tập, đây là ước tính thô cho toàn buổi.')}</Alert>
+            )}
+            {preview.data.exercises.length > 0 && (
+              <ul className="small muted" style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+                {preview.data.exercises.map((e, i) => (
+                  <li key={`${e.exerciseName}-${i}`}>
+                    {e.exerciseName}
+                    {e.sets != null && ` · ${e.sets} hiệp`}
+                    {e.reps && ` × ${e.reps}`}
+                    {` · ${e.activeMinutes} phút vận động`}
+                    {e.calories != null && ` · ${e.calories} kcal`}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="tiny faint mt-8">{preview.data.disclaimer}</p>
+          </div>
+        )}
         <Field label={t('Cảm nhận buổi tập')}>
           <div className="row" style={{ gap: 4 }}>
             {[1, 2, 3, 4, 5].map((n) => (

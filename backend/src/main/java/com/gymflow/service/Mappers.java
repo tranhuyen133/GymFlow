@@ -343,7 +343,8 @@ public class Mappers {
 
     public WorkoutLogResponse log(WorkoutLog l) {
         return new WorkoutLogResponse(l.getId(), l.getCompletedAt(), l.getDurationMinutes(), l.getCalories(),
-                l.getRating(), l.getNote());
+                l.getWeightKgUsed(), l.getActiveMinutes(), l.getIntensity(), l.getFormulaVersion(),
+                l.getEstimateStatus(), l.getEstimateQuality(), l.isEstimated(), l.getRating(), l.getNote());
     }
 
     // ---------- Others ----------
