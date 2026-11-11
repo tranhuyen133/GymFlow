@@ -44,6 +44,37 @@ class ProgressServiceTest {
     }
 
     @Test
+    void bmiMatchesSrsExampleAndBoundaries() {
+        // Mục 13.2: cao 170 cm, nặng 68 kg → 23,5 → thừa cân theo chuẩn châu Á
+        assertThat(ProgressService.bmi(68.0, 170.0)).isEqualTo(23.5);
+        assertThat(ProgressService.bmiCategory(ProgressService.bmi(68.0, 170.0))).isEqualTo("Thừa cân");
+        assertThat(ProgressService.bmiCategory(18.5)).isEqualTo("Bình thường");
+        assertThat(ProgressService.bmiCategory(24.9)).isEqualTo("Thừa cân");
+        assertThat(ProgressService.bmiCategory(29.9)).isEqualTo("Béo phì độ I");
+        assertThat(ProgressService.bmiCategory(null)).isNull();
+        assertThat(ProgressService.bmi(65.0, 0.0)).isNull();
+    }
+
+    @Test
+    void attendanceMatchesSrsExample() {
+        // Mục 13.2: tuần có 3 buổi xếp, 1 huỷ, 2 hoàn thành → 2/2 = 100%
+        List<WorkoutSchedule> list = List.of(
+                session(TODAY.minusDays(1), ScheduleStatus.COMPLETED),
+                session(TODAY.minusDays(2), ScheduleStatus.COMPLETED),
+                session(TODAY.minusDays(2), ScheduleStatus.CANCELLED));
+        WeekAttendance week = ProgressService.attendance(list, TODAY).get(7);
+        assertThat(week.scheduled()).isEqualTo(2);
+        assertThat(ProgressService.attendanceRate(week.completed(), week.missed())).isEqualTo(100.0);
+    }
+
+    @Test
+    void attendanceRateRoundsAndHandlesNoSessions() {
+        assertThat(ProgressService.attendanceRate(0, 0)).isNull();
+        assertThat(ProgressService.attendanceRate(2, 1)).isEqualTo(66.7);
+        assertThat(ProgressService.attendanceRate(0, 3)).isEqualTo(0.0);
+    }
+
+    @Test
     void weekStartsOnMonday() {
         assertThat(ProgressService.weekStart(TODAY)).isEqualTo(LocalDate.of(2026, 10, 26));
         assertThat(ProgressService.weekStart(LocalDate.of(2026, 11, 1))).isEqualTo(LocalDate.of(2026, 10, 26)); // CN
