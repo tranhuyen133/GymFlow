@@ -36,9 +36,13 @@ public class TrainingController {
                             @RequestParam(required = false) ExerciseGoal goal,
                             @RequestParam(required = false) ReviewStatus reviewStatus,
                             @RequestParam(defaultValue = "false") boolean includeHidden,
+                            @RequestParam(required = false) ExerciseType exerciseType,
+                            @RequestParam(required = false) String subCategory,
+                            @RequestParam(required = false) String cardioIntensity,
+                            @RequestParam(defaultValue = "false") boolean onlyFavorites,
                             @RequestParam(required = false) Integer page,
                             @RequestParam(required = false) Integer size) {
-        ExerciseService.Filter filter = new ExerciseService.Filter(q, muscleGroup, muscle, equipment, level, location, goal, reviewStatus, includeHidden);
+        ExerciseService.Filter filter = new ExerciseService.Filter(q, muscleGroup, muscle, equipment, level, location, goal, reviewStatus, includeHidden, exerciseType, subCategory, cardioIntensity, onlyFavorites);
         if (page != null) {
             int pageSize = (size == null || size <= 0) ? 12 : size;
             return exerciseService.listPaged(CurrentUser.get(), filter, page, pageSize);

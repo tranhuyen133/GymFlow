@@ -1,14 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Equipment, Level } from '../../api/types';
 import { ExerciseMedia, mediaCredit } from '../../components/ExerciseMedia';
 import { Icon } from '../../components/Icon';
 import { MuscleMap } from '../../components/MuscleMap';
-import { Badge, Empty, ErrorState, LoadingBlock, PageHead } from '../../components/ui';
+import { Badge, Button, Empty, ErrorState, LoadingBlock, PageHead } from '../../components/ui';
+import { useToast } from '../../components/Toast';
 import { t } from '../../i18n';
 import { MUSCLE_BY_KEY, parseMuscles, type MuscleKey } from '../../lib/anatomy';
-import { useAsync } from '../../lib/hooks';
+import { errMsg, useAsync } from '../../lib/hooks';
 import './kb.css';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -16,7 +17,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   MACHINE: 'Máy tập khối tạ',
   CABLE: 'Máy kéo cáp',
   BODYWEIGHT: 'Trọng lượng cơ thể',
-  CARDIO: 'Máy tim mạch',
+  CARDIO: 'Thiết bị cardio',
   ACCESSORY: 'Phụ kiện tập luyện',
   RECOVERY: 'Phục hồi & giãn cơ',
 };
@@ -29,10 +30,27 @@ const LEVEL_LABELS: Record<Level, string> = {
 
 export default function EquipmentDetail() {
   const { key = '' } = useParams<{ key: string }>();
+  const toast = useToast();
   const { data: eq, error, loading, reload } = useAsync(() => api.get<Equipment>(`/equipment/${encodeURIComponent(key)}`), [key]);
 
   const [selectedMuscle, setSelectedMuscle] = useState<string>('');
   const [selectedLevel, setSelectedLevel] = useState<'' | Level>('');
+  const [isFav, setIsFav] = useState(false);
+
+  useEffect(() => {
+    if (eq) setIsFav(Boolean(eq.isFavorite));
+  }, [eq]);
+
+  const toggleFavorite = async () => {
+    if (!eq) return;
+    try {
+      const res = await api.post<{ favorite: boolean }>(`/favorites/equipment/${encodeURIComponent(eq.key)}`, {});
+      setIsFav(res.favorite);
+      toast.success(res.favorite ? t('Đã lưu thiết bị vào mục yêu thích') : t('Đã bỏ lưu yêu thích'));
+    } catch (e) {
+      toast.error(errMsg(e, 'Không thể cập nhật mục yêu thích'));
+    }
+  };
 
   const muscles = useMemo(() => parseMuscles(eq?.targetMuscleKeys?.join(',') ?? ''), [eq]);
 
@@ -55,20 +73,28 @@ export default function EquipmentDetail() {
   return (
     <div className="page">
       <div className="mb-12">
-        <Link to="/equipment" className="btn btn-ghost btn-sm" style={{ paddingLeft: 0 }}>
+        <Link to="/knowledge?tab=equipment" className="btn btn-ghost btn-sm" style={{ paddingLeft: 0 }}>
           <Icon name="arrowLeft" size={14} />
-          <span>{t('Quay lại danh mục dụng cụ')}</span>
+          <span>{t('Quay lại Kho kiến thức')}</span>
         </Link>
       </div>
 
       <PageHead
-        eyebrow={t(CATEGORY_LABELS[eq.category] || eq.category)}
+        eyebrow={eq.nameEn || t(CATEGORY_LABELS[eq.category] || eq.category)}
         title={t(eq.name)}
         desc={eq.shortDesc ? t(eq.shortDesc) : ''}
         actions={
           <div className="row wrap" style={{ gap: 8, alignItems: 'center' }}>
             <Badge tone="blue">{t(CATEGORY_LABELS[eq.category] || eq.category)}</Badge>
             {eq.hidden && <Badge tone="amber">{t('Đang ẩn')}</Badge>}
+            <Button
+              variant={isFav ? 'primary' : 'secondary'}
+              size="sm"
+              icon="star"
+              onClick={toggleFavorite}
+            >
+              {isFav ? t('Đã lưu yêu thích') : t('Lưu yêu thích')}
+            </Button>
             <span className="tiny faint" style={{ alignSelf: 'center' }}>
               {t('{n} bài tập sử dụng', { n: eq.exerciseCount ?? 0 })}
             </span>
@@ -78,11 +104,12 @@ export default function EquipmentDetail() {
 
       <div className="eq-detail-grid mt-16">
         <div className="eq-detail-main">
+          {/* Hướng dẫn sử dụng */}
           {eq.usageGuide && (
             <section className="card p-20 mb-16">
               <h2 className="section-title mb-12">
                 <Icon name="info" size={18} className="primary" />
-                <span>{t('Cách sử dụng')}</span>
+                <span>{t('Hướng dẫn sử dụng')}</span>
               </h2>
               <div className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
                 {eq.usageGuide}
@@ -90,10 +117,37 @@ export default function EquipmentDetail() {
             </section>
           )}
 
-          {eq.safetyNotes && (
+          {/* Cách điều chỉnh */}
+          {eq.adjustmentInstructions && (
+            <section className="card p-20 mb-16">
+              <h2 className="section-title mb-12">
+                <Icon name="edit" size={18} className="primary" />
+                <span>{t('Cách điều chỉnh thiết bị')}</span>
+              </h2>
+              <div className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+                {eq.adjustmentInstructions}
+              </div>
+            </section>
+          )}
+
+          {/* Lỗi thường gặp */}
+          {eq.commonMistakes && (
             <section className="card p-20 mb-16" style={{ borderColor: 'color-mix(in srgb, var(--warn) 30%, var(--hairline))' }}>
               <h2 className="section-title mb-12" style={{ color: 'var(--warn-bright)' }}>
                 <Icon name="alert" size={18} />
+                <span>{t('Lỗi sai phổ biến cần tránh')}</span>
+              </h2>
+              <div className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6, color: 'var(--muted)' }}>
+                {eq.commonMistakes}
+              </div>
+            </section>
+          )}
+
+          {/* Lưu ý an toàn */}
+          {eq.safetyNotes && (
+            <section className="card p-20 mb-16" style={{ borderColor: 'color-mix(in srgb, var(--danger) 30%, var(--hairline))' }}>
+              <h2 className="section-title mb-12" style={{ color: 'var(--danger-bright)' }}>
+                <Icon name="shield" size={18} />
                 <span>{t('Lưu ý an toàn')}</span>
               </h2>
               <div className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6, color: 'var(--muted)' }}>

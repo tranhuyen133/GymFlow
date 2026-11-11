@@ -26,10 +26,11 @@ interface NavItem { to: string; label: string; icon: IconName; roles: Role[]; gr
  * Thứ tự ở đây là thứ tự trên menu. tab: hiện ở tab bar điện thoại (4 mục đầu theo vai trò).
  */
 export const NAV: NavItem[] = [
-  // --- Member: 5 mục chính tối giản, chuẩn mobile & desktop ---
+  // --- Member: mục chính chuẩn mobile & desktop ---
   { to: '/dashboard', label: 'Trang chủ', icon: 'dashboard', roles: ['MEMBER'], tab: true },
   { to: '/me/schedule', label: 'Lịch tập', icon: 'calendar', roles: ['MEMBER'], tab: true },
   { to: '/me/plan', label: 'Giáo án', icon: 'clipboard', roles: ['MEMBER'], tab: true },
+  { to: '/knowledge', label: 'Kho kiến thức', icon: 'layers', roles: ['MEMBER'], tab: false },
   { to: '/me/packages', label: 'Gói & Dịch vụ', icon: 'ticket', roles: ['MEMBER'], tab: true },
   { to: '/profile', label: 'Tài khoản', icon: 'user', roles: ['MEMBER'], tab: true },
 
@@ -39,9 +40,8 @@ export const NAV: NavItem[] = [
   { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['TRAINER'], tab: true },
   { to: '/members', label: 'Hội viên', icon: 'users', roles: ['TRAINER'], group: 'Huấn luyện', tab: true },
   { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['TRAINER'], group: 'Huấn luyện' },
-  { to: '/exercises', label: 'Thư viện bài tập', icon: 'dumbbell', roles: ['TRAINER'], group: 'Kiến thức' },
-  { to: '/equipment', label: 'Dụng cụ tập', icon: 'zap', roles: ['TRAINER'], group: 'Kiến thức' },
-  { to: '/programs', label: 'Lịch tập mẫu', icon: 'layers', roles: ['TRAINER'], group: 'Kiến thức' },
+  { to: '/knowledge', label: 'Kho kiến thức', icon: 'layers', roles: ['TRAINER'], group: 'Kiến thức' },
+  { to: '/programs', label: 'Lịch tập mẫu', icon: 'clipboard', roles: ['TRAINER'], group: 'Kiến thức' },
   { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['TRAINER'], group: 'Kiến thức' },
   { to: '/profile', label: 'Hồ sơ cá nhân', icon: 'user', roles: ['TRAINER'], group: 'Tài khoản' },
   { to: '/help', label: 'Trợ giúp', icon: 'info', roles: ['TRAINER'], group: 'Tài khoản' },
@@ -51,9 +51,8 @@ export const NAV: NavItem[] = [
   { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['ADMIN'], tab: true },
   { to: '/members', label: 'Hội viên', icon: 'users', roles: ['ADMIN'], group: 'Huấn luyện', tab: true },
   { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['ADMIN'], group: 'Huấn luyện' },
-  { to: '/exercises', label: 'Thư viện bài tập', icon: 'dumbbell', roles: ['ADMIN'], group: 'Kiến thức' },
-  { to: '/equipment', label: 'Dụng cụ tập', icon: 'zap', roles: ['ADMIN'], group: 'Kiến thức' },
-  { to: '/programs', label: 'Lịch tập mẫu', icon: 'layers', roles: ['ADMIN'], group: 'Kiến thức' },
+  { to: '/knowledge', label: 'Kho kiến thức', icon: 'layers', roles: ['ADMIN'], group: 'Kiến thức' },
+  { to: '/programs', label: 'Lịch tập mẫu', icon: 'clipboard', roles: ['ADMIN'], group: 'Kiến thức' },
   { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['ADMIN'], group: 'Kiến thức' },
   { to: '/trainers', label: 'Huấn luyện viên', icon: 'badge', roles: ['ADMIN'], group: 'Kinh doanh' },
   { to: '/plans', label: 'Gói tập', icon: 'ticket', roles: ['ADMIN'], group: 'Kinh doanh' },

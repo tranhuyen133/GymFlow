@@ -409,7 +409,24 @@ public final class Dtos {
             String steps,
             @Size(max = 100) String setsRepsHint,
             ExerciseGoal primaryGoal,
-            List<Long> alternativeIds) {
+            List<Long> alternativeIds,
+            ExerciseType exerciseType,
+            String subCategory,
+            String cardioIntensity) {
+
+        /** Giữ chữ ký V18 */
+        public ExerciseRequest(String name, MuscleGroup muscleGroup, String equipment, Level level, String description,
+                               String instructions, String videoUrl, String nameEn, String aliases, String secondaryMuscles,
+                               ExerciseLocation location, List<ExerciseGoal> goals, String breathing, String commonMistakes,
+                               String safetyNotes, String variations, String suggestedDose, ContentOrigin contentOrigin,
+                               List<Long> sourceIds, List<String> targetMuscles, List<String> secondaryMuscleKeys,
+                               List<String> equipmentKeys, String imageKey, String setupPosition, String steps,
+                               String setsRepsHint, ExerciseGoal primaryGoal, List<Long> alternativeIds) {
+            this(name, muscleGroup, equipment, level, description, instructions, videoUrl, nameEn, aliases, secondaryMuscles,
+                    location, goals, breathing, commonMistakes, safetyNotes, variations, suggestedDose, contentOrigin, sourceIds,
+                    targetMuscles, secondaryMuscleKeys, equipmentKeys, imageKey, setupPosition, steps, setsRepsHint, primaryGoal,
+                    alternativeIds, ExerciseType.MAIN, null, null);
+        }
 
         /** Giữ chữ ký V13 */
         public ExerciseRequest(String name, MuscleGroup muscleGroup, String equipment, Level level, String description,
@@ -485,7 +502,30 @@ public final class Dtos {
                                    List<String> targetMuscles, List<String> secondaryMuscleKeys, List<String> equipmentKeys,
                                    String imageKey,
                                    String setupPosition, String steps, String setsRepsHint,
-                                   ExerciseGoal primaryGoal, List<ExerciseSummary> alternatives) {
+                                   ExerciseGoal primaryGoal, List<ExerciseSummary> alternatives,
+                                   ExerciseType exerciseType, String subCategory, String cardioIntensity,
+                                   Boolean isFavorite) {
+
+        /** Giữ chữ ký V18 (37 tham số) */
+        public ExerciseResponse(Long id, String name, MuscleGroup muscleGroup, String equipment, Level level,
+                                String description, String instructions, String videoUrl, boolean hidden,
+                                long usageCount, String createdByName,
+                                String nameEn, String aliases, String secondaryMuscles, ExerciseLocation location,
+                                List<ExerciseGoal> goals, String breathing, String commonMistakes, String safetyNotes,
+                                String variations, String suggestedDose, ContentOrigin contentOrigin,
+                                ReviewStatus reviewStatus, String reviewNote, String reviewedByName,
+                                LocalDateTime reviewedAt, LocalDateTime updatedAt, List<SourceResponse> sources,
+                                List<String> targetMuscles, List<String> secondaryMuscleKeys, List<String> equipmentKeys,
+                                String imageKey,
+                                String setupPosition, String steps, String setsRepsHint,
+                                ExerciseGoal primaryGoal, List<ExerciseSummary> alternatives) {
+            this(id, name, muscleGroup, equipment, level, description, instructions, videoUrl, hidden, usageCount, createdByName,
+                    nameEn, aliases, secondaryMuscles, location, goals, breathing, commonMistakes, safetyNotes, variations,
+                    suggestedDose, contentOrigin, reviewStatus, reviewNote, reviewedByName, reviewedAt, updatedAt, sources,
+                    targetMuscles, secondaryMuscleKeys, equipmentKeys, imageKey,
+                    setupPosition, steps, setsRepsHint, primaryGoal, alternatives,
+                    ExerciseType.MAIN, null, null, false);
+        }
 
         /** Giữ chữ ký V13 (chưa có trường mới V18). */
         public ExerciseResponse(Long id, String name, MuscleGroup muscleGroup, String equipment, Level level,
@@ -526,24 +566,37 @@ public final class Dtos {
     public record EquipmentResponse(
             String key,
             String name,
+            String nameEn,
             EquipmentCategory category,
             String shortDesc,
+            String adjustmentInstructions,
+            String commonMistakes,
             List<String> targetMuscleKeys,
             String imageKey,
             int sortOrder,
             long exerciseCount,
             ReviewStatus reviewStatus,
             boolean hidden,
-            ContentOrigin origin
+            ContentOrigin origin,
+            Boolean isFavorite
     ) {
+        public EquipmentResponse(String key, String name, EquipmentCategory category, String shortDesc,
+                                 List<String> targetMuscleKeys, String imageKey, int sortOrder,
+                                 long exerciseCount, ReviewStatus reviewStatus, boolean hidden, ContentOrigin origin) {
+            this(key, name, null, category, shortDesc, null, null, targetMuscleKeys, imageKey, sortOrder,
+                    exerciseCount, reviewStatus, hidden, origin, false);
+        }
     }
 
     public record EquipmentDetailResponse(
             String key,
             String name,
+            String nameEn,
             EquipmentCategory category,
             String shortDesc,
             String usageGuide,
+            String adjustmentInstructions,
+            String commonMistakes,
             String safetyNotes,
             List<String> targetMuscleKeys,
             String imageKey,
@@ -552,8 +605,16 @@ public final class Dtos {
             ReviewStatus reviewStatus,
             boolean hidden,
             ContentOrigin origin,
+            Boolean isFavorite,
             List<ExerciseResponse> relatedExercises
     ) {
+        public EquipmentDetailResponse(String key, String name, EquipmentCategory category, String shortDesc,
+                                       String usageGuide, String safetyNotes, List<String> targetMuscleKeys,
+                                       String imageKey, int sortOrder, long exerciseCount, ReviewStatus reviewStatus,
+                                       boolean hidden, ContentOrigin origin, List<ExerciseResponse> relatedExercises) {
+            this(key, name, null, category, shortDesc, usageGuide, null, null, safetyNotes, targetMuscleKeys,
+                    imageKey, sortOrder, exerciseCount, reviewStatus, hidden, origin, false, relatedExercises);
+        }
     }
 
     public record EquipmentRequest(
@@ -563,17 +624,34 @@ public final class Dtos {
             @NotBlank(message = "Tên dụng cụ không được để trống")
             @Size(max = 120, message = "Tên dụng cụ tối đa 120 ký tự")
             String name,
+            @Size(max = 120, message = "Tên tiếng Anh tối đa 120 ký tự")
+            String nameEn,
             @NotNull(message = "Vui lòng chọn loại dụng cụ")
             EquipmentCategory category,
             @Size(max = 255, message = "Mô tả ngắn tối đa 255 ký tự")
             String shortDesc,
             String usageGuide,
+            String adjustmentInstructions,
+            String commonMistakes,
             String safetyNotes,
             List<String> targetMuscleKeys,
             String imageKey,
             Integer sortOrder,
             Boolean hidden
     ) {
+        public EquipmentRequest(String key, String name, EquipmentCategory category, String shortDesc,
+                                String usageGuide, String safetyNotes, List<String> targetMuscleKeys,
+                                String imageKey, Integer sortOrder, Boolean hidden) {
+            this(key, name, null, category, shortDesc, usageGuide, null, null, safetyNotes,
+                    targetMuscleKeys, imageKey, sortOrder, hidden);
+        }
+    }
+
+    // ===================== Favorites =====================
+    public record FavoriteResponse(Long id, String targetType, String targetId, LocalDateTime createdAt) {
+    }
+
+    public record FavoriteSummaryResponse(List<Long> exerciseIds, List<String> equipmentKeys) {
     }
 
     // ===================== Knowledge base =====================

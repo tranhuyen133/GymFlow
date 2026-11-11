@@ -276,6 +276,14 @@ export type ReviewStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'NEEDS_REVIEW';
 export type ContentOrigin = 'SELF_AUTHORED' | 'ADAPTED';
 export type ExerciseLocation = 'GYM' | 'HOME' | 'ANY';
 export type ExerciseGoal = 'STRENGTH' | 'ENDURANCE' | 'MOBILITY' | 'BALANCE' | 'FAT_LOSS' | 'HYPERTROPHY' | 'TONE';
+export type ExerciseType = 'MAIN' | 'WARMUP' | 'CARDIO';
+export type CardioIntensity = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface FavoriteSummary {
+  exerciseIds: number[];
+  equipmentKeys: string[];
+}
+
 export interface Source {
   id: number; code: string; publisher: string; title: string; url: string; license: string | null; licenseUrl: string | null;
   licenseVerified: boolean; attribution: string | null; publisherReviewed: string | null; accessedAt: string;
@@ -299,6 +307,11 @@ export interface Exercise {
   /** V18 · tư thế chuẩn bị, các bước đánh số, số hiệp/lần gợi ý, mục tiêu chính, bài thay thế. */
   setupPosition?: string | null; steps?: string | null; setsRepsHint?: string | null;
   primaryGoal?: ExerciseGoal | null; alternatives?: ExerciseSummary[];
+  /** V25 · Kho kiến thức chuẩn hóa: loại bài tập, nhóm chi tiết, cường độ cardio, yêu thích */
+  exerciseType?: ExerciseType;
+  subCategory?: string | null;
+  cardioIntensity?: CardioIntensity | null;
+  isFavorite?: boolean;
 }
 
 export type EquipmentCategory = 'FREE_WEIGHT' | 'MACHINE' | 'CABLE' | 'BODYWEIGHT' | 'CARDIO' | 'ACCESSORY' | 'RECOVERY';
@@ -306,9 +319,12 @@ export type EquipmentCategory = 'FREE_WEIGHT' | 'MACHINE' | 'CABLE' | 'BODYWEIGH
 export interface Equipment {
   key: string;
   name: string;
+  nameEn?: string | null;
   category: EquipmentCategory;
   shortDesc?: string | null;
   usageGuide?: string | null;
+  adjustmentInstructions?: string | null;
+  commonMistakes?: string | null;
   safetyNotes?: string | null;
   targetMuscleKeys: string[];
   imageKey?: string | null;
@@ -318,6 +334,7 @@ export interface Equipment {
   origin: ContentOrigin;
   exerciseCount?: number;
   relatedExercises?: Exercise[];
+  isFavorite?: boolean;
 }
 
 // ---------- Knowledge base ----------

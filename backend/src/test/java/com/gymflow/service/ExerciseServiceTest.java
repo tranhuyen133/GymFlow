@@ -56,6 +56,10 @@ class ExerciseServiceTest {
             Exercise e = inv.getArgument(0);
             return dummyResponse(e);
         });
+        lenient().when(mappers.exercise(any(Exercise.class), anyBoolean())).thenAnswer(inv -> {
+            Exercise e = inv.getArgument(0);
+            return dummyResponse(e);
+        });
     }
 
     private Exercise createExercise(Long id, String name, String nameEn, MuscleGroup group,

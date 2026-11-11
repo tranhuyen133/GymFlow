@@ -22,10 +22,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+import com.gymflow.repository.FavoriteRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.regex.Pattern;
 
 @Service
-@RequiredArgsConstructor
 public class ExerciseService {
 
     private final ExerciseRepository exerciseRepository;
@@ -35,6 +36,28 @@ public class ExerciseService {
     private final UserRepository userRepository;
     private final AuditService auditService;
     private final Mappers mappers;
+    private final FavoriteRepository favoriteRepository;
+
+    @Autowired
+    public ExerciseService(ExerciseRepository exerciseRepository, EquipmentRepository equipmentRepository,
+                           ContentSourceRepository sourceRepository, WorkoutPlanItemRepository planItemRepository,
+                           UserRepository userRepository, AuditService auditService, Mappers mappers,
+                           FavoriteRepository favoriteRepository) {
+        this.exerciseRepository = exerciseRepository;
+        this.equipmentRepository = equipmentRepository;
+        this.sourceRepository = sourceRepository;
+        this.planItemRepository = planItemRepository;
+        this.userRepository = userRepository;
+        this.auditService = auditService;
+        this.mappers = mappers;
+        this.favoriteRepository = favoriteRepository;
+    }
+
+    public ExerciseService(ExerciseRepository exerciseRepository, EquipmentRepository equipmentRepository,
+                           ContentSourceRepository sourceRepository, WorkoutPlanItemRepository planItemRepository,
+                           UserRepository userRepository, AuditService auditService, Mappers mappers) {
+        this(exerciseRepository, equipmentRepository, sourceRepository, planItemRepository, userRepository, auditService, mappers, null);
+    }
 
     private static final Pattern YT_PATTERN = Pattern.compile(
             "^(?:https?:)?//(?:www\\.|m\\.)?(?:youtube\\.com/(?:watch\\?.*?v=|embed/)|youtu\\.be/|youtube-nocookie\\.com/embed/)([a-zA-Z0-9_-]{11})(?:[?&].*)?$"
@@ -68,12 +91,18 @@ public class ExerciseService {
 
     /** Bộ lọc danh sách; mọi trường đều tuỳ chọn. */
     public record Filter(String q, MuscleGroup group, String muscle, String equipment, Level level,
-                         ExerciseLocation location, ExerciseGoal goal, ReviewStatus reviewStatus, boolean includeHidden) {
+                         ExerciseLocation location, ExerciseGoal goal, ReviewStatus reviewStatus, boolean includeHidden,
+                         ExerciseType exerciseType, String subCategory, String cardioIntensity, Boolean onlyFavorites) {
+
+        public Filter(String q, MuscleGroup group, String muscle, String equipment, Level level,
+                      ExerciseLocation location, ExerciseGoal goal, ReviewStatus reviewStatus, boolean includeHidden) {
+            this(q, group, muscle, equipment, level, location, goal, reviewStatus, includeHidden, null, null, null, false);
+        }
 
         /** Giữ chữ ký cũ cho các bài test và controller cũ. */
         public Filter(String q, MuscleGroup group, Level level, ExerciseLocation location, ExerciseGoal goal,
                       ReviewStatus reviewStatus, boolean includeHidden) {
-            this(q, group, null, null, level, location, goal, reviewStatus, includeHidden);
+            this(q, group, null, null, level, location, goal, reviewStatus, includeHidden, null, null, null, false);
         }
     }
 
@@ -85,8 +114,17 @@ public class ExerciseService {
     public List<ExerciseResponse> list(AuthUser user, Filter f) {
         String needle = f.q() == null ? "" : stripAccents(f.q().trim());
         boolean showHidden = f.includeHidden() && (user == null || !user.isMember());
+        Set<String> favIds = (user != null && favoriteRepository != null)
+                ? favoriteRepository.findByUserIdAndTargetType(user.id(), "EXERCISE").stream()
+                .map(Favorite::getTargetId).collect(java.util.stream.Collectors.toSet())
+                : Set.of();
+
         return exerciseRepository.findAllByOrderByNameAsc().stream()
                 .filter(e -> showHidden || !e.isHidden())
+                .filter(e -> f.exerciseType() == null || (e.getExerciseType() != null && e.getExerciseType() == f.exerciseType()))
+                .filter(e -> f.subCategory() == null || f.subCategory().isBlank() || (e.getSubCategory() != null && e.getSubCategory().equalsIgnoreCase(f.subCategory().trim())))
+                .filter(e -> f.cardioIntensity() == null || f.cardioIntensity().isBlank() || (e.getCardioIntensity() != null && e.getCardioIntensity().equalsIgnoreCase(f.cardioIntensity().trim())))
+                .filter(e -> !Boolean.TRUE.equals(f.onlyFavorites()) || favIds.contains(String.valueOf(e.getId())))
                 .filter(e -> f.group() == null || e.getMuscleGroup() == f.group())
                 .filter(e -> matchesMuscle(e, f.muscle()))
                 .filter(e -> matchesEquipment(e, f.equipment()))
@@ -97,7 +135,7 @@ public class ExerciseService {
                         || Mappers.parseGoals(e.getGoals()).contains(f.goal()))
                 .filter(e -> f.reviewStatus() == null || e.getReviewStatus() == f.reviewStatus())
                 .filter(e -> needle.isEmpty() || matches(e, needle))
-                .map(mappers::exercise).toList();
+                .map(e -> mappers.exercise(e, favIds.contains(String.valueOf(e.getId())))).toList();
     }
 
     @Transactional(readOnly = true)
@@ -151,7 +189,9 @@ public class ExerciseService {
     public ExerciseResponse get(AuthUser user, Long id) {
         Exercise e = load(id);
         if (e.isHidden() && user.isMember()) throw ApiException.notFound("bài tập");
-        return mappers.exercise(e);
+        boolean isFav = user != null && favoriteRepository != null
+                && favoriteRepository.existsByUserIdAndTargetTypeAndTargetId(user.id(), "EXERCISE", String.valueOf(id));
+        return mappers.exercise(e, isFav);
     }
 
     @Transactional(readOnly = true)
@@ -282,6 +322,9 @@ public class ExerciseService {
         e.setSafetyNotes(Mappers.blankToNull(req.safetyNotes()));
         e.setVariations(Mappers.blankToNull(req.variations()));
         e.setSuggestedDose(Mappers.blankToNull(req.suggestedDose()));
+        if (req.exerciseType() != null) e.setExerciseType(req.exerciseType());
+        if (req.subCategory() != null) e.setSubCategory(Mappers.blankToNull(req.subCategory()));
+        if (req.cardioIntensity() != null) e.setCardioIntensity(Mappers.blankToNull(req.cardioIntensity()));
         if (req.contentOrigin() != null) e.setContentOrigin(req.contentOrigin());
         if (req.sourceIds() != null) e.setSources(resolveSources(sourceRepository, req.sourceIds()));
         if (req.targetMuscles() != null) e.setTargetMuscles(joinKeys(req.targetMuscles(), MUSCLE_KEYS, "vùng cơ"));

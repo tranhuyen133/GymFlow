@@ -33,6 +33,16 @@ public class Exercise {
     private String aliases;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "exercise_type", nullable = false, length = 20)
+    private ExerciseType exerciseType = ExerciseType.MAIN;
+
+    @Column(name = "sub_category", length = 50)
+    private String subCategory;
+
+    @Column(name = "cardio_intensity", length = 20)
+    private String cardioIntensity;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "muscle_group", nullable = false)
     private MuscleGroup muscleGroup;
 

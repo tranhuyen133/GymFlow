@@ -135,3 +135,263 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ==========================================================================
+   V25 · KHO KIẾN THỨC UNIFIED KNOWLEDGE BASE
+   ========================================================================== */
+.kb-top-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--hairline-soft);
+  margin-bottom: 20px;
+  scrollbar-width: thin;
+}
+.kb-top-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.kb-top-tab:hover {
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--hairline);
+}
+.kb-top-tab.active {
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  color: var(--primary-bright);
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+.kb-top-tab .tab-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--rail);
+  color: var(--faint);
+}
+.kb-top-tab.active .tab-badge {
+  background: color-mix(in srgb, var(--primary) 24%, var(--surface));
+  color: var(--primary-bright);
+}
+
+.kb-sub-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 14px;
+  scrollbar-width: thin;
+}
+.kb-sub-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--hairline-soft);
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.kb-sub-pill:hover {
+  color: var(--ink);
+  border-color: var(--hairline);
+}
+.kb-sub-pill.active {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.kb-action-star {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--r-sm);
+  color: var(--faint);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.kb-action-star:hover {
+  transform: scale(1.15);
+  color: #f59e0b;
+}
+.kb-action-star.active {
+  color: #f59e0b;
+}
+
+.cardio-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.cardio-badge.intensity-low {
+  background: color-mix(in srgb, #10b981 16%, transparent);
+  color: #10b981;
+}
+.cardio-badge.intensity-medium {
+  background: color-mix(in srgb, #3b82f6 16%, transparent);
+  color: #3b82f6;
+}
+.cardio-badge.intensity-high {
+  background: color-mix(in srgb, #ef4444 16%, transparent);
+  color: #ef4444;
+}
+
+/* Kiến thức nhóm cơ */
+.anatomy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+.anatomy-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline-soft);
+  gap: 12px;
+  transition: transform 0.25s var(--ease-spring), border-color 0.25s, box-shadow 0.25s;
+}
+.anatomy-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--hairline));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+.anatomy-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.anatomy-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.anatomy-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+.anatomy-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.anatomy-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--faint);
+}
+.anatomy-val {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+/* Hướng dẫn tập luyện Modal & Cards */
+.guide-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline-soft);
+  cursor: pointer;
+  transition: transform 0.25s var(--ease-spring), border-color 0.25s, box-shadow 0.25s;
+  gap: 12px;
+}
+.guide-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--hairline));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.guide-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary-bright);
+}
+.guide-reader {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  line-height: 1.65;
+  font-size: 15px;
+  color: var(--ink);
+}
+.guide-reader h3 {
+  font-size: 18px;
+  margin: 16px 0 8px;
+  color: var(--ink);
+}
+.guide-callout {
+  padding: 14px 18px;
+  border-radius: var(--r-sm);
+  background: var(--rail);
+  border-left: 4px solid var(--primary);
+  font-size: 14px;
+}
+.dos-donts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 10px;
+}
+@media (max-width: 600px) {
+  .dos-donts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.dos-box, .donts-box {
+  padding: 14px;
+  border-radius: var(--r-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+.dos-box {
+  background: color-mix(in srgb, #10b981 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, #10b981 30%, transparent);
+}
+.donts-box {
+  background: color-mix(in srgb, #ef4444 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, #ef4444 30%, transparent);
+}
+.dos-box b { color: #10b981; }
+.donts-box b { color: #ef4444; }
+

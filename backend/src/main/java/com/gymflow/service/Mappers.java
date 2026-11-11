@@ -194,7 +194,7 @@ public class Mappers {
     }
 
     // ---------- Exercise ----------
-    public ExerciseResponse exercise(Exercise e) {
+    public ExerciseResponse exercise(Exercise e, boolean isFavorite) {
         List<ExerciseSummary> alts = e.getAlternatives() == null ? List.of() :
                 e.getAlternatives().stream().map(this::exerciseSummary).toList();
         return new ExerciseResponse(e.getId(), e.getName(), e.getMuscleGroup(), e.getEquipment(), e.getLevel(),
@@ -212,7 +212,15 @@ public class Mappers {
                 e.getSteps() != null ? e.getSteps() : e.getInstructions(),
                 e.getSetsRepsHint(),
                 e.getPrimaryGoal(),
-                alts);
+                alts,
+                e.getExerciseType() != null ? e.getExerciseType() : ExerciseType.MAIN,
+                e.getSubCategory(),
+                e.getCardioIntensity(),
+                isFavorite);
+    }
+
+    public ExerciseResponse exercise(Exercise e) {
+        return exercise(e, false);
     }
 
     public ExerciseSummary exerciseSummary(Exercise e) {
@@ -221,16 +229,26 @@ public class Mappers {
     }
 
     // ---------- Equipment ----------
-    public EquipmentResponse equipmentResponse(Equipment eq, long count) {
-        return new EquipmentResponse(eq.getKey(), eq.getName(), eq.getCategory(), eq.getShortDesc(),
+    public EquipmentResponse equipmentResponse(Equipment eq, long count, boolean isFavorite) {
+        return new EquipmentResponse(eq.getKey(), eq.getName(), eq.getNameEn(), eq.getCategory(), eq.getShortDesc(),
+                eq.getAdjustmentInstructions(), eq.getCommonMistakes(),
                 splitKeys(eq.getTargetMuscleKeys()), eq.getImageKey(), eq.getSortOrder(), count,
-                eq.getReviewStatus(), eq.isHidden(), eq.getOrigin());
+                eq.getReviewStatus(), eq.isHidden(), eq.getOrigin(), isFavorite);
+    }
+
+    public EquipmentResponse equipmentResponse(Equipment eq, long count) {
+        return equipmentResponse(eq, count, false);
+    }
+
+    public EquipmentDetailResponse equipmentDetail(Equipment eq, long count, List<ExerciseResponse> related, boolean isFavorite) {
+        return new EquipmentDetailResponse(eq.getKey(), eq.getName(), eq.getNameEn(), eq.getCategory(), eq.getShortDesc(),
+                eq.getUsageGuide(), eq.getAdjustmentInstructions(), eq.getCommonMistakes(), eq.getSafetyNotes(),
+                splitKeys(eq.getTargetMuscleKeys()), eq.getImageKey(),
+                eq.getSortOrder(), count, eq.getReviewStatus(), eq.isHidden(), eq.getOrigin(), isFavorite, related);
     }
 
     public EquipmentDetailResponse equipmentDetail(Equipment eq, long count, List<ExerciseResponse> related) {
-        return new EquipmentDetailResponse(eq.getKey(), eq.getName(), eq.getCategory(), eq.getShortDesc(),
-                eq.getUsageGuide(), eq.getSafetyNotes(), splitKeys(eq.getTargetMuscleKeys()), eq.getImageKey(),
-                eq.getSortOrder(), count, eq.getReviewStatus(), eq.isHidden(), eq.getOrigin(), related);
+        return equipmentDetail(eq, count, related, false);
     }
 
     /** V13 · "chest,triceps" -> [chest, triceps]; null/rỗng -> []. */

@@ -21,6 +21,9 @@ public class Equipment {
     @Column(nullable = false, length = 120)
     private String name;
 
+    @Column(name = "name_en", length = 120)
+    private String nameEn;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private EquipmentCategory category;
@@ -30,6 +33,12 @@ public class Equipment {
 
     @Column(name = "usage_guide", columnDefinition = "TEXT")
     private String usageGuide;
+
+    @Column(name = "adjustment_instructions", columnDefinition = "TEXT")
+    private String adjustmentInstructions;
+
+    @Column(name = "common_mistakes", columnDefinition = "TEXT")
+    private String commonMistakes;
 
     @Column(name = "safety_notes", columnDefinition = "TEXT")
     private String safetyNotes;

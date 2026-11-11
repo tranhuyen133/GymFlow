@@ -28,6 +28,7 @@ import Policies from './pages/Policies';
 import Register from './pages/Register';
 import { Forbidden, NotFound } from './pages/Errors';
 import Articles from './pages/shared/Articles';
+import KnowledgeBase from './pages/shared/KnowledgeBase';
 import Exercises from './pages/shared/Exercises';
 import ExerciseDetail from './pages/shared/ExerciseDetail';
 import BeginnerExercises from './pages/shared/BeginnerExercises';
@@ -112,8 +113,6 @@ export default function App() {
       <Route path="/policies" element={<Policies />} />
       <Route path="/forum" element={<ForumList />} />
       <Route path="/forum/:id" element={<ForumTopicPage />} />
-      {/* Kho kiến thức đã thay bằng Diễn đàn: giữ đường dẫn cũ để link / bookmark cũ không ra 404 */}
-      <Route path="/knowledge/*" element={<Navigate to="/forum" replace />} />
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
         <Route path="/getting-started" element={<Navigate to="/dashboard?onboarding=1" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
@@ -134,17 +133,20 @@ export default function App() {
         <Route path="/messages/:id" element={<Only roles={CHAT_ROLES}><Messages /></Only>} />
         <Route path="/community" element={<ForumList embedded />} />
         <Route path="/community/:id" element={<ForumTopicPage embedded />} />
-        <Route path="/me/knowledge/*" element={<Navigate to="/community" replace />} />
+        <Route path="/me/knowledge/*" element={<Navigate to="/knowledge" replace />} />
+        <Route path="/knowledge" element={<KnowledgeBase />} />
         <Route path="/schedules" element={<SchedulesRoute />} />
         <Route path="/members" element={<Only roles={STAFF}><Members /></Only>} />
         <Route path="/members/:id" element={<Only roles={STAFF}><MemberDetail /></Only>} />
         <Route path="/workout-plans" element={<Only roles={STAFF}><WorkoutPlans /></Only>} />
         <Route path="/workout-plans/new" element={<Only roles={STAFF}><PlanEditor /></Only>} />
         <Route path="/workout-plans/:id" element={<Only roles={STAFF}><PlanEditor /></Only>} />
-        <Route path="/exercises" element={<Exercises />} />
-        <Route path="/exercises/beginner" element={<BeginnerExercises />} />
+        <Route path="/exercises" element={<KnowledgeBase defaultTab="exercises" />} />
+        <Route path="/exercises/manage" element={<Only roles={STAFF}><Exercises /></Only>} />
+        <Route path="/exercises/beginner" element={<KnowledgeBase defaultTab="guides" />} />
         <Route path="/exercises/:id" element={<ExerciseDetail />} />
-        <Route path="/equipment" element={<Equipment />} />
+        <Route path="/equipment" element={<KnowledgeBase defaultTab="equipment" />} />
+        <Route path="/equipment/manage" element={<Only roles={STAFF}><Equipment /></Only>} />
         <Route path="/equipment/:key" element={<EquipmentDetail />} />
         <Route path="/programs" element={<Programs />} />
         <Route path="/articles" element={<Only roles={STAFF}><Articles /></Only>} />

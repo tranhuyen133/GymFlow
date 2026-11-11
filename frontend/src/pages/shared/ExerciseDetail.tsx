@@ -33,11 +33,27 @@ export default function ExerciseDetail() {
   const [rejecting, setRejecting] = useState(false);
   const [rejectNote, setRejectNote] = useState('');
   const [reviewing, setReviewing] = useState(false);
+  const [isFav, setIsFav] = useState(false);
 
   const { data: ex, error, loading, reload } = useAsync(
     () => api.get<Exercise>(`/exercises/${id}`),
     [id]
   );
+
+  useEffect(() => {
+    if (ex) setIsFav(Boolean(ex.isFavorite));
+  }, [ex]);
+
+  const toggleFavorite = async () => {
+    if (!ex) return;
+    try {
+      const res = await api.post<{ favorite: boolean }>(`/favorites/exercises/${ex.id}`, {});
+      setIsFav(res.favorite);
+      toast.success(res.favorite ? t('Đã lưu bài tập vào mục yêu thích') : t('Đã bỏ lưu yêu thích'));
+    } catch (e) {
+      toast.error(errMsg(e, 'Không thể cập nhật mục yêu thích'));
+    }
+  };
 
   const primaryMuscles = useMemo(() => parseMuscles(ex?.targetMuscles?.join(',') ?? ''), [ex]);
   const secondaryMuscles = useMemo(() => parseMuscles(ex?.secondaryMuscleKeys?.join(',') ?? ''), [ex]);
@@ -99,9 +115,9 @@ export default function ExerciseDetail() {
   return (
     <div className="page">
       <div className="mb-12">
-        <Link to="/exercises" className="btn btn-ghost btn-sm" style={{ paddingLeft: 0 }}>
+        <Link to="/knowledge" className="btn btn-ghost btn-sm" style={{ paddingLeft: 0 }}>
           <Icon name="arrowLeft" size={14} />
-          <span>{t('Quay lại Thư viện bài tập')}</span>
+          <span>{t('Quay lại Kho kiến thức')}</span>
         </Link>
       </div>
 
@@ -111,10 +127,23 @@ export default function ExerciseDetail() {
         desc={ex.description || ''}
         actions={
           <div className="row wrap" style={{ gap: 8, alignItems: 'center' }}>
+            {ex.exerciseType === 'WARMUP' && <Badge tone="teal">{t('Khởi động')}</Badge>}
+            {ex.exerciseType === 'CARDIO' && <Badge tone="amber">{t('Cardio')}</Badge>}
+            {ex.exerciseType === 'MAIN' && <Badge tone="blue">{t('Bài tập chính')}</Badge>}
+            {ex.cardioIntensity && <Badge tone="red">{t('Cường độ {i}', { i: ex.cardioIntensity })}</Badge>}
             <Badge tone="blue">{t(LEVEL_LABELS[ex.level] || ex.level)}</Badge>
             {ex.primaryGoal && <Badge tone="muted">{ex.primaryGoal}</Badge>}
             {ex.hidden && <Badge tone="amber">{t('Đang ẩn')}</Badge>}
             {ex.reviewStatus === 'PENDING' && <Badge tone="amber">{t('Chờ duyệt')}</Badge>}
+
+            <Button
+              variant={isFav ? 'primary' : 'secondary'}
+              size="sm"
+              icon="star"
+              onClick={toggleFavorite}
+            >
+              {isFav ? t('Đã yêu thích') : t('Lưu yêu thích')}
+            </Button>
 
             {/* Thao tác dành cho Admin */}
             {isAdmin && ex.reviewStatus !== 'APPROVED' && (

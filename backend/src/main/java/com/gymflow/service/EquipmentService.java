@@ -12,14 +12,32 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+import com.gymflow.repository.FavoriteRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+
 @Service
-@RequiredArgsConstructor
 public class EquipmentService {
 
     private final EquipmentRepository equipmentRepository;
     private final ExerciseRepository exerciseRepository;
     private final AuditService auditService;
     private final Mappers mappers;
+    private final FavoriteRepository favoriteRepository;
+
+    @Autowired
+    public EquipmentService(EquipmentRepository equipmentRepository, ExerciseRepository exerciseRepository,
+                            AuditService auditService, Mappers mappers, FavoriteRepository favoriteRepository) {
+        this.equipmentRepository = equipmentRepository;
+        this.exerciseRepository = exerciseRepository;
+        this.auditService = auditService;
+        this.mappers = mappers;
+        this.favoriteRepository = favoriteRepository;
+    }
+
+    public EquipmentService(EquipmentRepository equipmentRepository, ExerciseRepository exerciseRepository,
+                            AuditService auditService, Mappers mappers) {
+        this(equipmentRepository, exerciseRepository, auditService, mappers, null);
+    }
 
     @Transactional(readOnly = true)
     public List<EquipmentResponse> list(AuthUser user, boolean includeHidden) {
@@ -29,9 +47,13 @@ public class EquipmentService {
                 : equipmentRepository.findByHiddenFalseOrderBySortOrderAscNameAsc();
 
         Map<String, Long> countMap = computeExerciseCounts();
+        Set<String> favKeys = (user != null && favoriteRepository != null)
+                ? favoriteRepository.findByUserIdAndTargetType(user.id(), "EQUIPMENT").stream()
+                .map(Favorite::getTargetId).collect(java.util.stream.Collectors.toSet())
+                : Set.of();
 
         return items.stream()
-                .map(eq -> mappers.equipmentResponse(eq, countMap.getOrDefault(eq.getKey(), 0L)))
+                .map(eq -> mappers.equipmentResponse(eq, countMap.getOrDefault(eq.getKey(), 0L), favKeys.contains(eq.getKey())))
                 .toList();
     }
 
@@ -54,8 +76,10 @@ public class EquipmentService {
                 .map(mappers::exercise)
                 .toList();
 
+        boolean isFav = user != null && favoriteRepository != null
+                && favoriteRepository.existsByUserIdAndTargetTypeAndTargetId(user.id(), "EQUIPMENT", eq.getKey());
         long count = exerciseResponses.size();
-        return mappers.equipmentDetail(eq, count, exerciseResponses);
+        return mappers.equipmentDetail(eq, count, exerciseResponses, isFav);
     }
 
     @Transactional
@@ -124,9 +148,12 @@ public class EquipmentService {
 
     private void apply(Equipment eq, EquipmentRequest req) {
         eq.setName(req.name().trim());
+        eq.setNameEn(Mappers.blankToNull(req.nameEn()));
         eq.setCategory(req.category());
         eq.setShortDesc(Mappers.blankToNull(req.shortDesc()));
         eq.setUsageGuide(Mappers.blankToNull(req.usageGuide()));
+        eq.setAdjustmentInstructions(Mappers.blankToNull(req.adjustmentInstructions()));
+        eq.setCommonMistakes(Mappers.blankToNull(req.commonMistakes()));
         eq.setSafetyNotes(Mappers.blankToNull(req.safetyNotes()));
         if (req.targetMuscleKeys() != null) {
             eq.setTargetMuscleKeys(ExerciseService.joinKeys(req.targetMuscleKeys(), ExerciseService.MUSCLE_KEYS, "vùng cơ"));
