@@ -1,6 +1,7 @@
 package com.gymflow.service;
 
 import com.gymflow.domain.ScheduleStatus;
+import com.gymflow.domain.WorkoutLog;
 import com.gymflow.domain.WorkoutSchedule;
 import com.gymflow.dto.Dtos.WeekAttendance;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProgressServiceTest {
 
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 28); // thứ Tư
+
+    private static WorkoutLog log(Integer minutes, Integer calories) {
+        WorkoutLog l = new WorkoutLog();
+        l.setDurationMinutes(minutes);
+        l.setCalories(calories);
+        return l;
+    }
 
     private static WorkoutSchedule session(LocalDate day, ScheduleStatus status) {
         WorkoutSchedule s = new WorkoutSchedule();
@@ -67,6 +75,23 @@ class ProgressServiceTest {
 
         list.add(session(TODAY.minusDays(1), ScheduleStatus.COMPLETED));
         assertThat(ProgressService.streakWeeks(list, TODAY)).isEqualTo(4);
+    }
+
+    @Test
+    void totalsSkipLogsWithoutValues() {
+        List<WorkoutLog> logs = List.of(log(45, 320), log(null, 150), log(60, null));
+        assertThat(ProgressService.totalCalories(logs)).isEqualTo(470);
+        assertThat(ProgressService.totalMinutes(logs)).isEqualTo(105);
+        assertThat(ProgressService.totalCalories(List.of())).isZero();
+    }
+
+    @Test
+    void streakStopsAtFirstWeekWithoutCompletedSession() {
+        // Mục 13.2: tính đến tuần hiện tại; tuần trước không có buổi hoàn thành → chuỗi = 1
+        List<WorkoutSchedule> list = List.of(
+                session(TODAY.minusDays(1), ScheduleStatus.COMPLETED),
+                session(TODAY.minusWeeks(2), ScheduleStatus.COMPLETED));
+        assertThat(ProgressService.streakWeeks(list, TODAY)).isEqualTo(1);
     }
 
     @Test
