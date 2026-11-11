@@ -16,6 +16,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface WorkoutScheduleRepository extends JpaRepository<WorkoutSchedule, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from WorkoutSchedule s where s.id = :id")
+    Optional<WorkoutSchedule> findByIdForUpdate(@Param("id") Long id);
     /**
      * Khoá dòng hội viên rồi HLV (luôn theo thứ tự này để tránh deadlock) trước khi kiểm tra trùng giờ.
      * Thay cho ràng buộc EXCLUDE của PostgreSQL mà MySQL không có.

@@ -54,6 +54,7 @@ public class ScheduleService {
     private final UserRepository userRepository;
     private final PtSessionUsageRepository ptSessionUsageRepository;
     private final MemberSubscriptionRepository subscriptionRepository;
+    private final CalorieEstimationService calorieEstimationService;
 
     @Transactional(readOnly = true)
     public List<ScheduleResponse> list(AuthUser user, LocalDateTime from, LocalDateTime to, Long memberId, Long trainerId) {
@@ -171,7 +172,8 @@ public class ScheduleService {
     /** Hội viên của buổi, HLV phụ trách hoặc quản lý ghi nhận hoàn thành. */
     @Transactional
     public ScheduleResponse complete(AuthUser user, Long id, CompleteRequest req) {
-        WorkoutSchedule s = load(id);
+        WorkoutSchedule s = scheduleRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> ApiException.notFound("buổi tập"));
         if (!access.canView(user, s.getMember())) throw ApiException.forbidden();
         LocalDateTime now = LocalDateTime.now(clock);
         if (s.getStatus() == ScheduleStatus.CANCELLED) throw ApiException.badRequest("Buổi tập đã bị huỷ");
@@ -180,16 +182,20 @@ public class ScheduleService {
         if (s.getEndTime().plusDays(LATE_COMPLETE_DAYS).isBefore(now)) {
             throw ApiException.badRequest("Đã quá " + LATE_COMPLETE_DAYS + " ngày, không thể ghi nhận buổi này");
         }
+        int durationMinutes = req.durationMinutes() != null ? req.durationMinutes()
+                : (int) Duration.between(s.getStartTime(), s.getEndTime()).toMinutes();
+        CalorieEstimate calorieEstimate = calorieEstimationService.estimate(s, durationMinutes, req.intensity());
+
         WorkoutLog log = new WorkoutLog();
         log.setSchedule(s);
         log.setMember(s.getMember());
         log.setCompletedAt(now);
-        log.setDurationMinutes(req.durationMinutes() != null ? req.durationMinutes()
-                : (int) Duration.between(s.getStartTime(), s.getEndTime()).toMinutes());
-        log.setCalories(req.calories());
+        log.setDurationMinutes(durationMinutes);
         log.setRating(req.rating());
         log.setNote(Mappers.blankToNull(req.note()));
+        calorieEstimationService.applyToLog(log, calorieEstimate);
         logRepository.save(log);
+        calorieEstimationService.saveExercises(log, calorieEstimate);
 
         // Nếu buổi tập có HLV (buổi PT): trừ 1 buổi PT trong cùng transaction
         if (s.getTrainer() != null) {
@@ -223,6 +229,16 @@ public class ScheduleService {
         s.setStatus(ScheduleStatus.COMPLETED);
         auditService.log("SCHEDULE_COMPLETE", "SCHEDULE", s.getId(), s.getMember().getCode());
         return mappers.schedule(s, log);
+    }
+
+    /** Xem trước calo ước tính trước khi hoàn thành buổi tập. */
+    @Transactional(readOnly = true)
+    public CaloriePreviewResponse caloriePreview(AuthUser user, Long id, ExerciseIntensity intensity) {
+        WorkoutSchedule s = loadForRead(id);
+        if (!access.canView(user, s.getMember())) throw ApiException.forbidden();
+        int duration = Math.max(1, (int) Duration.between(s.getStartTime(), s.getEndTime()).toMinutes());
+        CalorieEstimate estimate = calorieEstimationService.estimate(s, duration, intensity);
+        return CalorieMapper.preview(s, duration, estimate);
     }
 
     // FIX #1: Task 176 - note-only, không thay đổi logic tự đánh vắng khi buổi đã quá giờ kết thúc.
@@ -441,6 +457,10 @@ public class ScheduleService {
     }
 
     private WorkoutSchedule load(Long id) {
+        return scheduleRepository.findByIdForUpdate(id).orElseThrow(() -> ApiException.notFound("buổi tập"));
+    }
+
+    private WorkoutSchedule loadForRead(Long id) {
         return scheduleRepository.findById(id).orElseThrow(() -> ApiException.notFound("buổi tập"));
     }
 }

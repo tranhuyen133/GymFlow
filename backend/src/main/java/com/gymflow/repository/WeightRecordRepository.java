@@ -13,4 +13,6 @@ public interface WeightRecordRepository extends JpaRepository<WeightRecord, Long
     Optional<WeightRecord> findByMemberIdAndRecordedDate(Long memberId, LocalDate recordedDate);
 
     Optional<WeightRecord> findFirstByMemberIdOrderByRecordedDateDesc(Long memberId);
+
+    Optional<WeightRecord> findFirstByMemberIdAndRecordedDateLessThanEqualOrderByRecordedDateDesc(Long memberId, LocalDate recordedDate);
 }

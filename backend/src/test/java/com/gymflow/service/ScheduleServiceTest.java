@@ -51,6 +51,7 @@ class ScheduleServiceTest {
     @Mock com.gymflow.repository.UserRepository userRepository;
     @Mock com.gymflow.repository.PtSessionUsageRepository ptSessionUsageRepository;
     @Mock com.gymflow.repository.MemberSubscriptionRepository memberSubscriptionRepository;
+    @Mock CalorieEstimationService calorieEstimationService;
 
     ScheduleService service;
     Member member;
@@ -62,7 +63,20 @@ class ScheduleServiceTest {
         Clock clock = Clock.fixed(NOW.atZone(ZONE).toInstant(), ZONE);
         service = new ScheduleService(scheduleRepository, logRepository, planRepository, trainerRepository,
                 subscriptionService, access, auditService, mappers, clock,
-                userRepository, ptSessionUsageRepository, memberSubscriptionRepository);
+                userRepository, ptSessionUsageRepository, memberSubscriptionRepository, calorieEstimationService);
+        CalorieEstimate dummy = new CalorieEstimate(EstimateStatus.OK, EstimateQuality.DETAILED, 65.0,
+                "WEIGHT_RECORD@2026-10-26", ExerciseIntensity.MODERATE, 60.0, 300, List.of());
+        lenient().when(calorieEstimationService.estimate(any(), anyInt(), any())).thenReturn(dummy);
+        lenient().doAnswer(inv -> {
+            WorkoutLog log = inv.getArgument(0);
+            CalorieEstimate estimate = inv.getArgument(1);
+            log.setCalories(estimate.totalCalories());
+            log.setEstimateStatus(estimate.status());
+            log.setEstimateQuality(estimate.quality());
+            log.setEstimated(estimate.status() == EstimateStatus.OK);
+            return null;
+        }).when(calorieEstimationService).applyToLog(any(), any());
+        lenient().doNothing().when(calorieEstimationService).saveExercises(any(), any());
         User tu = new User();
         tu.setId(5L);
         tu.setFullName("Lê Hoàng Phúc");
@@ -355,7 +369,7 @@ class ScheduleServiceTest {
         s.setStatus(ScheduleStatus.SCHEDULED);
         s.setStartTime(NOW.plusHours(3));
         s.setEndTime(NOW.plusHours(4));
-        when(scheduleRepository.findById(10L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(s));
         when(access.canView(trainerUser, member)).thenReturn(true);
         assertThatThrownBy(() -> service.complete(trainerUser, 10L, new CompleteRequest(null, null, null, null)))
                 .hasMessageContaining("Chưa đến giờ tập");
@@ -366,10 +380,13 @@ class ScheduleServiceTest {
     @DisplayName("LOG-01: Hoàn thành hợp lệ buổi tập đã qua giờ bắt đầu, lưu nhật ký đầy đủ và ghi audit")
     void complete_success_withFullDetails_savesLogAndLogsAudit() {
         WorkoutSchedule s = createSchedule(10L, ScheduleStatus.SCHEDULED, NOW.minusHours(2), NOW.minusHours(1));
-        when(scheduleRepository.findById(10L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(s));
         when(access.canView(trainerUser, member)).thenReturn(true);
 
-        CompleteRequest req = new CompleteRequest(60, 350, 5, "Buổi tập rất tốt");
+        when(calorieEstimationService.estimate(any(), anyInt(), any())).thenReturn(new CalorieEstimate(
+                EstimateStatus.OK, EstimateQuality.DETAILED, 65.0, "WEIGHT_RECORD@2026-10-26",
+                ExerciseIntensity.MODERATE, 60.0, 350, List.of()));
+        CompleteRequest req = new CompleteRequest(60, ExerciseIntensity.MODERATE, 5, "Buổi tập rất tốt");
         service.complete(trainerUser, 10L, req);
 
         ArgumentCaptor<WorkoutLog> captor = ArgumentCaptor.forClass(WorkoutLog.class);
@@ -392,10 +409,10 @@ class ScheduleServiceTest {
     void complete_defaultDuration_usesSessionLength() {
         // Buổi tập dài 90 phút: 07:00 đến 08:30
         WorkoutSchedule s = createSchedule(11L, ScheduleStatus.SCHEDULED, NOW.minusHours(2), NOW.minusHours(2).plusMinutes(90));
-        when(scheduleRepository.findById(11L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(s));
         when(access.canView(trainerUser, member)).thenReturn(true);
 
-        CompleteRequest req = new CompleteRequest(null, 400, 4, "Tập vừa sức");
+        CompleteRequest req = new CompleteRequest(null, ExerciseIntensity.MODERATE, 4, "Tập vừa sức");
         service.complete(trainerUser, 11L, req);
 
         ArgumentCaptor<WorkoutLog> captor = ArgumentCaptor.forClass(WorkoutLog.class);
@@ -407,10 +424,10 @@ class ScheduleServiceTest {
     @DisplayName("LOG-01: Ghi chú chỉ chứa khoảng trắng thì lưu null vào nhật ký")
     void complete_blankNote_savesNull() {
         WorkoutSchedule s = createSchedule(12L, ScheduleStatus.SCHEDULED, NOW.minusHours(2), NOW.minusHours(1));
-        when(scheduleRepository.findById(12L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(12L)).thenReturn(Optional.of(s));
         when(access.canView(trainerUser, member)).thenReturn(true);
 
-        CompleteRequest req = new CompleteRequest(60, 300, 4, "   ");
+        CompleteRequest req = new CompleteRequest(60, ExerciseIntensity.MODERATE, 4, "   ");
         service.complete(trainerUser, 12L, req);
 
         ArgumentCaptor<WorkoutLog> captor = ArgumentCaptor.forClass(WorkoutLog.class);
@@ -422,10 +439,10 @@ class ScheduleServiceTest {
     @DisplayName("LOG-03: Buổi tập bị đánh vắng (MISSED) kết thúc 3 ngày trước vẫn hoàn thành được và đổi sang COMPLETED")
     void complete_missedSessionWithin7Days_completesSuccessfully() {
         WorkoutSchedule s = createSchedule(13L, ScheduleStatus.MISSED, NOW.minusDays(3).minusHours(1), NOW.minusDays(3));
-        when(scheduleRepository.findById(13L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(13L)).thenReturn(Optional.of(s));
         when(access.canView(trainerUser, member)).thenReturn(true);
 
-        CompleteRequest req = new CompleteRequest(60, 250, 4, "Học viên tập bù");
+        CompleteRequest req = new CompleteRequest(60, ExerciseIntensity.MODERATE, 4, "Học viên tập bù");
         service.complete(trainerUser, 13L, req);
 
         assertThat(s.getStatus()).isEqualTo(ScheduleStatus.COMPLETED);
@@ -437,10 +454,10 @@ class ScheduleServiceTest {
     @DisplayName("LOG-03: Buổi kết thúc quá 7 ngày (+1 phút) bị từ chối với lỗi 400, không lưu nhật ký")
     void complete_past7DaysCutoff_failsWith400() {
         WorkoutSchedule s = createSchedule(14L, ScheduleStatus.SCHEDULED, NOW.minusDays(7).minusHours(2), NOW.minusDays(7).minusMinutes(1));
-        when(scheduleRepository.findById(14L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(14L)).thenReturn(Optional.of(s));
         when(access.canView(trainerUser, member)).thenReturn(true);
 
-        CompleteRequest req = new CompleteRequest(60, 200, 3, null);
+        CompleteRequest req = new CompleteRequest(60, ExerciseIntensity.MODERATE, 3, null);
         assertThatThrownBy(() -> service.complete(trainerUser, 14L, req))
                 .isInstanceOf(ApiException.class)
                 .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST))
@@ -454,10 +471,10 @@ class ScheduleServiceTest {
     @DisplayName("LOG-03: Buổi kết thúc cách đây đúng 7 ngày vẫn ghi nhận hoàn thành thành công")
     void complete_exactly7DaysCutoff_completesSuccessfully() {
         WorkoutSchedule s = createSchedule(15L, ScheduleStatus.SCHEDULED, NOW.minusDays(7).minusHours(1), NOW.minusDays(7));
-        when(scheduleRepository.findById(15L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(15L)).thenReturn(Optional.of(s));
         when(access.canView(trainerUser, member)).thenReturn(true);
 
-        CompleteRequest req = new CompleteRequest(60, 200, 3, null);
+        CompleteRequest req = new CompleteRequest(60, ExerciseIntensity.MODERATE, 3, null);
         service.complete(trainerUser, 15L, req);
 
         assertThat(s.getStatus()).isEqualTo(ScheduleStatus.COMPLETED);
@@ -469,10 +486,10 @@ class ScheduleServiceTest {
     @DisplayName("Từ chối hoàn thành buổi tập đã bị huỷ (CANCELLED) với lỗi 400, không lưu nhật ký, không ghi audit")
     void complete_cancelledSession_failsWith400() {
         WorkoutSchedule s = createSchedule(16L, ScheduleStatus.CANCELLED, NOW.minusHours(2), NOW.minusHours(1));
-        when(scheduleRepository.findById(16L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(16L)).thenReturn(Optional.of(s));
         when(access.canView(trainerUser, member)).thenReturn(true);
 
-        CompleteRequest req = new CompleteRequest(60, 200, 3, null);
+        CompleteRequest req = new CompleteRequest(60, ExerciseIntensity.MODERATE, 3, null);
         assertThatThrownBy(() -> service.complete(trainerUser, 16L, req))
                 .isInstanceOf(ApiException.class)
                 .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST))
@@ -486,10 +503,10 @@ class ScheduleServiceTest {
     @DisplayName("Từ chối hoàn thành buổi tập đã hoàn thành trước đó (COMPLETED) với lỗi 409 Conflict, không lưu nhật ký")
     void complete_alreadyCompleted_failsWith409() {
         WorkoutSchedule s = createSchedule(17L, ScheduleStatus.COMPLETED, NOW.minusHours(2), NOW.minusHours(1));
-        when(scheduleRepository.findById(17L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(17L)).thenReturn(Optional.of(s));
         when(access.canView(trainerUser, member)).thenReturn(true);
 
-        CompleteRequest req = new CompleteRequest(60, 200, 3, null);
+        CompleteRequest req = new CompleteRequest(60, ExerciseIntensity.MODERATE, 3, null);
         assertThatThrownBy(() -> service.complete(trainerUser, 17L, req))
                 .isInstanceOf(ApiException.class)
                 .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT))
@@ -502,10 +519,10 @@ class ScheduleServiceTest {
     @DisplayName("Từ chối hoàn thành khi người dùng không có quyền xem thông tin hội viên với lỗi 403 Forbidden")
     void complete_forbidden_failsWith403() {
         WorkoutSchedule s = createSchedule(18L, ScheduleStatus.SCHEDULED, NOW.minusHours(2), NOW.minusHours(1));
-        when(scheduleRepository.findById(18L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(18L)).thenReturn(Optional.of(s));
         when(access.canView(trainerUser, member)).thenReturn(false);
 
-        CompleteRequest req = new CompleteRequest(60, 200, 3, null);
+        CompleteRequest req = new CompleteRequest(60, ExerciseIntensity.MODERATE, 3, null);
         assertThatThrownBy(() -> service.complete(trainerUser, 18L, req))
                 .isInstanceOf(ApiException.class)
                 .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
@@ -516,9 +533,9 @@ class ScheduleServiceTest {
     @Test
     @DisplayName("Từ chối hoàn thành khi mã buổi tập không tồn tại với lỗi 404 Not Found")
     void complete_notFound_failsWith404() {
-        when(scheduleRepository.findById(999L)).thenReturn(Optional.empty());
+        when(scheduleRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
-        CompleteRequest req = new CompleteRequest(60, 200, 3, null);
+        CompleteRequest req = new CompleteRequest(60, ExerciseIntensity.MODERATE, 3, null);
         assertThatThrownBy(() -> service.complete(trainerUser, 999L, req))
                 .isInstanceOf(ApiException.class)
                 .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.NOT_FOUND))
@@ -531,10 +548,10 @@ class ScheduleServiceTest {
     @DisplayName("Buổi tập đang diễn ra (startTime trước hiện tại, endTime sau hiện tại) vẫn ghi nhận hoàn thành được")
     void complete_inProgressSession_completesSuccessfully() {
         WorkoutSchedule s = createSchedule(19L, ScheduleStatus.SCHEDULED, NOW.minusMinutes(30), NOW.plusMinutes(30));
-        when(scheduleRepository.findById(19L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(19L)).thenReturn(Optional.of(s));
         when(access.canView(trainerUser, member)).thenReturn(true);
 
-        CompleteRequest req = new CompleteRequest(30, 150, 4, "Hoàn thành sớm");
+        CompleteRequest req = new CompleteRequest(30, ExerciseIntensity.MODERATE, 4, "Hoàn thành sớm");
         service.complete(trainerUser, 19L, req);
 
         assertThat(s.getStatus()).isEqualTo(ScheduleStatus.COMPLETED);
@@ -601,7 +618,7 @@ class ScheduleServiceTest {
         WorkoutSchedule current = createSchedule(10L, ScheduleStatus.SCHEDULED, NOW.plusDays(1).withHour(18), NOW.plusDays(1).withHour(19));
         WorkoutSchedule onTargetDay = createSchedule(20L, ScheduleStatus.SCHEDULED, NOW.plusDays(3).withHour(17), NOW.plusDays(3).withHour(18));
 
-        when(scheduleRepository.findById(10L)).thenReturn(Optional.of(current));
+        when(scheduleRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(current));
         when(access.canCoach(trainerUser, member)).thenReturn(true);
         when(subscriptionService.hasEffective(eq(1L), any())).thenReturn(true);
         when(scheduleRepository.memberBusy(any(), any(), any(), eq(10L), any())).thenReturn(false);
