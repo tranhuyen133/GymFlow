@@ -1,3 +1,8 @@
+/**
+ * CHỦ FILE: Linh (Hồ Khánh Linh) · theo docs/OWNERS.md
+ * TASK: SCRUM-220 · Màn Nhật ký có lọc
+ * Quản trị nhật ký hệ thống: tìm kiếm, lọc theo hành động/ngày, phân trang và xuất CSV.
+ */
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -9,16 +14,25 @@ import { useAsync, useDebounced } from '../../lib/hooks';
 import { t } from '../../i18n';
 
 export default function AuditLog() {
-  const [params] = useSearchParams();
-  const [q, setQ] = useState('');
+  const [params, setParams] = useSearchParams();
+  const [q, setQ] = useState(params.get('q') ?? '');
   const [action, setAction] = useState(params.get('action') ?? '');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [from, setFrom] = useState(params.get('from') ?? '');
+  const [to, setTo] = useState(params.get('to') ?? '');
   const [page, setPage] = useState(0);
   const dq = useDebounced(q);
+  const hasFilters = Boolean(q || action || from || to);
   useEffect(() => setPage(0), [dq, action, from, to]);
   const actions = useAsync(() => api.get<string[]>('/audit-logs/actions'), []);
   const { data, error, loading, reload } = useAsync(() => api.get<Page<AuditEntry>>('/audit-logs', { q: dq, action, from, to, page, size: 30 }), [dq, action, from, to, page]);
+
+  const clearFilters = () => {
+    setQ('');
+    setAction('');
+    setFrom('');
+    setTo('');
+    setParams({}, { replace: true });
+  };
 
   return (
     <div className="page">
@@ -33,9 +47,16 @@ export default function AuditLog() {
           <option value="">{t('Mọi hành động')}</option>
           {actions.data?.map((a) => <option key={a} value={a}>{actionLabel[a] ?? a}</option>)}
         </Select>
-        <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={{ width: 160 }} aria-label="Từ ngày" />
+        <Input type="date" value={from} onChange={(e) => {
+          const value = e.target.value;
+          setFrom(value);
+          if (to && value && value > to) setTo('');
+        }} style={{ width: 160 }} aria-label="Từ ngày" />
         <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} style={{ width: 160 }} aria-label="Đến ngày" />
+        <Button disabled={!hasFilters} onClick={clearFilters}>Xóa bộ lọc</Button>
       </div>
+      {actions.error && <div role="alert"><ErrorState message={actions.error} onRetry={actions.reload} /></div>}
+      {loading && data && <p className="tiny muted" role="status">{t('Đang cập nhật nhật ký…')}</p>}
       <Card flush>
         {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div> : loading && !data ? <div style={{ padding: 20 }}><LoadingBlock /></div>
           : data && data.content.length === 0 ? <Empty icon="scroll" title="Không có bản ghi" /> : data && (
