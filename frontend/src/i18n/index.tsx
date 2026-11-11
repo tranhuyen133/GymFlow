@@ -1,6 +1,7 @@
 import { Children, cloneElement, Fragment, isValidElement, createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { EN } from './en';
 import { EN_EXTRA } from './en-extra';
+import { EN_PT } from './en-pt';
 
 /**
  * Đa ngôn ngữ tối giản: chuỗi tiếng Việt chính là khoá, bản tiếng Anh nằm trong en.ts.
@@ -16,7 +17,8 @@ function readLang(): Lang {
 
 let current: Lang = readLang();
 const missing = new Set<string>();
-const DICT: Record<string, string> = { ...EN, ...EN_EXTRA };
+// EN_PT (V24) đặt trước để không ghi đè bản dịch đã có trong EN / EN_EXTRA.
+const DICT: Record<string, string> = { ...EN_PT, ...EN, ...EN_EXTRA };
 
 type Vars = Record<string, string | number | null | undefined>;
 

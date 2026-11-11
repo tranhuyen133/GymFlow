@@ -89,4 +89,15 @@ public interface WorkoutScheduleRepository extends JpaRepository<WorkoutSchedule
                                                    @Param("cancelled") ScheduleStatus cancelled);
 
     List<WorkoutSchedule> findByStartTimeBetweenOrderByStartTimeAsc(LocalDateTime from, LocalDateTime to);
+
+    /** V24 · số buổi PT (có HLV) đang chờ của hội viên trong khoảng [from, to) – dùng chống xếp quá số buổi của gói. */
+    @Query("""
+            select count(s) from WorkoutSchedule s
+            where s.member.id = :memberId and s.trainer is not null and s.status = :status
+              and s.startTime >= :from and s.startTime < :to
+              and (:excludeId is null or s.id <> :excludeId)
+            """)
+    long countPtBooked(@Param("memberId") Long memberId, @Param("from") LocalDateTime from,
+                       @Param("to") LocalDateTime to, @Param("status") ScheduleStatus status,
+                       @Param("excludeId") Long excludeId);
 }

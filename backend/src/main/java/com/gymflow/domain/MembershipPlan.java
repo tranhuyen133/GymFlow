@@ -44,6 +44,22 @@ public class MembershipPlan {
     @Column(name = "pt_valid_days")
     private Integer ptValidDays;
 
+    /** V24 · mã gói cho quầy và báo cáo, không bắt buộc. */
+    @Column(length = 30)
+    private String code;
+
+    /** V24 · thời lượng một buổi PT (phút); null = chưa khai báo. */
+    @Column(name = "pt_session_minutes")
+    private Integer ptSessionMinutes;
+
+    /** V24 · số giờ tối thiểu phải báo trước khi huỷ/dời buổi PT; null = chưa khai báo. */
+    @Column(name = "pt_cancel_notice_hours")
+    private Integer ptCancelNoticeHours;
+
+    /** V24 · điều kiện sử dụng (đặt lịch, đổi HLV, bảo lưu...) do quản lý nhập. */
+    @Column(name = "usage_terms", length = 1000)
+    private String usageTerms;
+
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<PlanServiceGrant> serviceGrants = new java.util.ArrayList<>();
 

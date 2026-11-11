@@ -90,4 +90,16 @@ public interface MemberSubscriptionRepository extends JpaRepository<MemberSubscr
             where s.cancelled = false and s.createdAt >= :from and s.createdAt < :to
             """)
     Long revenueBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** V24 · gói PT chưa huỷ, chưa hết hạn (gồm gói sắp bắt đầu) cho màn theo dõi buổi PT. */
+    @Query("""
+            select s from MemberSubscription s
+            join fetch s.member m join fetch m.user
+            left join fetch m.trainer t left join fetch t.user
+            join fetch s.plan p
+            where s.cancelled = false and s.endDate >= :today
+              and (p.planType = com.gymflow.domain.PlanType.GYM_PT or s.ptSessionsTotal is not null)
+            order by s.endDate asc
+            """)
+    List<MemberSubscription> findCurrentPt(@Param("today") LocalDate today);
 }

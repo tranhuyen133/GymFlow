@@ -79,11 +79,15 @@ public class PackageRequestService {
         Trainer trainer = null;
         Integer ptSessionsSnapshot = null;
         Integer ptValidDaysSnapshot = null;
+        Integer ptMinutesSnapshot = null;
+        Integer ptNoticeSnapshot = null;
         if (plan.getPlanType() == PlanType.GYM_PT || plan.isIncludesTrainer()) {
             if (req.trainerId() == null) throw ApiException.badRequest("Gói này có HLV kèm, vui lòng chọn huấn luyện viên");
             trainer = activeTrainer(req.trainerId());
             ptSessionsSnapshot = plan.getPtSessions();
             ptValidDaysSnapshot = plan.getPtValidDays();
+            ptMinutesSnapshot = plan.getPtSessionMinutes();
+            ptNoticeSnapshot = plan.getPtCancelNoticeHours();
         }
 
         LocalDate today = mappers.today();
@@ -139,6 +143,8 @@ public class PackageRequestService {
         r.setDurationDays(plan.getDurationDays());
         r.setPtSessionsSnapshot(ptSessionsSnapshot);
         r.setPtValidDaysSnapshot(ptValidDaysSnapshot);
+        r.setPtSessionMinutesSnapshot(ptMinutesSnapshot);
+        r.setPtCancelNoticeHoursSnapshot(ptNoticeSnapshot);
         r.setDesiredStartDate(start);
         r.setMemberNote(Mappers.blankToNull(req.note()));
         r.setPaymentMethod(method);
@@ -226,7 +232,7 @@ public class PackageRequestService {
 
         SubscriptionResponse created = subscriptionService.create(admin,
                 new SubscriptionRequest(memberId, r.getPlan().getId(), start, r.getPrice(), note.length() > 255 ? note.substring(0, 255) : note,
-                        r.getPtSessionsSnapshot(), validUntil));
+                        r.getPtSessionsSnapshot(), validUntil, r.getPtSessionMinutesSnapshot(), r.getPtCancelNoticeHoursSnapshot()));
 
         MemberSubscription subEntity = subscriptionRepository.getReferenceById(created.id());
 

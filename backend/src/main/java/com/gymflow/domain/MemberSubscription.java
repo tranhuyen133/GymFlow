@@ -44,6 +44,22 @@ public class MemberSubscription {
     @Column(name = "pt_valid_until")
     private LocalDate ptValidUntil;
 
+    /** V24 · ảnh chụp điều kiện gói lúc bán: sửa gói về sau không đổi quyền lợi đã bán. Gói bán trước V24 để null. */
+    @Column(name = "plan_name_snapshot", length = 100)
+    private String planNameSnapshot;
+
+    @Column(name = "benefits_snapshot", length = 1000)
+    private String benefitsSnapshot;
+
+    @Column(name = "usage_terms_snapshot", length = 1000)
+    private String usageTermsSnapshot;
+
+    @Column(name = "pt_session_minutes_snapshot")
+    private Integer ptSessionMinutesSnapshot;
+
+    @Column(name = "pt_cancel_notice_hours_snapshot")
+    private Integer ptCancelNoticeHoursSnapshot;
+
     @Column(nullable = false)
     private boolean cancelled = false;
 

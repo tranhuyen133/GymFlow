@@ -60,6 +60,13 @@ public class PackageRequest {
     @Column(name = "pt_valid_days_snapshot")
     private Integer ptValidDaysSnapshot;
 
+    /** V24 · thời lượng buổi PT và số giờ báo huỷ chốt lúc gửi đơn. */
+    @Column(name = "pt_session_minutes_snapshot")
+    private Integer ptSessionMinutesSnapshot;
+
+    @Column(name = "pt_cancel_notice_hours_snapshot")
+    private Integer ptCancelNoticeHoursSnapshot;
+
     @Column(name = "desired_start_date")
     private LocalDate desiredStartDate;
 

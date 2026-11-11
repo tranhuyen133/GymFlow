@@ -106,6 +106,13 @@ public class SubscriptionService {
         }
         s.setPtSessionsTotal(ptTotal);
         s.setPtValidUntil(ptValidUntil);
+        // V24 · chụp lại điều kiện gói lúc bán để sửa gói về sau không đổi quyền lợi đã bán.
+        boolean ptPlan = plan.getPlanType() == PlanType.GYM_PT;
+        s.setPlanNameSnapshot(plan.getName());
+        s.setBenefitsSnapshot(cut(plan.getBenefits(), 1000));
+        s.setUsageTermsSnapshot(cut(plan.getUsageTerms(), 1000));
+        s.setPtSessionMinutesSnapshot(!ptPlan ? null : req.ptSessionMinutes() != null ? req.ptSessionMinutes() : plan.getPtSessionMinutes());
+        s.setPtCancelNoticeHoursSnapshot(!ptPlan ? null : req.ptCancelNoticeHours() != null ? req.ptCancelNoticeHours() : plan.getPtCancelNoticeHours());
 
         subscriptionRepository.saveAndFlush(s);
         auditService.log(p.chained() ? "SUBSCRIPTION_RENEW" : "SUBSCRIPTION_CREATE", "SUBSCRIPTION", s.getId(),
@@ -136,6 +143,10 @@ public class SubscriptionService {
         }
         auditService.log("SUBSCRIPTION_CANCEL", "SUBSCRIPTION", s.getId(), s.getMember().getCode() + (r == null ? "" : " · " + r));
         return mappers.subscription(s);
+    }
+
+    private static String cut(String s, int max) {
+        return s == null || s.length() <= max ? s : s.substring(0, max);
     }
 
     /** Hội viên có gói hiệu lực vào ngày này không (dùng khi xếp lịch). */

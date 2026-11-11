@@ -11,6 +11,7 @@ import { fmtDate, fmtTime, parseDateTime, scheduleStatus } from '../../lib/forma
 import { useAsync } from '../../lib/hooks';
 import { SessionModal } from '../shared/Schedules';
 import { t } from '../../i18n';
+import { PtOverview } from '../../components/PtOverview';
 
 export default function TrainerDashboard() {
   const me = useMe();
@@ -84,6 +85,7 @@ export default function TrainerDashboard() {
           </Table>
         )}
       </Card>
+      <PtOverview title="Buổi PT của hội viên" />
       {open && <SessionModal session={open} onClose={() => setOpen(null)} onChanged={() => { setOpen(null); void reload(); }} />}
     </div>
   );

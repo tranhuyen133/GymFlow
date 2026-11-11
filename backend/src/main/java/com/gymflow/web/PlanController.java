@@ -5,6 +5,7 @@ import com.gymflow.domain.SubscriptionState;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.security.CurrentUser;
 import com.gymflow.service.PlanService;
+import com.gymflow.service.ReportService;
 import com.gymflow.service.SubscriptionService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,6 +25,7 @@ public class PlanController {
 
     private final PlanService planService;
     private final SubscriptionService subscriptionService;
+    private final ReportService reportService;
 
     // ---------- Gói tập ----------
     @GetMapping("/api/plans/public")
@@ -106,5 +108,12 @@ public class PlanController {
     @PreAuthorize("hasAnyRole('MEMBER', 'TRAINER', 'ADMIN')")
     public List<PtSessionUsageResponse> ptUsages(@PathVariable Long id) {
         return subscriptionService.listPtUsages(CurrentUser.get(), id);
+    }
+
+    /** V24 · theo dõi buổi PT (đã dùng / đã xếp / còn lại). HLV chỉ thấy hội viên mình phụ trách. */
+    @GetMapping("/api/subscriptions/pt-overview")
+    @PreAuthorize("hasAnyRole('TRAINER', 'ADMIN')")
+    public List<PtOverviewRow> ptOverview() {
+        return reportService.ptOverview(CurrentUser.get());
     }
 }

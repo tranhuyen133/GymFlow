@@ -268,11 +268,37 @@ public class ScheduleService {
         if (trainer != null && !subscriptionRepository.hasEffectivePtSubscription(member.getId(), start.toLocalDate())) {
             return "hội viên chỉ có gói tự tập, không thể xếp lịch có huấn luyện viên (PT)";
         }
+        if (trainer != null) {
+            String quota = ptQuotaProblem(member, start.toLocalDate(), excludeId);
+            if (quota != null) return quota;
+        }
         if (scheduleRepository.memberBusy(member.getId(), start, end, excludeId, ScheduleStatus.CANCELLED)) {
             return "hội viên đã có buổi tập khác trùng giờ";
         }
         if (trainer != null && scheduleRepository.trainerBusy(trainer.getId(), start, end, excludeId, ScheduleStatus.CANCELLED)) {
             return "HLV " + trainer.getUser().getFullName() + " đã có buổi khác trùng giờ";
+        }
+        return null;
+    }
+
+    /**
+     * V24 · không xếp quá số buổi PT của gói: buổi đã dùng + buổi PT đang chờ trong thời hạn gói phải nhỏ hơn tổng số buổi,
+     * và không xếp buổi PT sau hạn dùng buổi. Gói chưa khai báo số buổi (null) thì không chặn.
+     * Xếp lịch không trừ buổi; buổi chỉ bị trừ khi ghi nhận hoàn thành (complete).
+     */
+    String ptQuotaProblem(Member member, LocalDate day, Long excludeId) {
+        MemberSubscription sub = subscriptionRepository.findEffective(member.getId(), day).stream()
+                .filter(x -> x.getPtSessionsTotal() != null)
+                .findFirst().orElse(null);
+        if (sub == null) return null;
+        if (sub.getPtValidUntil() != null && day.isAfter(sub.getPtValidUntil())) {
+            return "buổi PT của gói chỉ dùng được đến " + sub.getPtValidUntil().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        }
+        long used = ptSessionUsageRepository.countBySubscriptionId(sub.getId());
+        long booked = scheduleRepository.countPtBooked(member.getId(), sub.getStartDate().atStartOfDay(),
+                sub.getEndDate().plusDays(1).atStartOfDay(), ScheduleStatus.SCHEDULED, excludeId);
+        if (used + booked >= sub.getPtSessionsTotal()) {
+            return "gói chỉ có " + sub.getPtSessionsTotal() + " buổi PT (đã dùng " + used + ", đã xếp " + booked + "), không xếp thêm được";
         }
         return null;
     }

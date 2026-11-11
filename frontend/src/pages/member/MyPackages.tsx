@@ -197,6 +197,31 @@ export default function MyPackages() {
                       </Button>
                     </div>
                     <Meter value={current.ptSessionsUsed ?? 0} max={current.ptSessionsTotal} color="var(--primary)" />
+                    <div className="tiny muted mt-8">
+                      {[
+                        current.trainerName ? t('HLV phụ trách: {name}', { name: current.trainerName }) : t('Chưa phân công HLV'),
+                        current.ptSessionMinutes ? t('{n} phút mỗi buổi', { n: current.ptSessionMinutes }) : null,
+                        current.ptCancelNoticeHours != null ? t('Huỷ hoặc dời buổi PT trước ít nhất {n} giờ', { n: current.ptCancelNoticeHours }) : null,
+                      ].filter(Boolean).join(' · ')}
+                    </div>
+                  </div>
+                )}
+                {current.ptSessionsTotal == null && (
+                  <div className="row between row-wrap mt-16" style={{ gap: 8, padding: '12px 14px', borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--hairline)' }}>
+                    <span className="small muted">
+                      {current.planType === 'GYM_PT'
+                        ? t('Gói có PT nhưng chưa khai báo số buổi. Vui lòng liên hệ quầy lễ tân.')
+                        : t('Gói hiện tại không kèm buổi tập với huấn luyện viên (PT).')}
+                    </span>
+                    {current.planType !== 'GYM_PT' && (
+                      <Button size="sm" variant="ghost" icon="badge" onClick={() => setTab('catalog')}>{t('Xem các gói có PT')}</Button>
+                    )}
+                  </div>
+                )}
+                {(current.benefits || current.usageTerms) && (
+                  <div className="small mt-16 stack-sm" style={{ gap: 4 }}>
+                    {current.benefits && <div><b>{t('Quyền lợi đã mua')}:</b> <span className="muted">{current.benefits}</span></div>}
+                    {current.usageTerms && <div><b>{t('Điều kiện sử dụng')}:</b> <span className="muted">{current.usageTerms}</span></div>}
                   </div>
                 )}
               </div>

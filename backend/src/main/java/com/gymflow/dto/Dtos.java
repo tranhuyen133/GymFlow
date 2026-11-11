@@ -272,7 +272,20 @@ public final class Dtos {
             PlanType planType,
             Integer ptSessions,
             Integer ptValidDays,
-            List<PlanServiceGrantDto> serviceGrants) {
+            List<PlanServiceGrantDto> serviceGrants,
+            /** V24 · mã gói, để trống được. */
+            @Size(max = 30, message = "Mã gói tối đa 30 ký tự") @Pattern(regexp = "^$|^[A-Za-z0-9_-]+$", message = "Mã gói chỉ gồm chữ không dấu, số, - và _") String code,
+            @Size(max = 1000, message = "Điều kiện sử dụng tối đa 1000 ký tự") String usageTerms,
+            @Min(value = 15, message = "Buổi PT tối thiểu 15 phút") @Max(value = 240, message = "Buổi PT tối đa 240 phút") Integer ptSessionMinutes,
+            @Min(value = 0, message = "Số giờ báo trước không âm") @Max(value = 168, message = "Báo trước tối đa 168 giờ (7 ngày)") Integer ptCancelNoticeHours) {
+        /** Giữ chữ ký trước V24. */
+        public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits,
+                           boolean includesTrainer, PlanType planType, Integer ptSessions, Integer ptValidDays,
+                           List<PlanServiceGrantDto> serviceGrants) {
+            this(name, description, price, durationDays, benefits, includesTrainer, planType, ptSessions, ptValidDays,
+                    serviceGrants, null, null, null, null);
+        }
+
         public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits) {
             this(name, description, price, durationDays, benefits, false, PlanType.GYM, null, null, null);
         }
@@ -290,7 +303,16 @@ public final class Dtos {
     public record PlanResponse(Long id, String name, String description, Long price, Integer durationDays,
                                String benefits, boolean active, long currentSubscriptions, boolean includesTrainer,
                                PlanType planType, Integer ptSessions, Integer ptValidDays,
-                               List<PlanServiceGrantDto> serviceGrants) {
+                               List<PlanServiceGrantDto> serviceGrants,
+                               String code, String usageTerms, Integer ptSessionMinutes, Integer ptCancelNoticeHours) {
+        /** Giữ chữ ký trước V24. */
+        public PlanResponse(Long id, String name, String description, Long price, Integer durationDays,
+                            String benefits, boolean active, long currentSubscriptions, boolean includesTrainer,
+                            PlanType planType, Integer ptSessions, Integer ptValidDays,
+                            List<PlanServiceGrantDto> serviceGrants) {
+            this(id, name, description, price, durationDays, benefits, active, currentSubscriptions, includesTrainer,
+                    planType, ptSessions, ptValidDays, serviceGrants, null, null, null, null);
+        }
     }
 
     // ===================== Subscription =====================
@@ -301,7 +323,16 @@ public final class Dtos {
             @Min(value = 0, message = "Số tiền không âm") Long pricePaid,
             @Size(max = 255) String note,
             Integer ptSessionsTotal,
-            LocalDate ptValidUntil) {
+            LocalDate ptValidUntil,
+            /** V24 · chốt theo đơn hội viên gửi; null = lấy theo gói hiện tại. */
+            Integer ptSessionMinutes,
+            Integer ptCancelNoticeHours) {
+        /** Giữ chữ ký trước V24. */
+        public SubscriptionRequest(Long memberId, Long planId, LocalDate startDate, Long pricePaid, String note,
+                                   Integer ptSessionsTotal, LocalDate ptValidUntil) {
+            this(memberId, planId, startDate, pricePaid, note, ptSessionsTotal, ptValidUntil, null, null);
+        }
+
         public SubscriptionRequest(Long memberId, Long planId, LocalDate startDate, Long pricePaid, String note) {
             this(memberId, planId, startDate, pricePaid, note, null, null);
         }
@@ -317,7 +348,27 @@ public final class Dtos {
                                        Long planId, String planName, LocalDate startDate, LocalDate endDate,
                                        Long pricePaid, SubscriptionState state, long daysLeft, boolean cancelled,
                                        LocalDateTime cancelledAt, String note, LocalDateTime createdAt, String createdByName,
-                                       Integer ptSessionsTotal, Integer ptSessionsUsed, Integer ptSessionsRemaining, LocalDate ptValidUntil) {
+                                       Integer ptSessionsTotal, Integer ptSessionsUsed, Integer ptSessionsRemaining, LocalDate ptValidUntil,
+                                       PlanType planType, Integer ptSessionMinutes, Integer ptCancelNoticeHours,
+                                       String benefits, String usageTerms, String trainerName) {
+        /** Giữ chữ ký trước V24. */
+        public SubscriptionResponse(Long id, Long memberId, String memberName, String memberCode,
+                                    Long planId, String planName, LocalDate startDate, LocalDate endDate,
+                                    Long pricePaid, SubscriptionState state, long daysLeft, boolean cancelled,
+                                    LocalDateTime cancelledAt, String note, LocalDateTime createdAt, String createdByName,
+                                    Integer ptSessionsTotal, Integer ptSessionsUsed, Integer ptSessionsRemaining, LocalDate ptValidUntil) {
+            this(id, memberId, memberName, memberCode, planId, planName, startDate, endDate, pricePaid, state, daysLeft,
+                    cancelled, cancelledAt, note, createdAt, createdByName, ptSessionsTotal, ptSessionsUsed,
+                    ptSessionsRemaining, ptValidUntil, null, null, null, null, null, null);
+        }
+    }
+
+    /** V24 · một dòng theo dõi buổi PT cho quản lý / HLV. ptSessionsRemaining = null khi gói chưa khai báo số buổi. */
+    public record PtOverviewRow(Long subscriptionId, Long memberId, String memberCode, String memberName,
+                                Long trainerId, String trainerName, String planName,
+                                LocalDate startDate, LocalDate endDate, LocalDate ptValidUntil, SubscriptionState state,
+                                Integer ptSessionsTotal, long ptSessionsUsed, long ptSessionsScheduled,
+                                Integer ptSessionsRemaining, Integer ptSessionMinutes) {
     }
 
     public record PtSessionUsageResponse(Long id, Long subscriptionId, Long scheduleId, String scheduleTitle,

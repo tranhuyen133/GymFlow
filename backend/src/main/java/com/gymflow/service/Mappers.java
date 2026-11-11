@@ -87,7 +87,8 @@ public class Mappers {
                 : p.getServiceGrants().stream().map(this::planServiceGrant).toList();
         return new PlanResponse(p.getId(), p.getName(), p.getDescription(), p.getPrice(), p.getDurationDays(),
                 p.getBenefits(), p.isActive(), subscriptionRepository.countCurrentByPlan(p.getId(), today()),
-                p.isIncludesTrainer(), p.getPlanType(), p.getPtSessions(), p.getPtValidDays(), grants);
+                p.isIncludesTrainer(), p.getPlanType(), p.getPtSessions(), p.getPtValidDays(), grants,
+                p.getCode(), p.getUsageTerms(), p.getPtSessionMinutes(), p.getPtCancelNoticeHours());
     }
 
     public PlanServiceGrantDto planServiceGrant(PlanServiceGrant g) {
@@ -160,11 +161,17 @@ public class Mappers {
             ptUsed = (int) usedCount;
             ptRemaining = Math.max(0, ptTotal - ptUsed);
         }
+        // V24: tên gói theo ảnh chụp lúc bán; gói bán trước V24 chưa có ảnh chụp thì dùng tên gói hiện tại.
+        String planName = s.getPlanNameSnapshot() != null ? s.getPlanNameSnapshot() : s.getPlan().getName();
+        Trainer trainer = m.getTrainer();
         return new SubscriptionResponse(s.getId(), m.getId(), m.getUser().getFullName(), m.getCode(),
-                s.getPlan().getId(), s.getPlan().getName(), s.getStartDate(), s.getEndDate(), s.getPricePaid(),
+                s.getPlan().getId(), planName, s.getStartDate(), s.getEndDate(), s.getPricePaid(),
                 s.stateOn(today), s.daysLeft(today), s.isCancelled(), s.getCancelledAt(), s.getNote(),
                 s.getCreatedAt(), s.getCreatedBy() == null ? null : s.getCreatedBy().getFullName(),
-                ptTotal, ptUsed, ptRemaining, s.getPtValidUntil());
+                ptTotal, ptUsed, ptRemaining, s.getPtValidUntil(),
+                s.getPlan().getPlanType(), s.getPtSessionMinutesSnapshot(), s.getPtCancelNoticeHoursSnapshot(),
+                s.getBenefitsSnapshot(), s.getUsageTermsSnapshot(),
+                trainer == null ? null : trainer.getUser().getFullName());
     }
 
     public PtSessionUsageResponse ptSessionUsage(PtSessionUsage u) {
