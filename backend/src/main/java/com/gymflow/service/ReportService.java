@@ -6,6 +6,8 @@ import com.gymflow.dto.Dtos.*;
 import com.gymflow.repository.MemberRepository;
 import com.gymflow.repository.MemberSubscriptionRepository;
 import com.gymflow.repository.WorkoutScheduleRepository;
+import com.gymflow.repository.PtSessionUsageRepository;
+import com.gymflow.security.AuthUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,9 @@ public class ReportService {
     private final MemberSubscriptionRepository subscriptionRepository;
     private final WorkoutScheduleRepository scheduleRepository;
     private final MemberRepository memberRepository;
+    private final PtSessionUsageRepository ptSessionUsageRepository;
+    private final AccessService access;
+    private final Mappers mappers;
 
     public ReportResponse summary(LocalDate from, LocalDate to) {
         if (from == null || to == null || to.isBefore(from)) throw ApiException.badRequest("Khoảng ngày không hợp lệ");
@@ -80,6 +85,31 @@ public class ReportService {
 
         return new ReportResponse(from, to, revenue, subs.size(), monthList(byMonth), list(byPlan),
                 scheduled, completed, missed, cancelled, rate, byTrainer, list(byStatus), list(byGender), monthList(newByMonth));
+    }
+
+    /** V24 · theo dõi buổi PT: quản lý xem tất cả, HLV chỉ xem hội viên mình phụ trách. Gói chưa khai báo số buổi trả remaining = null. */
+    public List<PtOverviewRow> ptOverview(AuthUser user) {
+        if (!user.isAdmin() && !user.isTrainer()) throw ApiException.forbidden();
+        Long trainerScope = user.isTrainer() ? access.requireTrainerOf(user).getId() : null;
+        LocalDate today = mappers.today();
+        List<PtOverviewRow> rows = new ArrayList<>();
+        for (MemberSubscription s : subscriptionRepository.findCurrentPt(today)) {
+            Member m = s.getMember();
+            Trainer t = m.getTrainer();
+            if (trainerScope != null && (t == null || !trainerScope.equals(t.getId()))) continue;
+            long used = ptSessionUsageRepository.countBySubscriptionId(s.getId());
+            long booked = scheduleRepository.countPtBooked(m.getId(), s.getStartDate().atStartOfDay(),
+                    s.getEndDate().plusDays(1).atStartOfDay(), ScheduleStatus.SCHEDULED, null);
+            Integer total = s.getPtSessionsTotal();
+            Integer remaining = total == null ? null : (int) Math.max(0, total - used);
+            rows.add(new PtOverviewRow(s.getId(), m.getId(), m.getCode(), m.getUser().getFullName(),
+                    t == null ? null : t.getId(), t == null ? null : t.getUser().getFullName(),
+                    s.getPlanNameSnapshot() != null ? s.getPlanNameSnapshot() : s.getPlan().getName(),
+                    s.getStartDate(), s.getEndDate(), s.getPtValidUntil(), s.stateOn(today),
+                    total, used, booked, remaining, s.getPtSessionMinutesSnapshot()));
+        }
+        rows.sort(Comparator.comparing((PtOverviewRow r) -> r.ptSessionsRemaining() == null ? Integer.MAX_VALUE : r.ptSessionsRemaining()));
+        return rows;
     }
 
     private static long count(List<WorkoutSchedule> list, ScheduleStatus st) {

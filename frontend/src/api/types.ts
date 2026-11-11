@@ -88,6 +88,11 @@ export interface MembershipPlan {
   ptSessions?: number | null;
   ptValidDays?: number | null;
   serviceGrants?: PlanServiceGrant[];
+  /** V24 · null = chưa khai báo */
+  code?: string | null;
+  usageTerms?: string | null;
+  ptSessionMinutes?: number | null;
+  ptCancelNoticeHours?: number | null;
 }
 export interface Subscription {
   id: number; memberId: number; memberName: string; memberCode: string; planId: number; planName: string;
@@ -97,6 +102,21 @@ export interface Subscription {
   ptSessionsUsed?: number | null;
   ptSessionsRemaining?: number | null;
   ptValidUntil?: string | null;
+  /** V24 · ảnh chụp lúc bán; gói bán trước V24 để null */
+  planType?: PlanType | null;
+  ptSessionMinutes?: number | null;
+  ptCancelNoticeHours?: number | null;
+  benefits?: string | null;
+  usageTerms?: string | null;
+  trainerName?: string | null;
+}
+/** V24 · GET /subscriptions/pt-overview. ptSessionsRemaining = null khi gói chưa khai báo số buổi. */
+export interface PtOverviewRow {
+  subscriptionId: number; memberId: number; memberCode: string; memberName: string;
+  trainerId: number | null; trainerName: string | null; planName: string;
+  startDate: string; endDate: string; ptValidUntil: string | null; state: SubscriptionState;
+  ptSessionsTotal: number | null; ptSessionsUsed: number; ptSessionsScheduled: number;
+  ptSessionsRemaining: number | null; ptSessionMinutes: number | null;
 }
 export interface PtSessionUsage {
   id: number;

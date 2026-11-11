@@ -10,6 +10,7 @@ import { durationLabel, fmtMoney } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { TITLE_RE } from '../../lib/validation';
 import { t } from '../../i18n';
+import { PtOverview } from '../../components/PtOverview';
 
 type View = 'all' | 'active' | 'inactive';
 
@@ -97,6 +98,7 @@ export default function Plans() {
           )}
         </>
       )}
+      {data && data.length > 0 && <PtOverview />}
       {editing && <PlanForm plan={editing === 'new' ? undefined : editing} others={sorted.filter((p) => editing === 'new' || p.id !== editing.id)}
         onClose={() => setEditing(null)} onSaved={() => { setEditing(null); void reload(); }} />}
       {removing && <Confirm danger title="Xoá gói tập?" confirmText="Xoá" onClose={() => setRemoving(null)}
@@ -115,6 +117,10 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
   const [pt, setPt] = useState(plan?.planType === 'GYM_PT' || (plan?.includesTrainer ?? false));
   const [ptSessions, setPtSessions] = useState(plan?.ptSessions != null ? String(plan.ptSessions) : '12');
   const [ptValidDays, setPtValidDays] = useState(plan?.ptValidDays != null ? String(plan.ptValidDays) : String(plan?.durationDays ?? 30));
+  const [code, setCode] = useState(plan?.code ?? '');
+  const [usageTerms, setUsageTerms] = useState(plan?.usageTerms ?? '');
+  const [ptMinutes, setPtMinutes] = useState(plan?.ptSessionMinutes != null ? String(plan.ptSessionMinutes) : '');
+  const [ptNotice, setPtNotice] = useState(plan?.ptCancelNoticeHours != null ? String(plan.ptCancelNoticeHours) : '');
   const [serviceGrants, setServiceGrants] = useState<PlanServiceGrant[]>(
     plan?.serviceGrants ? plan.serviceGrants.map((g) => ({ ...g })) : []
   );
@@ -183,7 +189,10 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
       const vdays = Number(ptValidDays);
       if (!Number.isInteger(sess) || sess < 1 || sess > 200) v.ptSessions = 'Số buổi PT từ 1 đến 200';
       if (!Number.isInteger(vdays) || vdays < 1 || vdays > 1095) v.ptValidDays = 'Thời hạn buổi từ 1 đến 1095 ngày';
+      if (ptMinutes !== '' && (!Number.isInteger(Number(ptMinutes)) || Number(ptMinutes) < 15 || Number(ptMinutes) > 240)) v.ptSessionMinutes = 'Từ 15 đến 240 phút';
+      if (ptNotice !== '' && (!Number.isInteger(Number(ptNotice)) || Number(ptNotice) < 0 || Number(ptNotice) > 168)) v.ptCancelNoticeHours = 'Từ 0 đến 168 giờ';
     }
+    if (code.trim() && !/^[A-Za-z0-9_-]{1,30}$/.test(code.trim())) v.code = 'Chữ không dấu, số, - và _ (tối đa 30 ký tự)';
     setErrors(v); setError(null);
     if (Object.keys(v).length) return;
     setBusy(true);
@@ -198,6 +207,10 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
       includesTrainer: pt,
       ptSessions: pt ? Number(ptSessions) : null,
       ptValidDays: pt ? Number(ptValidDays) : null,
+      code: code.trim() ? code.trim().toUpperCase() : null,
+      usageTerms: usageTerms.trim() || null,
+      ptSessionMinutes: pt && ptMinutes !== '' ? Number(ptMinutes) : null,
+      ptCancelNoticeHours: pt && ptNotice !== '' ? Number(ptNotice) : null,
       serviceGrants: serviceGrants.map((g) => ({
         serviceId: g.serviceId,
         quantity: g.quantity,
@@ -221,6 +234,10 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
           {plan && plan.currentSubscriptions > 0 && <Alert kind="info">{t('{n} hội viên đang dùng gói này. Giá mới chỉ áp dụng cho lần đăng ký sau.', { n: plan.currentSubscriptions })}</Alert>}
           <div className="form-grid">
             <Field label="Tên gói" error={errors.name} required className="span-2"><Input maxLength={100} value={f.name} invalid={!!errors.name} onChange={(e) => set('name', e.target.value)} placeholder="VD: Gói 3 tháng" /></Field>
+            <Field label="Mã gói" error={errors.code} hint={t('Chữ không dấu, số, - và _ (tối đa 30 ký tự)')}>
+              <Input maxLength={30} value={code} invalid={!!errors.code} placeholder="VD: PT12-3T"
+                onChange={(e) => { setCode(e.target.value); if (errors.code) setErrors((x) => ({ ...x, code: '' })); }} />
+            </Field>
             <Field label="Giá (₫)" error={errors.price} required hint={f.price && !errors.price ? fmtMoney(price) : undefined}>
               <Input type="number" inputMode="numeric" min={0} step={10000} value={f.price} invalid={!!errors.price} onChange={(e) => set('price', e.target.value)} />
             </Field>
@@ -247,12 +264,24 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
                   <Input type="number" inputMode="numeric" min={1} max={1095} value={ptValidDays} invalid={!!errors.ptValidDays}
                     onChange={(e) => { setPtValidDays(e.target.value); if (errors.ptValidDays) setErrors((x) => ({ ...x, ptValidDays: '' })); }} />
                 </Field>
+                <Field label="Thời lượng mỗi buổi PT (phút)" error={errors.ptSessionMinutes} hint={t('Để trống nếu chưa áp dụng')}>
+                  <Input type="number" inputMode="numeric" min={15} max={240} value={ptMinutes} invalid={!!errors.ptSessionMinutes}
+                    onChange={(e) => { setPtMinutes(e.target.value); if (errors.ptSessionMinutes) setErrors((x) => ({ ...x, ptSessionMinutes: '' })); }} />
+                </Field>
+                <Field label="Báo huỷ/dời trước (giờ)" error={errors.ptCancelNoticeHours} hint={t('Để trống nếu chưa áp dụng')}>
+                  <Input type="number" inputMode="numeric" min={0} max={168} value={ptNotice} invalid={!!errors.ptCancelNoticeHours}
+                    onChange={(e) => { setPtNotice(e.target.value); if (errors.ptCancelNoticeHours) setErrors((x) => ({ ...x, ptCancelNoticeHours: '' })); }} />
+                </Field>
               </>
             )}
             {plan && plan.includesTrainer && !pt && plan.currentSubscriptions > 0 && (
               <div className="span-2"><Alert kind="warning">{t('Hội viên đang dùng gói này vẫn giữ HLV hiện tại. Đổi HLV ở hồ sơ từng hội viên nếu cần.')}</Alert></div>
             )}
             <Field label="Quyền lợi" hint="Mỗi dòng hoặc dấu phẩy là một quyền lợi" className="span-2"><Textarea maxLength={1000} rows={4} value={f.benefits} onChange={(e) => set('benefits', e.target.value)} placeholder={'Tủ đồ cá nhân\nNước uống miễn phí\n1 buổi PT'} /></Field>
+            <Field label="Điều kiện sử dụng" className="span-2" hint={t('{n}/1000', { n: usageTerms.length })}>
+              <Textarea maxLength={1000} rows={3} value={usageTerms} onChange={(e) => setUsageTerms(e.target.value)}
+                placeholder="VD: Đặt lịch PT trước 24 giờ. Đổi HLV tại quầy lễ tân." />
+            </Field>
 
             {/* Quà tặng dịch vụ kèm theo */}
             <div className="span-2">

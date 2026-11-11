@@ -223,6 +223,27 @@ public class PlanService {
         p.setPtSessions(type == PlanType.GYM_PT ? req.ptSessions() : null);
         p.setPtValidDays(type == PlanType.GYM_PT ? req.ptValidDays() : null);
 
+        // V24 · mã gói, điều kiện sử dụng, thời lượng buổi PT, số giờ báo huỷ. Để trống = chưa khai báo, không tự đặt số liệu.
+        String code = Mappers.blankToNull(req.code());
+        if (code != null) {
+            code = code.trim().toUpperCase(java.util.Locale.ROOT);
+            if (!code.matches("[A-Z0-9_-]{1,30}")) throw ApiException.badRequest("Mã gói chỉ gồm chữ không dấu, số, - và _ (tối đa 30 ký tự)");
+            boolean taken = p.getId() == null ? planRepository.existsByCodeIgnoreCase(code)
+                    : planRepository.existsByCodeIgnoreCaseAndIdNot(code, p.getId());
+            if (taken) throw ApiException.conflict("Mã gói " + code + " đã dùng cho gói khác");
+        }
+        String terms = Mappers.blankToNull(req.usageTerms());
+        if (terms != null) terms = terms.trim();
+        if (terms != null && terms.length() > 1000) throw ApiException.badRequest("Điều kiện sử dụng tối đa 1000 ký tự");
+        Integer minutes = type == PlanType.GYM_PT ? req.ptSessionMinutes() : null;
+        if (minutes != null && (minutes < 15 || minutes > 240)) throw ApiException.badRequest("Thời lượng buổi PT từ 15 đến 240 phút");
+        Integer notice = type == PlanType.GYM_PT ? req.ptCancelNoticeHours() : null;
+        if (notice != null && (notice < 0 || notice > 168)) throw ApiException.badRequest("Số giờ báo huỷ buổi PT từ 0 đến 168");
+        p.setCode(code);
+        p.setUsageTerms(terms);
+        p.setPtSessionMinutes(minutes);
+        p.setPtCancelNoticeHours(notice);
+
         if (req.serviceGrants() != null) {
             p.getServiceGrants().clear();
             for (PlanServiceGrantDto g : req.serviceGrants()) {
