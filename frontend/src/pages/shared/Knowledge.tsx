@@ -39,7 +39,7 @@ import {
   muscleLabel,
 } from '../../lib/format';
 import { errMsg, useAsync, useDebounced, usePaged } from '../../lib/hooks';
-import { getLang, t } from '../../i18n';
+import { getLang, t, useLang } from '../../i18n';
 import './exercises.css';
 import './kb.css';
 import './knowledge.css';
@@ -63,7 +63,7 @@ const TAB_CONFIGS: { key: KnowledgeTab; label: string; icon: IconName }[] = [
   { key: 'guides', label: 'Hướng dẫn tập luyện', icon: 'info' },
 ];
 
-export interface SubCategoryItem {
+interface SubCategoryItem {
   key: string;
   label: string;
 }
@@ -103,7 +103,7 @@ const CARDIO_SUBCATS: SubCategoryItem[] = [
   { key: 'HIIT', label: 'HIIT' },
 ];
 
-export const SUBCAT_LABEL: Record<string, string> = {
+const SUBCAT_LABEL: Record<string, string> = {
   // Strength
   CHEST: 'Ngực',
   BACK: 'Lưng',
@@ -167,6 +167,7 @@ function getMuscleIcon(subOrGroup?: string): IconName {
 
 export default function Knowledge() {
   const { user } = useAuth();
+  const { lang } = useLang();
   const isMember = user?.role === 'MEMBER';
   const isStaff = user?.role === 'ADMIN' || user?.role === 'TRAINER';
   const toast = useToast();
@@ -310,7 +311,6 @@ export default function Knowledge() {
   // Sắp xếp bài tập theo tên đang hiển thị
   const sortedExercises = useMemo(() => {
     const list = [...(exercisesData ?? [])];
-    const lang = getLang();
     if (sort === 'name') {
       list.sort((a, b) => exTitle(a).localeCompare(exTitle(b), lang));
     } else if (sort === 'updated') {
@@ -319,13 +319,13 @@ export default function Knowledge() {
       list.sort((a, b) => (b.usageCount ?? 0) - (a.usageCount ?? 0));
     }
     return list;
-  }, [exercisesData, sort]);
+  }, [exercisesData, sort, lang]);
 
-  // Đổi bất kỳ bộ lọc nào đều về trang 1
+  // Đổi bất kỳ bộ lọc nào hoặc đổi ngôn ngữ đều về trang 1
   const pagedExercises = usePaged(
     sortedExercises,
     'knowledge-exercises-page',
-    [currentTab, subCategory, dq, level, location, sort, muscle, equip, favoriteOnly, assignedOnly, showHidden],
+    [currentTab, subCategory, dq, level, location, sort, muscle, equip, favoriteOnly, assignedOnly, showHidden, lang],
     12
   );
 
@@ -497,7 +497,7 @@ export default function Knowledge() {
     </Link>
   );
 
-  const eyebrow = isStaff ? t('Trung tâm huấn luyện') : (isMember ? t('Kho kiến thức thể hình') : undefined);
+  const eyebrow = isStaff ? t('Trung tâm huấn luyện') : undefined;
 
   return (
     <div className="page">

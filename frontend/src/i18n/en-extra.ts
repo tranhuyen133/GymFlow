@@ -2245,4 +2245,10 @@ export const EN_EXTRA: Record<string, string> = {
   'Sắp xếp: {sort}': 'Sort: {sort}',
   'Được giao': 'Assigned',
   'Bài đang ẩn': 'Hidden exercises',
+  'Địa điểm tập': 'Workout location',
+  'Sắp xếp theo': 'Sort by',
+  'Máy chạy bộ': 'Treadmill',
+  'Máy tập tim mạch': 'Cardio machine',
+  'Tìm bài khởi động khớp, cơ, kích hoạt...': 'Search warm-up, mobility, activation exercises...',
+  'Tìm bài cardio, HIIT, máy chạy...': 'Search cardio, HIIT, treadmill exercises...',
 };
