@@ -317,7 +317,7 @@ class ScheduleServiceTest {
     @Test
     void cancelScheduledSessionBeforeStart_succeeds() {
         WorkoutSchedule s = createSchedule(20L, ScheduleStatus.SCHEDULED, NOW.plusHours(1), NOW.plusHours(2));
-        when(scheduleRepository.findById(20L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(s));
         when(access.canCoach(trainerUser, member)).thenReturn(true);
 
         service.cancel(trainerUser, 20L);
@@ -329,7 +329,7 @@ class ScheduleServiceTest {
     @Test
     void cancelScheduledSessionAfterStart_isRejected() {
         WorkoutSchedule s = createSchedule(21L, ScheduleStatus.SCHEDULED, NOW.minusMinutes(1), NOW.plusMinutes(59));
-        when(scheduleRepository.findById(21L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(21L)).thenReturn(Optional.of(s));
         when(access.canCoach(trainerUser, member)).thenReturn(true);
 
         assertThatThrownBy(() -> service.cancel(trainerUser, 21L))
