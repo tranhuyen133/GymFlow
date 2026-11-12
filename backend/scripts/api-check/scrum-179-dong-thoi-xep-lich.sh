@@ -5,6 +5,7 @@
 # CSDL chi co dung 1 buoi tap cho khung gio do nho khoa bi quan tren dong Member roi Trainer.
 # Chi chay voi ban local (mac dinh http://localhost:8080), KHONG chay vao VPS dung chung.
 # Mat khau nhap tu ban phim, khong luu vao file. Cuoi script hoi vien kiem thu chuyen INACTIVE.
+# NOTE #1: SCRUM-179 - chi bo sung ghi chu, khong doi logic kiem thu.
 set -u
 BASE="${BASE:-http://localhost:8080}"
 PASS=0; FAIL=0
