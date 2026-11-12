@@ -1,5 +1,7 @@
 package com.gymflow.config;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gymflow.domain.*;
 import com.gymflow.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.InputStream;
 import java.time.*;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -41,9 +44,28 @@ public class DataSeeder implements ApplicationRunner {
     private final WorkoutLogRepository logRepository;
     private final WeightRecordRepository weightRepository;
     private final AuditLogRepository auditRepository;
+    private final ArticleRepository articleRepository;
+    private final ContentSourceRepository sourceRepository;
+    private final ObjectMapper objectMapper;
     private final PasswordEncoder encoder;
     private final JdbcTemplate jdbc;
     private final Clock clock;
+
+    public record SeedSourceItem(String code, String publisher, String title, String url) {}
+
+    public record SeedExerciseItem(
+            String name, String nameEn, String aliases, MuscleGroup muscleGroup,
+            String secondaryMuscles, String equipment, Level level, ExerciseLocation location,
+            String goals, String description, String instructions, String breathing,
+            String commonMistakes, String safetyNotes, String variations, String suggestedDose,
+            ContentOrigin contentOrigin, List<SeedSourceItem> sources
+    ) {}
+
+    public record SeedArticleItem(
+            String slug, String title, ArticleCategory category, String summary,
+            String body, ContentOrigin contentOrigin, ArticleStatus status,
+            String reviewNote, List<SeedSourceItem> sources
+    ) {}
 
     @Value("${app.seed-demo-data:false}")
     private boolean enabled;
@@ -57,9 +79,15 @@ public class DataSeeder implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        if (!enabled || userRepository.count() > 0) return;
+        if (!enabled) return;
         LocalDate today = LocalDate.now(clock);
         LocalDateTime now = LocalDateTime.now(clock);
+        if (userRepository.count() > 0) {
+            if (articleRepository.count() == 0) {
+                userRepository.findByEmailIgnoreCase(DemoAccounts.ADMIN.email()).ifPresent(adm -> seedArticlesFromJson(adm, now));
+            }
+            return;
+        }
         log.info("Đang sinh dữ liệu mẫu GymFlow cho ngày {}", today);
 
         User admin = user(DemoAccounts.ADMIN.email(), DemoAccounts.ADMIN.password(), "Quản lý GymFlow", "0901000001", Role.ADMIN);
@@ -90,6 +118,7 @@ public class DataSeeder implements ApplicationRunner {
 
         // ---------- Bài tập ----------
         List<Exercise> ex = new ArrayList<>();
+        seedExercisesFromJson(trainers[0].getUser(), ex);
         Object[][] exData = {
                 {"Bench Press", MuscleGroup.CHEST, "Thanh đòn, ghế phẳng", Level.INTERMEDIATE},
                 {"Incline Dumbbell Press", MuscleGroup.CHEST, "Tạ đơn, ghế dốc", Level.INTERMEDIATE},
@@ -118,7 +147,9 @@ public class DataSeeder implements ApplicationRunner {
             // Flyway V3 đã tạo thư viện bài tập có nguồn → dùng lại, không tạo bản trùng tên
             var existing = exerciseRepository.findFirstByNameIgnoreCase((String) r[0]);
             if (existing.isPresent()) {
-                ex.add(existing.get());
+                if (!ex.contains(existing.get())) {
+                    ex.add(existing.get());
+                }
                 continue;
             }
             Exercise e = new Exercise();
@@ -256,11 +287,14 @@ public class DataSeeder implements ApplicationRunner {
             jdbc.update("UPDATE member_subscriptions SET created_at = ? WHERE id = ?", paid, s.getId());
         }
 
+        // ---------- Bài viết kiến thức mẫu có nguồn (SCRUM-221) ----------
+        seedArticlesFromJson(admin, now);
+
         AuditLog a = new AuditLog();
         a.setActorEmail("system");
         a.setAction("SYSTEM_SEED");
         a.setTargetType("SYSTEM");
-        a.setDetail("Khởi tạo dữ liệu mẫu: 12 hội viên, 3 HLV, 6 gói, 23 bài tập");
+        a.setDetail("Khởi tạo dữ liệu mẫu: 12 hội viên, 3 HLV, 6 gói, bài tập và kho bài viết mẫu");
         a.setSuccess(true);
         auditRepository.save(a);
         log.info("Đã sinh dữ liệu mẫu. Tài khoản demo: {}", DemoAccounts.ALL.stream().map(acc -> acc.email()).toList());
@@ -365,5 +399,101 @@ public class DataSeeder implements ApplicationRunner {
             case CARDIO -> "tim mạch";
             case FULL_BODY -> "toàn thân";
         };
+    }
+
+    private void seedArticlesFromJson(User author, LocalDateTime now) {
+        try (InputStream is = getClass().getResourceAsStream("/seed/articles.json")) {
+            if (is == null) {
+                log.info("Không tìm thấy file seed/articles.json trên classpath");
+                return;
+            }
+            List<SeedArticleItem> items = objectMapper.readValue(is, new TypeReference<List<SeedArticleItem>>() {});
+            int created = 0;
+            for (SeedArticleItem item : items) {
+                if (item.slug() == null || articleRepository.existsBySlug(item.slug())) continue;
+                Article a = new Article();
+                a.setSlug(item.slug());
+                a.setTitle(item.title());
+                a.setCategory(item.category() != null ? item.category() : ArticleCategory.ACTIVITY);
+                a.setSummary(item.summary() != null ? item.summary() : "");
+                a.setBody(item.body() != null ? item.body() : "");
+                a.setContentOrigin(item.contentOrigin() != null ? item.contentOrigin() : ContentOrigin.SELF_AUTHORED);
+                ArticleStatus st = item.status() != null ? item.status() : ArticleStatus.PUBLISHED;
+                a.setStatus(st);
+                a.setReviewNote(item.reviewNote());
+                a.setAuthor(author);
+                a.setReviewedBy(author);
+                a.setReviewedAt(now);
+                a.setPublishedAt(st == ArticleStatus.PUBLISHED ? now : null);
+                if (item.sources() != null) {
+                    for (SeedSourceItem src : item.sources()) {
+                        attachSource(a.getSources(), src);
+                    }
+                }
+                articleRepository.save(a);
+                created++;
+            }
+            log.info("Đã nạp {} bài viết mẫu từ seed/articles.json (SCRUM-221)", created);
+        } catch (Exception e) {
+            log.warn("Lỗi khi đọc file seed/articles.json: {}", e.getMessage());
+        }
+    }
+
+    private void seedExercisesFromJson(User creator, List<Exercise> ex) {
+        try (InputStream is = getClass().getResourceAsStream("/seed/exercises.json")) {
+            if (is == null) return;
+            List<SeedExerciseItem> items = objectMapper.readValue(is, new TypeReference<List<SeedExerciseItem>>() {});
+            for (SeedExerciseItem item : items) {
+                if (item.name() == null || item.name().isBlank()) continue;
+                var existing = exerciseRepository.findFirstByNameIgnoreCase(item.name());
+                if (existing.isPresent()) {
+                    ex.add(existing.get());
+                    continue;
+                }
+                Exercise e = new Exercise();
+                e.setName(item.name());
+                e.setNameEn(item.nameEn());
+                e.setAliases(item.aliases());
+                e.setMuscleGroup(item.muscleGroup() != null ? item.muscleGroup() : MuscleGroup.FULL_BODY);
+                e.setSecondaryMuscles(item.secondaryMuscles());
+                e.setEquipment(item.equipment() != null ? item.equipment() : "Không");
+                e.setLevel(item.level() != null ? item.level() : Level.BEGINNER);
+                e.setLocation(item.location() != null ? item.location() : ExerciseLocation.GYM);
+                e.setGoals(item.goals() != null ? item.goals() : "STRENGTH");
+                e.setDescription(item.description());
+                e.setInstructions(item.instructions());
+                e.setBreathing(item.breathing());
+                e.setCommonMistakes(item.commonMistakes());
+                e.setSafetyNotes(item.safetyNotes());
+                e.setVariations(item.variations());
+                e.setSuggestedDose(item.suggestedDose());
+                e.setContentOrigin(item.contentOrigin() != null ? item.contentOrigin() : ContentOrigin.SELF_AUTHORED);
+                e.setReviewStatus(ReviewStatus.APPROVED);
+                e.setCreatedBy(creator);
+                if (item.sources() != null) {
+                    for (SeedSourceItem src : item.sources()) {
+                        attachSource(e.getSources(), src);
+                    }
+                }
+                ex.add(exerciseRepository.save(e));
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi khi đọc file seed/exercises.json: {}", e.getMessage());
+        }
+    }
+
+    private void attachSource(Set<ContentSource> target, SeedSourceItem s) {
+        if (s == null || s.code() == null || s.code().isBlank()) return;
+        ContentSource src = sourceRepository.findByCode(s.code()).orElseGet(() -> {
+            ContentSource newSrc = new ContentSource();
+            newSrc.setCode(s.code());
+            newSrc.setPublisher(s.publisher() != null ? s.publisher() : "Nguồn tham khảo");
+            newSrc.setTitle(s.title() != null ? s.title() : s.code());
+            newSrc.setUrl(s.url());
+            newSrc.setLicense("Open Government Licence v3.0");
+            newSrc.setLicenseVerified(true);
+            return sourceRepository.save(newSrc);
+        });
+        target.add(src);
     }
 }

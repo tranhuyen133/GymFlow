@@ -1,0 +1,206 @@
+[
+  {
+    "slug": "dia-an-can-bang",
+    "title": "Đĩa ăn cân bằng: chia tỷ lệ các nhóm thực phẩm",
+    "category": "NUTRITION",
+    "summary": "Năm nhóm thực phẩm và tỷ lệ gợi ý theo hướng dẫn Eatwell Guide của Anh, kèm những nhóm nên hạn chế.",
+    "body": "## Ý chính\nKhông cần bữa nào cũng cân bằng hoàn hảo. Hãy nhắm tới sự cân bằng trong cả ngày, thậm chí cả tuần. Đây là hướng dẫn của Vương quốc Anh, áp dụng cho đa số người lớn.\n\n## Năm nhóm thực phẩm\n- Rau và trái cây: chiếm hơn một phần ba lượng thức ăn mỗi ngày; ăn ít nhất 5 phần đa dạng. Tươi, đông lạnh, đóng hộp hay sấy khô đều được tính.\n- Tinh bột (cơm, khoai, bánh mì, mì): cũng chiếm hơn một phần ba; ưu tiên loại nhiều chất xơ hoặc nguyên cám như gạo lứt, giữ vỏ khoai.\n- Đạm: đậu, đỗ, cá, trứng, thịt. Chọn thịt nạc, ăn ít thịt đỏ và thịt chế biến sẵn. Nên ăn ít nhất 2 phần cá mỗi tuần (mỗi phần khoảng 140 g), trong đó 1 phần là cá béo như cá hồi, cá mòi, cá thu.\n- Sữa và sản phẩm thay thế (như sữa đậu nành): nguồn đạm và canxi; ưu tiên loại ít béo, ít đường.\n- Dầu và chất béo: chọn chất béo không bão hoà (dầu thực vật, dầu ô liu, dầu hướng dương) và dùng lượng nhỏ, vì mọi loại chất béo đều nhiều năng lượng.\n\n## Nhóm nên hạn chế\nĐồ ăn uống nhiều chất béo, muối, đường như bánh quy, bánh ngọt, sô-cô-la, nước ngọt có đường, kem không cần thiết trong chế độ ăn, nên ăn ít và không thường xuyên. Nước ép trái cây và sinh tố tổng cộng không quá 150 ml mỗi ngày.\n\n## Áp dụng khi tập luyện\nNhu cầu năng lượng mỗi người khác nhau, phụ thuộc vào mức độ vận động và nhiều yếu tố khác. GymFlow không tính khẩu phần hay kê chế độ ăn. Người có nhu cầu ăn uống đặc biệt hoặc vấn đề sức khoẻ nên hỏi chuyên gia dinh dưỡng. Hướng dẫn này không áp dụng cho trẻ dưới 2 tuổi.",
+    "contentOrigin": "ADAPTED",
+    "status": "PUBLISHED",
+    "reviewNote": "Trang nguồn ghi hạn rà soát tiếp theo 29/11/2025 – đối chiếu chuẩn xác theo Eatwell Guide NHS.",
+    "sources": [
+      {
+        "code": "NHS_EATWELL",
+        "publisher": "NHS (nhs.uk)",
+        "title": "The Eatwell Guide",
+        "url": "https://www.nhs.uk/live-well/eat-well/food-guidelines-and-food-labels/the-eatwell-guide/"
+      }
+    ]
+  },
+  {
+    "slug": "uong-du-nuoc",
+    "title": "Uống đủ nước mỗi ngày và khi tập",
+    "category": "HYDRATION",
+    "summary": "Mức tham khảo 6–8 cốc chất lỏng mỗi ngày, cách tự kiểm tra và khi nào cần uống nhiều hơn.",
+    "body": "## Bao nhiêu là đủ\nHướng dẫn của Chính phủ Anh khuyên khoảng 6–8 cốc hoặc ly chất lỏng mỗi ngày. Đây chỉ là mức tham khảo; cách tự kiểm tra đơn giản là nước tiểu có màu vàng nhạt, trong.\n\n## Khi nào cần uống nhiều hơn\n- Mang thai hoặc cho con bú\n- Ở môi trường nóng\n- Vận động trong thời gian dài\n- Đang ốm hoặc đang hồi phục sau ốm\n\n## Mẹo cho người tập\n- Uống đều trong ngày.\n- Uống bù khi ra nhiều mồ hôi lúc tập; nước lọc là cách tốt nhất để bù lượng dịch đã mất.\n- Nước lọc, sữa ít béo, đồ uống ít đường, trà và cà phê đều được tính vào lượng chất lỏng.\n- Hạn chế đồ uống nhiều đường; nước ép và sinh tố tối đa một ly nhỏ 150 ml mỗi ngày, nên uống kèm bữa ăn.\n- Dùng caffeine ở mức vừa phải; người mang thai không quá 200 mg caffeine mỗi ngày.",
+    "contentOrigin": "ADAPTED",
+    "status": "PUBLISHED",
+    "reviewNote": "Trang nguồn ghi hạn rà soát tiếp theo 17/05/2026 – đối chiếu chuẩn theo hướng dẫn NHS.",
+    "sources": [
+      {
+        "code": "NHS_WATER",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Water, drinks and hydration",
+        "url": "https://www.nhs.uk/live-well/eat-well/food-guidelines-and-food-labels/water-drinks-nutrition/"
+      },
+      {
+        "code": "NHS_EATWELL",
+        "publisher": "NHS (nhs.uk)",
+        "title": "The Eatwell Guide",
+        "url": "https://www.nhs.uk/live-well/eat-well/food-guidelines-and-food-labels/the-eatwell-guide/"
+      }
+    ]
+  },
+  {
+    "slug": "ngu-ngon-hon",
+    "title": "Sáu thói quen giúp ngủ ngon hơn",
+    "category": "SLEEP",
+    "summary": "Những thay đổi nhỏ trong thói quen trước khi ngủ, phòng ngủ và vận động có thể giúp giấc ngủ tốt hơn.",
+    "body": "## Sáu thói quen\n- Giữ giờ ngủ đều: đi ngủ và thức dậy vào giờ tương tự mỗi ngày, kể cả ngày nghỉ.\n- Thư giãn trước khi ngủ: tránh điện thoại, máy tính bảng, máy tính khoảng 1 giờ trước khi ngủ; thử đọc sách, thiền, bài tập thở hoặc nhạc nhẹ.\n- Xử lý lo lắng: trò chuyện với người bạn tin tưởng, hoặc viết ra việc cần làm ngày mai trước khi ngủ.\n- Phòng ngủ yên tĩnh, tối và mát: dùng nút tai, kéo kín rèm, úp điện thoại, đeo bịt mắt nếu cần.\n- Đừng cố ép ngủ: nếu sau khoảng 20 phút vẫn chưa ngủ được, hãy dậy ngồi chỗ thoải mái làm việc nhẹ nhàng; buồn ngủ thì quay lại giường.\n- Vận động đều đặn: giúp ngủ ngon hơn. Nếu tập sát giờ ngủ khiến bạn khó ngủ, hãy tập sớm hơn trong ngày.\n\n## Ăn uống và giấc ngủ\nBữa ăn lớn sát giờ ngủ có thể khiến khó ngủ. Trà, cà phê và một số nước ngọt chứa caffeine. Rượu bia và nicotine cũng ảnh hưởng tới giấc ngủ, nên tránh trong 1–2 giờ trước khi ngủ.\n\n## Khi nào cần hỏi ý kiến\nBài viết không dùng để chẩn đoán. Nếu khó ngủ kéo dài hoặc ảnh hưởng tới sinh hoạt, hãy gặp nhân viên y tế.",
+    "contentOrigin": "ADAPTED",
+    "status": "PUBLISHED",
+    "reviewNote": "Đối chiếu theo Every Mind Matters - NHS.",
+    "sources": [
+      {
+        "code": "NHS_SLEEP",
+        "publisher": "NHS (nhs.uk)",
+        "title": "How to fall asleep faster and sleep better",
+        "url": "https://www.nhs.uk/every-mind-matters/mental-wellbeing-tips/how-to-fall-asleep-faster-and-sleep-better/"
+      }
+    ]
+  },
+  {
+    "slug": "khoi-dong-truoc-tap",
+    "title": "Khởi động 6 phút trước khi tập",
+    "category": "ACTIVITY",
+    "summary": "Năm động tác khởi động đơn giản giúp phòng chấn thương và buổi tập hiệu quả hơn.",
+    "body": "## Vì sao cần khởi động\nKhởi động đúng cách giúp phòng chấn thương và buổi tập hiệu quả hơn. Bài dưới đây mất ít nhất 6 phút; có thể kéo dài hơn nếu bạn cần.\n\n## Năm động tác\n- Bước tại chỗ: 3 phút, sau đó bước tới lui; đánh tay theo nhịp bước, khuỷu tay gập, nắm tay thả lỏng.\n- Chạm gót trước: khoảng 60 lần trong 60 giây, luân phiên hai chân, mũi chân trước hướng lên, chân trụ hơi chùng.\n- Nâng gối: khoảng 30 lần trong 30 giây, đưa gối chạm tay đối diện; siết bụng, lưng thẳng.\n- Xoay vai: vừa bước tại chỗ vừa xoay vai ra trước 5 lần, ra sau 5 lần, tay thả lỏng; làm 2 hiệp.\n- Gập gối nhẹ: chân rộng bằng vai, tay duỗi trước, hạ người không quá 10 cm rồi đứng lên; lặp 10 lần.\n\n## An toàn\nDừng ngay nếu thấy đau hoặc không khoẻ. Hỏi ý kiến nhân viên y tế trước nếu bạn có vấn đề sức khoẻ, chấn thương, mới phẫu thuật, đang mang thai hoặc mới sinh.",
+    "contentOrigin": "ADAPTED",
+    "status": "PUBLISHED",
+    "reviewNote": "Rà soát đối chiếu tài liệu khởi động thể thao NHS.",
+    "sources": [
+      {
+        "code": "NHS_WARMUP",
+        "publisher": "NHS (nhs.uk)",
+        "title": "How to warm up before exercising",
+        "url": "https://www.nhs.uk/live-well/exercise/how-to-warm-up-before-exercising/"
+      }
+    ]
+  },
+  {
+    "slug": "gian-co-sau-tap",
+    "title": "Giãn cơ 5 phút sau buổi tập",
+    "category": "RECOVERY",
+    "summary": "Năm động tác giãn cơ nhẹ nhàng giúp thả lỏng, cải thiện độ linh hoạt và đưa nhịp tim về chậm.",
+    "body": "## Mục đích\nThả lỏng dần, cải thiện độ linh hoạt và giúp nhịp tim chậm lại. Cả bài mất khoảng 5 phút; dành thêm thời gian nếu bạn cần.\n\n## Năm động tác, mỗi động tác giữ 15–20 giây\n- Giãn mông: nằm ngửa, kéo hai gối về ngực, vắt chân phải lên đùi trái, hai tay ôm sau đùi trái và kéo về phía ngực; đổi bên.\n- Giãn đùi sau: nằm ngửa, nâng chân phải, ôm dưới gối; chân trái gập, kéo chân phải thẳng về phía người; đổi bên.\n- Giãn đùi trong: ngồi lưng thẳng, áp hai lòng bàn chân vào nhau, giữ bàn chân và hạ dần gối về phía sàn.\n- Giãn bắp chân: bước chân phải lên trước, gập nhẹ, nghiêng người; chân trái thẳng, hạ gót trái xuống sàn; có thể vịn tường hoặc ghế.\n- Giãn đùi trước: nằm nghiêng bên phải, nắm mu bàn chân trái kéo gót về phía mông, hai gối chạm nhau; đổi bên.\n\n## Lưu ý\nNgười có chấn thương, bệnh lý hoặc đang mang thai có thể cần điều chỉnh động tác; hãy hỏi chuyên viên vật lý trị liệu hoặc nhân viên y tế.",
+    "contentOrigin": "ADAPTED",
+    "status": "PUBLISHED",
+    "reviewNote": "Rà soát đối chiếu tài liệu giãn cơ hồi phục NHS.",
+    "sources": [
+      {
+        "code": "NHS_STRETCH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "How to stretch after exercising",
+        "url": "https://www.nhs.uk/live-well/exercise/how-to-stretch-after-exercising/"
+      }
+    ]
+  },
+  {
+    "slug": "van-dong-bao-nhieu-la-du",
+    "title": "Vận động bao nhiêu mỗi tuần là đủ?",
+    "category": "ACTIVITY",
+    "summary": "Khuyến nghị vận động cho người lớn 19–64 tuổi và cách tự nhận biết cường độ vừa, cường độ mạnh.",
+    "body": "## Người lớn 19–64 tuổi\n- Tập tăng sức mạnh cho các nhóm cơ lớn (chân, hông, lưng, bụng, ngực, vai, tay) ít nhất 2 ngày mỗi tuần.\n- Ít nhất 150 phút hoạt động cường độ vừa hoặc 75 phút cường độ mạnh mỗi tuần.\n- Chia đều 4–5 ngày mỗi tuần hoặc mỗi ngày.\n- Giảm thời gian ngồi, nằm; xen các khoảng ngồi lâu bằng vận động.\n\n## Nhận biết cường độ\n- Vừa: tim đập nhanh hơn, thở nhanh hơn, người ấm lên; vẫn nói chuyện được nhưng không hát được. Ví dụ: đi bộ nhanh, đạp xe, khiêu vũ.\n- Mạnh: thở mạnh và nhanh, không nói được quá vài từ mà không ngừng lấy hơi. Ví dụ: chạy, bơi, leo cầu thang, nhảy dây.\n\nBài tập tăng cơ nên làm tới mức cần nghỉ ngắn trước khi lặp lại, và được tính riêng, không thay cho 150 phút vận động tim mạch.\n\n## Tham khảo thêm\nTổ chức Y tế Thế giới (WHO) có bộ hướng dẫn năm 2020 cho từng nhóm tuổi; xem văn bản gốc ở phần nguồn.\n\n## Lưu ý\nNếu lâu không tập, hoặc có bệnh lý hay băn khoăn về sức khoẻ, hãy hỏi ý kiến bác sĩ trước khi bắt đầu.",
+    "contentOrigin": "ADAPTED",
+    "status": "PUBLISHED",
+    "reviewNote": "Giấy phép tài liệu WHO chưa xác minh; bài chỉ dẫn link, không trích nguyên văn WHO.",
+    "sources": [
+      {
+        "code": "NHS_PA_ADULTS",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Physical activity guidelines for adults aged 19 to 64",
+        "url": "https://www.nhs.uk/live-well/exercise/physical-activity-guidelines-for-adults-aged-19-to-64/"
+      },
+      {
+        "code": "WHO_PA_2020",
+        "publisher": "WHO",
+        "title": "WHO guidelines on physical activity and sedentary behaviour",
+        "url": "https://www.who.int/publications/i/item/9789240015128"
+      }
+    ]
+  },
+  {
+    "slug": "dinh-duong-tang-co-giam-mo",
+    "title": "Hướng dẫn dinh dưỡng và phân bổ macro cho người tập gym",
+    "category": "NUTRITION",
+    "summary": "Nguyên tắc phân bổ ba chất đa lượng (protein, carb, fat), thâm hụt calo an toàn và thời điểm nạp dinh dưỡng quanh buổi tập.",
+    "body": "## Vai trò của ba chất đa lượng (Macronutrients)\n- Chất đạm (Protein): Đóng vai trò là vật liệu xây dựng và phục hồi các sợi cơ bị tổn thương sau tập. Người tập thể hình nên nhắm tới 1.6 – 2.2g protein trên mỗi kg trọng lượng cơ thể mỗi ngày.\n- Tinh bột (Carbohydrate): Nguồn nhiên liệu chính cung cấp glycogen cho cơ bắp trong các bài tập kháng lực cường độ cao. Ưu tiên tinh bột hấp thu chậm như yến mạch, gạo lứt, khoai lang.\n- Chất béo tốt (Healthy Fats): Cần thiết cho sản sinh hormone sinh học (bao gồm testosterone) và hấp thu các vitamin tan trong dầu (A, D, E, K). Chiếm khoảng 20–30% tổng năng lượng mỗi ngày.\n\n## Thời điểm nạp dinh dưỡng (Nutrient Timing)\n- Bữa trước tập (Pre-workout): Ăn trước 2–3 tiếng với bữa chính đủ đạm và tinh bột phức, hoặc trước 30–60 phút với bữa nhẹ dễ tiêu hoá (như chuối, bánh mì kèm bơ lạc).\n- Bữa sau tập (Post-workout): Cửa sổ phục hồi lý tưởng trong vòng 1–2 giờ sau khi tập. Kết hợp protein chất lượng cao cùng carbohydrate để phục hồi glycogen nhanh chóng.\n\n## Thâm hụt và thặng dư calo an toàn\n- Giảm mỡ (Cut): Giảm từ 300–500 calo/ngày so với mức duy trì (TDEE), đảm bảo giảm không quá 0.5–1% trọng lượng cơ thể mỗi tuần nhằm tránh mất cơ bắp.\n- Tăng cơ (Lean Bulk): Tăng nhẹ 200–300 calo/ngày để cơ thể có đủ nguyên liệu tổng hợp mô cơ mới mà hạn chế tích lũy mỡ thừa.",
+    "contentOrigin": "SELF_AUTHORED",
+    "status": "PUBLISHED",
+    "reviewNote": "Biên soạn độc quyền bởi đội ngũ chuyên môn GymFlow, đối chiếu khuyến nghị Eatwell Guide NHS.",
+    "sources": [
+      {
+        "code": "NHS_EATWELL",
+        "publisher": "NHS (nhs.uk)",
+        "title": "The Eatwell Guide",
+        "url": "https://www.nhs.uk/live-well/eat-well/food-guidelines-and-food-labels/the-eatwell-guide/"
+      },
+      {
+        "code": "NHS_STRENGTH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Strength exercises",
+        "url": "https://www.nhs.uk/live-well/exercise/strength-exercises/"
+      }
+    ]
+  },
+  {
+    "slug": "nguyen-tac-tang-tien-progressive-overload",
+    "title": "Nguyên tắc quá tải tăng tiến (Progressive Overload) trong xây dựng cơ bắp",
+    "category": "ACTIVITY",
+    "summary": "Bản chất sinh lý của sự phát triển cơ bắp, 4 phương pháp tăng tiến tải trọng và cách áp dụng tuần xả tạ (deload).",
+    "body": "## Quá tải tăng tiến là gì?\nQuá tải tăng tiến (Progressive Overload) là nguyên tắc nền tảng quan trọng nhất trong tập kháng lực: cơ thể chỉ thích nghi và phát triển khi liên tục phải chịu mức độ căng thẳng cơ học lớn hơn mức nó đã quen thuộc.\n\n## Bốn cách thức áp dụng quá tải tăng tiến\n- Tăng mức tạ (Load): Khi bạn đã thực hiện trọn vẹn số hiệp/lần quy định với form chuẩn, hãy nâng mức tạ thêm 2.5% đến 5% ở buổi tiếp theo.\n- Tăng số lần hoặc số hiệp (Volume): Thay vì đẩy 3 hiệp 8 lần, hãy cố gắng lên 3 hiệp 10 lần hoặc thêm 1 hiệp làm việc.\n- Tăng thời gian chịu áp lực (Time Under Tension - TUT): Kiểm soát pha hạ tạ (eccentric) chậm rãi trong 3–4 giây thay vì thả rơi tự do.\n- Rút ngắn thời gian nghỉ (Density): Rút ngắn khoảng nghỉ giữa các hiệp từ 90 giây xuống 60 giây mà vẫn hoàn thành đủ số reps.\n\n## Tuần xả tạ (Deload Week)\nSau 4–8 tuần tập luyện tăng dần cường độ, hệ thần kinh và cơ khớp cần thời gian hồi phục sâu. Trong tuần deload, giảm khối lượng tạ còn 50–60% hoặc giảm một nửa số hiệp để ngừa chấn thương và sẵn sàng cho chu kỳ mới.",
+    "contentOrigin": "SELF_AUTHORED",
+    "status": "PUBLISHED",
+    "reviewNote": "Nội dung đào tạo HLV chuẩn quốc tế, tham khảo hướng dẫn tập luyện sức mạnh NHS.",
+    "sources": [
+      {
+        "code": "NHS_STRENGTH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Strength exercises",
+        "url": "https://www.nhs.uk/live-well/exercise/strength-exercises/"
+      }
+    ]
+  },
+  {
+    "slug": "phuc-hoi-co-bap-chu-dong",
+    "title": "Phục hồi chủ động (Active Recovery) và cách tối ưu tái tạo thể lực",
+    "category": "RECOVERY",
+    "summary": "Lợi ích của phục hồi chủ động so với nghỉ ngơi hoàn toàn, các bài tập cường độ thấp, giãn cơ mạc và nhận biết hội chứng quá tải.",
+    "body": "## Phục hồi chủ động là gì?\nPhục hồi chủ động (Active Recovery) là việc thực hiện các hoạt động thể chất cường độ rất thấp vào những ngày không tập nặng. Thay vì nằm yên tại chỗ, việc vận động nhẹ nhàng giúp kích thích tuần hoàn máu, vận chuyển oxy và dưỡng chất đến các mô cơ tổn thương, đồng thời đào thải các chất chuyển hóa tích tụ.\n\n## Các hình thức phục hồi chủ động hiệu quả\n- Đi bộ hoặc đạp xe nhẹ nhàng: Giữ nhịp tim ở vùng Zone 1–2 (dưới 60% nhịp tim tối đa) trong 20–30 phút.\n- Kéo giãn động và tĩnh: Tập trung vào các khớp vai, háng và cột sống thắt lưng để duy trì biên độ chuyển động linh hoạt (Mobility).\n- Lăn mạc cơ (Foam Rolling): Giải phóng các điểm co thắt nút cơ (trigger points), giảm cảm giác đau mỏi cơ khởi phát muộn (DOMS).\n- Bơi lội thư giãn: Áp lực nước giúp giảm tải trọng lên xương khớp, tăng cường dẫn lưu bạch huyết.\n\n## Nhận biết hội chứng tập quá sức (Overtraining)\nDấu hiệu cảnh báo: Mất ngủ liên tục, nhịp tim nghỉ ngơi tăng cao vào buổi sáng, sụt giảm sức mạnh đột ngột, chán ăn và dễ cáu gắt. Khi gặp các dấu hiệu này, hãy nghỉ ngơi trọn vẹn 3–5 ngày.",
+    "contentOrigin": "SELF_AUTHORED",
+    "status": "PUBLISHED",
+    "reviewNote": "Biên soạn theo tài liệu hướng dẫn vận động và hồi phục thể thao NHS OGL v3.0.",
+    "sources": [
+      {
+        "code": "NHS_STRETCH",
+        "publisher": "NHS (nhs.uk)",
+        "title": "How to stretch after exercising",
+        "url": "https://www.nhs.uk/live-well/exercise/how-to-stretch-after-exercising/"
+      },
+      {
+        "code": "NHS_PA_ADULTS",
+        "publisher": "NHS (nhs.uk)",
+        "title": "Physical activity guidelines for adults aged 19 to 64",
+        "url": "https://www.nhs.uk/live-well/exercise/physical-activity-guidelines-for-adults-aged-19-to-64/"
+      }
+    ]
+  },
+  {
+    "slug": "toi-uu-giac-ngu-sau-cho-gymer",
+    "title": "Tối ưu hóa giấc ngủ sâu để hỗ trợ phát triển thể lực và cơ bắp",
+    "category": "SLEEP",
+    "summary": "Tác động của giấc ngủ sóng chậm (SWS) đối với sự tổng hợp protein cơ bắp, kiểm soát chu kỳ sáng tối, nhiệt độ phòng ngủ và nhịp sinh học.",
+    "body": "## Cơ chế phục hồi của giấc ngủ sâu\nTrong giai đoạn giấc ngủ sóng chậm (Slow-Wave Sleep / NREM sâu), tuyến yên tiết ra tới 70% tổng lượng hormone tăng trưởng (GH - Growth Hormone) của cả ngày. Đây là thời điểm diễn ra quá trình phục hồi tế bào, tổng hợp protein và sửa chữa các vi tổn thương sợi cơ sau buổi tập.\n\n## Ba yếu tố vàng để có giấc ngủ sâu\n- Kiểm soát ánh sáng và melatonin: Ngừng sử dụng màn hình điện tử chứa ánh sáng xanh ít nhất 60 phút trước khi ngủ, hoặc sử dụng kính chặn ánh sáng xanh. Đảm bảo phòng ngủ tối hoàn toàn.\n- Nhiệt độ phòng ngủ lý tưởng: Cơ thể cần hạ nhiệt độ lõi để bắt đầu chu kỳ ngủ sâu. Nhiệt độ phòng lý tưởng duy trì trong khoảng 18–22 độ C.\n- Nhịp sinh học cố định: Thức dậy và đi ngủ vào cùng một khung giờ mỗi ngày, kể cả ngày cuối tuần, để cố định đồng hồ sinh học.\n\n## Lưu ý về dinh dưỡng cho giấc ngủ\n- Tránh nạp caffeine sau 14h chiều vì thời gian bán thải của caffeine kéo dài từ 5–8 tiếng.\n- Bữa ăn giàu tryptophan và magie (như hạt hạnh nhân, chuối, sữa ấm hoặc thực phẩm giàu kẽm) hỗ trợ thư giãn hệ thần kinh trước khi ngủ.",
+    "contentOrigin": "SELF_AUTHORED",
+    "status": "PUBLISHED",
+    "reviewNote": "Tổng hợp cơ sở khoa học y học giấc ngủ, đối chiếu tài liệu Every Mind Matters NHS.",
+    "sources": [
+      {
+        "code": "NHS_SLEEP",
+        "publisher": "NHS (nhs.uk)",
+        "title": "How to fall asleep faster and sleep better",
+        "url": "https://www.nhs.uk/every-mind-matters/mental-wellbeing-tips/how-to-fall-asleep-faster-and-sleep-better/"
+      }
+    ]
+  }
+]

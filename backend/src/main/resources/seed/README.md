@@ -8,14 +8,13 @@ Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
 
 # Dữ Liệu Khởi Tạo (Seed Data)
 
-<!-- TODO(Linh): Chuẩn bị 2 file JSON dữ liệu mẫu (KHÔNG tạo file JSON rỗng trước): -->
-
 1. `exercises.json` (Hạn: 05/11/2026 - SCRUM-173) - **ĐÃ HOÀN THÀNH**:
    - Chứa 10 bài tập mẫu đa dạng nhóm cơ (Ngực, Lưng, Chân, Vai, Tay, Bụng, Toàn thân).
    - Có đầy đủ thông tin: hướng dẫn kỹ thuật chi tiết, cách hít thở, lỗi thường gặp, lưu ý an toàn và nguồn tham khảo chuẩn y tế (NHS OGL v3.0).
 
-2. `articles.json` (Hạn: 13/11/2026 - SCRUM-221):
-   - Chứa các bài viết kiến thức mẫu có nguồn trích dẫn.
-   - Phân loại rõ: `SELF_AUTHORED` hoặc `ADAPTED`.
+2. `articles.json` (Hạn: 13/11/2026 - SCRUM-221) - **ĐÃ HOÀN THÀNH**:
+   - Chứa 10 bài viết kiến thức mẫu đa dạng các chủ đề (`NUTRITION`, `HYDRATION`, `SLEEP`, `ACTIVITY`, `RECOVERY`).
+   - Có đầy đủ thông tin: tiêu đề, đường dẫn (slug), tóm tắt, nội dung chi tiết theo định dạng Markdown, ghi chú rà soát (`reviewNote`) và nguồn tham khảo chuẩn y tế/thể thao (`NHS`, `WHO`).
+   - Phân loại rõ xuất xứ: `SELF_AUTHORED` (tự biên soạn) hoặc `ADAPTED` (phóng tác từ tài liệu mở có trích dẫn nguồn).
 
-*Kiên sẽ viết code DataSeeder đọc 2 file JSON này khi khởi động ứng dụng.*
+*DataSeeder đọc 2 file JSON này khi khởi động ứng dụng để nạp kho nội dung mẫu.*
