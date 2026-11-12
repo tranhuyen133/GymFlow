@@ -315,6 +315,33 @@ class ScheduleServiceTest {
     }
 
     @Test
+    void cancelScheduledSessionBeforeStart_succeeds() {
+        WorkoutSchedule s = createSchedule(20L, ScheduleStatus.SCHEDULED, NOW.plusHours(1), NOW.plusHours(2));
+        when(scheduleRepository.findById(20L)).thenReturn(Optional.of(s));
+        when(access.canCoach(trainerUser, member)).thenReturn(true);
+
+        service.cancel(trainerUser, 20L);
+
+        assertThat(s.getStatus()).isEqualTo(ScheduleStatus.CANCELLED);
+        verify(auditService).log(eq("SCHEDULE_CANCEL"), eq("SCHEDULE"), eq(20L), contains("HV00001"));
+    }
+
+    @Test
+    void cancelScheduledSessionAfterStart_isRejected() {
+        WorkoutSchedule s = createSchedule(21L, ScheduleStatus.SCHEDULED, NOW.minusMinutes(1), NOW.plusMinutes(59));
+        when(scheduleRepository.findById(21L)).thenReturn(Optional.of(s));
+        when(access.canCoach(trainerUser, member)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.cancel(trainerUser, 21L))
+                .isInstanceOf(ApiException.class)
+                .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.BAD_REQUEST))
+                .hasMessageContaining("Chỉ huỷ được buổi chưa diễn ra");
+
+        assertThat(s.getStatus()).isEqualTo(ScheduleStatus.SCHEDULED);
+        verify(auditService, never()).log(any(), any(), any(), any());
+    }
+
+    @Test
     void rejectsWhenPlanDoesNotBelongToMember() {
         Member otherMember = new Member();
         otherMember.setId(99L);
