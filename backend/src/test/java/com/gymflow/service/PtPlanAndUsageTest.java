@@ -56,6 +56,7 @@ class PtPlanAndUsageTest {
     @Mock AuditService auditService;
     @Mock Mappers mappers;
     @Mock PaymentSettingsService paymentSettings;
+    @Mock CalorieEstimationService calorieEstimationService;
 
     Clock clock;
     PlanService planService;
@@ -73,7 +74,20 @@ class PtPlanAndUsageTest {
         planService = new PlanService(planRepository, subscriptionRepository, packageRequestRepository, serviceItemRepository, auditService, mappers, access);
         subscriptionService = new SubscriptionService(subscriptionRepository, userRepository, planService, access, auditService, mappers, clock, ptSessionUsageRepository, entitlementRepository);
         packageRequestService = new PackageRequestService(packageRequestRepository, subscriptionRepository, entitlementRepository, promotionRepository, promotionService, userRepository, subscriptionService, planService, access, auditService, mappers, clock, trainerRepository, paymentSettings);
-        scheduleService = new ScheduleService(scheduleRepository, logRepository, workoutPlanRepository, trainerRepository, subscriptionService, access, auditService, mappers, clock, userRepository, ptSessionUsageRepository, subscriptionRepository);
+        scheduleService = new ScheduleService(scheduleRepository, logRepository, workoutPlanRepository, trainerRepository, subscriptionService, access, auditService, mappers, clock, userRepository, ptSessionUsageRepository, subscriptionRepository, calorieEstimationService);
+        CalorieEstimate dummyCalories = new CalorieEstimate(EstimateStatus.OK, EstimateQuality.DETAILED, 65.0,
+                "WEIGHT_RECORD@2026-11-10", ExerciseIntensity.MODERATE, 60.0, 300, List.of());
+        lenient().when(calorieEstimationService.estimate(any(), anyInt(), any())).thenReturn(dummyCalories);
+        lenient().doAnswer(inv -> {
+            WorkoutLog log = inv.getArgument(0);
+            CalorieEstimate estimate = inv.getArgument(1);
+            log.setCalories(estimate.totalCalories());
+            log.setEstimateStatus(estimate.status());
+            log.setEstimateQuality(estimate.quality());
+            log.setEstimated(estimate.status() == EstimateStatus.OK);
+            return null;
+        }).when(calorieEstimationService).applyToLog(any(), any());
+        lenient().doNothing().when(calorieEstimationService).saveExercises(any(), any());
 
         lenient().when(promotionService.validate(any(), any()))
                 .thenReturn(new PromotionValidationResponse(true, null, null, null, null, null, DiscountType.NONE, 0L, 500_000L, 0L, 500_000L, List.of()));
@@ -155,10 +169,10 @@ class PtPlanAndUsageTest {
         s13.setStartTime(NOW.minusHours(2));
         s13.setEndTime(NOW.minusHours(1));
 
-        when(scheduleRepository.findById(113L)).thenReturn(Optional.of(s13));
+        when(scheduleRepository.findByIdForUpdate(113L)).thenReturn(Optional.of(s13));
         when(access.canView(TRAINER_USER, member)).thenReturn(true);
 
-        assertThatThrownBy(() -> scheduleService.complete(TRAINER_USER, 113L, new CompleteRequest(60, 300, 5, "Buổi 13")))
+        assertThatThrownBy(() -> scheduleService.complete(TRAINER_USER, 113L, new CompleteRequest(60, ExerciseIntensity.MODERATE, 5, "Buổi 13")))
                 .isInstanceOf(ApiException.class)
                 .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT))
                 .hasMessageContaining("đã sử dụng hết 12 buổi PT");
@@ -187,10 +201,10 @@ class PtPlanAndUsageTest {
         s.setStartTime(NOW.minusHours(2));
         s.setEndTime(NOW.minusHours(1));
 
-        when(scheduleRepository.findById(114L)).thenReturn(Optional.of(s));
+        when(scheduleRepository.findByIdForUpdate(114L)).thenReturn(Optional.of(s));
         when(access.canView(TRAINER_USER, member)).thenReturn(true);
 
-        assertThatThrownBy(() -> scheduleService.complete(TRAINER_USER, 114L, new CompleteRequest(60, 300, 5, "Quá hạn")))
+        assertThatThrownBy(() -> scheduleService.complete(TRAINER_USER, 114L, new CompleteRequest(60, ExerciseIntensity.MODERATE, 5, "Quá hạn")))
                 .isInstanceOf(ApiException.class)
                 .satisfies(ex -> assertThat(((ApiException) ex).getStatus()).isEqualTo(HttpStatus.CONFLICT))
                 .hasMessageContaining("hết hạn sử dụng");
@@ -239,8 +253,8 @@ class PtPlanAndUsageTest {
         s2.setStartTime(NOW.minusHours(2));
         s2.setEndTime(NOW.minusHours(1));
 
-        when(scheduleRepository.findById(101L)).thenReturn(Optional.of(s1));
-        when(scheduleRepository.findById(102L)).thenReturn(Optional.of(s2));
+        when(scheduleRepository.findByIdForUpdate(101L)).thenReturn(Optional.of(s1));
+        when(scheduleRepository.findByIdForUpdate(102L)).thenReturn(Optional.of(s2));
         when(access.canView(any(), any())).thenReturn(true);
 
         int threads = 2;
@@ -251,7 +265,7 @@ class PtPlanAndUsageTest {
         Callable<Boolean> task1 = () -> {
             barrier.await();
             synchronized (lock) { // Giả lập hành vi khóa hàng SELECT ... FOR UPDATE của CSDL
-                scheduleService.complete(TRAINER_USER, 101L, new CompleteRequest(60, 300, 5, "Buổi 1"));
+                scheduleService.complete(TRAINER_USER, 101L, new CompleteRequest(60, ExerciseIntensity.MODERATE, 5, "Buổi 1"));
             }
             return true;
         };
@@ -259,7 +273,7 @@ class PtPlanAndUsageTest {
         Callable<Boolean> task2 = () -> {
             barrier.await();
             synchronized (lock) { // Giả lập hành vi khóa hàng SELECT ... FOR UPDATE của CSDL
-                scheduleService.complete(TRAINER_USER, 102L, new CompleteRequest(60, 300, 5, "Buổi 2"));
+                scheduleService.complete(TRAINER_USER, 102L, new CompleteRequest(60, ExerciseIntensity.MODERATE, 5, "Buổi 2"));
             }
             return true;
         };
@@ -408,10 +422,10 @@ class PtPlanAndUsageTest {
         selfSchedule.setStartTime(NOW.minusHours(2));
         selfSchedule.setEndTime(NOW.minusHours(1));
 
-        when(scheduleRepository.findById(201L)).thenReturn(Optional.of(selfSchedule));
+        when(scheduleRepository.findByIdForUpdate(201L)).thenReturn(Optional.of(selfSchedule));
         when(access.canView(MEMBER_USER, member)).thenReturn(true);
 
-        scheduleService.complete(MEMBER_USER, 201L, new CompleteRequest(60, 250, 4, "Tự tập"));
+        scheduleService.complete(MEMBER_USER, 201L, new CompleteRequest(60, ExerciseIntensity.MODERATE, 4, "Tự tập"));
 
         assertThat(selfSchedule.getStatus()).isEqualTo(ScheduleStatus.COMPLETED);
         verify(ptSessionUsageRepository, never()).save(any());

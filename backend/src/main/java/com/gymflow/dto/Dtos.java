@@ -783,13 +783,56 @@ public final class Dtos {
 
     public record CompleteRequest(
             @Min(value = 1, message = "Tối thiểu 1 phút") @Max(value = 600, message = "Tối đa 600 phút") Integer durationMinutes,
-            @Min(value = 0, message = "Calo không âm") @Max(value = 5000, message = "Tối đa 5000 kcal") Integer calories,
+            ExerciseIntensity intensity,
             @Min(value = 1, message = "Đánh giá từ 1 đến 5") @Max(value = 5, message = "Đánh giá từ 1 đến 5") Integer rating,
             @Size(max = 255) String note) {
     }
 
     public record WorkoutLogResponse(Long id, LocalDateTime completedAt, Integer durationMinutes, Integer calories,
+                                     Double weightKgUsed, Double activeMinutes, ExerciseIntensity intensity,
+                                     String formulaVersion, EstimateStatus estimateStatus,
+                                     EstimateQuality estimateQuality, boolean estimated,
                                      Integer rating, String note) {
+    }
+
+    // ===================== Calorie (MET) =====================
+    public record CalorieExerciseResponse(Long exerciseId, String exerciseName, ActivityCategory activityCategory,
+                                          ExerciseIntensity intensity, Double metValue, String metSourceCode,
+                                          String metSourceVersion, Integer sets, String reps,
+                                          Integer workSecondsPerSet, Integer restSeconds,
+                                          Double activeMinutes, Integer calories, String dataSource) {
+    }
+
+    public record CaloriePreviewResponse(Long scheduleId, String title, LocalDate date, Integer durationMinutes,
+                                         Double weightKg, String weightSource, ExerciseIntensity intensity,
+                                         List<CalorieExerciseResponse> exercises, Integer totalCalories,
+                                         Double activeMinutes, EstimateStatus estimateStatus,
+                                         EstimateQuality estimateQuality, String disclaimer) {
+    }
+
+    public record CalorieBucket(String key, String label, LocalDate from, LocalDate to,
+                                long calories, long sessions, double activeMinutes) {
+    }
+
+    public record CaloriePeriodSummary(LocalDate from, LocalDate to, long calories, long sessions,
+                                       double activeMinutes, Double avgCaloriesPerSession,
+                                       Double changePercent) {
+    }
+
+    public record CalorieTopDay(LocalDate date, long calories, long sessions) {
+    }
+
+    public record CalorieSummaryResponse(String period, LocalDate from, LocalDate to, String timezone,
+                                         long totalCalories, long totalSessions, double totalActiveMinutes,
+                                         Double avgCaloriesPerSession, List<CalorieBucket> buckets,
+                                         CalorieTopDay topDay, CaloriePeriodSummary previous, String disclaimer) {
+    }
+
+    public record CalorieSessionResponse(Long logId, Long scheduleId, String title, LocalDateTime completedAt,
+                                         Integer durationMinutes, Double activeMinutes, Integer calories,
+                                         ExerciseIntensity intensity, Double weightKgUsed,
+                                         EstimateStatus estimateStatus, EstimateQuality estimateQuality,
+                                         String formulaVersion, List<CalorieExerciseResponse> exercises) {
     }
 
     public record ScheduleResponse(Long id, Long memberId, String memberName, Long trainerId, String trainerName,

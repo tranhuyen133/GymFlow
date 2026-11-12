@@ -372,13 +372,49 @@ export interface WorkoutPlanHistory {
 }
 
 // ---------- Schedules ----------
-export interface WorkoutLog { id: number; completedAt: string; durationMinutes: number | null; calories: number | null; rating: number | null; note: string | null }
+export type ExerciseIntensity = 'LIGHT' | 'MODERATE' | 'VIGOROUS';
+export type ActivityCategory = 'RESISTANCE' | 'CARDIO' | 'RUNNING' | 'WALKING' | 'CYCLING' | 'JUMP_ROPE' | 'HIIT' | 'OTHER';
+export type EstimateStatus = 'OK' | 'MISSING_WEIGHT' | 'NO_EXERCISE_DATA' | 'LEGACY';
+export type EstimateQuality = 'DETAILED' | 'COARSE';
+export interface WorkoutLog {
+  id: number; completedAt: string; durationMinutes: number | null; calories: number | null;
+  weightKgUsed: number | null; activeMinutes: number | null; intensity: ExerciseIntensity | null;
+  formulaVersion: string | null; estimateStatus: EstimateStatus; estimateQuality: EstimateQuality | null;
+  estimated: boolean; rating: number | null; note: string | null;
+}
 export interface Schedule {
   id: number; memberId: number; memberName: string; trainerId: number | null; trainerName: string | null;
   planId: number | null; planName: string | null; title: string; startTime: string; endTime: string;
   status: ScheduleStatus; note: string | null; log: WorkoutLog | null;
 }
 export interface ScheduleCreated { created: Schedule[]; skipped: string[] }
+
+// ---------- Calorie (MET) ----------
+export interface CalorieExercise {
+  exerciseId: number | null; exerciseName: string; activityCategory: ActivityCategory;
+  intensity: ExerciseIntensity; metValue: number; metSourceCode: string | null; metSourceVersion: string | null;
+  sets: number | null; reps: string | null; workSecondsPerSet: number | null; restSeconds: number | null;
+  activeMinutes: number; calories: number | null; dataSource: 'PLAN' | 'FALLBACK';
+}
+export interface CaloriePreview {
+  scheduleId: number; title: string; date: string; durationMinutes: number; weightKg: number | null;
+  weightSource: string; intensity: ExerciseIntensity; exercises: CalorieExercise[]; totalCalories: number | null;
+  activeMinutes: number; estimateStatus: EstimateStatus; estimateQuality: EstimateQuality | null; disclaimer: string;
+}
+export interface CalorieBucket { key: string; label: string; from: string; to: string; calories: number; sessions: number; activeMinutes: number }
+export interface CaloriePeriodSummary { from: string; to: string; calories: number; sessions: number; activeMinutes: number; avgCaloriesPerSession: number | null; changePercent: number | null }
+export interface CalorieTopDay { date: string; calories: number; sessions: number }
+export interface CalorieSummary {
+  period: 'WEEK' | 'MONTH'; from: string; to: string; timezone: string; totalCalories: number; totalSessions: number;
+  totalActiveMinutes: number; avgCaloriesPerSession: number | null; buckets: CalorieBucket[];
+  topDay: CalorieTopDay | null; previous: CaloriePeriodSummary; disclaimer: string;
+}
+export interface CalorieSession {
+  logId: number; scheduleId: number | null; title: string; completedAt: string; durationMinutes: number | null;
+  activeMinutes: number | null; calories: number | null; intensity: ExerciseIntensity | null;
+  weightKgUsed: number | null; estimateStatus: EstimateStatus; estimateQuality: EstimateQuality | null;
+  formulaVersion: string | null; exercises: CalorieExercise[];
+}
 
 // ---------- Progress ----------
 export interface Weight {
