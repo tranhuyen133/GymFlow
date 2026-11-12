@@ -1,5 +1,5 @@
 -- =====================================================================
--- GymFlow · V26 · Backfill calo MET cho các buổi tập lịch sử
+-- GymFlow · V27 · Backfill calo MET cho các buổi tập lịch sử
 --  * Giữ lại calo nhập tay cũ trong legacy_calories trước khi ghi đè bằng MET.
 --  * Đánh dấu công thức/phương pháp backfill để truy vết.
 --  * Không tạo bảng mới: tái sử dụng workout_logs + workout_log_exercises của V25.

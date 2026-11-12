@@ -32,6 +32,15 @@ public class Exercise {
     /** Tên gọi khác, cách nhau bởi dấu phẩy – dùng cho tìm kiếm. */
     private String aliases;
 
+    /** TASK 01 / SCRUM-229: Loại bài tập bắt buộc phân biệt (STRENGTH / WARMUP / CARDIO). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "exercise_type", nullable = false, length = 20)
+    private ExerciseType exerciseType = ExerciseType.STRENGTH;
+
+    /** Danh mục con chi tiết (VD: CHEST, SHOULDER_WARMUP, HIIT, LISS...). */
+    @Column(name = "sub_category", length = 60)
+    private String subCategory;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "muscle_group", nullable = false)
     private MuscleGroup muscleGroup;
@@ -129,6 +138,13 @@ public class Exercise {
             joinColumns = @JoinColumn(name = "exercise_id"),
             inverseJoinColumns = @JoinColumn(name = "alternative_id"))
     private Set<Exercise> alternatives = new LinkedHashSet<>();
+
+    /** TASK 01 / SCRUM-229: Quan hệ nhiều-nhiều hai chiều với bảng equipment. */
+    @ManyToMany
+    @JoinTable(name = "exercise_equipment",
+            joinColumns = @JoinColumn(name = "exercise_id"),
+            inverseJoinColumns = @JoinColumn(name = "equipment_key"))
+    private Set<Equipment> equipments = new LinkedHashSet<>();
 
     /** Bài tập đã nằm trong kế hoạch thì chỉ ẩn, không xoá cứng. */
     @Column(nullable = false)

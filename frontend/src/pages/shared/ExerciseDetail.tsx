@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Exercise, Level } from '../../api/types';
@@ -33,11 +33,36 @@ export default function ExerciseDetail() {
   const [rejecting, setRejecting] = useState(false);
   const [rejectNote, setRejectNote] = useState('');
   const [reviewing, setReviewing] = useState(false);
+  const [isFavorite, setIsFavorite] = useState<boolean>(false);
+  const [togglingFavorite, setTogglingFavorite] = useState(false);
 
   const { data: ex, error, loading, reload } = useAsync(
     () => api.get<Exercise>(`/exercises/${id}`),
     [id]
   );
+
+  useEffect(() => {
+    if (ex?.isFavorite !== undefined) {
+      setIsFavorite(ex.isFavorite);
+    }
+  }, [ex?.isFavorite]);
+
+  const handleToggleFavorite = async () => {
+    if (!ex) return;
+    setTogglingFavorite(true);
+    const prev = isFavorite;
+    setIsFavorite(!prev);
+    try {
+      const res = await api.post<{ isFavorite: boolean; favoriteCount: number; message: string }>(`/exercises/${ex.id}/favorite`);
+      setIsFavorite(res.isFavorite);
+      toast.success(t(res.isFavorite ? 'Đã lưu vào bài tập yêu thích' : 'Đã bỏ lưu khỏi bài tập yêu thích'));
+    } catch (e) {
+      setIsFavorite(prev);
+      toast.error(errMsg(e));
+    } finally {
+      setTogglingFavorite(false);
+    }
+  };
 
   const primaryMuscles = useMemo(() => parseMuscles(ex?.targetMuscles?.join(',') ?? ''), [ex]);
   const secondaryMuscles = useMemo(() => parseMuscles(ex?.secondaryMuscleKeys?.join(',') ?? ''), [ex]);
@@ -99,9 +124,9 @@ export default function ExerciseDetail() {
   return (
     <div className="page">
       <div className="mb-12">
-        <Link to="/exercises" className="btn btn-ghost btn-sm" style={{ paddingLeft: 0 }}>
+        <Link to="/knowledge" className="btn btn-ghost btn-sm" style={{ paddingLeft: 0 }}>
           <Icon name="arrowLeft" size={14} />
-          <span>{t('Quay lại Thư viện bài tập')}</span>
+          <span>{t('Quay lại Kho kiến thức')}</span>
         </Link>
       </div>
 
@@ -154,6 +179,15 @@ export default function ExerciseDetail() {
             {/* Thao tác dành cho Member */}
             {isMember && (
               <>
+                <Button
+                  variant={isFavorite ? 'primary' : 'secondary'}
+                  size="sm"
+                  icon={isFavorite ? 'trophy' : 'sparkle'}
+                  loading={togglingFavorite}
+                  onClick={handleToggleFavorite}
+                >
+                  {isFavorite ? t('Đã yêu thích') : t('Lưu yêu thích')}
+                </Button>
                 <Link to={`/me/schedule?exerciseId=${ex.id}`} className="btn btn-primary btn-sm">
                   <Icon name="calendar" size={14} className="mr-4" />
                   <span>{t('Thêm vào lịch tập')}</span>

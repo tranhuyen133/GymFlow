@@ -91,13 +91,11 @@ public class ProgressService {
         List<WeekAttendance> attendance = attendance(sessions, today);
         long done = attendance.stream().mapToLong(WeekAttendance::completed).sum();
         long missed = attendance.stream().mapToLong(WeekAttendance::missed).sum();
-        Double rate = done + missed == 0 ? null : round1(done * 100.0 / (done + missed));
+        Double rate = attendanceRate(done, missed);
 
         List<WorkoutLog> logs = logRepository.findByMemberIdOrderByCompletedAtDesc(m.getId());
-        long minutes = logs.stream().map(WorkoutLog::getDurationMinutes).filter(Objects::nonNull).mapToLong(Integer::longValue).sum();
-        long calories = logs.stream()
-                .filter(l -> l.isEstimated() && l.getEstimateStatus() == EstimateStatus.OK)
-                .map(WorkoutLog::getCalories).filter(Objects::nonNull).mapToLong(Integer::longValue).sum();
+        long minutes = totalMinutes(logs);
+        long calories = estimatedCalories(logs);
         Double avgRating = logs.stream().map(WorkoutLog::getRating).filter(Objects::nonNull)
                 .mapToInt(Integer::intValue).average().stream().mapToObj(ProgressService::round1).findFirst().orElse(null);
 
@@ -122,6 +120,15 @@ public class ProgressService {
         if (bmi < 25) return "Thừa cân";
         if (bmi < 30) return "Béo phì độ I";
         return "Béo phì độ II";
+    }
+
+    /**
+     * Chuyên cần (PRG-05, mục 13.2) = buổi hoàn thành / buổi đã xếp không huỷ, làm tròn 1 chữ số.
+     * Chỉ tính buổi đã diễn ra (COMPLETED + MISSED) nên buổi sắp tới trong tuần chưa kéo tỉ lệ xuống.
+     */
+    public static Double attendanceRate(long completed, long missed) {
+        if (completed + missed == 0) return null;
+        return round1(completed * 100.0 / (completed + missed));
     }
 
     public static LocalDate weekStart(LocalDate d) {
@@ -165,6 +172,22 @@ public class ProgressService {
             cursor = cursor.minusWeeks(1);
         }
         return streak;
+    }
+
+    /** PRG-06 · tổng calo các buổi đã ghi nhật ký; buổi không nhập calo thì bỏ qua. */
+    public static long totalCalories(List<WorkoutLog> logs) {
+        return logs.stream().map(WorkoutLog::getCalories).filter(Objects::nonNull).mapToLong(Integer::longValue).sum();
+    }
+
+    /** Tổng calo cho tiến độ: chỉ tính buổi đã ước tính MET hợp lệ. */
+    public static long estimatedCalories(List<WorkoutLog> logs) {
+        return logs.stream()
+                .filter(l -> l.isEstimated() && l.getEstimateStatus() == EstimateStatus.OK)
+                .map(WorkoutLog::getCalories).filter(Objects::nonNull).mapToLong(Integer::longValue).sum();
+    }
+
+    public static long totalMinutes(List<WorkoutLog> logs) {
+        return logs.stream().map(WorkoutLog::getDurationMinutes).filter(Objects::nonNull).mapToLong(Integer::longValue).sum();
     }
 
     static Double round1(double v) {
