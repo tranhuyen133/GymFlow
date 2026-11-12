@@ -29,6 +29,7 @@ import {
   SearchInput,
 } from '../../components/ui';
 import {
+  articleCategoryLabel,
   fmtDateTime,
   levelLabel,
   locationLabel,
@@ -69,6 +70,16 @@ const EQUIPMENT_CATEGORIES: { key: EquipmentCategory | ''; label: string }[] = [
   { key: 'ACCESSORY', label: 'Phụ kiện tập' },
   { key: 'RECOVERY', label: 'Phục hồi & giãn cơ' },
 ];
+
+const CATEGORY_MAP: Record<EquipmentCategory, string> = {
+  FREE_WEIGHT: 'Tạ tự do',
+  MACHINE: 'Máy tập khối tạ',
+  CABLE: 'Máy kéo cáp',
+  BODYWEIGHT: 'Trọng lượng cơ thể',
+  CARDIO: 'Máy tim mạch',
+  ACCESSORY: 'Phụ kiện tập',
+  RECOVERY: 'Phục hồi & giãn cơ',
+};
 
 const LOCATIONS = Object.keys(locationLabel) as ExerciseLocation[];
 
@@ -547,7 +558,7 @@ export default function Knowledge() {
                       )}
 
                       <div className="row between mt-auto pt-8" style={{ borderTop: '1px solid var(--hairline-soft)' }}>
-                        <Badge tone="blue">{t(eq.category)}</Badge>
+                        <Badge tone="blue">{t(CATEGORY_MAP[eq.category] ?? eq.category)}</Badge>
                         <Link to={`/equipment/${eq.key}`} className="btn btn-secondary btn-sm">
                           <span>{t('Xem hướng dẫn')}</span>
                           <Icon name="arrowRight" size={13} />
@@ -716,7 +727,7 @@ export default function Knowledge() {
                     onClick={() => setSelectedArticle(art)}
                   >
                     <div className="row between mb-8">
-                      <Badge tone="blue">{t(art.category)}</Badge>
+                      <Badge tone="blue">{t(articleCategoryLabel[art.category] ?? art.category)}</Badge>
                       <span className="tiny faint">{fmtDateTime(art.publishedAt)}</span>
                     </div>
 
@@ -745,7 +756,7 @@ export default function Knowledge() {
             >
               <div className="flow" style={{ gap: 14 }}>
                 <div className="row between" style={{ alignItems: 'center' }}>
-                  <Badge tone="blue">{t(selectedArticle.category)}</Badge>
+                  <Badge tone="blue">{t(articleCategoryLabel[selectedArticle.category] ?? selectedArticle.category)}</Badge>
                   <span className="tiny faint">{fmtDateTime(selectedArticle.publishedAt)}</span>
                 </div>
                 <p className="font-bold muted" style={{ fontSize: 15, lineHeight: 1.5, margin: 0 }}>

@@ -136,7 +136,7 @@ export function StackedBars({ data, height = 200, series }: {
   );
 }
 
-export const PALETTE = ['#00d95b', '#3d97ff', '#ffb020', '#8b7cff', '#ff6b61', '#00c2ff', '#ff4fa3'];
+const PALETTE = ['#00d95b', '#3d97ff', '#ffb020', '#8b7cff', '#ff6b61', '#00c2ff', '#ff4fa3'];
 
 export function Donut({ data, size = 180, center, sub }: { data: { label: string; value: number }[]; size?: number; center?: string; sub?: string }) {
   const total = data.reduce((a, b) => a + b.value, 0);
