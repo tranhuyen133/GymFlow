@@ -31,7 +31,6 @@ import Articles from './pages/shared/Articles';
 import KnowledgeBase from './pages/shared/KnowledgeBase';
 import Exercises from './pages/shared/Exercises';
 import ExerciseDetail from './pages/shared/ExerciseDetail';
-import BeginnerExercises from './pages/shared/BeginnerExercises';
 import Equipment from './pages/shared/Equipment';
 import EquipmentDetail from './pages/shared/EquipmentDetail';
 import Help from './pages/shared/Help';

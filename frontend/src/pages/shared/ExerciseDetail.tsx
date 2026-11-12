@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Exercise, Level } from '../../api/types';
@@ -51,7 +51,7 @@ export default function ExerciseDetail() {
       setIsFav(res.favorite);
       toast.success(res.favorite ? t('Đã lưu bài tập vào mục yêu thích') : t('Đã bỏ lưu yêu thích'));
     } catch (e) {
-      toast.error(errMsg(e, 'Không thể cập nhật mục yêu thích'));
+      toast.error(errMsg(e));
     }
   };
 
@@ -127,7 +127,7 @@ export default function ExerciseDetail() {
         desc={ex.description || ''}
         actions={
           <div className="row wrap" style={{ gap: 8, alignItems: 'center' }}>
-            {ex.exerciseType === 'WARMUP' && <Badge tone="teal">{t('Khởi động')}</Badge>}
+            {ex.exerciseType === 'WARMUP' && <Badge tone="green">{t('Khởi động')}</Badge>}
             {ex.exerciseType === 'CARDIO' && <Badge tone="amber">{t('Cardio')}</Badge>}
             {ex.exerciseType === 'MAIN' && <Badge tone="blue">{t('Bài tập chính')}</Badge>}
             {ex.cardioIntensity && <Badge tone="red">{t('Cường độ {i}', { i: ex.cardioIntensity })}</Badge>}

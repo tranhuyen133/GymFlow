@@ -48,7 +48,7 @@ export default function EquipmentDetail() {
       setIsFav(res.favorite);
       toast.success(res.favorite ? t('Đã lưu thiết bị vào mục yêu thích') : t('Đã bỏ lưu yêu thích'));
     } catch (e) {
-      toast.error(errMsg(e, 'Không thể cập nhật mục yêu thích'));
+      toast.error(errMsg(e));
     }
   };
 

@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type {
   Equipment,
   Exercise,
   ExerciseGoal,
   ExerciseLocation,
-  ExerciseType,
   CardioIntensity,
   Level,
-  MuscleGroup,
   WorkoutPlan,
   FavoriteSummary,
 } from '../../api/types';
@@ -19,7 +17,6 @@ import { MuscleMap } from '../../components/MuscleMap';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import {
-  Badge,
   Button,
   Card,
   Empty,
@@ -98,14 +95,11 @@ const equipOf = (e: Exercise): string[] => {
 const muscleName = (k: MuscleKey) => t(MUSCLE_BY_KEY.get(k)?.label ?? k);
 const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
 
-type Sort = 'name' | 'updated' | 'usage';
-
 export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBaseProps) {
   const me = useMe();
   const staff = me.role !== 'MEMBER';
   const isMember = me.role === 'MEMBER';
   const toast = useToast();
-  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
 
   // Active Tab: exercises | warmup | cardio | equipment | anatomy | guides | favorites | assigned
@@ -130,7 +124,6 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
   const [location, setLocation] = useState<'' | ExerciseLocation>(() => (params.get('location') as ExerciseLocation) || '');
   const [goal, setGoal] = useState<'' | ExerciseGoal>(() => (params.get('goal') as ExerciseGoal) || '');
   const [equipFilter, setEquipFilter] = useState<string>(() => params.get('equipment') ?? '');
-  const [sort, setSort] = useState<Sort>('name');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showSuggest, setShowSuggest] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -140,7 +133,7 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
     const m = params.get('muscle');
     return m && isMuscleKey(m) ? m : null;
   });
-  const [withSecondary, setWithSecondary] = useState(false);
+  const [withSecondary] = useState(false);
   const [anatomyView, setAnatomyView] = useState<'both' | 'front' | 'back'>('both');
 
   // Selected guide reader modal
@@ -218,7 +211,7 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
       nextSet.delete(ex.id);
       setFavExerciseIds(nextSet);
       try {
-        await api.delete(`/favorites/exercises/${ex.id}`);
+        await api.del(`/favorites/exercises/${ex.id}`);
         toast.info(t('Đã bỏ lưu bài tập {name}', { name: ex.name }));
       } catch (e) {
         nextSet.add(ex.id);
@@ -247,7 +240,7 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
       nextSet.delete(eq.key);
       setFavEquipmentKeys(nextSet);
       try {
-        await api.delete(`/favorites/equipment/${eq.key}`);
+        await api.del(`/favorites/equipment/${eq.key}`);
         toast.info(t('Đã bỏ lưu dụng cụ {name}', { name: eq.name }));
       } catch (e) {
         nextSet.add(eq.key);
@@ -283,7 +276,7 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
 
   // Tab A: Thư viện bài tập chính (MAIN)
   const mainExercises = useMemo(() => {
-    let list = allExercises.filter((e) => e.exerciseType === 'MAIN' || (!e.exerciseType && e.muscleGroup !== 'WARMUP' && e.muscleGroup !== 'CARDIO'));
+    let list = allExercises.filter((e) => e.exerciseType === 'MAIN' || (!e.exerciseType && (e.muscleGroup as string) !== 'WARMUP' && e.muscleGroup !== 'CARDIO'));
     if (!staff) list = list.filter((e) => e.reviewStatus === 'APPROVED');
     // Sub-category filter
     if (exerciseSub && exerciseSub !== 'all') {
@@ -321,7 +314,7 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
 
   // Tab B: Bài tập khởi động (WARMUP)
   const warmupExercises = useMemo(() => {
-    let list = allExercises.filter((e) => e.exerciseType === 'WARMUP' || e.muscleGroup === 'WARMUP');
+    let list = allExercises.filter((e) => e.exerciseType === 'WARMUP' || (e.muscleGroup as string) === 'WARMUP');
     if (!staff) list = list.filter((e) => e.reviewStatus === 'APPROVED');
     if (warmupSub && warmupSub !== 'all') {
       list = list.filter((e) => e.subCategory === warmupSub);
@@ -360,10 +353,10 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
       else if (equipSub === 'barbell') list = list.filter((eq) => eq.key === 'barbell' || eq.key === 'ez-bar' || eq.key === 'plate');
       else if (equipSub === 'kettlebell') list = list.filter((eq) => eq.key === 'kettlebell');
       else if (equipSub === 'cable') list = list.filter((eq) => eq.key === 'cable');
-      else if (equipSub === 'machine-chest') list = list.filter((eq) => eq.key === 'machine-chest' || (eq.category === 'MACHINE' && (eq.targetMuscles?.includes('chest') || eq.name.toLowerCase().includes('ngực'))));
-      else if (equipSub === 'machine-back') list = list.filter((eq) => eq.key === 'machine-back' || (eq.category === 'MACHINE' && (eq.targetMuscles?.includes('back') || eq.name.toLowerCase().includes('lưng') || eq.name.toLowerCase().includes('xô'))));
-      else if (equipSub === 'machine-shoulder') list = list.filter((eq) => eq.key === 'machine-shoulder' || (eq.category === 'MACHINE' && (eq.targetMuscles?.includes('deltoids') || eq.name.toLowerCase().includes('vai'))));
-      else if (equipSub === 'machine-legs') list = list.filter((eq) => eq.key === 'machine-legs' || (eq.category === 'MACHINE' && (eq.targetMuscles?.includes('quadriceps') || eq.targetMuscles?.includes('hamstrings') || eq.name.toLowerCase().includes('chân'))));
+      else if (equipSub === 'machine-chest') list = list.filter((eq) => eq.key === 'machine-chest' || (eq.category === 'MACHINE' && (eq.targetMuscleKeys?.includes('chest') || eq.name.toLowerCase().includes('ngực'))));
+      else if (equipSub === 'machine-back') list = list.filter((eq) => eq.key === 'machine-back' || (eq.category === 'MACHINE' && (eq.targetMuscleKeys?.includes('back') || eq.name.toLowerCase().includes('lưng') || eq.name.toLowerCase().includes('xô'))));
+      else if (equipSub === 'machine-shoulder') list = list.filter((eq) => eq.key === 'machine-shoulder' || (eq.category === 'MACHINE' && (eq.targetMuscleKeys?.includes('deltoids') || eq.name.toLowerCase().includes('vai'))));
+      else if (equipSub === 'machine-legs') list = list.filter((eq) => eq.key === 'machine-legs' || (eq.category === 'MACHINE' && (eq.targetMuscleKeys?.includes('quadriceps') || eq.targetMuscleKeys?.includes('hamstrings') || eq.name.toLowerCase().includes('chân'))));
       else if (equipSub === 'treadmill') list = list.filter((eq) => eq.key === 'treadmill' || eq.key === 'cardio-machine');
       else if (equipSub === 'bike') list = list.filter((eq) => eq.key === 'bike');
       else if (equipSub === 'band') list = list.filter((eq) => eq.key === 'band');
@@ -693,7 +686,9 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
 
           {/* Exercise items list / grid */}
           {exercisesAsync.loading ? (
-            <LoadingBlock rows={6} className="mt-16" />
+            <div className="mt-16">
+              <LoadingBlock rows={6} />
+            </div>
           ) : exercisesAsync.error ? (
             <ErrorState message={exercisesAsync.error} onRetry={exercisesAsync.reload} />
           ) : mainExercises.length === 0 ? (
@@ -864,7 +859,14 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
           )}
 
           <div className="mt-16">
-            <Pager {...pagedMain} />
+            <Pager
+              page={pagedMain.page}
+              totalPages={pagedMain.totalPages}
+              total={pagedMain.total}
+              onPage={pagedMain.setPage}
+              size={pagedMain.size}
+              onSize={pagedMain.setSize}
+            />
           </div>
         </section>
       )}
@@ -974,7 +976,14 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
           )}
 
           <div className="mt-16">
-            <Pager {...pagedWarmup} />
+            <Pager
+              page={pagedWarmup.page}
+              totalPages={pagedWarmup.totalPages}
+              total={pagedWarmup.total}
+              onPage={pagedWarmup.setPage}
+              size={pagedWarmup.size}
+              onSize={pagedWarmup.setSize}
+            />
           </div>
         </section>
       )}
@@ -1122,7 +1131,14 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
           )}
 
           <div className="mt-16">
-            <Pager {...pagedCardio} />
+            <Pager
+              page={pagedCardio.page}
+              totalPages={pagedCardio.totalPages}
+              total={pagedCardio.total}
+              onPage={pagedCardio.setPage}
+              size={pagedCardio.size}
+              onSize={pagedCardio.setSize}
+            />
           </div>
         </section>
       )}
@@ -1438,7 +1454,7 @@ export default function KnowledgeBase({ defaultTab = 'exercises' }: KnowledgeBas
           {readingGuide && (
             <Modal
               title={readingGuide.title}
-              size="large"
+              size="wide"
               onClose={() => setReadingGuide(null)}
               footer={
                 <Button variant="primary" onClick={() => setReadingGuide(null)}>

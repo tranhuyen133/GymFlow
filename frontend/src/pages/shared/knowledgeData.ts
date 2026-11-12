@@ -1,4 +1,4 @@
-import type { EquipmentCategory, MuscleGroup } from '../../api/types';
+import type { MuscleGroup } from '../../api/types';
 import type { MuscleKey } from '../../lib/anatomy';
 
 export interface MuscleDetailData {
