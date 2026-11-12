@@ -6,8 +6,9 @@ import { ExerciseMedia, mediaCredit } from '../../components/ExerciseMedia';
 import { Icon } from '../../components/Icon';
 import { MuscleMap } from '../../components/MuscleMap';
 import { Badge, Empty, ErrorState, LoadingBlock, PageHead, Pager } from '../../components/ui';
-import { t } from '../../i18n';
-import { MUSCLE_BY_KEY, parseMuscles, type MuscleKey } from '../../lib/anatomy';
+import { getLang, t } from '../../i18n';
+import { EQUIPMENT_BY_KEY, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey, type MuscleKey } from '../../lib/anatomy';
+import { exSub, exTitle, levelLabel } from '../../lib/format';
 import { useAsync, usePaged } from '../../lib/hooks';
 import './kb.css';
 
@@ -19,12 +20,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   CARDIO: 'Máy tim mạch',
   ACCESSORY: 'Phụ kiện tập luyện',
   RECOVERY: 'Phục hồi & giãn cơ',
-};
-
-const LEVEL_LABELS: Record<Level, string> = {
-  BEGINNER: 'Người mới',
-  INTERMEDIATE: 'Trung cấp',
-  ADVANCED: 'Nâng cao',
 };
 
 export default function EquipmentDetail() {
@@ -54,6 +49,10 @@ export default function EquipmentDetail() {
   if (loading) return <div className="page"><LoadingBlock rows={8} /></div>;
   if (error || !eq) return <div className="page"><ErrorState message={error || 'Không tìm thấy dụng cụ'} onRetry={reload} /></div>;
 
+  const eqEn = EQUIPMENT_BY_KEY.get(key as EquipmentKey)?.labelEn;
+  const eqTitle = getLang() === 'en' && eqEn ? eqEn : t(eq.name);
+  const eqSubText = getLang() === 'en' ? (eq.name !== eqTitle ? eq.name : null) : eqEn;
+
   return (
     <div className="page">
       <div className="mb-12">
@@ -64,8 +63,8 @@ export default function EquipmentDetail() {
       </div>
 
       <PageHead
-        eyebrow={t(CATEGORY_LABELS[eq.category] || eq.category)}
-        title={t(eq.name)}
+        eyebrow={eqSubText ? <span className="tiny faint">{eqSubText}</span> : t(CATEGORY_LABELS[eq.category] || eq.category)}
+        title={eqTitle}
         desc={eq.shortDesc ? t(eq.shortDesc) : ''}
         actions={
           <div className="row wrap" style={{ gap: 8, alignItems: 'center' }}>
@@ -131,7 +130,7 @@ export default function EquipmentDetail() {
           <section className="mt-24">
             <div className="row between wrap mb-12" style={{ alignItems: 'center', gap: 12 }}>
               <h2 className="section-title" style={{ margin: 0 }}>
-                <span>{t('Bài tập sử dụng {name}', { name: t(eq.name) })}</span>
+                <span>{t('Bài tập sử dụng {name}', { name: eqTitle })}</span>
                 <span className="tiny faint ml-8">({filteredExercises.length})</span>
               </h2>
 
@@ -143,9 +142,9 @@ export default function EquipmentDetail() {
                   aria-label={t('Lọc theo cấp độ')}
                 >
                   <option value="">{t('Tất cả cấp độ')}</option>
-                  <option value="BEGINNER">{t('Người mới')}</option>
-                  <option value="INTERMEDIATE">{t('Trung cấp')}</option>
-                  <option value="ADVANCED">{t('Nâng cao')}</option>
+                  <option value="BEGINNER">{levelLabel.BEGINNER[0]}</option>
+                  <option value="INTERMEDIATE">{levelLabel.INTERMEDIATE[0]}</option>
+                  <option value="ADVANCED">{levelLabel.ADVANCED[0]}</option>
                 </select>
 
                 {muscles.length > 0 && (
@@ -157,7 +156,11 @@ export default function EquipmentDetail() {
                   >
                     <option value="">{t('Tất cả nhóm cơ')}</option>
                     {muscles.map((m) => (
-                      <option key={m} value={m}>{t(MUSCLE_BY_KEY.get(m as MuscleKey)?.label ?? m)}</option>
+                      <option key={m} value={m}>
+                        {getLang() === 'en'
+                          ? (MUSCLE_BY_KEY.get(m as MuscleKey)?.labelEn ?? t(MUSCLE_BY_KEY.get(m as MuscleKey)?.label ?? m))
+                          : (MUSCLE_BY_KEY.get(m as MuscleKey)?.label ?? m)}
+                      </option>
                     ))}
                   </select>
                 )}
@@ -175,22 +178,22 @@ export default function EquipmentDetail() {
                 <div className="kb-grid mt-12">
                   {paged.items.map((e) => (
                     <article key={e.id} className="kb-card">
-                      <Link to={`/exercises/${e.id}`} className="kb-cover" aria-label={t(e.name)}>
+                      <Link to={`/exercises/${e.id}`} className="kb-cover" aria-label={exTitle(e)}>
                         <ExerciseMedia
                           imageKey={e.imageKey}
-                          alt={t(e.name)}
+                          alt={exTitle(e)}
                           playOnHover
-                          tag={t(LEVEL_LABELS[e.level] || e.level)}
+                          tag={levelLabel[e.level] ? levelLabel[e.level][0] : e.level}
                         />
                       </Link>
                       <div className="kb-body">
                         <div>
                           <h3 className="kb-title">
                             <Link to={`/exercises/${e.id}`} className="plain-link">
-                              {t(e.name)}
+                              {exTitle(e)}
                             </Link>
                           </h3>
-                          {e.nameEn && <div className="tiny faint">{e.nameEn}</div>}
+                          {exSub(e) && <div className="tiny faint" lang="vi">{exSub(e)}</div>}
                         </div>
 
                         {e.description && (
@@ -200,7 +203,7 @@ export default function EquipmentDetail() {
                         )}
 
                         <div className="row between mt-auto pt-8" style={{ borderTop: '1px solid var(--hairline-soft)' }}>
-                          <span className="badge badge-sm">{t(LEVEL_LABELS[e.level] || e.level)}</span>
+                          <span className="badge badge-sm">{levelLabel[e.level] ? levelLabel[e.level][0] : e.level}</span>
                           <Link to={`/exercises/${e.id}`} className="btn btn-secondary btn-sm">
                             <span>{t('Chi tiết')}</span>
                             <Icon name="arrowRight" size={13} />
@@ -240,7 +243,9 @@ export default function EquipmentDetail() {
                     className={`chip ${selectedMuscle === m ? 'active' : ''}`}
                     onClick={() => setSelectedMuscle(selectedMuscle === m ? '' : m)}
                   >
-                    {t(MUSCLE_BY_KEY.get(m as MuscleKey)?.label ?? m)}
+                    {getLang() === 'en'
+                      ? (MUSCLE_BY_KEY.get(m as MuscleKey)?.labelEn ?? t(MUSCLE_BY_KEY.get(m as MuscleKey)?.label ?? m))
+                      : (MUSCLE_BY_KEY.get(m as MuscleKey)?.label ?? m)}
                   </button>
                 ))}
               </div>

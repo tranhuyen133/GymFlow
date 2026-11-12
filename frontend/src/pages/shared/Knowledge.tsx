@@ -30,18 +30,23 @@ import {
 } from '../../components/ui';
 import {
   articleCategoryLabel,
+  exSub,
+  exTitle,
   fmtDateTime,
+  formatEquipment,
   levelLabel,
   locationLabel,
 } from '../../lib/format';
 import { errMsg, useAsync, useDebounced, usePaged } from '../../lib/hooks';
-import { t } from '../../i18n';
+import { getLang, t } from '../../i18n';
 import './exercises.css';
 import './kb.css';
 import './knowledge.css';
 import {
+  EQUIPMENT_BY_KEY,
   isMuscleKey,
   MUSCLE_BY_KEY,
+  type EquipmentKey,
   type MuscleKey
 } from '../../lib/anatomy';
 
@@ -367,14 +372,18 @@ export default function Knowledge() {
 
               {muscle && (
                 <span className="badge badge-sm badge-blue">
-                  {t('Vùng cơ: {m}', { m: MUSCLE_BY_KEY.get(muscle)?.label ?? muscle })}
+                  {t('Vùng cơ: {m}', {
+                    m: getLang() === 'en'
+                      ? (MUSCLE_BY_KEY.get(muscle)?.labelEn ?? t(MUSCLE_BY_KEY.get(muscle)?.label ?? muscle))
+                      : (MUSCLE_BY_KEY.get(muscle)?.label ?? muscle)
+                  })}
                   <button type="button" onClick={() => setMuscle(null)} style={{ marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
                 </span>
               )}
 
               {equip && (
                 <span className="badge badge-sm badge-blue">
-                  {t('Dụng cụ: {eq}', { eq: equip })}
+                  {t('Dụng cụ: {eq}', { eq: formatEquipment(equip) })}
                   <button type="button" onClick={() => setEquip('')} style={{ marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
                 </span>
               )}
@@ -422,12 +431,12 @@ export default function Knowledge() {
               <div className="kb-grid">
                 {pagedExercises.items.map((ex) => (
                   <article key={ex.id} className="kb-card">
-                    <Link to={`/exercises/${ex.id}`} className="kb-cover" aria-label={t(ex.name)}>
+                    <Link to={`/exercises/${ex.id}`} className="kb-cover" aria-label={exTitle(ex)}>
                       <ExerciseMedia
                         imageKey={ex.imageKey}
-                        alt={t(ex.name)}
+                        alt={exTitle(ex)}
                         playOnHover
-                        tag={levelLabel[ex.level] ? t(levelLabel[ex.level][0]) : ex.level}
+                        tag={levelLabel[ex.level] ? levelLabel[ex.level][0] : ex.level}
                       />
                     </Link>
 
@@ -436,10 +445,10 @@ export default function Knowledge() {
                         <div>
                           <h3 className="kb-title">
                             <Link to={`/exercises/${ex.id}`} className="plain-link">
-                              {t(ex.name)}
+                              {exTitle(ex)}
                             </Link>
                           </h3>
-                          {ex.nameEn && <div className="tiny faint">{ex.nameEn}</div>}
+                          {exSub(ex) && <div className="tiny faint" lang="vi">{exSub(ex)}</div>}
                         </div>
 
                         {/* Nút yêu thích dành cho Member */}
@@ -473,7 +482,7 @@ export default function Knowledge() {
                         <div className="row wrap" style={{ gap: 4 }}>
                           {ex.equipment && (
                             <span className="tiny faint">
-                              {ex.equipment}
+                              {formatEquipment(ex.equipment)}
                             </span>
                           )}
                         </div>
@@ -531,42 +540,48 @@ export default function Knowledge() {
               {(equipmentData ?? [])
                 .filter((eq) => !equipmentCategory || eq.category === equipmentCategory)
                 .filter((eq) => !q.trim() || fold(eq.name).includes(fold(q.trim())) || (eq.shortDesc && fold(eq.shortDesc).includes(fold(q.trim()))))
-                .map((eq) => (
-                  <article key={eq.key} className="kb-card">
-                    <Link to={`/equipment/${eq.key}`} className="kb-cover" aria-label={t(eq.name)}>
-                      <ExerciseMedia
-                        imageKey={eq.imageKey}
-                        alt={t(eq.name)}
-                        playOnHover
-                      />
-                    </Link>
+                .map((eq) => {
+                  const eqEn = EQUIPMENT_BY_KEY.get(eq.key as EquipmentKey)?.labelEn;
+                  const title = getLang() === 'en' && eqEn ? eqEn : t(eq.name);
+                  const sub = getLang() === 'en' ? (eq.name !== title ? eq.name : null) : eqEn;
+                  return (
+                    <article key={eq.key} className="kb-card">
+                      <Link to={`/equipment/${eq.key}`} className="kb-cover" aria-label={title}>
+                        <ExerciseMedia
+                          imageKey={eq.imageKey}
+                          alt={title}
+                          playOnHover
+                        />
+                      </Link>
 
-                    <div className="kb-body">
-                      <div>
-                        <h3 className="kb-title">
-                          <Link to={`/equipment/${eq.key}`} className="plain-link">
-                            {t(eq.name)}
+                      <div className="kb-body">
+                        <div>
+                          <h3 className="kb-title">
+                            <Link to={`/equipment/${eq.key}`} className="plain-link">
+                              {title}
+                            </Link>
+                          </h3>
+                          {sub && <div className="tiny faint">{sub}</div>}
+                          <span className="tiny faint">{eq.exerciseCount ?? 0} {t('bài tập sử dụng')}</span>
+                        </div>
+
+                        {eq.shortDesc && (
+                          <p className="small muted line-clamp-2" style={{ margin: 0 }}>
+                            {t(eq.shortDesc)}
+                          </p>
+                        )}
+
+                        <div className="row between mt-auto pt-8" style={{ borderTop: '1px solid var(--hairline-soft)' }}>
+                          <Badge tone="blue">{t(CATEGORY_MAP[eq.category] ?? eq.category)}</Badge>
+                          <Link to={`/equipment/${eq.key}`} className="btn btn-secondary btn-sm">
+                            <span>{t('Xem hướng dẫn')}</span>
+                            <Icon name="arrowRight" size={13} />
                           </Link>
-                        </h3>
-                        <span className="tiny faint">{eq.exerciseCount ?? 0} {t('bài tập sử dụng')}</span>
+                        </div>
                       </div>
-
-                      {eq.shortDesc && (
-                        <p className="small muted line-clamp-2" style={{ margin: 0 }}>
-                          {eq.shortDesc}
-                        </p>
-                      )}
-
-                      <div className="row between mt-auto pt-8" style={{ borderTop: '1px solid var(--hairline-soft)' }}>
-                        <Badge tone="blue">{t(CATEGORY_MAP[eq.category] ?? eq.category)}</Badge>
-                        <Link to={`/equipment/${eq.key}`} className="btn btn-secondary btn-sm">
-                          <span>{t('Xem hướng dẫn')}</span>
-                          <Icon name="arrowRight" size={13} />
-                        </Link>
-                      </div>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
             </div>
           )}
         </div>
@@ -594,38 +609,48 @@ export default function Knowledge() {
           </div>
 
           <div className="muscle-grid-layout">
-            {(musclesData ?? []).map((m) => (
-              <div
-                key={m.key}
-                className="muscle-card"
-                onClick={() => setSelectedMuscleKey(m.key)}
-              >
-                <div className="row between mb-8" style={{ alignItems: 'flex-start' }}>
-                  <div>
-                    <h3 className="font-bold" style={{ margin: 0, fontSize: 16 }}>{t(m.name)}</h3>
-                    <span className="tiny faint">{m.nameEn}</span>
+            {(musclesData ?? []).map((m) => {
+              const title = getLang() === 'en' ? (m.nameEn || t(m.name)) : t(m.name);
+              const sub = getLang() === 'en' ? (m.name !== title ? m.name : '') : m.nameEn;
+              return (
+                <div
+                  key={m.key}
+                  className="muscle-card"
+                  onClick={() => setSelectedMuscleKey(m.key)}
+                >
+                  <div className="row between mb-8" style={{ alignItems: 'flex-start' }}>
+                    <div>
+                      <h3 className="font-bold" style={{ margin: 0, fontSize: 16 }}>{title}</h3>
+                      {sub && <span className="tiny faint">{sub}</span>}
+                    </div>
+                    <Badge tone="blue">{t(m.view === 'front' ? 'Mặt trước' : m.view === 'back' ? 'Mặt sau' : 'Hai mặt')}</Badge>
                   </div>
-                  <Badge tone="blue">{t(m.view === 'front' ? 'Mặt trước' : m.view === 'back' ? 'Mặt sau' : 'Hai mặt')}</Badge>
-                </div>
 
-                <p className="small muted mb-12 line-clamp-2" style={{ margin: 0 }}>
-                  {m.hint}
-                </p>
+                  <p className="small muted mb-12 line-clamp-2" style={{ margin: 0 }}>
+                    {t(m.hint)}
+                  </p>
 
-                <div className="row between pt-8" style={{ borderTop: '1px solid var(--hairline-soft)', alignItems: 'center' }}>
-                  <span className="tiny font-bold primary">{m.exerciseCount} {t('bài tập')}</span>
-                  <span className="small faint">
-                    {t('Xem giải phẫu')} →
-                  </span>
+                  <div className="row between pt-8" style={{ borderTop: '1px solid var(--hairline-soft)', alignItems: 'center' }}>
+                    <span className="tiny font-bold primary">{m.exerciseCount} {t('bài tập')}</span>
+                    <span className="small faint">
+                      {t('Xem giải phẫu')} →
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Modal chi tiết nhóm cơ */}
           {selectedMuscleKey && (
             <Modal
-              title={muscleDetail ? `${muscleDetail.name} (${muscleDetail.nameEn})` : t('Đang tải...')}
+              title={
+                muscleDetail
+                  ? getLang() === 'en'
+                    ? `${muscleDetail.nameEn || muscleDetail.name} (${muscleDetail.name})`
+                    : `${muscleDetail.name} (${muscleDetail.nameEn})`
+                  : t('Đang tải...')
+              }
               onClose={() => setSelectedMuscleKey(null)}
             >
               {muscleDetailLoading || !muscleDetail ? (
@@ -650,7 +675,7 @@ export default function Knowledge() {
                           style={{ textDecoration: 'none' }}
                         >
                           <Icon name="dumbbell" size={13} className="mr-4" />
-                          <span>{pe.name}</span>
+                          <span>{exTitle(pe)}</span>
                         </Link>
                       ))}
                     </div>
@@ -669,7 +694,7 @@ export default function Knowledge() {
                             className="chip"
                             style={{ textDecoration: 'none' }}
                           >
-                            <span>{se.name}</span>
+                            <span>{exTitle(se)}</span>
                           </Link>
                         ))}
                       </div>
@@ -680,17 +705,21 @@ export default function Knowledge() {
                     <div>
                       <h4 className="tiny faint uppercase font-bold mb-8">{t('Dụng cụ thường dùng')}</h4>
                       <div className="row wrap" style={{ gap: 8 }}>
-                        {muscleDetail.commonEquipment.map((eq) => (
-                          <Link
-                            key={eq.key}
-                            to={`/equipment/${eq.key}`}
-                            className="chip"
-                            style={{ textDecoration: 'none' }}
-                          >
-                            <Icon name="zap" size={13} className="mr-4" />
-                            <span>{eq.name}</span>
-                          </Link>
-                        ))}
+                        {muscleDetail.commonEquipment.map((eq) => {
+                          const eqInfo = EQUIPMENT_BY_KEY.get(eq.key as EquipmentKey);
+                          const label = getLang() === 'en' ? (eqInfo?.labelEn ?? t(eq.name)) : (eqInfo?.label ?? t(eq.name));
+                          return (
+                            <Link
+                              key={eq.key}
+                              to={`/equipment/${eq.key}`}
+                              className="chip"
+                              style={{ textDecoration: 'none' }}
+                            >
+                              <Icon name="zap" size={13} className="mr-4" />
+                              <span>{label}</span>
+                            </Link>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -719,7 +748,7 @@ export default function Knowledge() {
           ) : (
             <div className="guide-grid-layout">
               {(guidesData ?? [])
-                .filter((a) => !q.trim() || fold(a.title).includes(fold(q.trim())) || fold(a.summary).includes(fold(q.trim())))
+                .filter((a) => !q.trim() || fold(t(a.title)).includes(fold(q.trim())) || fold(a.title).includes(fold(q.trim())) || fold(t(a.summary)).includes(fold(q.trim())) || fold(a.summary).includes(fold(q.trim())))
                 .map((art) => (
                   <article
                     key={art.id}
@@ -736,7 +765,7 @@ export default function Knowledge() {
                     </h3>
 
                     <p className="small muted mb-12 line-clamp-3" style={{ margin: 0, flex: 1 }}>
-                      {art.summary}
+                      {t(art.summary)}
                     </p>
 
                     <div className="row between pt-10" style={{ borderTop: '1px solid var(--hairline-soft)', alignItems: 'center' }}>
@@ -751,7 +780,7 @@ export default function Knowledge() {
           {/* Modal đọc bài viết hướng dẫn */}
           {selectedArticle && (
             <Modal
-              title={selectedArticle.title}
+              title={t(selectedArticle.title)}
               onClose={() => setSelectedArticle(null)}
             >
               <div className="flow" style={{ gap: 14 }}>
@@ -760,7 +789,7 @@ export default function Knowledge() {
                   <span className="tiny faint">{fmtDateTime(selectedArticle.publishedAt)}</span>
                 </div>
                 <p className="font-bold muted" style={{ fontSize: 15, lineHeight: 1.5, margin: 0 }}>
-                  {selectedArticle.summary}
+                  {t(selectedArticle.summary)}
                 </p>
                 <div
                   className="article-body mt-12"
