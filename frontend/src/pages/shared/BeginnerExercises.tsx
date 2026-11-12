@@ -207,7 +207,7 @@ export default function BeginnerExercises() {
                         {exTitle(e)}
                       </Link>
                     </h3>
-                    {exSub(e) && <div className="tiny faint" lang="vi">{exSub(e)}</div>}
+                    {exSub(e) && <div className="tiny faint" lang="en">{exSub(e)}</div>}
                   </div>
 
                   {e.description && (

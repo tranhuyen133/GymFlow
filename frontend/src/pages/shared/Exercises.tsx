@@ -234,7 +234,7 @@ export default function Exercises() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="ex-autocomplete-title">{exTitle(item)}</div>
-                    {exSub(item) && <div className="ex-autocomplete-sub" lang="vi">{exSub(item)}</div>}
+                    {exSub(item) && <div className="ex-autocomplete-sub" lang="en">{exSub(item)}</div>}
                   </div>
                   <div className="row gap-4 flex-shrink-0">
                     <span className="badge badge-sm">{muscleLabel[item.muscleGroup]}</span>
@@ -365,13 +365,13 @@ export default function Exercises() {
                     <div className="row" style={{ alignItems: 'flex-start' }}>
                       <div>
                         <button type="button" className="ex-title" onClick={() => setViewingId(e.id)}>{exTitle(e)}</button>
-                        {exSub(e) && <div className="tiny faint" lang="vi">{exSub(e)}</div>}
+                        {exSub(e) && <div className="tiny faint" lang="en">{exSub(e)}</div>}
                         <div className="tiny muted">{muscleLabel[e.muscleGroup]} · {e.equipment ? formatEquipment(e.equipment) : t('Không dụng cụ')}{e.location && ` · ${locationLabel[e.location]}`}</div>
                       </div>
                     </div>
                     <StatusBadge map={levelLabel} value={e.level} />
                   </div>
-                  {e.description && <p className="small muted" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.description}</p>}
+                  {e.description && <p className="small muted" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{t(e.description)}</p>}
                   <div className="row row-wrap" style={{ gap: 6 }}>
                     <StatusBadge map={reviewLabel} value={e.reviewStatus} />
                     <span className="tiny faint">{e.sources.length > 0 ? t('{n} nguồn', { n: e.sources.length }) : t('Chưa có nguồn')}</span>
@@ -425,7 +425,7 @@ export default function Exercises() {
                         <button type="button" className="ex-title font-bold text-left border-0 bg-transparent p-0 cursor-pointer" onClick={() => setViewingId(e.id)}>
                           {exTitle(e)}
                         </button>
-                        {exSub(e) && <div className="tiny faint" lang="vi">{exSub(e)}</div>}
+                        {exSub(e) && <div className="tiny faint" lang="en">{exSub(e)}</div>}
                       </td>
                       <td>
                         <span className="badge badge-sm">{muscleLabel[e.muscleGroup]}</span>
@@ -527,7 +527,7 @@ function ExerciseDetail({ exercise: e, canReview, queue, onClose, onEdit, onRevi
       title={
         <div>
           <div>{exTitle(e)}</div>
-          {exSub(e) && <div className="tiny faint font-normal" lang="vi" style={{ marginTop: 2 }}>{exSub(e)}</div>}
+          {exSub(e) && <div className="tiny faint font-normal" lang="en" style={{ marginTop: 2 }}>{exSub(e)}</div>}
         </div>
       }
       size="medium"
@@ -560,7 +560,7 @@ function ExerciseDetail({ exercise: e, canReview, queue, onClose, onEdit, onRevi
           </div>
         </div>
         <HealthDisclaimer pending={e.reviewStatus !== 'APPROVED'} />
-        {e.description ? <p className="muted">{e.description}</p> : <p className="small"><Missing /></p>}
+        {e.description ? <p className="muted">{t(e.description)}</p> : <p className="small"><Missing /></p>}
 
         <div className="info-grid">
           <InfoRow label={t('Tên tiếng Anh')} value={e.nameEn} />

@@ -2,11 +2,12 @@ import { Children, cloneElement, Fragment, isValidElement, createContext, useCal
 import { EN } from './en';
 import { EN_EXTRA } from './en-extra';
 import { EN_PT } from './en-pt';
+import { EXERCISE_CONTENT_EN } from './exercise-content-en';
 
 /**
  * Đa ngôn ngữ tối giản: chuỗi tiếng Việt chính là khoá, bản tiếng Anh nằm trong en.ts.
  * Thiếu bản dịch thì hiện nguyên tiếng Việt (không tự dịch máy).
- * Nội dung sức khoẻ (mô tả bài tập, bài viết) KHÔNG đưa vào từ điển: chỉ hiện bản tiếng Việt đã duyệt.
+ * Nội dung sức khỏe chỉ dịch khi có bản tiếng Anh đã được rà soát trong từ điển.
  */
 export type Lang = 'vi' | 'en';
 export const LANG_KEY = 'gf.lang';
@@ -18,7 +19,7 @@ function readLang(): Lang {
 let current: Lang = readLang();
 const missing = new Set<string>();
 // EN_PT (V24) đặt trước để không ghi đè bản dịch đã có trong EN / EN_EXTRA.
-const DICT: Record<string, string> = { ...EN_PT, ...EN, ...EN_EXTRA };
+const DICT: Record<string, string> = { ...EN_PT, ...EN, ...EN_EXTRA, ...EXERCISE_CONTENT_EN };
 
 type Vars = Record<string, string | number | null | undefined>;
 

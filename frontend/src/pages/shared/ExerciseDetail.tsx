@@ -363,7 +363,7 @@ export default function ExerciseDetail() {
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="font-bold small line-clamp-1">{exTitle(alt)}</div>
-                        {exSub(alt) && <div className="tiny faint line-clamp-1" lang="vi">{exSub(alt)}</div>}
+                        {exSub(alt) && <div className="tiny faint line-clamp-1" lang="en">{exSub(alt)}</div>}
                         <span className="badge badge-sm mt-4">{t(LEVEL_LABELS[alt.level] || alt.level)}</span>
                       </div>
                     </div>

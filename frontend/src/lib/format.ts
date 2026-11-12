@@ -205,7 +205,11 @@ export function exSub(e: { name: string; nameEn?: string | null } | null | undef
   if (!e) return null;
   const title = exTitle(e);
   if (getLang() === 'en') {
-    return e.name !== title ? e.name : (e.nameEn && e.nameEn !== title ? e.nameEn : null);
+    const translatedName = t(e.name);
+    if (translatedName === e.name && /[À-ỹĐđ]/.test(e.name)) {
+      return e.nameEn && e.nameEn !== title ? e.nameEn : null;
+    }
+    return translatedName !== title ? translatedName : null;
   }
   return e.nameEn || null;
 }

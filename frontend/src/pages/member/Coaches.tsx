@@ -100,7 +100,7 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
                   className={`chip ${selectedSpecialty === sp ? 'on' : ''}`}
                   onClick={() => setSelectedSpecialty(sp === selectedSpecialty ? null : sp)}
                 >
-                  {sp}
+                  {t(sp)}
                 </button>
               ))}
             </div>
@@ -148,7 +148,7 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
                         {tr.fullName}
                       </b>
                       <div className="tiny muted ellipsis mt-2">
-                        {tr.specialty ?? t('Huấn luyện thể hình')}
+                        {tr.specialty ? t(tr.specialty) : t('Huấn luyện thể hình')}
                       </div>
                     </div>
                   </div>
@@ -163,8 +163,8 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
                   {tr.certificates && (
                     <div className="row" style={{ gap: 8 }}>
                       <Icon name="badge" size={15} className="ok" />
-                      <span className="ellipsis" title={tr.certificates}>
-                        {tr.certificates}
+                      <span className="ellipsis" title={t(tr.certificates)}>
+                        {t(tr.certificates)}
                       </span>
                     </div>
                   )}
@@ -180,7 +180,7 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
                         overflow: 'hidden',
                       }}
                     >
-                      {tr.bio}
+                      {t(tr.bio)}
                     </p>
                   )}
                 </div>
