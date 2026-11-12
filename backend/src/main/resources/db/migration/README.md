@@ -14,6 +14,7 @@
 | `V26__knowledge_base_revamp.sql` | Tái cấu trúc Kho kiến thức (TASK 01 / SCRUM-229) | Phân loại bài tập (exercise_type, sub_category), hướng dẫn điều chỉnh dụng cụ (adjust_guide, common_mistakes), bảng nối exercise_equipment, bảng yêu thích member_favorite_exercises |
 | `V27__calorie_backfill.sql` | Ước tính calo MET | Bổ sung dữ liệu calo và bảng met_references |
 | `V28__messaging_enhancements.sql` | Tin nhắn HLV ↔ Hội viên & Admin | Bổ sung updated_at cho conversations, sender_role, attachment_url, deleted_at cho messages, index tối ưu truy vấn |
+| `V29__fix_exercise_subcategory.sql` | TASK 01 / SCRUM-229 | Chuẩn hoá sub_category bài tập (LEGS vs GLUTES, BICEPS vs TRICEPS, CARDIO), ẩn bài trùng #145 |
 
 Quy tắc:
 - Không sửa file đã merge. Tạo migration với số cao hơn migration mới nhất đã áp dụng; bỏ qua được V9–V12 trên một số CSDL demo cũ bằng cấu hình Flyway.

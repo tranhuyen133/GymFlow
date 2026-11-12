@@ -2229,4 +2229,20 @@ export const EN_EXTRA: Record<string, string> = {
   'Nguồn đạm: ăn thịt thế nào cho hợp lý': 'Protein Sources: How to Eat Meat Wisely',
   'Phòng và xử lý chấn thương thường gặp khi chạy': 'Preventing and Managing Common Running Injuries',
   'Video hướng dẫn: {name}': 'Video guide: {name}',
+
+  // Filters and subcategories
+  'Bộ lọc': 'Filters',
+  'Bộ lọc ({n})': 'Filters ({n})',
+  'Bộ lọc bài tập': 'Exercise Filters',
+  'Đặt lại bộ lọc': 'Reset filters',
+  'Kho kiến thức thể hình': 'Fitness Knowledge Base',
+  'Kích hoạt mông & hông': 'Glute & Hip Activation',
+  'Khởi động khớp gối': 'Knee Joint Warm-up',
+  'Kích hoạt cơ bắp': 'Muscle Activation',
+  'Leo cầu thang': 'Stair Climber',
+  'Cấp độ: {level}': 'Level: {level}',
+  'Địa điểm: {loc}': 'Location: {loc}',
+  'Sắp xếp: {sort}': 'Sort: {sort}',
+  'Được giao': 'Assigned',
+  'Bài đang ẩn': 'Hidden exercises',
 };
