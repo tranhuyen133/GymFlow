@@ -33,6 +33,10 @@ public class WorkoutLog {
 
     private Integer calories;
 
+    /** Calo nhập tay trước khi backfill MET (chỉ để truy vết, không dùng thống kê). */
+    @Column(name = "legacy_calories")
+    private Integer legacyCalories;
+
     @Column(name = "weight_kg_used")
     private Double weightKgUsed;
 

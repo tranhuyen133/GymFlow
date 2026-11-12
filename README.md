@@ -35,6 +35,15 @@ cd backend && gradle bootRun                  # cổng 8080
 cd frontend && npm install && npm run dev     # cổng 5173
 ```
 
+Máy Windows không cài Gradle hoặc cần nạp đúng mật khẩu MySQL trong `.env` thì dùng script:
+```powershell
+docker compose up -d mysql
+powershell -ExecutionPolicy Bypass -File scripts\run-backend.ps1
+powershell -ExecutionPolicy Bypass -File scripts\run-backend.ps1 test   # chạy test
+cd frontend; npm install; npm run dev          # http://localhost:5173
+```
+Chi tiết cách kiểm thử calo MET và backfill: xem [docs/LOCAL_DEV.md](docs/LOCAL_DEV.md).
+
 ## Cập nhật bản trên VPS
 Sau khi code mới đã merge vào `develop`:
 ```bash

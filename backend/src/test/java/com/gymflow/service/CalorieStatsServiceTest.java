@@ -37,7 +37,7 @@ class CalorieStatsServiceTest {
 
     CalorieStatsService service;
     List<WorkoutLog> logs;
-    AuthUser user = new AuthUser(10L, "member@gymflow.vn", Role.MEMBER, "Hội Viên");
+    AuthUser user = new AuthUser(10L, "member@gymflow.vn", Role.MEMBER, "Hội viên");
 
     @BeforeEach
     void setUp() {
@@ -47,8 +47,8 @@ class CalorieStatsServiceTest {
         member.setId(1L);
         lenient().when(access.requireView(user, 1L)).thenReturn(member);
         logs = new ArrayList<>();
-        when(logRepository.findByMemberIdAndCompletedAtBetweenAndEstimatedTrueAndEstimateStatusOrderByCompletedAtAsc(
-                eq(1L), any(), any(), eq(EstimateStatus.OK)))
+        when(logRepository.findByMemberIdAndCompletedAtBetweenOrderByCompletedAtAsc(
+                eq(1L), any(), any()))
                 .thenAnswer(inv -> {
                     LocalDateTime from = inv.getArgument(1);
                     LocalDateTime to = inv.getArgument(2);
@@ -68,6 +68,16 @@ class CalorieStatsServiceTest {
         logs.add(l);
     }
 
+    private void unestimated(LocalDateTime at, EstimateStatus status, double activeMinutes) {
+        WorkoutLog l = new WorkoutLog();
+        l.setCompletedAt(at);
+        l.setCalories(null);
+        l.setActiveMinutes(activeMinutes);
+        l.setEstimated(false);
+        l.setEstimateStatus(status);
+        logs.add(l);
+    }
+
     @Test
     @DisplayName("Tuần bắt đầu Thứ 2, tổng hợp đúng và so sánh tuần trước")
     void weeklySummary() {
@@ -81,6 +91,8 @@ class CalorieStatsServiceTest {
         assertThat(res.to()).isEqualTo(LocalDate.of(2026, 11, 16));
         assertThat(res.totalCalories()).isEqualTo(300);
         assertThat(res.totalSessions()).isEqualTo(2);
+        assertThat(res.estimatedSessions()).isEqualTo(2);
+        assertThat(res.unestimatedSessions()).isZero();
         assertThat(res.totalActiveMinutes()).isEqualTo(30.0);
         assertThat(res.avgCaloriesPerSession()).isEqualTo(150.0);
         assertThat(res.buckets()).hasSize(7);
@@ -108,5 +120,38 @@ class CalorieStatsServiceTest {
         assertThat(res.buckets()).hasSize(30);
         assertThat(res.topDay().date()).isEqualTo(LocalDate.of(2026, 11, 30));
         assertThat(res.previous().calories()).isEqualTo(100);
+    }
+
+    @Test
+    @DisplayName("Thống kê theo ngày dùng đúng ngày và so sánh hôm trước")
+    void dailySummary() {
+        log(ANCHOR.atTime(10, 0), 120, 12);
+        log(ANCHOR.minusDays(1).atTime(10, 0), 100, 10);
+
+        CalorieSummaryResponse res = service.summary(user, 1L, "DAY", ANCHOR);
+
+        assertThat(res.period()).isEqualTo("DAY");
+        assertThat(res.from()).isEqualTo(ANCHOR);
+        assertThat(res.to()).isEqualTo(ANCHOR.plusDays(1));
+        assertThat(res.totalCalories()).isEqualTo(120);
+        assertThat(res.totalSessions()).isEqualTo(1);
+        assertThat(res.buckets()).hasSize(1);
+        assertThat(res.previous().calories()).isEqualTo(100);
+    }
+
+    @Test
+    @DisplayName("Buổi thiếu cân nặng vẫn được đếm nhưng không cộng calo")
+    void unestimatedSessionIsCountedWithoutCalories() {
+        log(ANCHOR.atTime(10, 0), 100, 10);
+        unestimated(ANCHOR.minusDays(1).atTime(10, 0), EstimateStatus.MISSING_WEIGHT, 15);
+
+        CalorieSummaryResponse res = service.summary(user, 1L, "WEEK", ANCHOR);
+
+        assertThat(res.totalSessions()).isEqualTo(2);
+        assertThat(res.estimatedSessions()).isEqualTo(1);
+        assertThat(res.unestimatedSessions()).isEqualTo(1);
+        assertThat(res.totalCalories()).isEqualTo(100);
+        assertThat(res.totalActiveMinutes()).isEqualTo(25.0);
+        assertThat(res.avgCaloriesPerSession()).isEqualTo(100.0);
     }
 }
