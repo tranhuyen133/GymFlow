@@ -32,6 +32,9 @@ import KnowledgeBase from './pages/shared/KnowledgeBase';
 import Exercises from './pages/shared/Exercises';
 import ExerciseDetail from './pages/shared/ExerciseDetail';
 import Equipment from './pages/shared/Equipment';
+import Knowledge from './pages/shared/Knowledge';
+import ExerciseDetail from './pages/shared/ExerciseDetail';
+import BeginnerExercises from './pages/shared/BeginnerExercises';
 import EquipmentDetail from './pages/shared/EquipmentDetail';
 import Help from './pages/shared/Help';
 import Programs from './pages/shared/Programs';
@@ -146,6 +149,11 @@ export default function App() {
         <Route path="/exercises/:id" element={<ExerciseDetail />} />
         <Route path="/equipment" element={<KnowledgeBase defaultTab="equipment" />} />
         <Route path="/equipment/manage" element={<Only roles={STAFF}><Equipment /></Only>} />
+        <Route path="/knowledge" element={<Knowledge />} />
+        <Route path="/exercises" element={<Navigate to="/knowledge?tab=exercises" replace />} />
+        <Route path="/exercises/beginner" element={<BeginnerExercises />} />
+        <Route path="/exercises/:id" element={<ExerciseDetail />} />
+        <Route path="/equipment" element={<Navigate to="/knowledge?tab=equipment" replace />} />
         <Route path="/equipment/:key" element={<EquipmentDetail />} />
         <Route path="/programs" element={<Programs />} />
         <Route path="/articles" element={<Only roles={STAFF}><Articles /></Only>} />

@@ -293,6 +293,8 @@ export interface ExerciseSummary {
   targetMuscles?: string[]; imageKey?: string | null;
 }
 
+export type ExerciseType = 'STRENGTH' | 'WARMUP' | 'CARDIO';
+
 export interface Exercise {
   id: number; name: string; muscleGroup: MuscleGroup; equipment: string | null; level: Level;
   description: string | null; instructions: string | null; videoUrl: string | null; hidden: boolean;
@@ -312,6 +314,11 @@ export interface Exercise {
   subCategory?: string | null;
   cardioIntensity?: CardioIntensity | null;
   isFavorite?: boolean;
+  /** SCRUM-229: Phân loại bài tập, danh mục con, yêu thích của Member và quan hệ thiết bị */
+  exerciseType?: ExerciseType;
+  subCategory?: string | null;
+  isFavorite?: boolean;
+  equipments?: { key: string; name: string; category: EquipmentCategory; imageKey?: string | null }[];
 }
 
 export type EquipmentCategory = 'FREE_WEIGHT' | 'MACHINE' | 'CABLE' | 'BODYWEIGHT' | 'CARDIO' | 'ACCESSORY' | 'RECOVERY';
@@ -324,6 +331,7 @@ export interface Equipment {
   shortDesc?: string | null;
   usageGuide?: string | null;
   adjustmentInstructions?: string | null;
+  adjustGuide?: string | null;
   commonMistakes?: string | null;
   safetyNotes?: string | null;
   targetMuscleKeys: string[];
@@ -338,7 +346,38 @@ export interface Equipment {
 }
 
 // ---------- Knowledge base ----------
-export type ArticleCategory = 'NUTRITION' | 'HYDRATION' | 'SLEEP' | 'ACTIVITY' | 'RECOVERY';
+export type ArticleCategory = 'NUTRITION' | 'HYDRATION' | 'SLEEP' | 'ACTIVITY' | 'RECOVERY' | 'TRAINING_GUIDE';
+
+export interface MuscleSummary {
+  key: string;
+  name: string;
+  nameEn: string;
+  group: MuscleGroup;
+  view: 'front' | 'back' | 'both';
+  hint: string;
+  exerciseCount: number;
+}
+
+export interface MuscleDetail {
+  key: string;
+  name: string;
+  nameEn: string;
+  group: MuscleGroup;
+  view: 'front' | 'back' | 'both';
+  hint: string;
+  description: string;
+  exerciseCount: number;
+  primaryExercises: Exercise[];
+  secondaryExercises: Exercise[];
+  commonEquipment: Equipment[];
+}
+
+export interface FavoriteToggleResult {
+  exerciseId: number;
+  isFavorite: boolean;
+  favoriteCount: number;
+  message: string;
+}
 export type ArticleStatus = 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'ARCHIVED';
 export type ArticleAction = 'SUBMIT' | 'APPROVE' | 'REJECT' | 'ARCHIVE' | 'RESTORE';
 export interface ArticleSummary { id: number; slug: string; title: string; category: ArticleCategory; summary: string; publishedAt: string | null }
@@ -405,7 +444,8 @@ export interface CalorieBucket { key: string; label: string; from: string; to: s
 export interface CaloriePeriodSummary { from: string; to: string; calories: number; sessions: number; activeMinutes: number; avgCaloriesPerSession: number | null; changePercent: number | null }
 export interface CalorieTopDay { date: string; calories: number; sessions: number }
 export interface CalorieSummary {
-  period: 'WEEK' | 'MONTH'; from: string; to: string; timezone: string; totalCalories: number; totalSessions: number;
+  period: 'DAY' | 'WEEK' | 'MONTH'; from: string; to: string; timezone: string; totalCalories: number;
+  totalSessions: number; estimatedSessions: number; unestimatedSessions: number;
   totalActiveMinutes: number; avgCaloriesPerSession: number | null; buckets: CalorieBucket[];
   topDay: CalorieTopDay | null; previous: CaloriePeriodSummary; disclaimer: string;
 }
@@ -414,6 +454,10 @@ export interface CalorieSession {
   activeMinutes: number | null; calories: number | null; intensity: ExerciseIntensity | null;
   weightKgUsed: number | null; estimateStatus: EstimateStatus; estimateQuality: EstimateQuality | null;
   formulaVersion: string | null; exercises: CalorieExercise[];
+}
+export interface CalorieBackfillResult {
+  processed: number; estimated: number; missingWeight: number; noExerciseData: number;
+  skipped: number; failed: number; formulaVersion: string;
 }
 
 // ---------- Progress ----------

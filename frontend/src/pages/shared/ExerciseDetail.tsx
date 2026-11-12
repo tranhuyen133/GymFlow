@@ -34,6 +34,8 @@ export default function ExerciseDetail() {
   const [rejectNote, setRejectNote] = useState('');
   const [reviewing, setReviewing] = useState(false);
   const [isFav, setIsFav] = useState(false);
+  const [isFavorite, setIsFavorite] = useState<boolean>(false);
+  const [togglingFavorite, setTogglingFavorite] = useState(false);
 
   const { data: ex, error, loading, reload } = useAsync(
     () => api.get<Exercise>(`/exercises/${id}`),
@@ -52,6 +54,25 @@ export default function ExerciseDetail() {
       toast.success(res.favorite ? t('Đã lưu bài tập vào mục yêu thích') : t('Đã bỏ lưu yêu thích'));
     } catch (e) {
       toast.error(errMsg(e));
+    if (ex?.isFavorite !== undefined) {
+      setIsFavorite(ex.isFavorite);
+    }
+  }, [ex?.isFavorite]);
+
+  const handleToggleFavorite = async () => {
+    if (!ex) return;
+    setTogglingFavorite(true);
+    const prev = isFavorite;
+    setIsFavorite(!prev);
+    try {
+      const res = await api.post<{ isFavorite: boolean; favoriteCount: number; message: string }>(`/exercises/${ex.id}/favorite`);
+      setIsFavorite(res.isFavorite);
+      toast.success(t(res.isFavorite ? 'Đã lưu vào bài tập yêu thích' : 'Đã bỏ lưu khỏi bài tập yêu thích'));
+    } catch (e) {
+      setIsFavorite(prev);
+      toast.error(errMsg(e));
+    } finally {
+      setTogglingFavorite(false);
     }
   };
 
@@ -183,6 +204,15 @@ export default function ExerciseDetail() {
             {/* Thao tác dành cho Member */}
             {isMember && (
               <>
+                <Button
+                  variant={isFavorite ? 'primary' : 'secondary'}
+                  size="sm"
+                  icon={isFavorite ? 'trophy' : 'sparkle'}
+                  loading={togglingFavorite}
+                  onClick={handleToggleFavorite}
+                >
+                  {isFavorite ? t('Đã yêu thích') : t('Lưu yêu thích')}
+                </Button>
                 <Link to={`/me/schedule?exerciseId=${ex.id}`} className="btn btn-primary btn-sm">
                   <Icon name="calendar" size={14} className="mr-4" />
                   <span>{t('Thêm vào lịch tập')}</span>

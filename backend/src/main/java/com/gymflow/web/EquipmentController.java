@@ -27,6 +27,14 @@ public class EquipmentController {
         return equipmentService.get(CurrentUser.get(), key);
     }
 
+    @GetMapping("/api/equipment/{key}/exercises")
+    public com.gymflow.common.PageResponse<ExerciseResponse> exercises(
+            @PathVariable String key,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        return equipmentService.getExercisesPaged(CurrentUser.get(), key, page, size);
+    }
+
     @PostMapping("/api/equipment")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMIN','TRAINER')")

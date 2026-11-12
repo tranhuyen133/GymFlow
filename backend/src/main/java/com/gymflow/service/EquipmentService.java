@@ -1,6 +1,7 @@
 package com.gymflow.service;
 
 import com.gymflow.common.ApiException;
+import com.gymflow.common.PageResponse;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.repository.EquipmentRepository;
@@ -82,6 +83,35 @@ public class EquipmentService {
         return mappers.equipmentDetail(eq, count, exerciseResponses, isFav);
     }
 
+    @Transactional(readOnly = true)
+    public PageResponse<ExerciseResponse> getExercisesPaged(AuthUser user, String key, int page, int size) {
+        Equipment eq = equipmentRepository.findById(key)
+                .orElseThrow(() -> ApiException.notFound("dụng cụ"));
+
+        boolean isStaff = user != null && !user.isMember();
+        if (!isStaff && eq.isHidden()) {
+            throw ApiException.notFound("dụng cụ");
+        }
+
+        List<Exercise> relatedExercises = exerciseRepository.findAllByOrderByNameAsc().stream()
+                .filter(e -> isStaff || !e.isHidden())
+                .filter(e -> hasEquipmentKey(e, eq.getKey()))
+                .toList();
+
+        int totalElements = relatedExercises.size();
+        int pageSize = size <= 0 ? 12 : size;
+        int totalPages = (int) Math.ceil((double) totalElements / pageSize);
+        int p = Math.max(0, page);
+        int fromIndex = Math.min(p * pageSize, totalElements);
+        int toIndex = Math.min(fromIndex + pageSize, totalElements);
+
+        List<ExerciseResponse> content = relatedExercises.subList(fromIndex, toIndex).stream()
+                .map(mappers::exercise)
+                .toList();
+
+        return new PageResponse<>(content, p, pageSize, totalElements, totalPages);
+    }
+
     @Transactional
     public EquipmentResponse create(AuthUser user, EquipmentRequest req) {
         if (user == null || user.isMember()) {
@@ -153,6 +183,7 @@ public class EquipmentService {
         eq.setShortDesc(Mappers.blankToNull(req.shortDesc()));
         eq.setUsageGuide(Mappers.blankToNull(req.usageGuide()));
         eq.setAdjustmentInstructions(Mappers.blankToNull(req.adjustmentInstructions()));
+        eq.setAdjustGuide(Mappers.blankToNull(req.adjustGuide()));
         eq.setCommonMistakes(Mappers.blankToNull(req.commonMistakes()));
         eq.setSafetyNotes(Mappers.blankToNull(req.safetyNotes()));
         if (req.targetMuscleKeys() != null) {
@@ -176,13 +207,22 @@ public class EquipmentService {
                 .toList();
 
         for (Exercise e : visible) {
+            Set<String> keys = new HashSet<>();
+            if (e.getEquipments() != null) {
+                for (Equipment eq : e.getEquipments()) {
+                    keys.add(eq.getKey().toLowerCase(Locale.ROOT));
+                }
+            }
             if (e.getEquipmentKeys() != null) {
                 for (String k : e.getEquipmentKeys().split(",")) {
                     String cleanKey = k.trim().toLowerCase(Locale.ROOT);
                     if (!cleanKey.isEmpty()) {
-                        map.put(cleanKey, map.getOrDefault(cleanKey, 0L) + 1L);
+                        keys.add(cleanKey);
                     }
                 }
+            }
+            for (String k : keys) {
+                map.put(k, map.getOrDefault(k, 0L) + 1L);
             }
         }
         return map;
@@ -196,7 +236,11 @@ public class EquipmentService {
     }
 
     private static boolean hasEquipmentKey(Exercise e, String key) {
-        if (e.getEquipmentKeys() == null || key == null) return false;
+        if (key == null) return false;
+        if (e.getEquipments() != null && e.getEquipments().stream().anyMatch(item -> item.getKey().equalsIgnoreCase(key))) {
+            return true;
+        }
+        if (e.getEquipmentKeys() == null) return false;
         for (String k : e.getEquipmentKeys().split(",")) {
             if (k.trim().equalsIgnoreCase(key)) return true;
         }

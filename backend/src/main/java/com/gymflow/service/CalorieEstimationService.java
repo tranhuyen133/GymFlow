@@ -43,26 +43,50 @@ public class CalorieEstimationService {
 
     @Transactional(readOnly = true)
     public CalorieEstimate estimate(WorkoutSchedule schedule, int durationMinutes, ExerciseIntensity requestedIntensity) {
+        return estimateInternal(schedule, schedule.getMember().getId(), schedule.getStartTime().toLocalDate(),
+                durationMinutes, requestedIntensity, false, null);
+    }
+
+    /**
+     * Dùng riêng cho backfill dữ liệu lịch sử: cho phép lấy cân nặng gần nhất và ép chất lượng COARSE
+     * vì cường độ của buổi cũ chỉ là giả định (MODERATE).
+     */
+    @Transactional(readOnly = true)
+    public CalorieEstimate estimateForBackfill(WorkoutSchedule schedule, int durationMinutes,
+                                               ExerciseIntensity requestedIntensity) {
+        return estimateInternal(schedule, schedule.getMember().getId(), schedule.getStartTime().toLocalDate(),
+                durationMinutes, requestedIntensity, true, EstimateQuality.COARSE);
+    }
+
+    /** Log không còn schedule: chỉ có thể ước tính thô toàn buổi từ cân nặng gần nhất. */
+    @Transactional(readOnly = true)
+    public CalorieEstimate estimateStandalone(Member member, LocalDate sessionDate, int durationMinutes) {
+        return estimateInternal(null, member.getId(), sessionDate, durationMinutes,
+                ExerciseIntensity.MODERATE, true, EstimateQuality.COARSE);
+    }
+
+    private CalorieEstimate estimateInternal(WorkoutSchedule schedule, Long memberId, LocalDate sessionDate,
+                                             int durationMinutes, ExerciseIntensity requestedIntensity,
+                                             boolean allowNearestWeight, EstimateQuality qualityOverride) {
         ExerciseIntensity intensity = requestedIntensity == null ? ExerciseIntensity.MODERATE : requestedIntensity;
         int duration = Math.max(1, durationMinutes);
-        LocalDate sessionDate = schedule.getStartTime().toLocalDate();
-        Long memberId = schedule.getMember().getId();
 
-        WeightRecord weightRecord = weightRepository
-                .findFirstByMemberIdAndRecordedDateLessThanEqualOrderByRecordedDateDesc(memberId, sessionDate)
-                .orElse(null);
-        Double weight = weightRecord == null ? null : weightRecord.getWeightKg();
-        String weightSource = weightRecord == null ? "MISSING" : "WEIGHT_RECORD@" + weightRecord.getRecordedDate();
+        WeightChoice weightChoice = resolveWeight(memberId, sessionDate, allowNearestWeight);
+        Double weight = weightChoice.weight();
+        String weightSource = weightChoice.source();
 
         List<CalorieEstimate.ExerciseEstimate> exercises = new ArrayList<>();
-        for (WorkoutPlanItem item : planItemsFor(schedule)) {
-            CalorieEstimate.ExerciseEstimate estimate = estimateItem(item, intensity, weight);
-            if (estimate != null && estimate.activeMinutes() != null && estimate.activeMinutes() > 0) {
-                exercises.add(estimate);
+        if (schedule != null) {
+            for (WorkoutPlanItem item : planItemsFor(schedule)) {
+                CalorieEstimate.ExerciseEstimate estimate = estimateItem(item, intensity, weight);
+                if (estimate != null && estimate.activeMinutes() != null && estimate.activeMinutes() > 0) {
+                    exercises.add(estimate);
+                }
             }
         }
 
         EstimateQuality quality = exercises.isEmpty() ? EstimateQuality.COARSE : EstimateQuality.DETAILED;
+        if (qualityOverride != null) quality = qualityOverride;
         if (exercises.isEmpty()) {
             exercises.add(fallbackEstimate(duration, weight));
         }
@@ -93,13 +117,38 @@ public class CalorieEstimationService {
                 round1(totalActive), totalCalories, List.copyOf(exercises));
     }
 
+    private WeightChoice resolveWeight(Long memberId, LocalDate sessionDate, boolean allowNearestWeight) {
+        WeightRecord weightRecord = weightRepository
+                .findFirstByMemberIdAndRecordedDateLessThanEqualOrderByRecordedDateDesc(memberId, sessionDate)
+                .orElse(null);
+        if (weightRecord != null) {
+            return new WeightChoice(weightRecord.getWeightKg(), "WEIGHT_RECORD@" + weightRecord.getRecordedDate());
+        }
+        if (allowNearestWeight) {
+            WeightRecord nearest = weightRepository.findFirstByMemberIdOrderByRecordedDateAsc(memberId).orElse(null);
+            if (nearest != null) {
+                return new WeightChoice(nearest.getWeightKg(),
+                        "WEIGHT_RECORD_NEAREST@" + nearest.getRecordedDate());
+            }
+        }
+        return new WeightChoice(null, "MISSING");
+    }
+
+    private record WeightChoice(Double weight, String source) {
+    }
+
     /** Ghi snapshot ước tính vào nhật ký (phải gọi trước khi lưu log). */
     public void applyToLog(WorkoutLog log, CalorieEstimate estimate) {
+        applyToLog(log, estimate, MET_METHOD, FORMULA_VERSION);
+    }
+
+    /** Ghi snapshot với phương pháp/công thức tuỳ biến (dùng cho backfill lịch sử). */
+    public void applyToLog(WorkoutLog log, CalorieEstimate estimate, String metMethod, String formulaVersion) {
         log.setWeightKgUsed(estimate.weightKg());
         log.setActiveMinutes(estimate.activeMinutes());
         log.setIntensity(estimate.intensity());
-        log.setMetMethod(MET_METHOD);
-        log.setFormulaVersion(FORMULA_VERSION);
+        log.setMetMethod(metMethod);
+        log.setFormulaVersion(formulaVersion);
         log.setEstimateStatus(estimate.status());
         log.setEstimateQuality(estimate.quality());
         log.setEstimated(estimate.status() == EstimateStatus.OK);

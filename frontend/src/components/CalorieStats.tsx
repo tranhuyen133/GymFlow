@@ -1,19 +1,21 @@
 import { useState } from 'react';
 import { api } from '../api/client';
-import type { CalorieSession, CalorieSummary } from '../api/types';
+import type { CalorieBackfillResult, CalorieSession, CalorieSummary } from '../api/types';
 import { t } from '../i18n';
 import { addDays, fmtDate, fmtDateTime, fmtNum, parseDate, toIsoDate } from '../lib/format';
 import { useAsync } from '../lib/hooks';
 import { Icon } from './Icon';
-import { Badge, Card, Empty, ErrorState, LoadingBlock, Modal, Segmented, Stat, Table } from './ui';
+import { Alert, Badge, Button, Card, Empty, ErrorState, LoadingBlock, Modal, Segmented, Stat, Table } from './ui';
 
 const INTENSITY_LABEL: Record<string, string> = { LIGHT: 'Nhẹ', MODERATE: 'Vừa', VIGOROUS: 'Cao' };
 
 /** Khu vực thống kê calo tiêu hao theo MET cho hội viên. */
 export function CalorieStats({ memberId }: { memberId: number }) {
-  const [period, setPeriod] = useState<'WEEK' | 'MONTH'>('WEEK');
+  const [period, setPeriod] = useState<'DAY' | 'WEEK' | 'MONTH'>('WEEK');
   const [dayFilter, setDayFilter] = useState<string | null>(null);
   const [detail, setDetail] = useState<CalorieSession | null>(null);
+  const [recomputing, setRecomputing] = useState(false);
+  const [recomputeError, setRecomputeError] = useState<string | null>(null);
   const state = useAsync(async () => {
     const summary = await api.get<CalorieSummary>(`/members/${memberId}/calories/summary`, { period });
     const to = toIsoDate(addDays(parseDate(summary.to), -1));
@@ -27,14 +29,35 @@ export function CalorieStats({ memberId }: { memberId: number }) {
   const { summary, sessions } = state.data;
   const max = Math.max(1, ...summary.buckets.map((b) => b.calories));
   const filtered = dayFilter ? sessions.filter((s) => s.completedAt.slice(0, 10) === dayFilter) : sessions;
-  const label = period === 'WEEK' ? t('Calo tuần này') : t('Calo tháng này');
+  const label = period === 'DAY' ? t('Calo ngày này') : period === 'WEEK' ? t('Calo tuần này') : t('Calo tháng này');
+
+  const recompute = async () => {
+    setRecomputing(true);
+    setRecomputeError(null);
+    try {
+      const res = await api.post<CalorieBackfillResult>(`/members/${memberId}/calories/recompute`, {});
+      if (res.failed > 0) setRecomputeError(t('Có {n} buổi chưa tính lại được. Vui lòng thử lại sau.', { n: res.failed }));
+      await state.reload();
+    } catch (e) {
+      setRecomputeError(e instanceof Error ? e.message : t('Không tính lại được calo. Vui lòng thử lại.'));
+    } finally {
+      setRecomputing(false);
+    }
+  };
 
   return (
     <div className="stack" style={{ gap: 18 }}>
       <Card title={t('Thống kê calo tiêu hao')} icon="flame"
-        actions={<Segmented value={period} onChange={(v) => { setPeriod(v); setDayFilter(null); }} options={[
-          { value: 'WEEK', label: t('Tuần') }, { value: 'MONTH', label: t('Tháng') },
+        actions={<Segmented value={period} onChange={(v) => { setPeriod(v); setDayFilter(null); setRecomputeError(null); }} options={[
+          { value: 'DAY', label: t('Ngày') }, { value: 'WEEK', label: t('Tuần') }, { value: 'MONTH', label: t('Tháng') },
         ]} />}>
+        {summary.unestimatedSessions > 0 && (
+          <Alert kind="warning"
+            action={<Button size="sm" loading={recomputing} onClick={recompute}>{t('Tính lại calo')}</Button>}>
+            {t('{n} buổi chưa ước tính được vì thiếu cân nặng hoặc dữ liệu vận động. Hãy ghi cân nặng rồi bấm tính lại.', { n: summary.unestimatedSessions })}
+          </Alert>
+        )}
+        {recomputeError && <Alert kind="error">{recomputeError}</Alert>}
         <div className="grid grid-4">
           <Stat icon="flame" label={label} value={fmtNum(summary.totalCalories)} unit="kcal" accent="#ff6b61"
             foot={summary.previous.changePercent == null ? t('Chưa có kỳ trước') : t('{n}% so với kỳ trước', { n: summary.previous.changePercent })} />

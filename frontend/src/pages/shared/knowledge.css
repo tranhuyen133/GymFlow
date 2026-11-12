@@ -1,0 +1,136 @@
+/* Kho kiến thức GymFlow (TASK 01 - SCRUM-229) */
+.knowledge-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--hairline-soft);
+  margin-bottom: 20px;
+}
+
+.knowledge-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.knowledge-tab-btn:hover {
+  background: var(--rail);
+  color: var(--ink);
+}
+
+.knowledge-tab-btn.active {
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  color: var(--primary-bright);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+.knowledge-sub-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 16px;
+  scrollbar-width: thin;
+}
+
+.sub-pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.sub-pill:hover {
+  border-color: var(--primary);
+  color: var(--ink);
+}
+
+.sub-pill.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.fav-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--hairline-soft);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.fav-toggle-btn:hover {
+  background: var(--rail);
+  color: var(--ink);
+}
+
+.fav-toggle-btn.is-fav {
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  color: var(--primary-bright);
+}
+
+.muscle-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.muscle-card {
+  padding: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.muscle-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+}
+
+.guide-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.guide-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.guide-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+}

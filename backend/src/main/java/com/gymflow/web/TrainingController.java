@@ -2,6 +2,7 @@ package com.gymflow.web;
 
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
+import com.gymflow.dto.KnowledgeDtos;
 import com.gymflow.security.CurrentUser;
 import com.gymflow.service.ExerciseImporterService;
 import com.gymflow.service.ExerciseService;
@@ -35,6 +36,10 @@ public class TrainingController {
                             @RequestParam(required = false) ExerciseLocation location,
                             @RequestParam(required = false) ExerciseGoal goal,
                             @RequestParam(required = false) ReviewStatus reviewStatus,
+                            @RequestParam(required = false) ExerciseType exerciseType,
+                            @RequestParam(required = false) String subCategory,
+                            @RequestParam(required = false) Boolean favoriteOnly,
+                            @RequestParam(required = false) Boolean assignedOnly,
                             @RequestParam(defaultValue = "false") boolean includeHidden,
                             @RequestParam(required = false) ExerciseType exerciseType,
                             @RequestParam(required = false) String subCategory,
@@ -43,11 +48,33 @@ public class TrainingController {
                             @RequestParam(required = false) Integer page,
                             @RequestParam(required = false) Integer size) {
         ExerciseService.Filter filter = new ExerciseService.Filter(q, muscleGroup, muscle, equipment, level, location, goal, reviewStatus, includeHidden, exerciseType, subCategory, cardioIntensity, onlyFavorites);
+        ExerciseService.Filter filter = new ExerciseService.Filter(
+                q, muscleGroup, muscle, equipment, level, location, goal, reviewStatus,
+                exerciseType, subCategory, favoriteOnly, assignedOnly, includeHidden
+        );
         if (page != null) {
             int pageSize = (size == null || size <= 0) ? 12 : size;
             return exerciseService.listPaged(CurrentUser.get(), filter, page, pageSize);
         }
         return exerciseService.list(CurrentUser.get(), filter);
+    }
+
+    @GetMapping("/api/exercises/favorites")
+    @PreAuthorize("hasRole('MEMBER')")
+    public List<ExerciseResponse> favoriteExercises() {
+        return exerciseService.getFavorites(CurrentUser.get());
+    }
+
+    @PostMapping("/api/exercises/{id}/favorite")
+    @PreAuthorize("hasRole('MEMBER')")
+    public KnowledgeDtos.FavoriteToggleResponse toggleFavorite(@PathVariable Long id) {
+        return exerciseService.toggleFavorite(CurrentUser.get(), id);
+    }
+
+    @DeleteMapping("/api/exercises/{id}/favorite")
+    @PreAuthorize("hasRole('MEMBER')")
+    public KnowledgeDtos.FavoriteToggleResponse removeFavorite(@PathVariable Long id) {
+        return exerciseService.removeFavorite(CurrentUser.get(), id);
     }
 
     @GetMapping("/api/exercises/{id}")

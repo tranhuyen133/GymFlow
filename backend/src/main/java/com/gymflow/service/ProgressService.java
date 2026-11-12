@@ -95,7 +95,7 @@ public class ProgressService {
 
         List<WorkoutLog> logs = logRepository.findByMemberIdOrderByCompletedAtDesc(m.getId());
         long minutes = totalMinutes(logs);
-        long calories = totalCalories(logs);
+        long calories = estimatedCalories(logs);
         Double avgRating = logs.stream().map(WorkoutLog::getRating).filter(Objects::nonNull)
                 .mapToInt(Integer::intValue).average().stream().mapToObj(ProgressService::round1).findFirst().orElse(null);
 
@@ -177,6 +177,13 @@ public class ProgressService {
     /** PRG-06 · tổng calo các buổi đã ghi nhật ký; buổi không nhập calo thì bỏ qua. */
     public static long totalCalories(List<WorkoutLog> logs) {
         return logs.stream().map(WorkoutLog::getCalories).filter(Objects::nonNull).mapToLong(Integer::longValue).sum();
+    }
+
+    /** Tổng calo cho tiến độ: chỉ tính buổi đã ước tính MET hợp lệ. */
+    public static long estimatedCalories(List<WorkoutLog> logs) {
+        return logs.stream()
+                .filter(l -> l.isEstimated() && l.getEstimateStatus() == EstimateStatus.OK)
+                .map(WorkoutLog::getCalories).filter(Objects::nonNull).mapToLong(Integer::longValue).sum();
     }
 
     public static long totalMinutes(List<WorkoutLog> logs) {

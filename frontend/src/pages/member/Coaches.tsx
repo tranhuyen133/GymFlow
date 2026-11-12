@@ -9,6 +9,22 @@ import { DAYS } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import { t } from '../../i18n';
 
+/** Viết hoa ký tự đầu của một cụm chuyên môn (giảm mỡ → Giảm mỡ). */
+function sentenceCase(value: string) {
+  const s = value.trim();
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
+/** Chuẩn hoá chuỗi chuyên môn: tách theo dấu ngăn cách, viết hoa từng cụm, nối lại. */
+function formatSpecialty(raw: string | null | undefined) {
+  if (!raw) return '';
+  return raw
+    .split(/[,/•;]/)
+    .map(sentenceCase)
+    .filter(Boolean)
+    .join(', ');
+}
+
 export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const toast = useToast();
@@ -23,7 +39,7 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
     data.forEach((tr) => {
       if (tr.specialty) {
         tr.specialty.split(/[,/•;]/).forEach((part) => {
-          const item = part.trim();
+          const item = sentenceCase(part);
           if (item) s.add(item);
         });
       }
@@ -84,25 +100,29 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
             />
           </div>
           {specialties.length > 0 && (
-            <div className="row wrap" style={{ gap: 6, alignItems: 'center' }}>
-              <span className="tiny muted mr-4">{t('Chuyên môn:')}</span>
-              <button
-                type="button"
-                className={`chip ${!selectedSpecialty ? 'on' : ''}`}
-                onClick={() => setSelectedSpecialty(null)}
-              >
-                {t('Tất cả')}
-              </button>
-              {specialties.map((sp) => (
+            <div className="row" style={{ gap: 6, alignItems: 'center', flex: '1 1 auto', minWidth: 0, justifyContent: 'flex-end' }}>
+              <span className="tiny muted mr-4" style={{ whiteSpace: 'nowrap', flex: 'none' }}>{t('Chuyên môn:')}</span>
+              <div className="row" style={{ gap: 6, flex: '1 1 auto', minWidth: 0, overflowX: 'auto', paddingBottom: 2 }}>
                 <button
-                  key={sp}
                   type="button"
-                  className={`chip ${selectedSpecialty === sp ? 'on' : ''}`}
-                  onClick={() => setSelectedSpecialty(sp === selectedSpecialty ? null : sp)}
+                  className={`chip ${!selectedSpecialty ? 'on' : ''}`}
+                  style={{ flex: 'none', whiteSpace: 'nowrap' }}
+                  onClick={() => setSelectedSpecialty(null)}
                 >
-                  {sp}
+                  {t('Tất cả')}
                 </button>
-              ))}
+                {specialties.map((sp) => (
+                  <button
+                    key={sp}
+                    type="button"
+                    className={`chip ${selectedSpecialty === sp ? 'on' : ''}`}
+                    style={{ flex: 'none', whiteSpace: 'nowrap' }}
+                    onClick={() => setSelectedSpecialty(sp === selectedSpecialty ? null : sp)}
+                  >
+                    {sp}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -136,10 +156,10 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
 
             return (
               <Card key={tr.id} className="hoverable trainer-card">
-                <div className="row between" style={{ alignItems: 'flex-start' }}>
-                  <div className="row" style={{ gap: 12 }}>
+                <div className="row between row-wrap" style={{ alignItems: 'flex-start', gap: 8 }}>
+                  <div className="row" style={{ gap: 12, flex: '1 1 170px', minWidth: 0 }}>
                     <Avatar name={tr.fullName} src={tr.avatar} size="lg" />
-                    <div style={{ minWidth: 0 }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
                       <b
                         className="ellipsis pointer link-accent"
                         style={{ fontSize: 16, display: 'block' }}
@@ -148,11 +168,13 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
                         {tr.fullName}
                       </b>
                       <div className="tiny muted ellipsis mt-2">
-                        {tr.specialty ?? t('Huấn luyện thể hình')}
+                        {formatSpecialty(tr.specialty) || t('Huấn luyện thể hình')}
                       </div>
                     </div>
                   </div>
-                  <Badge tone={todayShift ? 'green' : 'blue'}>{statusLabel}</Badge>
+                  <div style={{ marginLeft: 'auto', flex: 'none' }}>
+                    <Badge tone={todayShift ? 'green' : 'blue'}>{statusLabel}</Badge>
+                  </div>
                 </div>
 
                 <div className="stack-sm mt-16 small">

@@ -6,6 +6,7 @@ import com.gymflow.domain.UserStatus;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.security.CurrentUser;
 import com.gymflow.service.AvatarService;
+import com.gymflow.service.CalorieBackfillService;
 import com.gymflow.service.DashboardService;
 import com.gymflow.service.NotificationService;
 import com.gymflow.service.ReportService;
@@ -36,6 +37,7 @@ public class AdminController {
     private final NotificationService notificationService;
     private final UserService userService;
     private final AvatarService avatarService;
+    private final CalorieBackfillService calorieBackfillService;
 
     // ---------- Dashboard ----------
     @GetMapping("/api/dashboard/admin")
@@ -67,6 +69,13 @@ public class AdminController {
     public ReportResponse report(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                  @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return reportService.summary(from, to);
+    }
+
+    /** Backfill calo MET cho toàn bộ buổi tập lịch sử chưa ước tính (idempotent). */
+    @PostMapping("/api/admin/calories/backfill")
+    @PreAuthorize("hasRole('ADMIN')")
+    public CalorieBackfillResponse backfillCalories() {
+        return calorieBackfillService.backfillLegacy();
     }
 
     // ---------- Tài khoản ----------

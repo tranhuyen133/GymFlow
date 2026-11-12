@@ -4,13 +4,15 @@ import com.gymflow.common.ApiException;
 import com.gymflow.common.PageResponse;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
+import com.gymflow.dto.KnowledgeDtos;
 import com.gymflow.repository.ContentSourceRepository;
 import com.gymflow.repository.EquipmentRepository;
 import com.gymflow.repository.ExerciseRepository;
+import com.gymflow.repository.MemberFavoriteExerciseRepository;
 import com.gymflow.repository.UserRepository;
 import com.gymflow.repository.WorkoutPlanItemRepository;
 import com.gymflow.security.AuthUser;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 import com.gymflow.repository.FavoriteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Service
@@ -43,6 +46,19 @@ public class ExerciseService {
                            ContentSourceRepository sourceRepository, WorkoutPlanItemRepository planItemRepository,
                            UserRepository userRepository, AuditService auditService, Mappers mappers,
                            FavoriteRepository favoriteRepository) {
+    private final MemberFavoriteExerciseRepository favoriteRepository;
+    private final AccessService accessService;
+
+    @Autowired
+    public ExerciseService(ExerciseRepository exerciseRepository,
+                           EquipmentRepository equipmentRepository,
+                           ContentSourceRepository sourceRepository,
+                           WorkoutPlanItemRepository planItemRepository,
+                           UserRepository userRepository,
+                           AuditService auditService,
+                           Mappers mappers,
+                           MemberFavoriteExerciseRepository favoriteRepository,
+                           AccessService accessService) {
         this.exerciseRepository = exerciseRepository;
         this.equipmentRepository = equipmentRepository;
         this.sourceRepository = sourceRepository;
@@ -57,6 +73,17 @@ public class ExerciseService {
                            ContentSourceRepository sourceRepository, WorkoutPlanItemRepository planItemRepository,
                            UserRepository userRepository, AuditService auditService, Mappers mappers) {
         this(exerciseRepository, equipmentRepository, sourceRepository, planItemRepository, userRepository, auditService, mappers, null);
+        this.accessService = accessService;
+    }
+
+    public ExerciseService(ExerciseRepository exerciseRepository,
+                           EquipmentRepository equipmentRepository,
+                           ContentSourceRepository sourceRepository,
+                           WorkoutPlanItemRepository planItemRepository,
+                           UserRepository userRepository,
+                           AuditService auditService,
+                           Mappers mappers) {
+        this(exerciseRepository, equipmentRepository, sourceRepository, planItemRepository, userRepository, auditService, mappers, null, null);
     }
 
     private static final Pattern YT_PATTERN = Pattern.compile(
@@ -99,10 +126,31 @@ public class ExerciseService {
             this(q, group, muscle, equipment, level, location, goal, reviewStatus, includeHidden, null, null, null, false);
         }
 
+    public record Filter(
+            String q,
+            MuscleGroup group,
+            String muscle,
+            String equipment,
+            Level level,
+            ExerciseLocation location,
+            ExerciseGoal goal,
+            ReviewStatus reviewStatus,
+            ExerciseType exerciseType,
+            String subCategory,
+            Boolean favoriteOnly,
+            Boolean assignedOnly,
+            boolean includeHidden
+    ) {
         /** Giữ chữ ký cũ cho các bài test và controller cũ. */
+        public Filter(String q, MuscleGroup group, String muscle, String equipment, Level level,
+                      ExerciseLocation location, ExerciseGoal goal, ReviewStatus reviewStatus, boolean includeHidden) {
+            this(q, group, muscle, equipment, level, location, goal, reviewStatus, null, null, null, null, includeHidden);
+        }
+
         public Filter(String q, MuscleGroup group, Level level, ExerciseLocation location, ExerciseGoal goal,
                       ReviewStatus reviewStatus, boolean includeHidden) {
             this(q, group, null, null, level, location, goal, reviewStatus, includeHidden, null, null, null, false);
+            this(q, group, null, null, level, location, goal, reviewStatus, null, null, null, null, includeHidden);
         }
     }
 
@@ -125,6 +173,28 @@ public class ExerciseService {
                 .filter(e -> f.subCategory() == null || f.subCategory().isBlank() || (e.getSubCategory() != null && e.getSubCategory().equalsIgnoreCase(f.subCategory().trim())))
                 .filter(e -> f.cardioIntensity() == null || f.cardioIntensity().isBlank() || (e.getCardioIntensity() != null && e.getCardioIntensity().equalsIgnoreCase(f.cardioIntensity().trim())))
                 .filter(e -> !Boolean.TRUE.equals(f.onlyFavorites()) || favIds.contains(String.valueOf(e.getId())))
+
+        Set<Long> favIds = Set.of();
+        Set<Long> assignedIds = null;
+        if (user != null && user.isMember() && accessService != null && favoriteRepository != null) {
+            try {
+                Member m = accessService.requireMemberOf(user);
+                favIds = new HashSet<>(favoriteRepository.findExerciseIdsByMemberId(m.getId()));
+                if (Boolean.TRUE.equals(f.assignedOnly())) {
+                    assignedIds = new HashSet<>(planItemRepository.findActiveAssignedExerciseIdsByMemberId(m.getId()));
+                }
+            } catch (Exception ignored) {
+                // Nếu chưa có hồ sơ hội viên hoặc mock thiếu thì bỏ qua
+            }
+        }
+
+        final Set<Long> finalFavIds = favIds;
+        final Set<Long> finalAssignedIds = assignedIds;
+
+        return exerciseRepository.findAllByOrderByNameAsc().stream()
+                .filter(e -> showHidden || !e.isHidden())
+                .filter(e -> f.exerciseType() == null || e.getExerciseType() == f.exerciseType())
+                .filter(e -> matchesSubCategory(e, f.subCategory()))
                 .filter(e -> f.group() == null || e.getMuscleGroup() == f.group())
                 .filter(e -> matchesMuscle(e, f.muscle()))
                 .filter(e -> matchesEquipment(e, f.equipment()))
@@ -136,6 +206,13 @@ public class ExerciseService {
                 .filter(e -> f.reviewStatus() == null || e.getReviewStatus() == f.reviewStatus())
                 .filter(e -> needle.isEmpty() || matches(e, needle))
                 .map(e -> mappers.exercise(e, favIds.contains(String.valueOf(e.getId())))).toList();
+                .filter(e -> !Boolean.TRUE.equals(f.favoriteOnly()) || finalFavIds.contains(e.getId()))
+                .filter(e -> !Boolean.TRUE.equals(f.assignedOnly()) || (finalAssignedIds != null && finalAssignedIds.contains(e.getId())))
+                .map(e -> {
+                    boolean isFav = finalFavIds.contains(e.getId());
+                    return isFav ? mappers.exercise(e, true) : mappers.exercise(e);
+                })
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -149,6 +226,12 @@ public class ExerciseService {
         int toIndex = Math.min(fromIndex + pageSize, totalElements);
         List<ExerciseResponse> content = all.subList(fromIndex, toIndex);
         return new PageResponse<>(content, p, pageSize, totalElements, totalPages);
+    }
+
+    private static boolean matchesSubCategory(Exercise e, String subCategory) {
+        if (subCategory == null || subCategory.isBlank()) return true;
+        if (e.getSubCategory() == null) return false;
+        return stripAccents(e.getSubCategory()).equalsIgnoreCase(stripAccents(subCategory.trim()));
     }
 
     private static boolean matchesMuscle(Exercise e, String muscle) {
@@ -170,6 +253,9 @@ public class ExerciseService {
     private static boolean matchesEquipment(Exercise e, String equipment) {
         if (equipment == null || equipment.isBlank()) return true;
         String eq = equipment.trim();
+        if (e.getEquipments() != null && e.getEquipments().stream().anyMatch(item -> item.getKey().equalsIgnoreCase(eq))) {
+            return true;
+        }
         if (e.getEquipmentKeys() != null) {
             for (String k : e.getEquipmentKeys().split(",")) {
                 if (k.trim().equalsIgnoreCase(eq)) return true;
@@ -192,6 +278,82 @@ public class ExerciseService {
         boolean isFav = user != null && favoriteRepository != null
                 && favoriteRepository.existsByUserIdAndTargetTypeAndTargetId(user.id(), "EXERCISE", String.valueOf(id));
         return mappers.exercise(e, isFav);
+        if (e.isHidden() && user != null && user.isMember()) throw ApiException.notFound("bài tập");
+        boolean isFav = false;
+        if (user != null && user.isMember() && accessService != null && favoriteRepository != null) {
+            try {
+                Member m = accessService.requireMemberOf(user);
+                isFav = favoriteRepository.existsByMemberIdAndExerciseId(m.getId(), id);
+            } catch (Exception ignored) {}
+        }
+        return isFav ? mappers.exercise(e, true) : mappers.exercise(e);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ExerciseResponse> getFavorites(AuthUser user) {
+        if (user == null || !user.isMember()) {
+            throw ApiException.forbidden("Chỉ hội viên mới có danh sách yêu thích");
+        }
+        Member m = accessService.requireMemberOf(user);
+        List<MemberFavoriteExercise> list = favoriteRepository.findByMemberIdOrderByCreatedAtDesc(m.getId());
+        return list.stream()
+                .map(MemberFavoriteExercise::getExercise)
+                .filter(e -> !e.isHidden())
+                .map(e -> mappers.exercise(e, true))
+                .toList();
+    }
+
+    @Transactional
+    public KnowledgeDtos.FavoriteToggleResponse toggleFavorite(AuthUser user, Long exerciseId) {
+        if (user == null || !user.isMember()) {
+            throw ApiException.forbidden("Chỉ hội viên mới có quyền thao tác yêu thích");
+        }
+        Member m = accessService.requireMemberOf(user);
+        Exercise e = load(exerciseId);
+        if (e.isHidden()) {
+            throw ApiException.notFound("bài tập");
+        }
+        var existing = favoriteRepository.findByMemberIdAndExerciseId(m.getId(), exerciseId);
+        boolean isFav;
+        if (existing.isPresent()) {
+            favoriteRepository.delete(existing.get());
+            isFav = false;
+        } else {
+            MemberFavoriteExercise mfe = new MemberFavoriteExercise(m, e);
+            favoriteRepository.save(mfe);
+            isFav = true;
+        }
+        long count = favoriteRepository.countByMemberId(m.getId());
+        return new KnowledgeDtos.FavoriteToggleResponse(exerciseId, isFav, count);
+    }
+
+    @Transactional
+    public KnowledgeDtos.FavoriteToggleResponse addFavorite(AuthUser user, Long exerciseId) {
+        if (user == null || !user.isMember()) {
+            throw ApiException.forbidden("Chỉ hội viên mới có quyền thao tác yêu thích");
+        }
+        Member m = accessService.requireMemberOf(user);
+        Exercise e = load(exerciseId);
+        if (e.isHidden()) {
+            throw ApiException.notFound("bài tập");
+        }
+        if (!favoriteRepository.existsByMemberIdAndExerciseId(m.getId(), exerciseId)) {
+            MemberFavoriteExercise mfe = new MemberFavoriteExercise(m, e);
+            favoriteRepository.save(mfe);
+        }
+        long count = favoriteRepository.countByMemberId(m.getId());
+        return new KnowledgeDtos.FavoriteToggleResponse(exerciseId, true, count);
+    }
+
+    @Transactional
+    public KnowledgeDtos.FavoriteToggleResponse removeFavorite(AuthUser user, Long exerciseId) {
+        if (user == null || !user.isMember()) {
+            throw ApiException.forbidden("Chỉ hội viên mới có quyền thao tác yêu thích");
+        }
+        Member m = accessService.requireMemberOf(user);
+        favoriteRepository.findByMemberIdAndExerciseId(m.getId(), exerciseId).ifPresent(favoriteRepository::delete);
+        long count = favoriteRepository.countByMemberId(m.getId());
+        return new KnowledgeDtos.FavoriteToggleResponse(exerciseId, false, count);
     }
 
     @Transactional(readOnly = true)
@@ -329,7 +491,28 @@ public class ExerciseService {
         if (req.sourceIds() != null) e.setSources(resolveSources(sourceRepository, req.sourceIds()));
         if (req.targetMuscles() != null) e.setTargetMuscles(joinKeys(req.targetMuscles(), MUSCLE_KEYS, "vùng cơ"));
         if (req.secondaryMuscleKeys() != null) e.setSecondaryMuscleKeys(joinKeys(req.secondaryMuscleKeys(), MUSCLE_KEYS, "vùng cơ"));
-        if (req.equipmentKeys() != null) e.setEquipmentKeys(joinEquipmentKeys(req.equipmentKeys()));
+
+        if (req.exerciseType() != null) {
+            e.setExerciseType(req.exerciseType());
+        } else if (e.getExerciseType() == null) {
+            e.setExerciseType(ExerciseType.STRENGTH);
+        }
+        if (req.subCategory() != null) {
+            e.setSubCategory(Mappers.blankToNull(req.subCategory()));
+        }
+
+        if (req.equipmentKeys() != null) {
+            e.setEquipmentKeys(joinEquipmentKeys(req.equipmentKeys()));
+            List<String> cleanKeys = req.equipmentKeys().stream()
+                    .filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).distinct().toList();
+            if (cleanKeys.isEmpty()) {
+                e.setEquipments(new LinkedHashSet<>());
+            } else {
+                List<Equipment> eqList = equipmentRepository.findAllById(cleanKeys);
+                e.setEquipments(new LinkedHashSet<>(eqList));
+            }
+        }
+
         if (req.imageKey() != null) e.setImageKey(Mappers.blankToNull(req.imageKey()));
         if (req.alternativeIds() != null) {
             List<Long> distinctIds = req.alternativeIds().stream()
@@ -342,10 +525,11 @@ public class ExerciseService {
     }
 
     /** V13 & V18 · khớp lib/anatomy.ts ở frontend. */
-    static final Set<String> MUSCLE_KEYS = Set.of("chest", "front-deltoids", "back-deltoids", "biceps", "triceps", "forearm",
+    public static final Set<String> MUSCLE_KEYS = Set.of("chest", "front-deltoids", "back-deltoids", "biceps", "triceps", "forearm",
             "abs", "obliques", "trapezius", "upper-back", "lower-back", "gluteal", "quadriceps", "hamstring", "adductor",
             "abductors", "calves", "neck");
-    static String joinKeys(List<String> keys, Set<String> allowed, String what) {
+
+    public static String joinKeys(List<String> keys, Set<String> allowed, String what) {
         List<String> clean = keys.stream().filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).distinct().toList();
         for (String k : clean) if (!allowed.contains(k)) throw ApiException.badRequest("Mã " + what + " không hợp lệ: " + k);
         return clean.isEmpty() ? null : String.join(",", clean);

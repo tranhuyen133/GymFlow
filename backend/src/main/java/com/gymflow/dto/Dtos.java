@@ -415,6 +415,9 @@ public final class Dtos {
             String cardioIntensity) {
 
         /** Giữ chữ ký V18 */
+            String subCategory) {
+
+        /** Giữ chữ ký V18 (trước V26). */
         public ExerciseRequest(String name, MuscleGroup muscleGroup, String equipment, Level level, String description,
                                String instructions, String videoUrl, String nameEn, String aliases, String secondaryMuscles,
                                ExerciseLocation location, List<ExerciseGoal> goals, String breathing, String commonMistakes,
@@ -426,6 +429,8 @@ public final class Dtos {
                     location, goals, breathing, commonMistakes, safetyNotes, variations, suggestedDose, contentOrigin, sourceIds,
                     targetMuscles, secondaryMuscleKeys, equipmentKeys, imageKey, setupPosition, steps, setsRepsHint, primaryGoal,
                     alternativeIds, ExerciseType.MAIN, null, null);
+                    targetMuscles, secondaryMuscleKeys, equipmentKeys, imageKey, setupPosition, steps, setsRepsHint,
+                    primaryGoal, alternativeIds, ExerciseType.STRENGTH, null);
         }
 
         /** Giữ chữ ký V13 */
@@ -507,6 +512,10 @@ public final class Dtos {
                                    Boolean isFavorite) {
 
         /** Giữ chữ ký V18 (37 tham số) */
+                                   ExerciseType exerciseType, String subCategory, Boolean isFavorite,
+                                   List<KnowledgeDtos.EquipmentSummary> equipments) {
+
+        /** Giữ chữ ký V18 (trước V26). */
         public ExerciseResponse(Long id, String name, MuscleGroup muscleGroup, String equipment, Level level,
                                 String description, String instructions, String videoUrl, boolean hidden,
                                 long usageCount, String createdByName,
@@ -525,6 +534,8 @@ public final class Dtos {
                     targetMuscles, secondaryMuscleKeys, equipmentKeys, imageKey,
                     setupPosition, steps, setsRepsHint, primaryGoal, alternatives,
                     ExerciseType.MAIN, null, null, false);
+                    targetMuscles, secondaryMuscleKeys, equipmentKeys, imageKey, setupPosition, steps, setsRepsHint,
+                    primaryGoal, alternatives, ExerciseType.STRENGTH, null, false, List.of());
         }
 
         /** Giữ chữ ký V13 (chưa có trường mới V18). */
@@ -596,6 +607,7 @@ public final class Dtos {
             String shortDesc,
             String usageGuide,
             String adjustmentInstructions,
+            String adjustGuide,
             String commonMistakes,
             String safetyNotes,
             List<String> targetMuscleKeys,
@@ -608,12 +620,15 @@ public final class Dtos {
             Boolean isFavorite,
             List<ExerciseResponse> relatedExercises
     ) {
+        /** Giữ chữ ký V18 */
         public EquipmentDetailResponse(String key, String name, EquipmentCategory category, String shortDesc,
                                        String usageGuide, String safetyNotes, List<String> targetMuscleKeys,
                                        String imageKey, int sortOrder, long exerciseCount, ReviewStatus reviewStatus,
                                        boolean hidden, ContentOrigin origin, List<ExerciseResponse> relatedExercises) {
             this(key, name, null, category, shortDesc, usageGuide, null, null, safetyNotes, targetMuscleKeys,
                     imageKey, sortOrder, exerciseCount, reviewStatus, hidden, origin, false, relatedExercises);
+            this(key, name, category, shortDesc, usageGuide, null, null, safetyNotes, targetMuscleKeys, imageKey,
+                    sortOrder, exerciseCount, reviewStatus, hidden, origin, relatedExercises);
         }
     }
 
@@ -632,6 +647,7 @@ public final class Dtos {
             String shortDesc,
             String usageGuide,
             String adjustmentInstructions,
+            String adjustGuide,
             String commonMistakes,
             String safetyNotes,
             List<String> targetMuscleKeys,
@@ -652,6 +668,8 @@ public final class Dtos {
     }
 
     public record FavoriteSummaryResponse(List<Long> exerciseIds, List<String> equipmentKeys) {
+            this(key, name, category, shortDesc, usageGuide, null, null, safetyNotes, targetMuscleKeys, imageKey, sortOrder, hidden);
+        }
     }
 
     // ===================== Knowledge base =====================
@@ -823,7 +841,8 @@ public final class Dtos {
     }
 
     public record CalorieSummaryResponse(String period, LocalDate from, LocalDate to, String timezone,
-                                         long totalCalories, long totalSessions, double totalActiveMinutes,
+                                         long totalCalories, long totalSessions, long estimatedSessions,
+                                         long unestimatedSessions, double totalActiveMinutes,
                                          Double avgCaloriesPerSession, List<CalorieBucket> buckets,
                                          CalorieTopDay topDay, CaloriePeriodSummary previous, String disclaimer) {
     }
@@ -833,6 +852,10 @@ public final class Dtos {
                                          ExerciseIntensity intensity, Double weightKgUsed,
                                          EstimateStatus estimateStatus, EstimateQuality estimateQuality,
                                          String formulaVersion, List<CalorieExerciseResponse> exercises) {
+    }
+
+    public record CalorieBackfillResponse(int processed, int estimated, int missingWeight, int noExerciseData,
+                                          int skipped, int failed, String formulaVersion) {
     }
 
     public record ScheduleResponse(Long id, Long memberId, String memberName, Long trainerId, String trainerName,
