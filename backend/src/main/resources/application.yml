@@ -56,6 +56,9 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8081}
   # Mặc định TẮT (an toàn cho production). Máy local bật bằng SEED_DEMO_DATA=true trong .env
   seed-demo-data: ${SEED_DEMO_DATA:false}
+  # Backfill calo MET cho các buổi tập lịch sử chưa được ước tính (chạy một lần, idempotent).
+  calorie-backfill:
+    enabled: ${CALORIE_BACKFILL_ENABLED:true}
   demo:
     # Hiện nút đăng nhập nhanh bằng tài khoản demo (chỉ các tài khoản thật sự tồn tại). Mặc định tắt.
     quick-login: ${DEMO_QUICK_LOGIN:false}

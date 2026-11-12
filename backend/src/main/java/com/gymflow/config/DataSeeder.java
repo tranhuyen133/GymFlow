@@ -225,7 +225,7 @@ public class DataSeeder implements ApplicationRunner {
                     l.setMember(m);
                     l.setCompletedAt(end.plusMinutes(5));
                     l.setDurationMinutes(50 + roll * 2);
-                    l.setCalories(300 + roll * 25 + (female ? 0 : 60));
+                    // Calo được tính bằng MET ở bước backfill sau khi seed, không ghi số giả.
                     l.setRating(3 + roll % 3);
                     l.setNote(roll % 4 == 0 ? "Tăng được mức tạ so với tuần trước" : null);
                     logRepository.save(l);

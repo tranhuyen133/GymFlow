@@ -113,7 +113,9 @@ class CalorieCompletionIntegrationTest {
 
         CalorieSummaryResponse summary = statsService.summary(user, member.getId(), "WEEK", LocalDate.now());
         assertThat(summary.totalCalories()).isZero();
-        assertThat(summary.totalSessions()).isZero();
+        assertThat(summary.totalSessions()).isEqualTo(1);
+        assertThat(summary.estimatedSessions()).isZero();
+        assertThat(summary.unestimatedSessions()).isEqualTo(1);
     }
 
     @Test

@@ -12,7 +12,8 @@
 | `V24__pt_plan_terms.sql` | Gói PT | Mã gói, điều kiện sử dụng, thời lượng buổi PT, số giờ báo huỷ; ảnh chụp quyền lợi lúc bán ở member_subscriptions và package_requests. Chỉ thêm cột |
 | `V25__met_calorie_estimation.sql` | Ước tính calo MET | Bảng met_references, workout_log_exercises; cột calo ước tính ở workout_logs |
 | `V26__knowledge_base_revamp.sql` | Tái cấu trúc Kho kiến thức (TASK 01 / SCRUM-229) | Phân loại bài tập (exercise_type, sub_category), hướng dẫn điều chỉnh dụng cụ (adjust_guide, common_mistakes), bảng nối exercise_equipment, bảng yêu thích member_favorite_exercises |
-| `V27__messaging_enhancements.sql` | Tin nhắn HLV ↔ Hội viên & Admin | Bổ sung updated_at cho conversations, sender_role, attachment_url, deleted_at cho messages, index tối ưu truy vấn |
+| `V27__calorie_backfill.sql` | Ước tính calo MET | Bổ sung dữ liệu calo và bảng met_references |
+| `V28__messaging_enhancements.sql` | Tin nhắn HLV ↔ Hội viên & Admin | Bổ sung updated_at cho conversations, sender_role, attachment_url, deleted_at cho messages, index tối ưu truy vấn |
 
 Quy tắc:
 - Không sửa file đã merge. Tạo migration với số cao hơn migration mới nhất đã áp dụng; bỏ qua được V9–V12 trên một số CSDL demo cũ bằng cấu hình Flyway.

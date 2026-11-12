@@ -1,10 +1,12 @@
 package com.gymflow.web;
 
 import com.gymflow.domain.ExerciseIntensity;
+import com.gymflow.dto.Dtos.CalorieBackfillResponse;
 import com.gymflow.dto.Dtos.CaloriePreviewResponse;
 import com.gymflow.dto.Dtos.CalorieSessionResponse;
 import com.gymflow.dto.Dtos.CalorieSummaryResponse;
 import com.gymflow.security.CurrentUser;
+import com.gymflow.service.CalorieBackfillService;
 import com.gymflow.service.CalorieStatsService;
 import com.gymflow.service.ScheduleService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,6 +24,7 @@ public class CalorieController {
 
     private final ScheduleService scheduleService;
     private final CalorieStatsService statsService;
+    private final CalorieBackfillService backfillService;
 
     @GetMapping("/api/schedules/{id}/calorie-preview")
     public CaloriePreviewResponse preview(@PathVariable Long id,
@@ -42,5 +45,11 @@ public class CalorieController {
                                                  @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                                  @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return statsService.sessions(CurrentUser.get(), id, from, to);
+    }
+
+    /** Tính lại calo MET cho các buổi đang thiếu dữ liệu (sau khi hội viên nhập cân nặng). */
+    @PostMapping("/api/members/{id}/calories/recompute")
+    public CalorieBackfillResponse recompute(@PathVariable Long id) {
+        return backfillService.recomputeMember(CurrentUser.get(), id);
     }
 }
