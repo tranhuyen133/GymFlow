@@ -154,12 +154,12 @@ export function Donut({ data, size = 180, center, sub }: { data: { label: string
           return el;
         })}
         <text className="ring-label" x="90" y="92" textAnchor="middle">{center ?? total}</text>
-        {sub && <text className="ring-sub" x="90" y="112" textAnchor="middle">{sub}</text>}
+        {sub && <text className="ring-sub" x="90" y="112" textAnchor="middle">{t(sub)}</text>}
       </svg>
       <div className="stack-sm grow" style={{ minWidth: 140 }}>
         {data.map((d, i) => (
           <div key={d.label} className="row between small">
-            <span className="row" style={{ gap: 8 }}><i style={{ width: 10, height: 10, borderRadius: 3, background: PALETTE[i % PALETTE.length], display: 'inline-block' }} />{d.label}</span>
+            <span className="row" style={{ gap: 8 }}><i style={{ width: 10, height: 10, borderRadius: 3, background: PALETTE[i % PALETTE.length], display: 'inline-block' }} />{t(d.label)}</span>
             <span className="num">{d.value}{total > 0 && <span className="faint"> · {Math.round((d.value / total) * 100)}%</span>}</span>
           </div>
         ))}

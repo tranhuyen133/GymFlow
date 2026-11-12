@@ -60,7 +60,7 @@ export default function Subscriptions() {
         <SearchInput value={q} onChange={setQ} placeholder="Tìm hội viên, mã, gói…" />
         <Select value={planId} onChange={(e) => setPlanId(e.target.value)} aria-label="Gói tập">
           <option value="">{t('Mọi gói tập')}</option>
-          {planOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          {planOptions.map(([id, name]) => <option key={id} value={id}>{t(name)}</option>)}
         </Select>
         <div className="spacer" />
         <Segmented<Filter> value={filter} onChange={changeFilter} options={[

@@ -18,33 +18,33 @@ export default function AdminDashboard() {
   const greet = hour < 11 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
 
   if (error) return <ErrorState message={error} onRetry={reload} />;
-  if (loading || !data) return <div className="page"><PageHead title="Tổng quan" /><LoadingBlock rows={6} /></div>;
+  if (loading || !data) return <div className="page"><PageHead title={t('Tổng quan')} /><LoadingBlock rows={6} /></div>;
 
   const growth = pctChange(data.revenueThisMonth, data.revenuePrevMonth);
   const coverage = data.totalMembers ? Math.round((data.membersWithActivePackage / data.totalMembers) * 100) : 0;
 
   return (
     <div className="page">
-      <PageHead eyebrow={greet} title={t('Xin chào, {name}', { name: me.fullName.split(' ').slice(-1)[0] })}
-        desc="Toàn cảnh phòng tập hôm nay: hội viên, doanh thu, gói sắp hết hạn và hoạt động mới nhất."
+      <PageHead eyebrow={t(greet)} title={t('Xin chào, {name}', { name: me.fullName.split(' ').slice(-1)[0] })}
+        desc={t('Toàn cảnh phòng tập hôm nay: hội viên, doanh thu, gói sắp hết hạn và hoạt động mới nhất.')}
         actions={<>
           <Link className="btn btn-secondary" to="/reports"><Icon name="chart" /><span>{t('Báo cáo')}</span></Link>
           <Link className="btn btn-primary" to="/members?new=1"><Icon name="plus" /><span>{t('Thêm hội viên')}</span></Link>
         </>} />
 
       <div className="grid grid-4">
-        <Stat icon="users" label="Hội viên" value={<CountUp value={data.totalMembers} />}
+        <Stat icon="users" label={t('Hội viên')} value={<CountUp value={data.totalMembers} />}
           foot={tn('{n} tháng này · {active} đang hoạt động', { n: <span className="trend-up">+{data.newMembersThisMonth}</span>, active: data.activeMembers })} />
-        <Stat icon="ticket" label="Có gói hiệu lực" value={<CountUp value={data.membersWithActivePackage} />} accent="#3d97ff"
+        <Stat icon="ticket" label={t('Có gói hiệu lực')} value={<CountUp value={data.membersWithActivePackage} />} accent="#3d97ff"
           foot={t('{n}% tổng hội viên', { n: coverage })} />
-        <Stat icon="wallet" label="Doanh thu tháng" value={<CountUp value={data.revenueThisMonth} format={fmtMoneyShort} />} accent="#8b7cff" highlight
+        <Stat icon="wallet" label={t('Doanh thu tháng')} value={<CountUp value={data.revenueThisMonth} format={fmtMoneyShort} />} accent="#8b7cff" highlight
           foot={tn('{pct} so với tháng trước', { pct: <span className={growth >= 0 ? 'trend-up' : 'trend-down'}><Icon name={growth >= 0 ? 'trendUp' : 'trendDown'} size={13} /> {growth >= 0 ? '+' : ''}{growth}%</span> })} />
-        <Stat icon="clock" label="Sắp hết hạn (7 ngày)" value={<CountUp value={data.expiringSoon} />} accent="#ffb020"
+        <Stat icon="clock" label={t('Sắp hết hạn (7 ngày)')} value={<CountUp value={data.expiringSoon} />} accent="#ffb020"
           foot={t('{n} buổi tập hôm nay · {m} HLV', { n: data.sessionsToday, m: data.activeTrainers })} />
       </div>
 
       {/* Sức khoẻ phòng tập: 3 vòng tính từ số liệu thật của hôm nay (không đặt chỉ tiêu tự nghĩ ra) */}
-      <Card className="mt-24" title="Sức khoẻ phòng tập" icon="activity"
+      <Card className="mt-24" title={t('Sức khoẻ phòng tập')} icon="activity"
         actions={<span className="tiny faint">{t('Vòng đầy = 100%')}</span>}>
         <ActivityRings size={150} celebrate={false} rings={[
           { key: 'cover', label: t('Hội viên có gói'), value: data.membersWithActivePackage, max: Math.max(1, data.totalMembers), color: 'var(--ring-1)', text: `${coverage}%` },
@@ -54,7 +54,7 @@ export default function AdminDashboard() {
       </Card>
 
       <div className="grid grid-main mt-24">
-        <Card title="Doanh thu 6 tháng" icon="chart" actions={<span className="tiny faint">Theo ngày thu tiền</span>}>
+        <Card title={t('Doanh thu 6 tháng')} icon="chart" actions={<span className="tiny faint">{t('Theo ngày thu tiền')}</span>}>
           <BarChart
             data={data.revenueByMonth.map((r) => {
               const [m, y] = r.label.split('/');
@@ -63,30 +63,37 @@ export default function AdminDashboard() {
             format={fmtMoneyShort}
           />
         </Card>
-        <Card title="Gói đang hiệu lực" icon="layers">
-          {data.planDistribution.length ? <Donut data={data.planDistribution} sub={t('hội viên')} /> : <Empty title="Chưa có gói hiệu lực" />}
+        <Card title={t('Gói đang hiệu lực')} icon="layers">
+          {data.planDistribution.length ? (
+            <Donut
+              data={data.planDistribution.map((d) => ({ ...d, label: t(d.label) }))}
+              sub={t('hội viên')}
+            />
+          ) : (
+            <Empty title={t('Chưa có gói hiệu lực')} />
+          )}
         </Card>
       </div>
 
       <div className="grid grid-2 mt-24">
-        <Card title="Gói sắp hết hạn" icon="alert" flush actions={<Link to="/subscriptions?state=EXPIRING" className="link small">{t('Xem tất cả')}</Link>}>
-          {data.expiring.length === 0 ? <Empty icon="checkCircle" title="Không có gói nào sắp hết hạn" /> : (
-            <Table caption="Gói sắp hết hạn">
-              <thead><tr><th>Hội viên</th><th>Gói</th><th>Hết hạn</th><th className="right">Còn</th></tr></thead>
+        <Card title={t('Gói sắp hết hạn')} icon="alert" flush actions={<Link to="/subscriptions?state=EXPIRING" className="link small">{t('Xem tất cả')}</Link>}>
+          {data.expiring.length === 0 ? <Empty icon="checkCircle" title={t('Không có gói nào sắp hết hạn')} /> : (
+            <Table caption={t('Gói sắp hết hạn')}>
+              <thead><tr><th>{t('Hội viên')}</th><th>{t('Gói')}</th><th>{t('Hết hạn')}</th><th className="right">{t('Còn')}</th></tr></thead>
               <tbody>
                 {data.expiring.map((s) => (
                   <tr key={s.id} className="clickable" onClick={() => navigate(`/members/${s.memberId}`)}>
                     <td><Person name={s.memberName} sub={s.memberCode} size="sm" /></td>
                     <td>{t(s.planName)}</td>
                     <td className="nowrap">{fmtDate(s.endDate)}</td>
-                    <td className="right"><Badge tone={s.daysLeft <= 3 ? 'red' : 'amber'}>{s.daysLeft} ngày</Badge></td>
+                    <td className="right"><Badge tone={s.daysLeft <= 3 ? 'red' : 'amber'}>{t('{n} ngày', { n: s.daysLeft })}</Badge></td>
                   </tr>
                 ))}
               </tbody>
             </Table>
           )}
         </Card>
-        <Card title="Hoạt động gần đây" icon="activity" actions={<Link to="/audit-logs" className="link small">{t('Nhật ký')}</Link>}>
+        <Card title={t('Hoạt động gần đây')} icon="activity" actions={<Link to="/audit-logs" className="link small">{t('Nhật ký')}</Link>}>
           <div className="stack">
             {data.recentActivity.map((a) => (
               <div key={a.id} className="row" style={{ alignItems: 'flex-start' }}>
