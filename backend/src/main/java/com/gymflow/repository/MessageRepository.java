@@ -13,24 +13,29 @@ import java.util.Optional;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
-    @Query("select m from Message m where m.conversation.id = :conversationId and (:before is null or m.id < :before) order by m.id desc")
+    @Query("select m from Message m where m.conversation.id = :conversationId and m.deletedAt is null and (:before is null or m.id < :before) order by m.id desc")
     List<Message> findMessagesBefore(@Param("conversationId") Long conversationId, @Param("before") Long before, Pageable pageable);
 
-    @Query("select m from Message m where m.conversation.id = :conversationId and m.id > :after order by m.id asc")
+    @Query("select m from Message m where m.conversation.id = :conversationId and m.deletedAt is null and m.id > :after order by m.id asc")
     List<Message> findNewMessages(@Param("conversationId") Long conversationId, @Param("after") Long after);
 
-    @Query("select count(m) from Message m where m.conversation.id = :conversationId and m.senderUser.id <> :userId and m.readAt is null")
+    @Query("select count(m) from Message m where m.conversation.id = :conversationId and m.deletedAt is null and m.senderUser.id <> :userId and m.readAt is null")
     long countUnreadInConversation(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
 
-    @Query("select count(m) from Message m where (m.conversation.member.user.id = :userId or m.conversation.trainer.user.id = :userId) and m.senderUser.id <> :userId and m.readAt is null")
+    @Query("select count(m) from Message m where (m.conversation.member.user.id = :userId or m.conversation.trainer.user.id = :userId) and m.deletedAt is null and m.senderUser.id <> :userId and m.readAt is null")
     long countTotalUnreadForUser(@Param("userId") Long userId);
 
     @Modifying
-    @Query("update Message m set m.readAt = :now where m.conversation.id = :conversationId and m.senderUser.id <> :userId and m.readAt is null")
+    @Query("update Message m set m.readAt = :now where m.conversation.id = :conversationId and m.senderUser.id <> :userId and m.readAt is null and m.deletedAt is null")
     int markAsRead(@Param("conversationId") Long conversationId, @Param("userId") Long userId, @Param("now") LocalDateTime now);
 
     Optional<Message> findFirstByConversationIdOrderByIdDesc(Long conversationId);
 
-    @Query("select m from Message m where (m.conversation.member.user.id = :userId or m.conversation.trainer.user.id = :userId) and m.senderUser.id <> :userId and m.readAt is null order by m.createdAt desc")
+    Optional<Message> findFirstByConversationIdAndDeletedAtIsNullOrderByIdDesc(Long conversationId);
+
+    @Query("select count(m) from Message m where m.conversation.id = :conversationId and m.deletedAt is null")
+    long countByConversationIdAndDeletedAtIsNull(@Param("conversationId") Long conversationId);
+
+    @Query("select m from Message m where (m.conversation.member.user.id = :userId or m.conversation.trainer.user.id = :userId) and m.deletedAt is null and m.senderUser.id <> :userId and m.readAt is null order by m.createdAt desc")
     List<Message> findUnreadMessagesForUser(@Param("userId") Long userId);
 }

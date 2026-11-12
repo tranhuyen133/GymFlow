@@ -6,6 +6,7 @@ import { BrandMark } from './components/Brand';
 import { Layout } from './components/Layout';
 import { t } from './i18n';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminConversations from './pages/admin/AdminConversations';
 import AuditLog from './pages/admin/AuditLog';
 import PackageRequests from './pages/admin/PackageRequests';
 import PaymentSettings from './pages/admin/PaymentSettings';
@@ -97,7 +98,7 @@ function MeScheduleRoute() {
 const STAFF: Role[] = ['ADMIN', 'TRAINER'];
 const ADMIN: Role[] = ['ADMIN'];
 const MEMBER: Role[] = ['MEMBER'];
-const CHAT_ROLES: Role[] = ['MEMBER', 'TRAINER'];
+const CHAT_ROLES: Role[] = ['MEMBER', 'TRAINER', 'ADMIN'];
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -138,6 +139,7 @@ export default function App() {
         <Route path="/workout-plans" element={<Only roles={STAFF}><WorkoutPlans /></Only>} />
         <Route path="/workout-plans/new" element={<Only roles={STAFF}><PlanEditor /></Only>} />
         <Route path="/workout-plans/:id" element={<Only roles={STAFF}><PlanEditor /></Only>} />
+        <Route path="/admin/conversations" element={<Only roles={ADMIN}><AdminConversations /></Only>} />
         <Route path="/knowledge" element={<Knowledge />} />
         <Route path="/exercises" element={<Navigate to="/knowledge?tab=exercises" replace />} />
         <Route path="/exercises/beginner" element={<BeginnerExercises />} />

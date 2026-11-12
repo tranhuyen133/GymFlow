@@ -485,45 +485,64 @@ export default function Messages() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Composer */}
-              <div className="messages-composer">
-                {failedMessage && (
-                  <div className="messages-retry-bar">
-                    <span>{t('Gửi tin nhắn thất bại.')}</span>
-                    <Button size="sm" variant="danger" icon="refresh" onClick={retrySend}>
-                      {t('Gửi lại')}
-                    </Button>
-                  </div>
-                )}
-                <form
-                  className="messages-composer-form"
-                  onSubmit={(e: FormEvent) => {
-                    e.preventDefault();
-                    void handleSend();
+              {/* Composer or Admin Read-Only Banner */}
+              {user.role === 'ADMIN' ? (
+                <div
+                  style={{
+                    padding: '14px 20px',
+                    background: 'var(--surface)',
+                    borderTop: '1px solid var(--hairline)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--muted)',
+                    fontSize: 13,
+                    gap: 8,
                   }}
                 >
-                  <textarea
-                    ref={textareaRef}
-                    className="messages-textarea"
-                    placeholder={t('Nhập tin nhắn… (Enter để gửi, Shift+Enter xuống dòng)')}
-                    rows={1}
-                    value={inputText}
-                    maxLength={2000}
-                    disabled={sending}
-                    onChange={(e) => setInputText(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                  />
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    icon="arrowRight"
-                    disabled={!inputText.trim() || sending}
-                    aria-label={t('Gửi')}
+                  <span>🔒</span>
+                  <span>{t('Chế độ chỉ đọc dành cho Quản trị viên · Không thể gửi tin nhắn')}</span>
+                </div>
+              ) : (
+                <div className="messages-composer">
+                  {failedMessage && (
+                    <div className="messages-retry-bar">
+                      <span>{t('Gửi tin nhắn thất bại.')}</span>
+                      <Button size="sm" variant="danger" icon="refresh" onClick={retrySend}>
+                        {t('Gửi lại')}
+                      </Button>
+                    </div>
+                  )}
+                  <form
+                    className="messages-composer-form"
+                    onSubmit={(e: FormEvent) => {
+                      e.preventDefault();
+                      void handleSend();
+                    }}
                   >
-                    {sending ? t('Đang gửi…') : t('Gửi')}
-                  </Button>
-                </form>
-              </div>
+                    <textarea
+                      ref={textareaRef}
+                      className="messages-textarea"
+                      placeholder={t('Nhập tin nhắn… (Enter để gửi, Shift+Enter xuống dòng)')}
+                      rows={1}
+                      value={inputText}
+                      maxLength={2000}
+                      disabled={sending}
+                      onChange={(e) => setInputText(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                    />
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      icon="arrowRight"
+                      disabled={!inputText.trim() || sending}
+                      aria-label={t('Gửi')}
+                    >
+                      {sending ? t('Đang gửi…') : t('Gửi')}
+                    </Button>
+                  </form>
+                </div>
+              )}
             </>
           )}
         </section>

@@ -1,21 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Member, MemberDetail as Detail, MemberServiceEntitlement, MemberStatus, Subscription } from '../../api/types';
+import type { Conversation, Member, MemberDetail as Detail, MemberServiceEntitlement, MemberStatus, Subscription } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
 import { ProgressPanel } from '../../components/ProgressPanel';
 import { SubscriptionForm } from '../../components/SubscriptionForm';
 import { CancelSubscriptionModal } from '../../components/CancelSubscriptionModal';
+import { ConversationHistoryModal } from '../../components/ConversationHistoryModal';
 import { useToast } from '../../components/Toast';
-import { Alert, Avatar, Badge, Button, Card, Empty, ErrorState, Field, LoadingBlock, Modal, Segmented, Select, Stat, StatusBadge, Table, Textarea } from '../../components/ui';
-import { age, fmtDate, fmtMoney, genderLabel, memberStatus, planStatus, subState, todayIso } from '../../lib/format';
+import { Alert, Avatar, Badge, Button, Card, Empty, ErrorState, Field, LoadingBlock, Modal, Person, Segmented, Select, Stat, StatusBadge, Table, Textarea } from '../../components/ui';
+import { age, fmtDate, fmtMoney, genderLabel, memberStatus, planStatus, relativeTime, subState, todayIso } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import { ScheduleForm } from './Schedules';
 import { MemberFormModal } from './Members';
 import { t } from '../../i18n';
 
-type Tab = 'overview' | 'progress' | 'plans' | 'entitlements';
+type Tab = 'overview' | 'progress' | 'plans' | 'entitlements' | 'messages';
 
 export default function MemberDetail() {
   const { id } = useParams();
@@ -28,13 +29,37 @@ export default function MemberDetail() {
   const [modal, setModal] = useState<'edit' | 'subscribe' | 'schedule' | 'status' | null>(null);
   const [cancelling, setCancelling] = useState<Subscription | null>(null);
   const [usingEntitlement, setUsingEntitlement] = useState<MemberServiceEntitlement | null>(null);
+  const [startingChat, setStartingChat] = useState(false);
   const { data, error, loading, reload } = useAsync(() => api.get<Detail>(`/members/${memberId}`), [memberId]);
   const entitlements = useAsync(() => api.get<MemberServiceEntitlement[]>(`/admin/members/${memberId}/entitlements`), [memberId]);
+
+  const handleOpenChat = async () => {
+    if (!data) return;
+    try {
+      setStartingChat(true);
+      const res = await api.post<Conversation>('/conversations', { memberId: data.member.id });
+      navigate(`/messages/${res.id}`);
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   if (error) return <div className="page"><ErrorState message={error} onRetry={reload} /><Link to="/members" className="link small mt-16" style={{ display: 'inline-block' }}>← {t('Danh sách hội viên')}</Link></div>;
   if (loading || !data) return <div className="page"><LoadingBlock rows={8} /></div>;
   const m = data.member;
   const rate = data.totalSessions ? Math.round((data.completedSessions / data.totalSessions) * 100) : null;
+
+  const tabOptions: Array<{ value: Tab; label: string }> = [
+    { value: 'overview', label: t('Tổng quan') },
+    { value: 'progress', label: t('Tiến độ') },
+    { value: 'plans', label: t('Giáo án ({n})', { n: data.plans.length }) },
+    { value: 'entitlements', label: t('Quyền lợi dịch vụ ({n})', { n: (entitlements.data ?? []).length }) },
+  ];
+  if (admin) {
+    tabOptions.push({ value: 'messages', label: t('Tin nhắn') });
+  }
 
   return (
     <div className="page">
@@ -54,6 +79,16 @@ export default function MemberDetail() {
             </div>
           </div>
           <div className="row row-wrap">
+            {me.role === 'TRAINER' && (
+              <Button icon="message" disabled={startingChat} onClick={handleOpenChat}>
+                {startingChat ? t('Đang kết nối…') : t('Nhắn tin')}
+              </Button>
+            )}
+            {admin && (
+              <Button icon="message" onClick={() => setTab('messages')}>
+                {t('Tin nhắn')}
+              </Button>
+            )}
             <Button icon="calendar" onClick={() => setModal('schedule')}>Xếp lịch</Button>
             <Button icon="clipboard" onClick={() => navigate(`/workout-plans/new?memberId=${m.id}`)}>Soạn giáo án</Button>
             {admin && <Button icon="edit" onClick={() => setModal('edit')}>Sửa</Button>}
@@ -63,12 +98,7 @@ export default function MemberDetail() {
         </div>
       </div>
 
-      <Segmented<Tab> value={tab} onChange={setTab} options={[
-        { value: 'overview', label: 'Tổng quan' },
-        { value: 'progress', label: 'Tiến độ' },
-        { value: 'plans', label: t('Giáo án ({n})', { n: data.plans.length }) },
-        { value: 'entitlements', label: t('Quyền lợi dịch vụ ({n})', { n: (entitlements.data ?? []).length }) },
-      ]} />
+      <Segmented<Tab> value={tab} onChange={setTab} options={tabOptions} />
 
       <div className="mt-16">
         {tab === 'overview' && (
@@ -228,6 +258,9 @@ export default function MemberDetail() {
             )}
           </Card>
         )}
+        {tab === 'messages' && admin && (
+          <AdminMemberMessagesTab memberId={m.id} memberName={m.fullName} />
+        )}
       </div>
 
       {modal === 'edit' && <MemberFormModal member={m} onClose={() => setModal(null)} onSaved={() => { setModal(null); void reload(); }} />}
@@ -350,5 +383,101 @@ function UseEntitlementModal({
         </Field>
       </div>
     </Modal>
+  );
+}
+
+function AdminMemberMessagesTab({ memberId, memberName }: { memberId: number; memberName: string }) {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
+
+  const load = () => {
+    setLoading(true);
+    api
+      .get<Conversation[]>(`/conversations/admin/by-member/${memberId}`)
+      .then((data) => {
+        setConversations(data);
+        setError(null);
+      })
+      .catch((e) => setError(errMsg(e)))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
+  }, [memberId]);
+
+  if (loading) return <Card flush><div style={{ padding: 20 }}><LoadingBlock rows={4} /></div></Card>;
+  if (error) return <Card flush><div style={{ padding: 20 }}><ErrorState message={error} onRetry={load} /></div></Card>;
+  if (conversations.length === 0) {
+    return (
+      <Card flush>
+        <Empty
+          icon="message"
+          title={t('Chưa có tin nhắn')}
+          desc={t('Hội viên {name} chưa có cuộc trò chuyện nào với Huấn luyện viên.', { name: memberName })}
+        />
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card title={t('Hội thoại với Huấn luyện viên')} icon="message" flush>
+        <Table caption={t('Danh sách hội thoại')}>
+          <thead>
+            <tr>
+              <th>{t('Huấn luyện viên')}</th>
+              <th>{t('Tin nhắn cuối')}</th>
+              <th>{t('Thời gian')}</th>
+              <th>{t('Quan hệ')}</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {conversations.map((c) => (
+              <tr key={c.id}>
+                <td>
+                  <Person name={c.trainerName} src={c.trainerAvatar} size="sm" />
+                </td>
+                <td>
+                  <div className="ellipsis" style={{ maxWidth: 320 }}>
+                    {c.lastMessage?.body ?? <span className="tiny faint">{t('Chưa có tin nhắn')}</span>}
+                  </div>
+                </td>
+                <td className="small nowrap muted">
+                  {c.lastMessageAt ? relativeTime(c.lastMessageAt) : '—'}
+                </td>
+                <td>
+                  <span className="chip small">{c.relation === 'ASSIGNED' ? t('HLV phụ trách') : t('Đang tư vấn')}</span>
+                </td>
+                <td className="actions">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon="message"
+                    onClick={() => setSelectedConv(c)}
+                  >
+                    {t('Xem lịch sử chat')}
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </Card>
+
+      {selectedConv && (
+        <ConversationHistoryModal
+          conversationId={selectedConv.id}
+          memberName={selectedConv.memberName}
+          trainerName={selectedConv.trainerName}
+          memberAvatar={selectedConv.memberAvatar}
+          trainerAvatar={selectedConv.trainerAvatar}
+          onClose={() => setSelectedConv(null)}
+        />
+      )}
+    </>
   );
 }

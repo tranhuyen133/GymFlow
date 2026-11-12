@@ -36,10 +36,10 @@ export function Avatar({ name, size, src }: { name: string; size?: 'sm' | 'lg' |
   if (src) return <img className={`avatar avatar-img ${size ?? ''}`} src={src} alt="" aria-hidden decoding="async" />;
   return <div className={`avatar ${size ?? ''}`} style={{ ['--h' as string]: hueOf(name) }} aria-hidden>{initials(name)}</div>;
 }
-export function Person({ name, sub, size }: { name: string; sub?: ReactNode; size?: 'sm' | 'lg' }) {
+export function Person({ name, sub, size, src }: { name: string; sub?: ReactNode; size?: 'sm' | 'lg'; src?: string | null }) {
   return (
     <div className="person">
-      <Avatar name={name} size={size} />
+      <Avatar name={name} size={size} src={src} />
       <div style={{ minWidth: 0 }}>
         <div className="name">{name}</div>
         {sub && <div className="sub">{sub}</div>}

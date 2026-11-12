@@ -12,6 +12,7 @@ export type MuscleGroup = 'CHEST' | 'BACK' | 'LEGS' | 'SHOULDERS' | 'ARMS' | 'CO
 export type Level = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 
 export interface Page<T> { content: T[]; page: number; size: number; totalElements: number; totalPages: number }
+export type PageResponse<T> = Page<T>;
 export interface MessageResponse { message: string }
 export interface LabelValue { label: string; value: number }
 
@@ -494,6 +495,8 @@ export interface ChatMessageItem {
   conversationId: number;
   senderUserId: number;
   senderName: string;
+  senderRole?: string | null;
+  attachmentUrl?: string | null;
   body: string;
   createdAt: string;
   readAt: string | null;
@@ -512,6 +515,21 @@ export interface Conversation {
   lastMessage: ChatMessageItem | null;
   unreadCount: number;
   relation: ConversationRelation;
+}
+
+export interface AdminConversationSummary {
+  id: number;
+  memberId: number;
+  memberName: string;
+  memberAvatar: string | null;
+  trainerId: number;
+  trainerName: string;
+  trainerAvatar: string | null;
+  lastMessageSnippet: string | null;
+  lastMessageAt: string | null;
+  messageCount: number;
+  updatedAt: string;
+  createdAt: string;
 }
 
 export interface UnreadCount {
