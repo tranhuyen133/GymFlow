@@ -95,7 +95,9 @@ public class ProgressService {
 
         List<WorkoutLog> logs = logRepository.findByMemberIdOrderByCompletedAtDesc(m.getId());
         long minutes = logs.stream().map(WorkoutLog::getDurationMinutes).filter(Objects::nonNull).mapToLong(Integer::longValue).sum();
-        long calories = logs.stream().map(WorkoutLog::getCalories).filter(Objects::nonNull).mapToLong(Integer::longValue).sum();
+        long calories = logs.stream()
+                .filter(l -> l.isEstimated() && l.getEstimateStatus() == EstimateStatus.OK)
+                .map(WorkoutLog::getCalories).filter(Objects::nonNull).mapToLong(Integer::longValue).sum();
         Double avgRating = logs.stream().map(WorkoutLog::getRating).filter(Objects::nonNull)
                 .mapToInt(Integer::intValue).average().stream().mapToObj(ProgressService::round1).findFirst().orElse(null);
 

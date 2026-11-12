@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
@@ -50,7 +49,12 @@ public class CalorieStatsService {
         LocalDate to;
         LocalDate previousFrom;
         LocalDate previousTo;
-        if ("MONTH".equals(period)) {
+        if ("DAY".equals(period)) {
+            from = base;
+            to = base.plusDays(1);
+            previousFrom = base.minusDays(1);
+            previousTo = base;
+        } else if ("MONTH".equals(period)) {
             YearMonth ym = YearMonth.from(base);
             from = ym.atDay(1);
             to = ym.plusMonths(1).atDay(1);
@@ -63,16 +67,19 @@ public class CalorieStatsService {
             previousFrom = from.minusWeeks(1);
             previousTo = from;
         } else {
-            throw ApiException.badRequest("Kỳ thống kê chỉ có thể là WEEK hoặc MONTH");
+            throw ApiException.badRequest("Kỳ thống kê chỉ có thể là DAY, WEEK hoặc MONTH");
         }
 
-        List<WorkoutLog> logs = estimatedLogs(memberId, from, to);
-        List<WorkoutLog> previousLogs = estimatedLogs(memberId, previousFrom, previousTo);
+        List<WorkoutLog> logs = logs(memberId, from, to);
+        List<WorkoutLog> previousLogs = logs(memberId, previousFrom, previousTo);
 
-        long totalCalories = sumCalories(logs);
+        List<WorkoutLog> counted = estimated(logs);
+        long totalCalories = sumCalories(counted);
         long totalSessions = logs.size();
+        long estimatedSessions = counted.size();
+        long unestimatedSessions = totalSessions - estimatedSessions;
         double totalActive = sumActiveMinutes(logs);
-        Double avg = totalSessions == 0 ? null : round1(totalCalories / (double) totalSessions);
+        Double avg = estimatedSessions == 0 ? null : round1(totalCalories / (double) estimatedSessions);
 
         List<CalorieBucket> buckets = buckets(logs, from, to);
         CalorieTopDay topDay = buckets.stream()
@@ -81,17 +88,19 @@ public class CalorieStatsService {
                 .map(b -> new CalorieTopDay(b.from(), b.calories(), b.sessions()))
                 .orElse(null);
 
-        long prevCalories = sumCalories(previousLogs);
+        List<WorkoutLog> previousCounted = estimated(previousLogs);
+        long prevCalories = sumCalories(previousCounted);
         long prevSessions = previousLogs.size();
+        long prevEstimated = previousCounted.size();
         double prevActive = sumActiveMinutes(previousLogs);
-        Double prevAvg = prevSessions == 0 ? null : round1(prevCalories / (double) prevSessions);
+        Double prevAvg = prevEstimated == 0 ? null : round1(prevCalories / (double) prevEstimated);
         Double changePercent = prevCalories == 0 ? null : round1((totalCalories - prevCalories) * 100.0 / prevCalories);
         CaloriePeriodSummary previous = new CaloriePeriodSummary(
                 previousFrom, previousTo, prevCalories, prevSessions, round1(prevActive), prevAvg, changePercent);
 
         return new CalorieSummaryResponse(period, from, to, "Asia/Ho_Chi_Minh",
-                totalCalories, totalSessions, round1(totalActive), avg, buckets, topDay, previous,
-                CalorieEstimationService.DISCLAIMER);
+                totalCalories, totalSessions, estimatedSessions, unestimatedSessions, round1(totalActive),
+                avg, buckets, topDay, previous, CalorieEstimationService.DISCLAIMER);
     }
 
     @Transactional(readOnly = true)
@@ -110,9 +119,15 @@ public class CalorieStatsService {
                 .toList();
     }
 
-    private List<WorkoutLog> estimatedLogs(Long memberId, LocalDate from, LocalDate to) {
-        return logRepository.findByMemberIdAndCompletedAtBetweenAndEstimatedTrueAndEstimateStatusOrderByCompletedAtAsc(
-                memberId, from.atStartOfDay(), to.atStartOfDay(), EstimateStatus.OK);
+    private List<WorkoutLog> logs(Long memberId, LocalDate from, LocalDate to) {
+        return logRepository.findByMemberIdAndCompletedAtBetweenOrderByCompletedAtAsc(
+                memberId, from.atStartOfDay(), to.atStartOfDay());
+    }
+
+    private static List<WorkoutLog> estimated(List<WorkoutLog> logs) {
+        return logs.stream()
+                .filter(l -> l.isEstimated() && l.getEstimateStatus() == EstimateStatus.OK)
+                .toList();
     }
 
     private List<CalorieBucket> buckets(List<WorkoutLog> logs, LocalDate from, LocalDate to) {
@@ -126,7 +141,7 @@ public class CalorieStatsService {
                     day.format(DAY_LABEL),
                     day,
                     day.plusDays(1),
-                    sumCalories(dayLogs),
+                    sumCalories(estimated(dayLogs)),
                     dayLogs.size(),
                     round1(sumActiveMinutes(dayLogs))));
         }

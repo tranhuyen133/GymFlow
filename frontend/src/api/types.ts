@@ -388,7 +388,8 @@ export interface CalorieBucket { key: string; label: string; from: string; to: s
 export interface CaloriePeriodSummary { from: string; to: string; calories: number; sessions: number; activeMinutes: number; avgCaloriesPerSession: number | null; changePercent: number | null }
 export interface CalorieTopDay { date: string; calories: number; sessions: number }
 export interface CalorieSummary {
-  period: 'WEEK' | 'MONTH'; from: string; to: string; timezone: string; totalCalories: number; totalSessions: number;
+  period: 'DAY' | 'WEEK' | 'MONTH'; from: string; to: string; timezone: string; totalCalories: number;
+  totalSessions: number; estimatedSessions: number; unestimatedSessions: number;
   totalActiveMinutes: number; avgCaloriesPerSession: number | null; buckets: CalorieBucket[];
   topDay: CalorieTopDay | null; previous: CaloriePeriodSummary; disclaimer: string;
 }
@@ -397,6 +398,10 @@ export interface CalorieSession {
   activeMinutes: number | null; calories: number | null; intensity: ExerciseIntensity | null;
   weightKgUsed: number | null; estimateStatus: EstimateStatus; estimateQuality: EstimateQuality | null;
   formulaVersion: string | null; exercises: CalorieExercise[];
+}
+export interface CalorieBackfillResult {
+  processed: number; estimated: number; missingWeight: number; noExerciseData: number;
+  skipped: number; failed: number; formulaVersion: string;
 }
 
 // ---------- Progress ----------

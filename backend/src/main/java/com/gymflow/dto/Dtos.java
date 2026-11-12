@@ -745,7 +745,8 @@ public final class Dtos {
     }
 
     public record CalorieSummaryResponse(String period, LocalDate from, LocalDate to, String timezone,
-                                         long totalCalories, long totalSessions, double totalActiveMinutes,
+                                         long totalCalories, long totalSessions, long estimatedSessions,
+                                         long unestimatedSessions, double totalActiveMinutes,
                                          Double avgCaloriesPerSession, List<CalorieBucket> buckets,
                                          CalorieTopDay topDay, CaloriePeriodSummary previous, String disclaimer) {
     }
@@ -755,6 +756,10 @@ public final class Dtos {
                                          ExerciseIntensity intensity, Double weightKgUsed,
                                          EstimateStatus estimateStatus, EstimateQuality estimateQuality,
                                          String formulaVersion, List<CalorieExerciseResponse> exercises) {
+    }
+
+    public record CalorieBackfillResponse(int processed, int estimated, int missingWeight, int noExerciseData,
+                                          int skipped, int failed, String formulaVersion) {
     }
 
     public record ScheduleResponse(Long id, Long memberId, String memberName, Long trainerId, String trainerName,
