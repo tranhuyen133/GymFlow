@@ -164,6 +164,8 @@ export const EN: Record<string, string> = {
   'Huấn luyện viên': 'Trainers',
   'Kinh doanh': 'Business',
   'Gói tập': 'Packages',
+  'Gói & Dịch vụ': 'Packages & Services',
+  'Gói tập & Dịch vụ': 'Packages & Services',
   'Đăng ký gói': 'Subscriptions',
   'Báo cáo': 'Reports',
   'Tài khoản & quyền': 'Accounts & roles',
@@ -831,6 +833,17 @@ export const EN: Record<string, string> = {
   'Tìm kiếm cẩm nang kỹ thuật, cách dùng máy, an toàn...': 'Search technique guides, equipment usage, safety tips...',
   'Đọc hướng dẫn': 'Read guide',
   'Hệ thống thư viện bài tập, giáo án khởi động, cardio, hướng dẫn sử dụng thiết bị và bản đồ giải phẫu cơ bắp toàn diện.': 'Comprehensive library of exercises, warmups, cardio, equipment guides and muscular anatomy map.',
+
+  // ---------- Gói tập & Dịch vụ hội viên ----------
+  'Gym + PT': 'Gym + PT',
+  'Tất cả ({n})': 'All ({n})',
+  'Gói Gym (Tự tập) ({n})': 'Gym Membership (Self-training) ({n})',
+  'Gói Gym + PT ({n})': 'Gym + PT ({n})',
+  'Dịch vụ ({n})': 'Services ({n})',
+  'Dịch vụ & Gói tập': 'Services & Packages',
+  'Chọn gói tập phù hợp': 'Choose the right package',
+  'Đội ngũ huấn luyện viên': 'Coaching staff',
+  'Gặp gỡ và trao đổi trực tiếp với các huấn luyện viên chuyên nghiệp để chọn lộ trình phù hợp.': 'Meet and chat directly with professional coaches to find the right roadmap for you.',
 };
 
 // Bản dịch các nhãn mang sang từ bản demo (ảnh đại diện, hành trình, số đo cơ thể, trang chủ…).

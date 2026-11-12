@@ -2176,4 +2176,6 @@ export const EN_EXTRA: Record<string, string> = {
   'Nhắn tin cho HLV': 'Message Trainer',
   'Hội viên chỉ có thể nhắn tin với Huấn luyện viên đang phụ trách': 'Members can only message their assigned Trainer',
   'Huấn luyện viên chỉ có thể nhắn tin với hội viên mình phụ trách': 'Trainers can only message members they are assigned to',
+  'Thành viên': 'Member',
+  'Gym + PT': 'Gym + PT',
 };
