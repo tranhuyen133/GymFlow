@@ -5,10 +5,10 @@ import type { Equipment, Level } from '../../api/types';
 import { ExerciseMedia, mediaCredit } from '../../components/ExerciseMedia';
 import { Icon } from '../../components/Icon';
 import { MuscleMap } from '../../components/MuscleMap';
-import { Badge, Empty, ErrorState, LoadingBlock, PageHead } from '../../components/ui';
+import { Badge, Empty, ErrorState, LoadingBlock, PageHead, Pager } from '../../components/ui';
 import { t } from '../../i18n';
 import { MUSCLE_BY_KEY, parseMuscles, type MuscleKey } from '../../lib/anatomy';
-import { useAsync } from '../../lib/hooks';
+import { useAsync, usePaged } from '../../lib/hooks';
 import './kb.css';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -49,13 +49,15 @@ export default function EquipmentDetail() {
     });
   }, [eq, selectedLevel, selectedMuscle]);
 
+  const paged = usePaged(filteredExercises, 'equipment-exercises-page', [key, selectedLevel, selectedMuscle], 12);
+
   if (loading) return <div className="page"><LoadingBlock rows={8} /></div>;
   if (error || !eq) return <div className="page"><ErrorState message={error || 'Không tìm thấy dụng cụ'} onRetry={reload} /></div>;
 
   return (
     <div className="page">
       <div className="mb-12">
-        <Link to="/equipment" className="btn btn-ghost btn-sm" style={{ paddingLeft: 0 }}>
+        <Link to="/knowledge?tab=equipment" className="btn btn-ghost btn-sm" style={{ paddingLeft: 0 }}>
           <Icon name="arrowLeft" size={14} />
           <span>{t('Quay lại danh mục dụng cụ')}</span>
         </Link>
@@ -86,6 +88,30 @@ export default function EquipmentDetail() {
               </h2>
               <div className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
                 {eq.usageGuide}
+              </div>
+            </section>
+          )}
+
+          {eq.adjustGuide && (
+            <section className="card p-20 mb-16">
+              <h2 className="section-title mb-12">
+                <Icon name="target" size={18} className="primary" />
+                <span>{t('Cách điều chỉnh máy / thiết bị')}</span>
+              </h2>
+              <div className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+                {eq.adjustGuide}
+              </div>
+            </section>
+          )}
+
+          {eq.commonMistakes && (
+            <section className="card p-20 mb-16" style={{ borderColor: 'color-mix(in srgb, var(--warn) 30%, var(--hairline))' }}>
+              <h2 className="section-title mb-12" style={{ color: 'var(--warn-bright)' }}>
+                <Icon name="alert" size={18} />
+                <span>{t('Lỗi thường gặp')}</span>
+              </h2>
+              <div className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+                {eq.commonMistakes}
               </div>
             </section>
           )}
@@ -145,44 +171,51 @@ export default function EquipmentDetail() {
                 desc={t('Thử thay đổi bộ lọc cấp độ hoặc nhóm cơ bên trên.')}
               />
             ) : (
-              <div className="kb-grid mt-12">
-                {filteredExercises.map((e) => (
-                  <article key={e.id} className="kb-card">
-                    <Link to={`/exercises/${e.id}`} className="kb-cover" aria-label={t(e.name)}>
-                      <ExerciseMedia
-                        imageKey={e.imageKey}
-                        alt={t(e.name)}
-                        playOnHover
-                        tag={t(LEVEL_LABELS[e.level] || e.level)}
-                      />
-                    </Link>
-                    <div className="kb-body">
-                      <div>
-                        <h3 className="kb-title">
-                          <Link to={`/exercises/${e.id}`} className="plain-link">
-                            {t(e.name)}
+              <>
+                <div className="kb-grid mt-12">
+                  {paged.items.map((e) => (
+                    <article key={e.id} className="kb-card">
+                      <Link to={`/exercises/${e.id}`} className="kb-cover" aria-label={t(e.name)}>
+                        <ExerciseMedia
+                          imageKey={e.imageKey}
+                          alt={t(e.name)}
+                          playOnHover
+                          tag={t(LEVEL_LABELS[e.level] || e.level)}
+                        />
+                      </Link>
+                      <div className="kb-body">
+                        <div>
+                          <h3 className="kb-title">
+                            <Link to={`/exercises/${e.id}`} className="plain-link">
+                              {t(e.name)}
+                            </Link>
+                          </h3>
+                          {e.nameEn && <div className="tiny faint">{e.nameEn}</div>}
+                        </div>
+
+                        {e.description && (
+                          <p className="small muted line-clamp-2" style={{ margin: 0 }}>
+                            {e.description}
+                          </p>
+                        )}
+
+                        <div className="row between mt-auto pt-8" style={{ borderTop: '1px solid var(--hairline-soft)' }}>
+                          <span className="badge badge-sm">{t(LEVEL_LABELS[e.level] || e.level)}</span>
+                          <Link to={`/exercises/${e.id}`} className="btn btn-secondary btn-sm">
+                            <span>{t('Chi tiết')}</span>
+                            <Icon name="arrowRight" size={13} />
                           </Link>
-                        </h3>
-                        {e.nameEn && <div className="tiny faint">{e.nameEn}</div>}
+                        </div>
                       </div>
-
-                      {e.description && (
-                        <p className="small muted line-clamp-2" style={{ margin: 0 }}>
-                          {e.description}
-                        </p>
-                      )}
-
-                      <div className="row between mt-auto pt-8" style={{ borderTop: '1px solid var(--hairline-soft)' }}>
-                        <span className="badge badge-sm">{t(LEVEL_LABELS[e.level] || e.level)}</span>
-                        <Link to={`/exercises/${e.id}`} className="btn btn-secondary btn-sm">
-                          <span>{t('Chi tiết')}</span>
-                          <Icon name="arrowRight" size={13} />
-                        </Link>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
+                    </article>
+                  ))}
+                </div>
+                {paged.totalPages > 1 && (
+                  <div className="mt-16">
+                    <Pager page={paged.page} totalPages={paged.totalPages} total={filteredExercises.length} onPage={paged.setPage} />
+                  </div>
+                )}
+              </>
             )}
           </section>
         </div>

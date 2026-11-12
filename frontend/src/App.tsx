@@ -28,10 +28,9 @@ import Policies from './pages/Policies';
 import Register from './pages/Register';
 import { Forbidden, NotFound } from './pages/Errors';
 import Articles from './pages/shared/Articles';
-import Exercises from './pages/shared/Exercises';
+import Knowledge from './pages/shared/Knowledge';
 import ExerciseDetail from './pages/shared/ExerciseDetail';
 import BeginnerExercises from './pages/shared/BeginnerExercises';
-import Equipment from './pages/shared/Equipment';
 import EquipmentDetail from './pages/shared/EquipmentDetail';
 import Help from './pages/shared/Help';
 import Programs from './pages/shared/Programs';
@@ -112,8 +111,6 @@ export default function App() {
       <Route path="/policies" element={<Policies />} />
       <Route path="/forum" element={<ForumList />} />
       <Route path="/forum/:id" element={<ForumTopicPage />} />
-      {/* Kho kiến thức đã thay bằng Diễn đàn: giữ đường dẫn cũ để link / bookmark cũ không ra 404 */}
-      <Route path="/knowledge/*" element={<Navigate to="/forum" replace />} />
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
         <Route path="/getting-started" element={<Navigate to="/dashboard?onboarding=1" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
@@ -141,10 +138,11 @@ export default function App() {
         <Route path="/workout-plans" element={<Only roles={STAFF}><WorkoutPlans /></Only>} />
         <Route path="/workout-plans/new" element={<Only roles={STAFF}><PlanEditor /></Only>} />
         <Route path="/workout-plans/:id" element={<Only roles={STAFF}><PlanEditor /></Only>} />
-        <Route path="/exercises" element={<Exercises />} />
+        <Route path="/knowledge" element={<Knowledge />} />
+        <Route path="/exercises" element={<Navigate to="/knowledge?tab=exercises" replace />} />
         <Route path="/exercises/beginner" element={<BeginnerExercises />} />
         <Route path="/exercises/:id" element={<ExerciseDetail />} />
-        <Route path="/equipment" element={<Equipment />} />
+        <Route path="/equipment" element={<Navigate to="/knowledge?tab=equipment" replace />} />
         <Route path="/equipment/:key" element={<EquipmentDetail />} />
         <Route path="/programs" element={<Programs />} />
         <Route path="/articles" element={<Only roles={STAFF}><Articles /></Only>} />

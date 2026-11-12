@@ -285,6 +285,8 @@ export interface ExerciseSummary {
   targetMuscles?: string[]; imageKey?: string | null;
 }
 
+export type ExerciseType = 'STRENGTH' | 'WARMUP' | 'CARDIO';
+
 export interface Exercise {
   id: number; name: string; muscleGroup: MuscleGroup; equipment: string | null; level: Level;
   description: string | null; instructions: string | null; videoUrl: string | null; hidden: boolean;
@@ -299,6 +301,11 @@ export interface Exercise {
   /** V18 · tư thế chuẩn bị, các bước đánh số, số hiệp/lần gợi ý, mục tiêu chính, bài thay thế. */
   setupPosition?: string | null; steps?: string | null; setsRepsHint?: string | null;
   primaryGoal?: ExerciseGoal | null; alternatives?: ExerciseSummary[];
+  /** SCRUM-229: Phân loại bài tập, danh mục con, yêu thích của Member và quan hệ thiết bị */
+  exerciseType?: ExerciseType;
+  subCategory?: string | null;
+  isFavorite?: boolean;
+  equipments?: { key: string; name: string; category: EquipmentCategory; imageKey?: string | null }[];
 }
 
 export type EquipmentCategory = 'FREE_WEIGHT' | 'MACHINE' | 'CABLE' | 'BODYWEIGHT' | 'CARDIO' | 'ACCESSORY' | 'RECOVERY';
@@ -309,6 +316,8 @@ export interface Equipment {
   category: EquipmentCategory;
   shortDesc?: string | null;
   usageGuide?: string | null;
+  adjustGuide?: string | null;
+  commonMistakes?: string | null;
   safetyNotes?: string | null;
   targetMuscleKeys: string[];
   imageKey?: string | null;
@@ -321,7 +330,38 @@ export interface Equipment {
 }
 
 // ---------- Knowledge base ----------
-export type ArticleCategory = 'NUTRITION' | 'HYDRATION' | 'SLEEP' | 'ACTIVITY' | 'RECOVERY';
+export type ArticleCategory = 'NUTRITION' | 'HYDRATION' | 'SLEEP' | 'ACTIVITY' | 'RECOVERY' | 'TRAINING_GUIDE';
+
+export interface MuscleSummary {
+  key: string;
+  name: string;
+  nameEn: string;
+  group: MuscleGroup;
+  view: 'front' | 'back' | 'both';
+  hint: string;
+  exerciseCount: number;
+}
+
+export interface MuscleDetail {
+  key: string;
+  name: string;
+  nameEn: string;
+  group: MuscleGroup;
+  view: 'front' | 'back' | 'both';
+  hint: string;
+  description: string;
+  exerciseCount: number;
+  primaryExercises: Exercise[];
+  secondaryExercises: Exercise[];
+  commonEquipment: Equipment[];
+}
+
+export interface FavoriteToggleResult {
+  exerciseId: number;
+  isFavorite: boolean;
+  favoriteCount: number;
+  message: string;
+}
 export type ArticleStatus = 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'ARCHIVED';
 export type ArticleAction = 'SUBMIT' | 'APPROVE' | 'REJECT' | 'ARCHIVE' | 'RESTORE';
 export interface ArticleSummary { id: number; slug: string; title: string; category: ArticleCategory; summary: string; publishedAt: string | null }
