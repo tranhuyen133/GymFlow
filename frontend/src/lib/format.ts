@@ -45,6 +45,7 @@ const goalLabel_VI: Record<ExerciseGoal, string> = {
 };
 const articleCategoryLabel_VI: Record<ArticleCategory, string> = {
   NUTRITION: 'Dinh dưỡng', HYDRATION: 'Nước uống', SLEEP: 'Giấc ngủ', ACTIVITY: 'Vận động', RECOVERY: 'Hồi phục',
+  TRAINING_GUIDE: 'Hướng dẫn tập luyện',
 };
 const articleStatusLabel_VI: Record<ArticleStatus, [string, Tone]> = {
   DRAFT: ['Bản nháp', 'muted'], PENDING: ['Chờ duyệt', 'amber'], PUBLISHED: ['Đã xuất bản', 'green'], ARCHIVED: ['Đã gỡ', 'muted'],

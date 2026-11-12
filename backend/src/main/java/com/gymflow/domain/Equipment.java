@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "equipment")
@@ -31,6 +33,14 @@ public class Equipment {
     @Column(name = "usage_guide", columnDefinition = "TEXT")
     private String usageGuide;
 
+    /** TASK 01 / SCRUM-229: Hướng dẫn điều chỉnh ghế, chốt, ròng rọc. */
+    @Column(name = "adjust_guide", columnDefinition = "TEXT")
+    private String adjustGuide;
+
+    /** TASK 01 / SCRUM-229: Lỗi thường gặp khi thao tác thiết bị. */
+    @Column(name = "common_mistakes", columnDefinition = "TEXT")
+    private String commonMistakes;
+
     @Column(name = "safety_notes", columnDefinition = "TEXT")
     private String safetyNotes;
 
@@ -53,6 +63,10 @@ public class Equipment {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ContentOrigin origin = ContentOrigin.SELF_AUTHORED;
+
+    /** Quan hệ nhiều-nhiều hai chiều với bảng exercises. */
+    @ManyToMany(mappedBy = "equipments")
+    private Set<Exercise> exercises = new LinkedHashSet<>();
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;

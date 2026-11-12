@@ -2,6 +2,7 @@ package com.gymflow.service;
 
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
+import com.gymflow.dto.KnowledgeDtos;
 import com.gymflow.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -195,8 +196,14 @@ public class Mappers {
 
     // ---------- Exercise ----------
     public ExerciseResponse exercise(Exercise e) {
+        return exercise(e, false);
+    }
+
+    public ExerciseResponse exercise(Exercise e, boolean isFavorite) {
         List<ExerciseSummary> alts = e.getAlternatives() == null ? List.of() :
                 e.getAlternatives().stream().map(this::exerciseSummary).toList();
+        List<KnowledgeDtos.EquipmentSummary> eqSummaries = e.getEquipments() == null ? List.of() :
+                e.getEquipments().stream().map(eq -> new KnowledgeDtos.EquipmentSummary(eq.getKey(), eq.getName(), eq.getCategory(), eq.getImageKey())).toList();
         return new ExerciseResponse(e.getId(), e.getName(), e.getMuscleGroup(), e.getEquipment(), e.getLevel(),
                 e.getDescription(), e.getInstructions(), e.getVideoUrl(), e.isHidden(),
                 planItemRepository.countByExerciseId(e.getId()),
@@ -212,7 +219,11 @@ public class Mappers {
                 e.getSteps() != null ? e.getSteps() : e.getInstructions(),
                 e.getSetsRepsHint(),
                 e.getPrimaryGoal(),
-                alts);
+                alts,
+                e.getExerciseType(),
+                e.getSubCategory(),
+                isFavorite,
+                eqSummaries);
     }
 
     public ExerciseSummary exerciseSummary(Exercise e) {
@@ -229,7 +240,8 @@ public class Mappers {
 
     public EquipmentDetailResponse equipmentDetail(Equipment eq, long count, List<ExerciseResponse> related) {
         return new EquipmentDetailResponse(eq.getKey(), eq.getName(), eq.getCategory(), eq.getShortDesc(),
-                eq.getUsageGuide(), eq.getSafetyNotes(), splitKeys(eq.getTargetMuscleKeys()), eq.getImageKey(),
+                eq.getUsageGuide(), eq.getAdjustGuide(), eq.getCommonMistakes(), eq.getSafetyNotes(),
+                splitKeys(eq.getTargetMuscleKeys()), eq.getImageKey(),
                 eq.getSortOrder(), count, eq.getReviewStatus(), eq.isHidden(), eq.getOrigin(), related);
     }
 
