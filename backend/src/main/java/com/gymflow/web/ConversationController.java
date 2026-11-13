@@ -4,13 +4,18 @@ import com.gymflow.common.PageResponse;
 import com.gymflow.dto.Dtos.*;
 import com.gymflow.security.CurrentUser;
 import com.gymflow.service.ConversationService;
+import com.gymflow.service.MessageAttachmentService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Tag(name = "Hội thoại Hội viên ↔ Huấn luyện viên")
@@ -20,6 +25,7 @@ import java.util.List;
 public class ConversationController {
 
     private final ConversationService conversationService;
+    private final MessageAttachmentService attachmentService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -61,6 +67,23 @@ public class ConversationController {
     public MessageResponseDto sendMessage(@PathVariable Long id,
                                           @Valid @RequestBody SendMessageRequest req) {
         return conversationService.sendMessage(CurrentUser.get(), id, req.body(), req.attachmentUrl());
+    }
+
+    @PostMapping(value = "/{id}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('MEMBER', 'TRAINER')")
+    public MessageResponseDto sendAttachment(@PathVariable Long id,
+                                             @RequestPart("file") MultipartFile file,
+                                             @RequestParam(value = "caption", required = false) String caption) {
+        return attachmentService.upload(CurrentUser.get(), id, file, caption);
+    }
+
+    @GetMapping("/{id}/recalled")
+    @PreAuthorize("hasAnyRole('MEMBER', 'TRAINER', 'ADMIN')")
+    public RecallSyncResponse recalled(@PathVariable Long id,
+                                       @RequestParam(required = false)
+                                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime since) {
+        return attachmentService.recalledSince(CurrentUser.get(), id, since);
     }
 
     @PostMapping("/{id}/read")

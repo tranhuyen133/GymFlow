@@ -1,0 +1,27 @@
+/* Thẻ "Calo đốt tuần này" ở Trang chủ hội viên */
+.cw-body { display: grid; grid-template-columns: minmax(180px, 0.9fr) minmax(0, 1.6fr); gap: 22px; align-items: end; }
+.cw-total { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.cw-kcal { font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.cw-kcal small { font-size: 15px; font-weight: 600; color: var(--muted); margin-left: 6px; letter-spacing: 0; }
+.cw-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.cw-meta span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.cw-meta svg { color: var(--primary-bright); }
+.cw-delta { align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); }
+.cw-delta.up { color: var(--primary-bright); }
+.cw-delta.down { color: var(--warning); }
+.cw-warn { display: inline-flex; align-items: center; gap: 6px; color: var(--warning); text-decoration: none; line-height: 1.35; }
+.cw-warn:hover { text-decoration: underline; }
+.cw-chart { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: end; height: 150px; min-width: 0; }
+.cw-bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0; }
+.cw-bar i { display: block; width: 100%; max-width: 30px; border-radius: 7px 7px 2px 2px; background: linear-gradient(180deg, #ff8a5c, #ff5a4e); transform-origin: bottom; animation: barGrow 0.8s var(--ease-out) backwards; }
+.cw-bar i.zero { background: var(--surface-2); }
+.cw-n { font-size: 11px; font-weight: 700; color: var(--muted); min-height: 14px; font-variant-numeric: tabular-nums; }
+.cw-l { font-size: 11px; color: var(--faint); white-space: nowrap; }
+.cw-bar.is-today .cw-l { color: var(--ink); font-weight: 700; }
+.cw-bar.is-today i:not(.zero) { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px #ff6b61; }
+@media (max-width: 720px) {
+  .cw-body { grid-template-columns: 1fr; gap: 16px; }
+  .cw-kcal { font-size: 34px; }
+  .cw-chart { height: 120px; gap: 5px; }
+}
+@media (prefers-reduced-motion: reduce) { .cw-bar i { animation: none; } }

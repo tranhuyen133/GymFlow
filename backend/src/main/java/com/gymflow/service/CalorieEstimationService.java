@@ -20,18 +20,20 @@ import java.util.List;
  * <p>Quy tắc:
  * <ul>
  *   <li>Cân nặng: bản ghi mới nhất có ngày ghi ≤ ngày tập. Thiếu → MISSING_WEIGHT, calo null.</li>
- *   <li>Tập tạ: chỉ tính thời gian vận động (sets × giây/hiệp), không cộng thời gian nghỉ.</li>
+ *   <li>Tập tạ: tính cả cụm bài = các hiệp + nghỉ giữa hiệp (thiếu số giây nghỉ → 90 giây).</li>
  *   <li>Cardio: dùng durationMinutes của bài; thiếu thì bỏ qua bài đó.</li>
  *   <li>Không có bài tập/không đủ dữ liệu: fallback ước tính thô toàn buổi (OTHER, MODERATE).</li>
- *   <li>Tổng thời gian vận động không vượt quá thời lượng buổi tập.</li>
+ *   <li>Thời gian còn lại của buổi (khởi động, chuyển bài, giãn cơ) tính ở mức nhẹ (OTHER, LIGHT).</li>
+ *   <li>Tổng thời gian không vượt quá thời lượng buổi tập (vượt thì thu nhỏ theo tỉ lệ).</li>
  * </ul>
  */
 @Service
 @RequiredArgsConstructor
 public class CalorieEstimationService {
 
-    public static final String FORMULA_VERSION = "MET-COMPENDIUM-2011-v1";
+    public static final String FORMULA_VERSION = "MET-COMPENDIUM-2011-v2";
     public static final String MET_METHOD = "MET_COMPENDIUM_2011";
+    public static final String TRANSITION_NAME = "Khởi động, chuyển bài & giãn cơ";
     public static final String DISCLAIMER = "Lượng calo là giá trị ước tính dựa trên dữ liệu vận động và thông tin cá nhân. "
             + "Giá trị thực tế có thể khác nhau giữa từng người. Đây là calo tiêu hao do tập luyện, "
             + "không phải tổng năng lượng tiêu hao trong ngày.";
@@ -96,6 +98,11 @@ public class CalorieEstimationService {
             double factor = duration / totalActive;
             exercises = exercises.stream().map(e -> scale(e, factor, weight)).toList();
             totalActive = duration;
+        } else if (duration - totalActive >= 1.0) {
+            double remaining = round1(duration - totalActive);
+            exercises = new ArrayList<>(exercises);
+            exercises.add(transitionEstimate(remaining, weight));
+            totalActive += remaining;
         }
 
         EstimateStatus status;
@@ -203,11 +210,11 @@ public class CalorieEstimationService {
         boolean timeBasedReps = isTimeBased(item.getReps());
         Double activeMinutes;
         if (timeBasedReps) {
-            activeMinutes = MetCalorieCalculator.strengthActiveMinutes(item.getSets(), item.getReps());
+            activeMinutes = MetCalorieCalculator.strengthBlockMinutes(item.getSets(), item.getReps(), item.getRestSeconds());
         } else if (isCardioLike(category)) {
             activeMinutes = item.getDurationMinutes() == null ? null : item.getDurationMinutes().doubleValue();
         } else {
-            activeMinutes = MetCalorieCalculator.strengthActiveMinutes(item.getSets(), item.getReps());
+            activeMinutes = MetCalorieCalculator.strengthBlockMinutes(item.getSets(), item.getReps(), item.getRestSeconds());
             if (activeMinutes == null && item.getDurationMinutes() != null) {
                 activeMinutes = item.getDurationMinutes().doubleValue();
             }
@@ -238,6 +245,20 @@ public class CalorieEstimationService {
                 null, "Hoạt động tập luyện chung", category, intensity, met,
                 metRef.getSourceCode(), metRef.getSourceVersion(),
                 null, null, null, null, round1(active), calories, "FALLBACK");
+    }
+
+    /** Phần còn lại của buổi ngoài các bài trong giáo án: khởi động, chuyển máy, giãn cơ – mức nhẹ. */
+    private CalorieEstimate.ExerciseEstimate transitionEstimate(double minutes, Double weight) {
+        ActivityCategory category = ActivityCategory.OTHER;
+        ExerciseIntensity intensity = ExerciseIntensity.LIGHT;
+        MetReference metRef = metReferenceService.get(category, intensity);
+        double met = metRef.getMetValue();
+        Double rawCalories = weight == null ? null : MetCalorieCalculator.calories(met, weight, minutes);
+        Integer calories = rawCalories == null ? null : MetCalorieCalculator.roundKcal(rawCalories);
+        return new CalorieEstimate.ExerciseEstimate(
+                null, TRANSITION_NAME, category, intensity, met,
+                metRef.getSourceCode(), metRef.getSourceVersion(),
+                null, null, null, null, minutes, calories, "FALLBACK");
     }
 
     private CalorieEstimate.ExerciseEstimate scale(CalorieEstimate.ExerciseEstimate e, double factor, Double weight) {

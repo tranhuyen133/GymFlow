@@ -37,5 +37,14 @@ public class CalorieBackfillRunner implements ApplicationRunner {
         } catch (RuntimeException e) {
             log.warn("Bỏ qua bước backfill calo lịch sử: {}", e.getMessage());
         }
+        try {
+            CalorieBackfillResponse result = backfillService.recomputeOutdated();
+            if (result.processed() > 0 || result.failed() > 0) {
+                log.info("Đã tính lại calo theo công thức {}: {} buổi (lỗi {})",
+                        result.formulaVersion(), result.processed(), result.failed());
+            }
+        } catch (RuntimeException e) {
+            log.warn("Bỏ qua bước tính lại calo theo công thức mới: {}", e.getMessage());
+        }
     }
 }

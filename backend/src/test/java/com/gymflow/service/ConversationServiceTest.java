@@ -219,7 +219,7 @@ class ConversationServiceTest {
         Message m1 = new Message(conv, memberUser, Role.MEMBER, "Tin nhắn từ member", null);
         m1.setId(101L);
         m1.setCreatedAt(LocalDateTime.now());
-        when(messageRepository.findMessagesBefore(eq(1L), any(), any())).thenReturn(List.of(m1));
+        when(messageRepository.findVisibleBefore(eq(1L), any(), any(), any())).thenReturn(List.of(m1));
 
         List<MessageResponseDto> messages = conversationService.getMessages(adminAuth, 1L, null, 50);
 

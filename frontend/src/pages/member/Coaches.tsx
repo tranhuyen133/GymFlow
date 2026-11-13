@@ -1,69 +1,46 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Conversation, TrainerPublic } from '../../api/types';
+import type { Conversation, MemberDashboard, TrainerPublic } from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Avatar, Badge, Button, Card, Empty, ErrorState, LoadingBlock, PageHead, SearchInput } from '../../components/ui';
+import { Avatar, Button, Card, Empty, ErrorState, LoadingBlock, PageHead, SearchInput } from '../../components/ui';
 import { DAYS } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import { t } from '../../i18n';
+import { allSpecialties, canMessage, certificateList, isoDay, matchesCoach, splitSpecialties, todayShift, weeklyHours } from './coachRules';
+import './coaches.css';
 
-/** Viết hoa ký tự đầu của một cụm chuyên môn (giảm mỡ → Giảm mỡ). */
-function sentenceCase(value: string) {
-  const s = value.trim();
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-}
-
-/** Chuẩn hoá chuỗi chuyên môn: tách theo dấu ngăn cách, viết hoa từng cụm, nối lại. */
-function formatSpecialty(raw: string | null | undefined) {
-  if (!raw) return '';
-  return raw
-    .split(/[,/•;]/)
-    .map(sentenceCase)
-    .filter(Boolean)
-    .join(', ');
+/** HLV đang phụ trách hội viên (được gán hoặc HLV của giáo án đang áp dụng); null = chưa biết. */
+export function useAssignedTrainers() {
+  const dash = useAsync(() => api.get<MemberDashboard>('/dashboard/member'), []);
+  return useMemo(() => {
+    if (!dash.data) return null;
+    const ids = new Set<number>();
+    if (dash.data.member.trainerId != null) ids.add(dash.data.member.trainerId);
+    if (dash.data.currentPlan?.trainerId != null) ids.add(dash.data.currentPlan.trainerId);
+    return ids;
+  }, [dash.data]);
 }
 
 export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const toast = useToast();
   const { data, error, loading, reload } = useAsync(() => api.get<TrainerPublic[]>('/trainers/public'), []);
+  const assigned = useAssignedTrainers();
   const [search, setSearch] = useState('');
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
+  const [specialty, setSpecialty] = useState<string | null>(null);
   const [startingChatId, setStartingChatId] = useState<number | null>(null);
 
-  const specialties = useMemo(() => {
-    if (!data) return [];
-    const s = new Set<string>();
-    data.forEach((tr) => {
-      if (tr.specialty) {
-        tr.specialty.split(/[,/•;]/).forEach((part) => {
-          const item = sentenceCase(part);
-          if (item) s.add(item);
-        });
-      }
-    });
-    return Array.from(s).sort();
-  }, [data]);
-
+  const specialties = useMemo(() => allSpecialties(data ?? []), [data]);
   const filtered = useMemo(() => {
-    if (!data) return [];
-    const q = search.trim().toLowerCase();
-    return data.filter((tr) => {
-      const matchSearch =
-        !q ||
-        tr.fullName.toLowerCase().includes(q) ||
-        (tr.specialty && tr.specialty.toLowerCase().includes(q)) ||
-        (tr.bio && tr.bio.toLowerCase().includes(q));
-      const matchSpecialty =
-        !selectedSpecialty ||
-        (tr.specialty && tr.specialty.toLowerCase().includes(selectedSpecialty.toLowerCase()));
-      return matchSearch && matchSpecialty;
-    });
-  }, [data, search, selectedSpecialty]);
+    const list = (data ?? []).filter((tr) => matchesCoach(tr, search, specialty));
+    // HLV đang phụ trách lên đầu, sau đó theo kinh nghiệm
+    return list.sort((a, b) => Number(assigned?.has(b.id) ?? 0) - Number(assigned?.has(a.id) ?? 0) || b.experienceYears - a.experienceYears);
+  }, [data, search, specialty, assigned]);
 
-  const handleStartChat = async (trainerId: number) => {
+  const startChat = async (trainerId: number) => {
+    if (startingChatId != null) return;
     try {
       setStartingChatId(trainerId);
       const res = await api.post<Conversation>('/conversations', { trainerId });
@@ -75,57 +52,27 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
     }
   };
 
-  const currentDayOfWeek = (() => {
-    const d = new Date().getDay();
-    return d === 0 ? 7 : d;
-  })();
+  const now = new Date();
+  const today = isoDay(now);
 
   return (
     <div className={embedded ? undefined : 'page'}>
       {!embedded && (
-        <PageHead
-          eyebrow={t('Dịch vụ')}
-          title={t('Đội ngũ huấn luyện viên')}
-          desc={t('Gặp gỡ và trao đổi trực tiếp với các huấn luyện viên chuyên nghiệp để chọn lộ trình phù hợp.')}
-        />
+        <PageHead eyebrow={t('Dịch vụ')} title={t('Đội ngũ huấn luyện viên')}
+          desc={t('Gặp gỡ và trao đổi trực tiếp với các huấn luyện viên chuyên nghiệp để chọn lộ trình phù hợp.')} />
       )}
 
-      <div className="card mb-16" style={{ padding: '16px 20px' }}>
-        <div className="row wrap between" style={{ gap: 12 }}>
-          <div style={{ flex: '1 1 280px', maxWidth: 400 }}>
-            <SearchInput
-              placeholder={t('Tìm theo tên, chuyên môn…')}
-              value={search}
-              onChange={setSearch}
-            />
+      <div className="cz-toolbar">
+        <div className="cz-search"><SearchInput placeholder={t('Tìm theo tên, chuyên môn, chứng chỉ…')} value={search} onChange={setSearch} /></div>
+        {specialties.length > 0 && (
+          <div className="cz-filters" role="group" aria-label={t('Chuyên môn')}>
+            <button type="button" className={`chip ${!specialty ? 'on' : ''}`} onClick={() => setSpecialty(null)}>{t('Tất cả')}</button>
+            {specialties.map((sp) => (
+              <button key={sp} type="button" className={`chip ${specialty === sp ? 'on' : ''}`} aria-pressed={specialty === sp}
+                onClick={() => setSpecialty(sp === specialty ? null : sp)}>{t(sp)}</button>
+            ))}
           </div>
-          {specialties.length > 0 && (
-            <div className="row" style={{ gap: 6, alignItems: 'center', flex: '1 1 auto', minWidth: 0, justifyContent: 'flex-end' }}>
-              <span className="tiny muted mr-4" style={{ whiteSpace: 'nowrap', flex: 'none' }}>{t('Chuyên môn:')}</span>
-              <div className="row" style={{ gap: 6, flex: '1 1 auto', minWidth: 0, overflowX: 'auto', paddingBottom: 2 }}>
-                <button
-                  type="button"
-                  className={`chip ${!selectedSpecialty ? 'on' : ''}`}
-                  style={{ flex: 'none', whiteSpace: 'nowrap' }}
-                  onClick={() => setSelectedSpecialty(null)}
-                >
-                  {t('Tất cả')}
-                </button>
-                {specialties.map((sp) => (
-                  <button
-                    key={sp}
-                    type="button"
-                    className={`chip ${selectedSpecialty === sp ? 'on' : ''}`}
-                    style={{ flex: 'none', whiteSpace: 'nowrap' }}
-                    onClick={() => setSelectedSpecialty(sp === selectedSpecialty ? null : sp)}
-                  >
-                    {sp}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {error ? (
@@ -134,113 +81,89 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
         <LoadingBlock rows={6} />
       ) : filtered.length === 0 ? (
         <Card>
-          <Empty
-            icon="badge"
+          <Empty icon="badge"
             title={data.length === 0 ? t('Chưa có huấn luyện viên') : t('Không tìm thấy huấn luyện viên phù hợp')}
             desc={data.length > 0 ? t('Thử đổi từ khoá tìm kiếm hoặc xoá bộ lọc chuyên môn.') : undefined}
-          />
+            action={data.length > 0 && (search || specialty)
+              ? <Button size="sm" variant="secondary" onClick={() => { setSearch(''); setSpecialty(null); }}>{t('Xoá bộ lọc')}</Button> : undefined} />
         </Card>
       ) : (
-        <div className="grid grid-3">
-          {filtered.map((tr) => {
-            const shiftDays = new Set(tr.shifts.map((s) => s.dayOfWeek));
-            const todayShift = tr.shifts.find((s) => s.dayOfWeek === currentDayOfWeek);
-            const statusLabel = todayShift
-              ? t('Có ca hôm nay ({start} - {end})', {
-                  start: todayShift.startTime.slice(0, 5),
-                  end: todayShift.endTime.slice(0, 5),
-                })
-              : tr.shifts.length > 0
-              ? t('Nhận tư vấn ({n} ca/tuần)', { n: tr.shifts.length })
-              : t('Liên hệ đặt hẹn');
-
-            return (
-              <Card key={tr.id} className="hoverable trainer-card">
-                <div className="row between row-wrap" style={{ alignItems: 'flex-start', gap: 8 }}>
-                  <div className="row" style={{ gap: 12, flex: '1 1 170px', minWidth: 0 }}>
-                    <Avatar name={tr.fullName} src={tr.avatar} size="lg" />
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <b
-                        className="ellipsis pointer link-accent"
-                        style={{ fontSize: 16, display: 'block' }}
-                        onClick={() => navigate(`/coaches/${tr.id}`)}
-                      >
-                        {tr.fullName}
-                      </b>
-                      <div className="tiny muted ellipsis mt-2">
-                        {formatSpecialty(tr.specialty) || t('Huấn luyện thể hình')}
+        <>
+          <p className="tiny faint cz-count">{t('{n} huấn luyện viên', { n: filtered.length })}</p>
+          <div className="cz-grid">
+            {filtered.map((tr) => {
+              const days = new Set(tr.shifts.map((s) => s.dayOfWeek));
+              const shift = todayShift(tr.shifts, now);
+              const specs = splitSpecialties(tr.specialty);
+              const certs = certificateList(tr.certificates);
+              const mine = assigned?.has(tr.id) ?? false;
+              const chatOk = canMessage(tr.id, assigned);
+              return (
+                <article key={tr.id} className={`cz-card ${mine ? 'is-mine' : ''}`}>
+                  <div className="cz-head">
+                    <Link to={`/coaches/${tr.id}`} className="cz-avatar" aria-label={t('Xem hồ sơ {name}', { name: tr.fullName })}>
+                      <Avatar name={tr.fullName} src={tr.avatar} size="lg" />
+                      <i className={shift ? 'on' : ''} title={shift ? t('Có ca hôm nay') : t('Hôm nay nghỉ')} />
+                    </Link>
+                    <div className="cz-id">
+                      <Link to={`/coaches/${tr.id}`} className="cz-name">{tr.fullName}</Link>
+                      <div className="cz-specs">
+                        {specs.length ? specs.slice(0, 3).map((s) => <span key={s} className="cz-spec">{t(s)}</span>)
+                          : <span className="cz-spec">{t('Huấn luyện thể hình')}</span>}
                       </div>
                     </div>
+                    {mine && <span className="cz-mine"><Icon name="checkCircle" size={13} />{t('HLV của bạn')}</span>}
                   </div>
-                  <div style={{ marginLeft: 'auto', flex: 'none' }}>
-                    <Badge tone={todayShift ? 'green' : 'blue'}>{statusLabel}</Badge>
-                  </div>
-                </div>
 
-                <div className="stack-sm mt-16 small">
-                  <div className="row" style={{ gap: 8 }}>
-                    <Icon name="trophy" size={15} className="ok" />
-                    <span>{t('{n} năm kinh nghiệm', { n: tr.experienceYears })}</span>
+                  <div className={`cz-today ${shift ? 'on' : ''}`}>
+                    <Icon name="clock" size={14} />
+                    {shift ? t('Có ca hôm nay {start}–{end}', { start: shift.startTime.slice(0, 5), end: shift.endTime.slice(0, 5) })
+                      : tr.shifts.length ? t('Hôm nay nghỉ · {n} ca/tuần', { n: tr.shifts.length }) : t('Chưa có ca cố định – nhắn để hẹn')}
                   </div>
-                  {tr.certificates && (
-                    <div className="row" style={{ gap: 8 }}>
-                      <Icon name="badge" size={15} className="ok" />
-                      <span className="ellipsis" title={tr.certificates}>
-                        {tr.certificates}
-                      </span>
+
+                  <div className="cz-stats">
+                    <div><b>{tr.experienceYears}</b><span>{t('năm KN')}</span></div>
+                    <div><b>{tr.shifts.length}</b><span>{t('ca/tuần')}</span></div>
+                    <div><b>{weeklyHours(tr.shifts)}</b><span>{t('giờ/tuần')}</span></div>
+                  </div>
+
+                  {certs.length > 0 && (
+                    <div className="cz-certs" title={certs.join(', ')}>
+                      <Icon name="badge" size={14} />
+                      {certs.slice(0, 2).map((c) => <span key={c}>{c}</span>)}
+                      {certs.length > 2 && <span className="more">+{certs.length - 2}</span>}
                     </div>
                   )}
-                  {tr.bio && (
-                    <p
-                      className="tiny muted mt-4"
-                      style={{
-                        margin: '4px 0 0',
-                        lineHeight: 1.5,
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {tr.bio}
-                    </p>
-                  )}
-                </div>
 
-                <div className="row mt-16" style={{ gap: 4 }}>
-                  {DAYS.map((d, i) => (
-                    <span
-                      key={d}
-                      className={`chip ${shiftDays.has(i + 1) ? 'on' : ''}`}
-                      style={{ padding: '0 7px' }}
-                    >
-                      {d}
-                    </span>
-                  ))}
-                </div>
+                  {tr.bio && <p className="cz-bio">{tr.bio}</p>}
 
-                <div className="row between mt-16" style={{ gap: 8, paddingTop: 12, borderTop: '1px solid var(--hairline)' }}>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => navigate(`/coaches/${tr.id}`)}
-                  >
-                    {t('Xem hồ sơ')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    icon="message"
-                    disabled={startingChatId === tr.id}
-                    onClick={() => handleStartChat(tr.id)}
-                  >
-                    {startingChatId === tr.id ? t('Đang kết nối…') : t('Nhắn tin tư vấn')}
-                  </Button>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                  <div className="cz-week" aria-label={t('Ngày có ca trong tuần')}>
+                    {DAYS.map((d, i) => (
+                      <span key={d} className={`${days.has(i + 1) ? 'on' : ''} ${today === i + 1 ? 'today' : ''}`}>{d}</span>
+                    ))}
+                  </div>
+
+                  <div className="cz-actions">
+                    <Link to={`/coaches/${tr.id}`} className="btn btn-sm btn-secondary">{t('Xem hồ sơ')}</Link>
+                    {chatOk ? (
+                      <Button size="sm" variant="primary" icon="message" loading={startingChatId === tr.id}
+                        disabled={startingChatId != null && startingChatId !== tr.id} onClick={() => startChat(tr.id)}>
+                        {t('Nhắn tin')}
+                      </Button>
+                    ) : (
+                      <Link to="/me/packages?tab=catalog" className="btn btn-sm btn-primary" title={t('Đăng ký gói có PT để được nhắn tin trực tiếp với HLV')}>
+                        <Icon name="ticket" size={15} /><span>{t('Tập cùng HLV')}</span>
+                      </Link>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          {assigned && assigned.size === 0 && (
+            <p className="tiny faint mt-16">{t('Bạn có thể nhắn tin trực tiếp với HLV đang phụ trách mình. Đăng ký gói có PT để được ghép HLV.')}</p>
+          )}
+        </>
       )}
     </div>
   );

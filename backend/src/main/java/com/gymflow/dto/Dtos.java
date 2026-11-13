@@ -1089,11 +1089,24 @@ public final class Dtos {
 
     public record MessageResponseDto(Long id, Long conversationId, Long senderUserId, String senderName,
                                      String senderRole, String attachmentUrl,
-                                     String body, LocalDateTime createdAt, LocalDateTime readAt) {
+                                     String body, LocalDateTime createdAt, LocalDateTime readAt,
+                                     String kind, boolean recalled, String attachmentName,
+                                     String attachmentType, Long attachmentSize) {
+        public MessageResponseDto(Long id, Long conversationId, Long senderUserId, String senderName,
+                                  String senderRole, String attachmentUrl,
+                                  String body, LocalDateTime createdAt, LocalDateTime readAt) {
+            this(id, conversationId, senderUserId, senderName, senderRole, attachmentUrl, body, createdAt, readAt,
+                    "TEXT", false, null, null, null);
+        }
+
         public MessageResponseDto(Long id, Long conversationId, Long senderUserId, String senderName,
                                   String body, LocalDateTime createdAt, LocalDateTime readAt) {
             this(id, conversationId, senderUserId, senderName, null, null, body, createdAt, readAt);
         }
+    }
+
+    /** Thăm dò thu hồi: id các tin vừa bị thu hồi + giờ máy chủ để dùng làm mốc lần sau (tránh lệch giờ máy khách). */
+    public record RecallSyncResponse(List<Long> recalledIds, LocalDateTime serverTime) {
     }
 
     public record ConversationResponse(Long id, Long memberId, String memberName, String memberAvatar,

@@ -6,6 +6,8 @@ import { fmtTime } from '../lib/format';
 import { errMsg } from '../lib/hooks';
 import { t } from '../i18n';
 import '../pages/shared/messages.css';
+import { ChatAttachment } from '../pages/shared/ChatAttachment';
+import { kindOf } from '../pages/shared/chatRules';
 
 interface Props {
   conversationId: number;
@@ -168,7 +170,10 @@ export function ConversationHistoryModal({
                           whiteSpace: 'pre-wrap',
                         }}
                       >
-                        {m.body}
+                        {m.recalled ? <i style={{ opacity: 0.75 }}>{t('Tin nhắn đã được thu hồi')}</i> : <>
+                          {kindOf(m) !== 'TEXT' && <ChatAttachment m={m} />}
+                          {m.body && <div>{m.body}</div>}
+                        </>}
                       </div>
                       <div className="row" style={{ gap: 6, fontSize: 10, color: 'var(--faint)', marginTop: 2 }}>
                         <span>{time}</span>

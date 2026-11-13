@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { MemberDashboard as Data, Progress, Schedule } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
+import { CalorieWeekCard } from '../../components/CalorieWeekCard';
 import { Icon } from '../../components/Icon';
 import { achievements, ActivityRings, BadgeShelf, weekRings } from '../../components/motivation';
 import { Alert, Badge, Button, Card, CountUp, Empty, ErrorState, LoadingBlock, Meter, PageHead, Stat, StatusBadge } from '../../components/ui';
@@ -213,6 +214,8 @@ export default function MemberDashboard() {
           foot={data.latestWeight ? t('Ngày {d}', { d: fmtDate(data.latestWeight.recordedDate) }) : t('Chưa có số liệu')} />
         <Stat icon="heart" label="BMI" value={data.bmi ?? '—'} accent="#ffb020" foot={data.bmiCategory ? t(data.bmiCategory) : t('Cần chiều cao & cân nặng')} />
       </div>
+
+      {me.memberId && <div className="mt-24"><CalorieWeekCard memberId={me.memberId} /></div>}
 
       {/* Vòng hoạt động & Huy hiệu */}
       <div className="grid grid-main mt-24">

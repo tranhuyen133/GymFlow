@@ -131,7 +131,7 @@ public class ConversationService {
                     "Quản lý xem hội thoại #" + conversationId);
         }
         int limit = Math.min(Math.max(size, 1), 50);
-        List<Message> desc = messageRepository.findMessagesBefore(conversationId, before, PageRequest.of(0, limit));
+        List<Message> desc = messageRepository.findVisibleBefore(conversationId, user.id(), before, PageRequest.of(0, limit));
         List<Message> asc = new ArrayList<>(desc);
         Collections.reverse(asc);
         return asc.stream().map(this::toMessageDto).toList();
@@ -142,7 +142,7 @@ public class ConversationService {
         Conversation c = loadConversation(conversationId);
         checkParticipant(user, c);
         Long minId = after == null ? 0L : after;
-        return messageRepository.findNewMessages(conversationId, minId).stream()
+        return messageRepository.findVisibleNew(conversationId, user.id(), minId).stream()
                 .map(this::toMessageDto)
                 .toList();
     }
@@ -239,10 +239,7 @@ public class ConversationService {
             String snippet = null;
             LocalDateTime lastTime = c.getLastMessageAt();
             if (lastMsg != null) {
-                snippet = lastMsg.getBody();
-                if (snippet.length() > 80) {
-                    snippet = snippet.substring(0, 80) + "...";
-                }
+                snippet = snippetOf(lastMsg);
                 lastTime = lastMsg.getCreatedAt();
             }
             long count = messageRepository.countByConversationIdAndDeletedAtIsNull(c.getId());
@@ -284,7 +281,9 @@ public class ConversationService {
         String memberAvatar = mu.getAvatarUpdatedAt() != null ? "/api/users/" + mu.getId() + "/avatar?v=" + mu.getAvatarUpdatedAt() : null;
         String trainerAvatar = tu.getAvatarUpdatedAt() != null ? "/api/users/" + tu.getId() + "/avatar?v=" + tu.getAvatarUpdatedAt() : null;
 
-        MessageResponseDto lastMsg = messageRepository.findFirstByConversationIdAndDeletedAtIsNullOrderByIdDesc(c.getId())
+        MessageResponseDto lastMsg = (user != null
+                ? messageRepository.findVisibleBefore(c.getId(), user.id(), null, PageRequest.of(0, 1)).stream().findFirst()
+                : messageRepository.findFirstByConversationIdAndDeletedAtIsNullOrderByIdDesc(c.getId()))
                 .map(this::toMessageDto)
                 .orElse(null);
 
@@ -310,17 +309,39 @@ public class ConversationService {
         );
     }
 
-    private MessageResponseDto toMessageDto(Message m) {
+    /** Tin đã thu hồi không trả nội dung / tên tệp; tệp tải qua GET /api/messages/{id}/attachment (cần đăng nhập). */
+    public MessageResponseDto toMessageDto(Message m) {
+        boolean recalled = m.getRecalledAt() != null;
+        String kind = m.getKind() == null ? "TEXT" : m.getKind();
         return new MessageResponseDto(
                 m.getId(),
                 m.getConversation().getId(),
                 m.getSenderUser().getId(),
                 m.getSenderUser().getFullName(),
                 m.getSenderRole() != null ? m.getSenderRole().name() : null,
-                m.getAttachmentUrl(),
-                m.getBody(),
+                recalled ? null : m.getAttachmentUrl(),
+                recalled ? "" : m.getBody(),
                 m.getCreatedAt(),
-                m.getReadAt()
+                m.getReadAt(),
+                kind,
+                recalled,
+                recalled ? null : m.getAttachmentName(),
+                recalled ? null : m.getAttachmentType(),
+                recalled ? null : m.getAttachmentSize()
         );
+    }
+
+    /** Dòng tóm tắt tin cuối cho danh sách quản trị. */
+    static String snippetOf(Message m) {
+        if (m.getRecalledAt() != null) return "Tin nhắn đã được thu hồi";
+        String body = m.getBody() == null ? "" : m.getBody().trim();
+        String label = switch (m.getKind() == null ? "TEXT" : m.getKind()) {
+            case "IMAGE" -> "[Ảnh] ";
+            case "VIDEO" -> "[Video] ";
+            case "FILE" -> "[Tệp] " + (m.getAttachmentName() == null ? "" : m.getAttachmentName() + " ");
+            default -> "";
+        };
+        String s = (label + body).trim();
+        return s.length() > 80 ? s.substring(0, 80) + "..." : s;
     }
 }

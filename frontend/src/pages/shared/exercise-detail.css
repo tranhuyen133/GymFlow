@@ -6,7 +6,7 @@
 
 /* ---------- Khối đầu ---------- */
 .exd-hero {
-  position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(240px, 380px) minmax(0, 1fr);
+  position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(300px, 540px) minmax(0, 1fr);
   gap: 28px; padding: 22px; align-items: center;
 }
 .exd-hero::before {
@@ -21,7 +21,7 @@
   background: var(--rail); border: 1px solid var(--hairline-soft);
 }
 .exd-stage.is-gif { background: #fff; border-color: transparent; }
-.exd-stage.is-gif img { width: 180px; height: 180px; image-rendering: auto; }
+.exd-stage.is-gif img { width: min(264px, 100%); height: auto; aspect-ratio: 1; object-fit: contain; image-rendering: auto; }
 .exd-credit { font-size: 11px; color: #6b7280; text-decoration: none; }
 .exd-credit:hover { text-decoration: underline; }
 .exd-pose { flex: 1; min-height: 0; width: 100%; padding: 0; border: 0; border-radius: var(--r-sm); background: #000; cursor: pointer; overflow: hidden; }
@@ -29,7 +29,7 @@
 .exd-pose-switch { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--hairline); }
 .exd-pose-switch button { height: 28px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .exd-pose-switch button.on { background: var(--primary); color: var(--on-primary); }
-.exd-stage-map { width: 100%; max-width: 300px; }
+.exd-stage-map { width: 100%; max-width: 420px; }
 
 .exd-info { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .exd-tags { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -119,7 +119,7 @@
 }
 @media (max-width: 900px) {
   .exd-hero { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 16px; }
-  .exd-stage { max-width: 460px; width: 100%; justify-self: center; }
+  .exd-stage { max-width: 640px; width: 100%; justify-self: center; }
   .exd-grid { grid-template-columns: minmax(0, 1fr); }
   .exd-side { position: static; order: -1; }
 }

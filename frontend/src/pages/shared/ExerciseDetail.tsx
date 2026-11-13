@@ -155,7 +155,7 @@ export default function ExerciseDetail() {
         <div className={`exd-stage ${gif ? 'is-gif' : ''}`}>
           {gif ? (
             <>
-              <img src={exerciseImage(ex.imageKey!, 1)} alt={localized.title} width={180} height={180} />
+              <img src={exerciseImage(ex.imageKey!, 1)} alt={localized.title} width={264} height={264} />
               <a className="exd-credit" href="https://gymvisual.com/" target="_blank" rel="noreferrer">{GYM_VISUAL_CREDIT}</a>
             </>
           ) : ex.imageKey ? (
