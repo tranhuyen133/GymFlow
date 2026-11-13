@@ -14,6 +14,7 @@ import { useToast } from '../components/Toast';
 import { Alert, Avatar, Badge, Button, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, Pager, SearchInput, Segmented, Select, Textarea } from '../components/ui';
 import { t } from '../i18n';
 import { fmtDateTime, relativeTime, roleLabel } from '../lib/format';
+import { localizeText } from '../lib/planText';
 import { errMsg, fieldErrs, useAsync, useDebounced } from '../lib/hooks';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { canEditReply, canModerateAuthor, charCount, cleanLine, cleanText, LIMITS, replyBlock, validateReason, validateReply, validateTopic } from './forumRules';
@@ -119,7 +120,7 @@ function JoinPrompt({ text }: { text: string }) {
 // ---------- Hộp thoại ----------
 
 function TopicEditor({ initial, onClose, onSaved }: { initial?: TopicDetail; onClose: () => void; onSaved: (d: TopicDetail) => void }) {
-  const [f, setF] = useState<TopicForm>({ title: initial?.title ?? '', category: initial?.category ?? 'GENERAL', body: initial?.body ?? '' });
+  const [f, setF] = useState<TopicForm>({ title: initial?.title ?? '', titleEn: initial?.titleEn ?? '', category: initial?.category ?? 'GENERAL', body: initial?.body ?? '', bodyEn: initial?.bodyEn ?? '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -140,7 +141,7 @@ function TopicEditor({ initial, onClose, onSaved }: { initial?: TopicDetail; onC
     if (Object.keys(v).length) return;
     setBusy(true);
     try {
-      const body = { title: cleanLine(f.title), category: f.category, body: cleanText(f.body) };
+      const body = { title: cleanLine(f.title), titleEn: cleanLine(f.titleEn ?? '') || null, category: f.category, body: cleanText(f.body), bodyEn: cleanText(f.bodyEn ?? '') || null };
       onSaved(initial
         ? await api.put<TopicDetail>(`/forum/topics/${initial.id}`, body)
         : await api.post<TopicDetail>('/forum/topics', body));
@@ -164,6 +165,9 @@ function TopicEditor({ initial, onClose, onSaved }: { initial?: TopicDetail; onC
           <Input value={f.title} maxLength={TITLE_MAX} invalid={!!errors.title} placeholder={t('VD: Tập chân 2 buổi mỗi tuần có đủ không?')}
             onChange={(e) => set('title', e.target.value)} onBlur={() => blur('title')} />
         </Field>
+        <Field label={t('Tiêu đề (EN)')} hint={t('Không bắt buộc')}>
+          <Input value={f.titleEn ?? ''} maxLength={TITLE_MAX} onChange={(e) => set('titleEn', e.target.value)} />
+        </Field>
         <Field label={t('Nhóm chủ đề')} required>
           <Select value={f.category} onChange={(e) => set('category', e.target.value as ForumCategory)}>
             {FORUM_CATEGORIES.map((c) => <option key={c} value={c}>{t(FORUM_CATEGORY_VI[c])}</option>)}
@@ -175,6 +179,10 @@ function TopicEditor({ initial, onClose, onSaved }: { initial?: TopicDetail; onC
             onChange={(e) => set('body', e.target.value)} onBlur={() => blur('body')} />
         </Field>
         <span className="right"><Counter value={f.body} max={BODY_MAX} /></span>
+        <Field label={t('Nội dung (EN)')} hint={t('Không bắt buộc')}>
+          <Textarea rows={9} value={f.bodyEn ?? ''} maxLength={BODY_MAX}
+            onChange={(e) => set('bodyEn', e.target.value)} />
+        </Field>
       </div>
     </Modal>
   );
@@ -274,8 +282,8 @@ export function ForumList({ embedded }: { embedded?: boolean }) {
                     {x.locked && <Badge tone="muted">{t('Đã khoá')}</Badge>}
                     {x.hidden && <Badge tone="red">{t('Đã ẩn')}</Badge>}
                   </div>
-                  <h3>{t(x.title)}</h3>
-                  <p className="small muted">{t(x.excerpt)}</p>
+                  <h3>{localizeText(x.titleEn, x.title)}</h3>
+                  <p className="small muted">{localizeText(x.excerptEn, x.excerpt)}</p>
                   <div className="row between row-wrap" style={{ gap: 8 }}>
                     <AuthorLine author={x.author} at={x.createdAt} />
                     <span className="tiny muted row" style={{ gap: 6 }}>
@@ -421,10 +429,10 @@ export function ForumTopicPage({ embedded }: { embedded?: boolean }) {
           {data.locked && <Badge tone="muted">{t('Đã khoá')}</Badge>}
           {data.hidden && <Badge tone="red">{t('Đã ẩn')}</Badge>}
         </div>
-        <h1 className="forum-title">{t(data.title)}</h1>
+        <h1 className="forum-title">{localizeText(data.titleEn, data.title)}</h1>
         <AuthorLine author={data.author} at={data.createdAt} edited={data.updatedAt} />
         {data.hidden && data.hiddenReason && <Alert kind="warning">{t('Chủ đề đang bị ẩn: {r}', { r: data.hiddenReason })}</Alert>}
-        <Prose text={t(data.body)} />
+        <Prose text={localizeText(data.bodyEn, data.body)} />
         {user && block !== 'expired' && (
           <div className="row row-wrap forum-actions">
             {data.mine && !data.hidden && <Button size="sm" variant="ghost" icon="edit" onClick={() => setEditing(true)}>{t('Sửa')}</Button>}

@@ -90,8 +90,10 @@ public class ForumService {
         ForumTopic t = new ForumTopic();
         t.setAuthor(userRepository.getReferenceById(me.id()));
         t.setTitle(title);
+        t.setTitleEn(optionalClean(req.titleEn()));
         t.setCategory(req.category());
         t.setBody(body);
+        t.setBodyEn(optionalClean(req.bodyEn()));
         t.setCreatedAt(now);
         t.setLastActivityAt(now);
         topicRepository.save(t);
@@ -104,8 +106,10 @@ public class ForumService {
         if (!isAuthor(me, t.getAuthor())) throw ApiException.forbidden("Chỉ người viết mới sửa được chủ đề này");
         if (t.isHidden()) throw ApiException.badRequest("Chủ đề đang bị ẩn nên không sửa được");
         t.setTitle(title(req.title()));
+        t.setTitleEn(optionalClean(req.titleEn()));
         t.setCategory(req.category());
         t.setBody(body(req.body()));
+        t.setBodyEn(optionalClean(req.bodyEn()));
         t.setUpdatedAt(LocalDateTime.now(clock));
         return detail(t, me);
     }
@@ -372,7 +376,8 @@ public class ForumService {
 
     private TopicSummary summary(ForumTopic t, AuthUser viewer) {
         return new TopicSummary(t.getId(), t.getTitle(), t.getCategory(), excerpt(t.getBody()), author(t.getAuthor(), viewer),
-                t.isPinned(), t.isLocked(), t.isHidden(), t.getReplyCount(), t.getCreatedAt(), t.getLastActivityAt());
+                t.isPinned(), t.isLocked(), t.isHidden(), t.getReplyCount(), t.getCreatedAt(), t.getLastActivityAt(),
+                t.getTitleEn(), t.getBodyEn() == null ? null : excerpt(t.getBodyEn()));
     }
 
     private TopicDetail detail(ForumTopic t, AuthUser viewer) {
@@ -383,7 +388,8 @@ public class ForumService {
                 .toList();
         return new TopicDetail(t.getId(), t.getTitle(), t.getCategory(), t.getBody(), author(t.getAuthor(), viewer),
                 t.isPinned(), t.isLocked(), t.isHidden(), t.getHiddenReason(), t.getReplyCount(),
-                t.getCreatedAt(), t.getUpdatedAt(), replies, isAuthor(viewer, t.getAuthor()), staff, viewer != null);
+                t.getCreatedAt(), t.getUpdatedAt(), replies, isAuthor(viewer, t.getAuthor()), staff, viewer != null,
+                t.getTitleEn(), t.getBodyEn());
     }
 
     private ReplyResponse reply(ForumReply r, AuthUser viewer) {
@@ -402,8 +408,11 @@ public class ForumService {
         return parts[parts.length - 1] + " " + parts[0].charAt(0) + ".";
     }
 
-    static String excerpt(String body) {
-        String s = body.replaceAll("(?m)^#+\\s*", "").replaceAll("\\s+", " ").trim();
+    private static String optionalClean(String raw) {
+        return raw == null || raw.isBlank() ? null : clean(raw).trim();
+    }
+
+    static String excerpt(String body) {        String s = body.replaceAll("(?m)^#+\\s*", "").replaceAll("\\s+", " ").trim();
         return s.length() <= EXCERPT_LENGTH ? s : s.substring(0, EXCERPT_LENGTH - 1).trim() + "…";
     }
 

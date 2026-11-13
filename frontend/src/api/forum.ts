@@ -28,8 +28,10 @@ export interface ForumAuthor { id: number; name: string; role: Role }
 export interface TopicSummary {
   id: number;
   title: string;
+  titleEn?: string | null;
   category: ForumCategory;
   excerpt: string;
+  excerptEn?: string | null;
   author: ForumAuthor;
   pinned: boolean;
   locked: boolean;
@@ -53,8 +55,10 @@ export interface ForumReply {
 export interface TopicDetail {
   id: number;
   title: string;
+  titleEn?: string | null;
   category: ForumCategory;
   body: string;
+  bodyEn?: string | null;
   author: ForumAuthor;
   pinned: boolean;
   locked: boolean;
@@ -83,4 +87,4 @@ export interface ForumReport {
   createdAt: string;
 }
 
-export interface TopicForm { title: string; category: ForumCategory; body: string }
+export interface TopicForm { title: string; titleEn?: string; category: ForumCategory; body: string; bodyEn?: string }

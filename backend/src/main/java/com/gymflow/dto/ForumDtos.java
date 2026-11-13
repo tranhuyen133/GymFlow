@@ -20,7 +20,13 @@ public final class ForumDtos {
 
     public record TopicSummary(Long id, String title, ForumCategory category, String excerpt, ForumAuthor author,
                                boolean pinned, boolean locked, boolean hidden, int replyCount,
-                               LocalDateTime createdAt, LocalDateTime lastActivityAt) {
+                               LocalDateTime createdAt, LocalDateTime lastActivityAt,
+                               String titleEn, String excerptEn) {
+        public TopicSummary(Long id, String title, ForumCategory category, String excerpt, ForumAuthor author,
+                            boolean pinned, boolean locked, boolean hidden, int replyCount,
+                            LocalDateTime createdAt, LocalDateTime lastActivityAt) {
+            this(id, title, category, excerpt, author, pinned, locked, hidden, replyCount, createdAt, lastActivityAt, null, null);
+        }
     }
 
     public record ReplyResponse(Long id, String body, ForumAuthor author, boolean hidden, String hiddenReason,
@@ -31,7 +37,15 @@ public final class ForumDtos {
     public record TopicDetail(Long id, String title, ForumCategory category, String body, ForumAuthor author,
                               boolean pinned, boolean locked, boolean hidden, String hiddenReason, int replyCount,
                               LocalDateTime createdAt, LocalDateTime updatedAt, List<ReplyResponse> replies,
-                              boolean mine, boolean canModerate, boolean viewerSignedIn) {
+                              boolean mine, boolean canModerate, boolean viewerSignedIn,
+                              String titleEn, String bodyEn) {
+        public TopicDetail(Long id, String title, ForumCategory category, String body, ForumAuthor author,
+                           boolean pinned, boolean locked, boolean hidden, String hiddenReason, int replyCount,
+                           LocalDateTime createdAt, LocalDateTime updatedAt, List<ReplyResponse> replies,
+                           boolean mine, boolean canModerate, boolean viewerSignedIn) {
+            this(id, title, category, body, author, pinned, locked, hidden, hiddenReason, replyCount,
+                    createdAt, updatedAt, replies, mine, canModerate, viewerSignedIn, null, null);
+        }
     }
 
     public record TopicRequest(
@@ -39,7 +53,12 @@ public final class ForumDtos {
             @Size(min = 5, max = 200, message = "Tiêu đề từ 5 đến 200 ký tự") String title,
             @NotNull(message = "Vui lòng chọn chủ đề") ForumCategory category,
             @NotBlank(message = "Vui lòng nhập nội dung")
-            @Size(min = 10, max = 10000, message = "Nội dung từ 10 đến 10.000 ký tự") String body) {
+            @Size(min = 10, max = 10000, message = "Nội dung từ 10 đến 10.000 ký tự") String body,
+            @Size(max = 200, message = "Tiêu đề EN tối đa 200 ký tự") String titleEn,
+            @Size(max = 10000, message = "Nội dung EN tối đa 10.000 ký tự") String bodyEn) {
+        public TopicRequest(String title, ForumCategory category, String body) {
+            this(title, category, body, null, null);
+        }
     }
 
     public record ReplyRequest(

@@ -24,12 +24,18 @@ public class ForumTopic {
     @Column(nullable = false, length = 200)
     private String title;
 
+    @Column(name = "title_en", length = 200)
+    private String titleEn;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ForumCategory category;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
+
+    @Column(name = "body_en", columnDefinition = "TEXT")
+    private String bodyEn;
 
     @Column(nullable = false)
     private boolean pinned;
