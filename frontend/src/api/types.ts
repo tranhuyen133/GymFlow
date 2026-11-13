@@ -290,7 +290,7 @@ export type ExerciseType = 'STRENGTH' | 'WARMUP' | 'CARDIO';
 
 export interface Exercise {
   id: number; name: string; muscleGroup: MuscleGroup; equipment: string | null; level: Level;
-  description: string | null; instructions: string | null; videoUrl: string | null; hidden: boolean;
+  description: string | null; descriptionEn?: string | null; instructions: string | null; videoUrl: string | null; hidden: boolean;
   usageCount: number; createdByName: string | null;
   nameEn: string | null; aliases: string | null; secondaryMuscles: string | null; location: ExerciseLocation | null;
   goals: ExerciseGoal[]; breathing: string | null; commonMistakes: string | null; safetyNotes: string | null;

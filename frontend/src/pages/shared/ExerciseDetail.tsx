@@ -11,6 +11,7 @@ import { useToast } from '../../components/Toast';
 import { Badge, Button, ErrorState, LoadingBlock, Modal, PageHead, Textarea } from '../../components/ui';
 import { getLang, t } from '../../i18n';
 import { EQUIPMENT_BY_KEY, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey } from '../../lib/anatomy';
+import { localizeExercise } from '../../lib/exercise';
 import { exTitle, exSub, goalLabel, levelLabel } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import './kb.css';
@@ -115,6 +116,8 @@ export default function ExerciseDetail() {
   if (loading) return <div className="page"><LoadingBlock rows={8} /></div>;
   if (error || !ex) return <div className="page"><ErrorState message={error || 'Không tìm thấy bài tập'} onRetry={reload} /></div>;
 
+  const localized = localizeExercise(ex, getLang());
+
   return (
     <div className="page">
       <div className="mb-12">
@@ -125,9 +128,9 @@ export default function ExerciseDetail() {
       </div>
 
       <PageHead
-        eyebrow={getLang() === 'en' ? (ex.name ? <span lang="vi">{ex.name}</span> : null) : (ex.nameEn || t('Chi tiết bài tập'))}
-        title={exTitle(ex)}
-        desc={ex.description || ''}
+        eyebrow={localized.subtitle || t('Chi tiết bài tập')}
+        title={localized.title}
+        desc={localized.description || ''}
         actions={
           <div className="row wrap" style={{ gap: 8, alignItems: 'center' }}>
             <Badge tone="blue">{levelLabel[ex.level] ? levelLabel[ex.level][0] : ex.level}</Badge>
@@ -229,7 +232,7 @@ export default function ExerciseDetail() {
               >
                 <img
                   src={`/exercise-img/${ex.imageKey}/${frame}.jpg`}
-                  alt={`${exTitle(ex)} frame ${frame}`}
+                  alt={`${localized.title} frame ${frame}`}
                   style={{ width: '100%', maxHeight: 440, objectFit: 'contain', display: 'block' }}
                 />
               </div>
@@ -274,7 +277,7 @@ export default function ExerciseDetail() {
               <div className="video-embed-container">
                 <iframe
                   src={ex.videoUrl}
-                  title={t('Video hướng dẫn: {name}', { name: exTitle(ex) })}
+                  title={t('Video hướng dẫn: {name}', { name: localized.title })}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   loading="lazy"

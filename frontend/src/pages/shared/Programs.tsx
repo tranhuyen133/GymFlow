@@ -12,6 +12,7 @@ import { Icon } from '../../components/Icon';
 import { MuscleMap } from '../../components/MuscleMap';
 import { Alert, Badge, Button, ErrorState, LoadingBlock, Modal, PageHead, Segmented, StatusBadge } from '../../components/ui';
 import { t, getLang } from '../../i18n';
+import { localizeExercise } from '../../lib/exercise';
 import { DAYS, DAY_NAMES, levelLabel } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 import { PROGRAMS, programFocus, resolveItem, type Program, type ProgramItem } from '../../lib/programs';
@@ -178,7 +179,7 @@ function ProgramRow({ it, approved, any }: { it: ProgramItem; approved: Map<stri
   const ok = resolveItem(it, approved);
   const ex = ok ?? resolveItem(it, any);
   const dose = it.minutes ? t('{n} phút', { n: it.minutes }) : `${it.sets} × ${it.reps ?? ''}`;
-  const exName = ex ? (getLang() === 'en' && ex.nameEn ? ex.nameEn : t(ex.name)) : t(it.ex[0]);
+  const exName = ex ? localizeExercise(ex, getLang()).title : t(it.ex[0]);
   return (
     <div className={`prog-row ${ok ? '' : 'missing'}`}>
       <ExerciseMedia imageKey={ex?.imageKey} alt={ex?.name ?? it.ex[0]} playOnHover className="prog-thumb"

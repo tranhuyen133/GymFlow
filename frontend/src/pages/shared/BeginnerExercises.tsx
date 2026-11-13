@@ -5,8 +5,9 @@ import type { Article, Exercise, MuscleGroup } from '../../api/types';
 import { ExerciseMedia, mediaCredit } from '../../components/ExerciseMedia';
 import { Icon } from '../../components/Icon';
 import { Badge, Empty, ErrorState, LoadingBlock, Modal, PageHead } from '../../components/ui';
-import { t } from '../../i18n';
+import { getLang, t } from '../../i18n';
 import { MUSCLE_BY_KEY, type MuscleKey } from '../../lib/anatomy';
+import { localizeExercise } from '../../lib/exercise';
 import { exTitle, exSub } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 import './kb.css';
@@ -210,9 +211,9 @@ export default function BeginnerExercises() {
                     {exSub(e) && <div className="tiny faint" lang="vi">{exSub(e)}</div>}
                   </div>
 
-                  {e.description && (
+                  {localizeExercise(e, getLang()).description && (
                     <p className="small muted line-clamp-2" style={{ margin: 0 }}>
-                      {e.description}
+                      {localizeExercise(e, getLang()).description}
                     </p>
                   )}
 

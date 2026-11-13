@@ -78,6 +78,9 @@ public class Exercise {
 
     private String description;
 
+    @Column(name = "description_en", columnDefinition = "TEXT")
+    private String descriptionEn;
+
     private String instructions;
 
     @Column(name = "setup_position", columnDefinition = "TEXT")

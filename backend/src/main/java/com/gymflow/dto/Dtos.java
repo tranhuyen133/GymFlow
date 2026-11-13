@@ -385,6 +385,7 @@ public final class Dtos {
             @Size(max = 60, message = "Dụng cụ tối đa 60 ký tự") @Pattern(regexp = TEXT_RULE, message = "Dụng cụ phải có chữ, VD: Tạ đơn") String equipment,
             @NotNull(message = "Vui lòng chọn cấp độ") Level level,
             @Size(max = 1000, message = "Mô tả tối đa 1000 ký tự") String description,
+            @Size(max = 1000, message = "Mô tả tiếng Anh tối đa 1000 ký tự") String descriptionEn,
             @Size(max = 2000, message = "Hướng dẫn tối đa 2000 ký tự") String instructions,
             @Pattern(regexp = "^$|^https?://[^\\s]+\\.[^\\s]+$", message = "Link video phải là địa chỉ web đầy đủ, bắt đầu bằng http(s)://") @Size(max = 255) String videoUrl,
             @Size(max = 120) @Pattern(regexp = NAME_EN_RULE, message = "Tên tiếng Anh chỉ gồm chữ không dấu, số và khoảng trắng") String nameEn,
@@ -421,7 +422,7 @@ public final class Dtos {
                                List<Long> sourceIds, List<String> targetMuscles, List<String> secondaryMuscleKeys,
                                List<String> equipmentKeys, String imageKey, String setupPosition, String steps,
                                String setsRepsHint, ExerciseGoal primaryGoal, List<Long> alternativeIds) {
-            this(name, muscleGroup, equipment, level, description, instructions, videoUrl, nameEn, aliases, secondaryMuscles,
+            this(name, muscleGroup, equipment, level, description, null, instructions, videoUrl, nameEn, aliases, secondaryMuscles,
                     location, goals, breathing, commonMistakes, safetyNotes, variations, suggestedDose, contentOrigin, sourceIds,
                     targetMuscles, secondaryMuscleKeys, equipmentKeys, imageKey, setupPosition, steps, setsRepsHint,
                     primaryGoal, alternativeIds, ExerciseType.STRENGTH, null);
@@ -491,7 +492,7 @@ public final class Dtos {
     }
 
     public record ExerciseResponse(Long id, String name, MuscleGroup muscleGroup, String equipment, Level level,
-                                   String description, String instructions, String videoUrl, boolean hidden,
+                                   String description, String descriptionEn, String instructions, String videoUrl, boolean hidden,
                                    long usageCount, String createdByName,
                                    String nameEn, String aliases, String secondaryMuscles, ExerciseLocation location,
                                    List<ExerciseGoal> goals, String breathing, String commonMistakes, String safetyNotes,
@@ -518,7 +519,7 @@ public final class Dtos {
                                 String imageKey,
                                 String setupPosition, String steps, String setsRepsHint,
                                 ExerciseGoal primaryGoal, List<ExerciseSummary> alternatives) {
-            this(id, name, muscleGroup, equipment, level, description, instructions, videoUrl, hidden, usageCount, createdByName,
+            this(id, name, muscleGroup, equipment, level, description, null, instructions, videoUrl, hidden, usageCount, createdByName,
                     nameEn, aliases, secondaryMuscles, location, goals, breathing, commonMistakes, safetyNotes, variations,
                     suggestedDose, contentOrigin, reviewStatus, reviewNote, reviewedByName, reviewedAt, updatedAt, sources,
                     targetMuscles, secondaryMuscleKeys, equipmentKeys, imageKey, setupPosition, steps, setsRepsHint,

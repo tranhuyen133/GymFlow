@@ -275,7 +275,8 @@ public class ExerciseService {
     }
 
     private static boolean matches(Exercise e, String needle) {
-        for (String field : new String[]{e.getName(), e.getNameEn(), e.getAliases(), e.getEquipment(), e.getSecondaryMuscles()}) {
+        for (String field : new String[]{e.getName(), e.getNameEn(), e.getAliases(), e.getEquipment(), e.getSecondaryMuscles(),
+                e.getDescription(), e.getDescriptionEn()}) {
             if (field != null && stripAccents(field).contains(needle)) return true;
         }
         return false;
@@ -474,6 +475,7 @@ public class ExerciseService {
         e.setEquipment(Mappers.blankToNull(req.equipment()));
         e.setLevel(req.level());
         e.setDescription(Mappers.blankToNull(req.description()));
+        e.setDescriptionEn(Mappers.blankToNull(req.descriptionEn()));
         e.setInstructions(Mappers.blankToNull(req.instructions()));
         e.setVideoUrl(sanitizeVideoUrl(req.videoUrl()));
         e.setSetupPosition(Mappers.blankToNull(req.setupPosition()));

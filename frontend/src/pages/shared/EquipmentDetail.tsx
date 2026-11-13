@@ -8,6 +8,7 @@ import { MuscleMap } from '../../components/MuscleMap';
 import { Badge, Empty, ErrorState, LoadingBlock, PageHead, Pager } from '../../components/ui';
 import { getLang, t } from '../../i18n';
 import { EQUIPMENT_BY_KEY, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey, type MuscleKey } from '../../lib/anatomy';
+import { localizeExercise } from '../../lib/exercise';
 import { exSub, exTitle, levelLabel } from '../../lib/format';
 import { useAsync, usePaged } from '../../lib/hooks';
 import './kb.css';
@@ -196,9 +197,9 @@ export default function EquipmentDetail() {
                           {exSub(e) && <div className="tiny faint" lang="vi">{exSub(e)}</div>}
                         </div>
 
-                        {e.description && (
+                        {localizeExercise(e, getLang()).description && (
                           <p className="small muted line-clamp-2" style={{ margin: 0 }}>
-                            {e.description}
+                            {localizeExercise(e, getLang()).description}
                           </p>
                         )}
 

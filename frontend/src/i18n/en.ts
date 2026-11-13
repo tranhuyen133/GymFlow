@@ -1477,6 +1477,8 @@ const EN_DEMO: Record<string, string> = {
   'VD: Back squat': 'E.g. Back squat',
   'Cách nhau bởi dấu phẩy – giúp tìm kiếm': 'Comma-separated – helps search',
   'Mô tả ngắn': 'Short description',
+  'Mô tả tiếng Anh': 'English description',
+  'Dùng cho giao diện tiếng Anh; để trống sẽ hiển thị mô tả tiếng Việt': 'Used by the English interface; leave blank to fall back to the Vietnamese description',
   'Phân loại': 'Classification',
   'Dùng cho bộ lọc trong thư viện và khi HLV soạn giáo án.': 'Used by library filters and when trainers build workout plans.',
   'VD: Mông, lưng dưới': 'E.g. Glutes, lower back',

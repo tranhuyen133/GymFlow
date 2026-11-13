@@ -39,6 +39,7 @@ import {
   muscleLabel,
 } from '../../lib/format';
 import { errMsg, useAsync, useDebounced, usePaged } from '../../lib/hooks';
+import { localizeExercise } from '../../lib/exercise';
 import { getLang, t, useLang } from '../../i18n';
 import './exercises.css';
 import './kb.css';
@@ -312,7 +313,7 @@ export default function Knowledge() {
   const sortedExercises = useMemo(() => {
     const list = [...(exercisesData ?? [])];
     if (sort === 'name') {
-      list.sort((a, b) => exTitle(a).localeCompare(exTitle(b), lang));
+      list.sort((a, b) => localizeExercise(a, lang).title.localeCompare(localizeExercise(b, lang).title, lang));
     } else if (sort === 'updated') {
       list.sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
     } else if (sort === 'usage') {
@@ -389,18 +390,20 @@ export default function Knowledge() {
   const isBrowsingAll = !subCategory && !dq && !muscle && !equip && !level && !location && !favoriteOnly && !assignedOnly;
 
   // Render Card thống nhất
-  const renderExerciseCard = (ex: Exercise) => (
+  const renderExerciseCard = (ex: Exercise) => {
+    const { title, description, subtitle } = localizeExercise(ex, lang);
+    return (
     <Link
       key={ex.id}
       to={`/exercises/${ex.id}`}
       className="kb-card ex-interactive-card"
       style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column' }}
-      aria-label={exTitle(ex)}
+      aria-label={title}
     >
       <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
         <ExerciseMedia
           imageKey={ex.imageKey}
-          alt={exTitle(ex)}
+          alt={title}
           playOnHover
           fallback={
             <div
@@ -449,9 +452,9 @@ export default function Knowledge() {
         <div className="row between" style={{ alignItems: 'flex-start', gap: 8 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <h3 className="kb-title line-clamp-1" style={{ margin: 0 }}>
-              {exTitle(ex)}
+              {title}
             </h3>
-            {exSub(ex) && <div className="tiny faint line-clamp-1" lang="vi">{exSub(ex)}</div>}
+            {subtitle && <div className="tiny faint line-clamp-1" lang="vi">{subtitle}</div>}
           </div>
 
           {isMember && (
@@ -475,9 +478,9 @@ export default function Knowledge() {
           </div>
         )}
 
-        {ex.description && (
+        {description && (
           <p className="small muted line-clamp-2" style={{ margin: 0, lineHeight: 1.45 }}>
-            {ex.description}
+            {description}
           </p>
         )}
 
@@ -495,7 +498,8 @@ export default function Knowledge() {
         </div>
       </div>
     </Link>
-  );
+    );
+  };
 
   const eyebrow = isStaff ? t('Trung tâm huấn luyện') : undefined;
 

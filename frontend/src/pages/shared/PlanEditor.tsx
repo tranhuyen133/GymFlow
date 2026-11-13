@@ -9,7 +9,8 @@ import { MuscleMap } from '../../components/MuscleMap';
 import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, SearchInput, Select, StatusBadge, Textarea } from '../../components/ui';
-import { t, tn } from '../../i18n';
+import { getLang, t, tn } from '../../i18n';
+import { localizeExercise } from '../../lib/exercise';
 import { addDays, DAYS, DAY_NAMES, formatEquipment, levelLabel, muscleColor, muscleLabel, planStatus, toIsoDate } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { checkPlanName, itemProblems, type ItemField } from '../../lib/validation';
@@ -160,8 +161,8 @@ export default function PlanEditor() {
     return approvedLib
       .filter((e) => !groupFilter || e.muscleGroup === groupFilter)
       .filter((e) => !muscleFilter || targetOf(e).includes(muscleFilter))
-      .filter((e) => !k || `${e.name} ${e.nameEn ?? ''} ${e.aliases ?? ''} ${e.equipment ?? ''}`.toLowerCase().includes(k))
-      .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+      .filter((e) => !k || `${e.name} ${e.nameEn ?? ''} ${e.aliases ?? ''} ${e.equipment ?? ''} ${e.description ?? ''} ${e.descriptionEn ?? ''}`.toLowerCase().includes(k))
+      .sort((a, b) => localizeExercise(a, getLang()).title.localeCompare(localizeExercise(b, getLang()).title, getLang()));
   }, [approvedLib, groupFilter, muscleFilter, libQ]);
   // Số hiệp mỗi vùng cơ chính nhận được trong cả tuần: thấy ngay nhóm nào đang bị bỏ quên
   const weekLoad = useMemo(() => {

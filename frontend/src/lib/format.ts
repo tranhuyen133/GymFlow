@@ -1,6 +1,7 @@
 import type { ArticleCategory, ArticleStatus, ExerciseGoal, ExerciseLocation, Gender, Level, MemberStatus, MuscleGroup, PackageRequestStatus, PlanStatus, ReviewStatus, Role, ScheduleStatus, SubscriptionState, UserStatus } from '../api/types';
 import { getLang, locale, t } from '../i18n';
 import { ACTION_EN } from '../i18n/en';
+import { localizeExercise } from './exercise';
 
 export type Tone = 'green' | 'blue' | 'violet' | 'amber' | 'red' | 'muted';
 
@@ -190,25 +191,16 @@ export function formatEquipment(eq: string | null | undefined): string {
     .join(', ');
 }
 
-/** Tên chính của bài tập song ngữ: EN ưu tiên t(name) hoặc nameEn; VI giữ name */
+/** Tên chính của bài tập song ngữ: EN ưu tiên nameEn; VI giữ name */
 export function exTitle(e: { name: string; nameEn?: string | null } | null | undefined): string {
   if (!e) return '';
-  if (getLang() === 'en') {
-    const tr = t(e.name);
-    if (tr !== e.name) return tr;
-    if (e.nameEn && e.nameEn.trim()) return e.nameEn.trim();
-  }
-  return e.name;
+  return localizeExercise(e, getLang()).title;
 }
 
-/** Tên phụ của bài tập: EN hiện tên tiếng Việt đối chiếu; VI hiện tên tiếng Anh nameEn */
+/** Tên phụ của bài tập: EN không hiện; VI hiện nameEn khi khác tên chính */
 export function exSub(e: { name: string; nameEn?: string | null } | null | undefined): string | null {
   if (!e) return null;
-  const title = exTitle(e);
-  if (getLang() === 'en') {
-    return e.name !== title ? e.name : (e.nameEn && e.nameEn !== title ? e.nameEn : null);
-  }
-  return e.nameEn || null;
+  return localizeExercise(e, getLang()).subtitle;
 }
 
 
