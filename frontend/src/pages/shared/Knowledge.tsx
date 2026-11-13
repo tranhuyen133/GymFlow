@@ -30,7 +30,6 @@ import {
 } from '../../components/ui';
 import {
   articleCategoryLabel,
-  exSub,
   exTitle,
   fmtDateTime,
   formatEquipment,
