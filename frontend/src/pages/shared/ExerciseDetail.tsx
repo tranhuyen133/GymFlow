@@ -1,20 +1,54 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Exercise } from '../../api/types';
 import { useAuth } from '../../auth/AuthContext';
 import { HealthDisclaimer, SourceList } from '../../components/Content';
-import { mediaCredit } from '../../components/ExerciseMedia';
-import { Icon } from '../../components/Icon';
+import { ExerciseMedia, GYM_VISUAL_CREDIT, mediaCredit } from '../../components/ExerciseMedia';
+import { Icon, type IconName } from '../../components/Icon';
 import { MuscleMap } from '../../components/MuscleMap';
 import { useToast } from '../../components/Toast';
-import { Badge, Button, ErrorState, LoadingBlock, Modal, PageHead, Textarea } from '../../components/ui';
+import { Badge, Button, ErrorState, LoadingBlock, Modal, Textarea } from '../../components/ui';
 import { getLang, t } from '../../i18n';
-import { EQUIPMENT_BY_KEY, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey } from '../../lib/anatomy';
+import { EQUIPMENT_BY_KEY, exerciseImage, isGifKey, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey, type MuscleKey } from '../../lib/anatomy';
 import { localizeExercise, localizeExerciseContent } from '../../lib/exercise';
-import { exTitle, exSub, goalLabel, levelLabel } from '../../lib/format';
+import { exSub, exTitle, goalLabel, levelLabel, locationLabel } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import './kb.css';
+import './exercise-detail.css';
+
+/**
+ * Chi tiết bài tập. Bố cục: khối đầu (ảnh động / tư thế + thông tin + thao tác), dải thông số,
+ * rồi 2 cột: hướng dẫn bên trái, bản đồ cơ + dụng cụ bên phải (dính khi cuộn).
+ * Mọi khoảng cách dùng class exd-* trong exercise-detail.css, không dùng class tiện ích không có trong styles.css.
+ */
+const TYPE_VI: Record<string, string> = { STRENGTH: 'Sức mạnh', WARMUP: 'Khởi động', CARDIO: 'Cardio' };
+
+const muscleText = (k: MuscleKey) => {
+  const m = MUSCLE_BY_KEY.get(k);
+  if (!m) return k;
+  return getLang() === 'en' ? m.labelEn : m.label;
+};
+
+const toLines = (raw: string | null | undefined) =>
+  (raw ?? '')
+    .split('\n')
+    .map((s) => s.trim().replace(/^(\d+[.)]|[-•*])\s*/, ''))
+    .filter(Boolean);
+
+function Section({ icon, title, tone, children }: { icon: IconName; title: string; tone?: 'warn' | 'danger' | 'calm'; children: ReactNode }) {
+  return (
+    <section className={`card exd-section ${tone ? `is-${tone}` : ''}`}>
+      <h2 className="exd-section-title"><span className="exd-section-icon"><Icon name={icon} size={16} /></span>{t(title)}</h2>
+      {children}
+    </section>
+  );
+}
+
+function LineList({ lines }: { lines: string[] }) {
+  if (lines.length === 1) return <p className="exd-text">{lines[0]}</p>;
+  return <ul className="exd-bullets">{lines.map((l, i) => <li key={i}>{l}</li>)}</ul>;
+}
 
 export default function ExerciseDetail() {
   const { id = '' } = useParams<{ id: string }>();
@@ -28,27 +62,26 @@ export default function ExerciseDetail() {
   const [rejecting, setRejecting] = useState(false);
   const [rejectNote, setRejectNote] = useState('');
   const [reviewing, setReviewing] = useState(false);
-  const [isFavorite, setIsFavorite] = useState<boolean>(false);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [togglingFavorite, setTogglingFavorite] = useState(false);
 
-  const { data: ex, error, loading, reload } = useAsync(
-    () => api.get<Exercise>(`/exercises/${id}`),
-    [id]
-  );
+  const { data: ex, error, loading, reload } = useAsync(() => api.get<Exercise>(`/exercises/${encodeURIComponent(id)}`), [id]);
 
-  useEffect(() => {
-    if (ex?.isFavorite !== undefined) {
-      setIsFavorite(ex.isFavorite);
-    }
-  }, [ex?.isFavorite]);
+  useEffect(() => { setFrame(0); }, [id]);
+  useEffect(() => { if (ex?.isFavorite !== undefined) setIsFavorite(ex.isFavorite); }, [ex?.isFavorite]);
+
+  const primaryMuscles = useMemo(() => parseMuscles(ex?.targetMuscles?.join(',') ?? ''), [ex]);
+  const secondaryMuscles = useMemo(() => parseMuscles(ex?.secondaryMuscleKeys?.join(',') ?? ''), [ex]);
+  const content = ex ? localizeExerciseContent(ex, getLang()) : null;
+  const steps = useMemo(() => toLines(content?.steps || content?.instructions), [content]);
 
   const handleToggleFavorite = async () => {
-    if (!ex) return;
+    if (!ex || togglingFavorite) return;
     setTogglingFavorite(true);
     const prev = isFavorite;
     setIsFavorite(!prev);
     try {
-      const res = await api.post<{ isFavorite: boolean; favoriteCount: number; message: string }>(`/exercises/${ex.id}/favorite`);
+      const res = await api.post<{ isFavorite: boolean }>(`/exercises/${ex.id}/favorite`);
       setIsFavorite(res.isFavorite);
       toast.success(t(res.isFavorite ? 'Đã lưu vào bài tập yêu thích' : 'Đã bỏ lưu khỏi bài tập yêu thích'));
     } catch (e) {
@@ -59,40 +92,14 @@ export default function ExerciseDetail() {
     }
   };
 
-  const primaryMuscles = useMemo(() => parseMuscles(ex?.targetMuscles?.join(',') ?? ''), [ex]);
-  const secondaryMuscles = useMemo(() => parseMuscles(ex?.secondaryMuscleKeys?.join(',') ?? ''), [ex]);
-  const content = ex ? localizeExerciseContent(ex, getLang()) : null;
-
-  const stepsList = useMemo(() => {
-    const raw = content?.steps || content?.instructions;
-    if (!raw) return [];
-    return raw
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((s) => s.replace(/^\d+[\.\)]\s*/, ''));
-  }, [content]);
-
-  const handleApprove = async () => {
-    if (!ex) return;
+  const review = async (status: 'APPROVED' | 'NEEDS_REVIEW') => {
+    if (!ex || reviewing) return;
+    const note = rejectNote.trim();
+    if (status === 'NEEDS_REVIEW' && note.length < 5) { toast.error(t('Vui lòng ghi rõ điểm cần sửa (ít nhất 5 ký tự)')); return; }
     setReviewing(true);
     try {
-      await api.put(`/exercises/${ex.id}/review`, { status: 'APPROVED', note: null });
-      toast.success(t('Đã duyệt bài tập'));
-      void reload();
-    } catch (e) {
-      toast.error(errMsg(e));
-    } finally {
-      setReviewing(false);
-    }
-  };
-
-  const handleReject = async () => {
-    if (!ex) return;
-    setReviewing(true);
-    try {
-      await api.put(`/exercises/${ex.id}/review`, { status: 'NEEDS_REVIEW', note: rejectNote || null });
-      toast.success(t('Đã trả về yêu cầu chỉnh sửa'));
+      await api.put(`/exercises/${ex.id}/review`, { status, note: status === 'APPROVED' ? null : note });
+      toast.success(t(status === 'APPROVED' ? 'Đã duyệt bài tập' : 'Đã trả về yêu cầu chỉnh sửa'));
       setRejecting(false);
       setRejectNote('');
       void reload();
@@ -114,398 +121,225 @@ export default function ExerciseDetail() {
     }
   };
 
-  if (loading) return <div className="page"><LoadingBlock rows={8} /></div>;
-  if (error || !ex) return <div className="page"><ErrorState message={error || 'Không tìm thấy bài tập'} onRetry={reload} /></div>;
+  const back = (
+    <Link to="/knowledge" className="exd-back"><Icon name="arrowLeft" size={14} /><span>{t('Quay lại Kho kiến thức')}</span></Link>
+  );
+
+  if (loading && !ex) return <div className="page exd">{back}<LoadingBlock rows={8} /></div>;
+  if (error || !ex) return <div className="page exd">{back}<ErrorState message={error || t('Không tìm thấy bài tập')} onRetry={reload} /></div>;
 
   const localized = localizeExercise(ex, getLang());
+  const gif = isGifKey(ex.imageKey);
+  const level = levelLabel[ex.level];
+  const goals = ex.primaryGoal ? [ex.primaryGoal] : ex.goals ?? [];
+  const facts: { icon: IconName; label: string; value: string }[] = [
+    { icon: 'trendUp', label: 'Cấp độ', value: level ? level[0] : ex.level },
+    ...(ex.exerciseType ? [{ icon: 'layers' as const, label: 'Loại bài', value: t(TYPE_VI[ex.exerciseType] ?? ex.exerciseType) }] : []),
+    ...(goals.length ? [{ icon: 'target' as const, label: 'Mục tiêu', value: goals.map((g) => goalLabel[g] ?? g).join(', ') }] : []),
+    ...(ex.location ? [{ icon: 'home' as const, label: 'Nơi tập', value: locationLabel[ex.location] ?? ex.location }] : []),
+    ...(content?.setsRepsHint ? [{ icon: 'repeat' as const, label: 'Liều gợi ý', value: content.setsRepsHint }] : []),
+  ];
+  const equipment = (ex.equipmentKeys ?? []).map((k) => {
+    const info = EQUIPMENT_BY_KEY.get(k as EquipmentKey);
+    return { key: k, label: info ? (getLang() === 'en' ? info.labelEn : info.label) : t(k) };
+  });
+  const mistakes = toLines(content?.commonMistakes);
+  const safety = toLines(content?.safetyNotes);
 
   return (
-    <div className="page">
-      <div className="mb-12">
-        <Link to="/knowledge" className="btn btn-ghost btn-sm" style={{ paddingLeft: 0 }}>
-          <Icon name="arrowLeft" size={14} />
-          <span>{t('Quay lại Kho kiến thức')}</span>
-        </Link>
-      </div>
+    <div className="page exd">
+      {back}
 
-      <PageHead
-        eyebrow={localized.subtitle || t('Chi tiết bài tập')}
-        title={localized.title}
-        desc={localized.description || ''}
-        actions={
-          <div className="row wrap" style={{ gap: 8, alignItems: 'center' }}>
-            <Badge tone="blue">{levelLabel[ex.level] ? levelLabel[ex.level][0] : ex.level}</Badge>
-            {ex.primaryGoal && <Badge tone="muted">{goalLabel[ex.primaryGoal] || ex.primaryGoal}</Badge>}
+      {/* ---------- Khối đầu ---------- */}
+      <header className="card exd-hero">
+        <div className={`exd-stage ${gif ? 'is-gif' : ''}`}>
+          {gif ? (
+            <>
+              <img src={exerciseImage(ex.imageKey!, 1)} alt={localized.title} width={180} height={180} />
+              <a className="exd-credit" href="https://gymvisual.com/" target="_blank" rel="noreferrer">{GYM_VISUAL_CREDIT}</a>
+            </>
+          ) : ex.imageKey ? (
+            <>
+              <button type="button" className="exd-pose" onClick={() => setFrame(frame === 0 ? 1 : 0)} aria-label={t('Đổi tư thế')}>
+                <img src={exerciseImage(ex.imageKey, frame)} alt={`${localized.title} – ${t(frame === 0 ? 'Bắt đầu' : 'Kết thúc')}`} />
+              </button>
+              <div className="exd-pose-switch" role="tablist" aria-label={t('Tư thế động tác')}>
+                {([0, 1] as const).map((f) => (
+                  <button key={f} type="button" role="tab" aria-selected={frame === f} className={frame === f ? 'on' : ''} onClick={() => setFrame(f)}>
+                    {t(f === 0 ? 'Bắt đầu' : 'Kết thúc')}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="exd-stage-map"><MuscleMap size="md" primary={primaryMuscles} secondary={secondaryMuscles} hideTip /></div>
+          )}
+        </div>
+
+        <div className="exd-info">
+          <div className="exd-tags">
+            {level && <Badge tone={level[1]}>{level[0]}</Badge>}
             {ex.hidden && <Badge tone="amber">{t('Đang ẩn')}</Badge>}
             {ex.reviewStatus === 'PENDING' && <Badge tone="amber">{t('Chờ duyệt')}</Badge>}
-
-            {/* Thao tác dành cho Admin */}
-            {isAdmin && ex.reviewStatus !== 'APPROVED' && (
-              <>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon="checkCircle"
-                  loading={reviewing}
-                  onClick={handleApprove}
-                >
-                  {t('Duyệt bài tập')}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon="alert"
-                  onClick={() => setRejecting(true)}
-                >
-                  {t('Yêu cầu sửa')}
-                </Button>
-              </>
-            )}
-
-            {/* Thao tác ẩn/hiện dành cho Staff */}
-            {isStaff && (
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={ex.hidden ? 'eye' : 'eyeOff'}
-                onClick={toggleHidden}
-              >
-                {ex.hidden ? t('Hiện bài') : t('Ẩn bài')}
-              </Button>
-            )}
-
-            {/* Thao tác dành cho Member */}
-            {isMember && (
-              <>
-                <Button
-                  variant={isFavorite ? 'primary' : 'secondary'}
-                  size="sm"
-                  icon={isFavorite ? 'trophy' : 'sparkle'}
-                  loading={togglingFavorite}
-                  onClick={handleToggleFavorite}
-                >
-                  {isFavorite ? t('Đã yêu thích') : t('Lưu yêu thích')}
-                </Button>
-                <Link to={`/me/schedule?exerciseId=${ex.id}`} className="btn btn-primary btn-sm">
-                  <Icon name="calendar" size={14} className="mr-4" />
-                  <span>{t('Thêm vào lịch tập')}</span>
-                </Link>
-                <Link to="/me/plan" className="btn btn-secondary btn-sm">
-                  <Icon name="clipboard" size={14} className="mr-4" />
-                  <span>{t('Giáo án của tôi')}</span>
-                </Link>
-              </>
-            )}
+            {ex.reviewStatus === 'NEEDS_REVIEW' && <Badge tone="red">{t('Cần chỉnh sửa')}</Badge>}
           </div>
-        }
-      />
+          <h1 className="exd-title">{localized.title}</h1>
+          {localized.subtitle && <div className="exd-subtitle" lang="en">{localized.subtitle}</div>}
+          {localized.description && <p className="exd-desc">{localized.description}</p>}
 
-      <div className="ex-detail-grid mt-16">
-        <div className="ex-detail-main">
-          {/* Ảnh minh hoạ tư thế đầu / cuối nếu có */}
-          {ex.imageKey ? (
-            <div className="card p-16 mb-16">
-              <div className="row between wrap mb-10" style={{ alignItems: 'center' }}>
-                <span className="tiny faint uppercase font-bold">{t('Tư thế động tác (Bấm ảnh để chuyển tư thế)')}</span>
-                <div className="btn-group">
-                  <button
-                    type="button"
-                    className={`btn btn-sm ${frame === 0 ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => setFrame(0)}
-                  >
-                    {t('Tư thế 1 (Bắt đầu)')}
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn btn-sm ${frame === 1 ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => setFrame(1)}
-                  >
-                    {t('Tư thế 2 (Kết thúc)')}
-                  </button>
-                </div>
-              </div>
-
-              <div
-                className="ex-image-interactive"
-                onClick={() => setFrame(frame === 0 ? 1 : 0)}
-                title={t('Bấm để đổi góc động tác')}
-                style={{ cursor: 'pointer', borderRadius: 'var(--r-md)', overflow: 'hidden', background: '#000' }}
-              >
-                <img
-                  src={`/exercise-img/${ex.imageKey}/${frame}.jpg`}
-                  alt={`${localized.title} frame ${frame}`}
-                  style={{ width: '100%', maxHeight: 440, objectFit: 'contain', display: 'block' }}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="card p-20 mb-16 ex-hero-neutral">
-              <div className="row gap-16 wrap" style={{ alignItems: 'center' }}>
-                <div className="ex-thumb-map" style={{ width: 140, height: 100, flexShrink: 0 }}>
-                  <MuscleMap size="sm" primary={primaryMuscles} secondary={secondaryMuscles} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="tiny font-bold uppercase mb-4" style={{ color: 'var(--primary-bright)' }}>
-                    {t('Minh họa giải phẫu cơ bắp')}
-                  </div>
-                  <p className="small muted mb-8" style={{ margin: 0 }}>
-                    {t('Bài tập tác động tập trung vào các vùng cơ được tô sáng. Dữ liệu chuẩn hóa tuân thủ bản quyền mở.')}
-                  </p>
-                  <div className="row gap-6 wrap">
-                    {primaryMuscles.map((m) => (
-                      <span key={m} className="chip chip-primary tiny">
-                        {getLang() === 'en' ? (MUSCLE_BY_KEY.get(m)?.labelEn ?? t(MUSCLE_BY_KEY.get(m)?.label ?? m)) : (MUSCLE_BY_KEY.get(m)?.label ?? m)}
-                      </span>
-                    ))}
-                    {secondaryMuscles.map((m) => (
-                      <span key={m} className="chip tiny">
-                        {getLang() === 'en' ? (MUSCLE_BY_KEY.get(m)?.labelEn ?? t(MUSCLE_BY_KEY.get(m)?.label ?? m)) : (MUSCLE_BY_KEY.get(m)?.label ?? m)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+          {primaryMuscles.length + secondaryMuscles.length > 0 && (
+            <div className="exd-chip-block">
+              <span className="exd-label">{t('Nhóm cơ')}</span>
+              <div className="exd-chips">
+                {primaryMuscles.map((m) => <span key={m} className="exd-chip is-primary">{muscleText(m)}</span>)}
+                {secondaryMuscles.map((m) => <span key={m} className="exd-chip">{muscleText(m)}</span>)}
               </div>
             </div>
           )}
 
-          {/* Video nhúng 16:9 nếu có */}
+          {(isMember || isStaff) && (
+            <div className="exd-actions">
+              {isMember && (
+                <>
+                  <Link to={`/me/schedule?exerciseId=${ex.id}`} className="btn btn-primary btn-sm"><Icon name="calendar" /><span>{t('Thêm vào lịch tập')}</span></Link>
+                  <Button size="sm" variant={isFavorite ? 'primary' : 'secondary'} icon={isFavorite ? 'heart' : 'star'} loading={togglingFavorite} onClick={() => void handleToggleFavorite()}>
+                    {isFavorite ? t('Đã yêu thích') : t('Lưu yêu thích')}
+                  </Button>
+                  <Link to="/me/plan" className="btn btn-ghost btn-sm"><Icon name="clipboard" /><span>{t('Giáo án của tôi')}</span></Link>
+                </>
+              )}
+              {isAdmin && ex.reviewStatus !== 'APPROVED' && (
+                <>
+                  <Button size="sm" variant="primary" icon="checkCircle" loading={reviewing} onClick={() => void review('APPROVED')}>{t('Duyệt bài tập')}</Button>
+                  <Button size="sm" variant="secondary" icon="alert" onClick={() => setRejecting(true)}>{t('Yêu cầu sửa')}</Button>
+                </>
+              )}
+              {isStaff && (
+                <Button size="sm" variant="ghost" icon={ex.hidden ? 'eye' : 'eyeOff'} onClick={() => void toggleHidden()}>{ex.hidden ? t('Hiện bài') : t('Ẩn bài')}</Button>
+              )}
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* ---------- Dải thông số ---------- */}
+      <div className="exd-facts">
+        {facts.map((f) => (
+          <div key={f.label} className="exd-fact">
+            <span className="exd-fact-icon"><Icon name={f.icon} size={16} /></span>
+            <div className="exd-fact-body">
+              <span className="exd-label">{t(f.label)}</span>
+              <b title={f.value}>{f.value}</b>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="exd-grid">
+        {/* ---------- Cột hướng dẫn ---------- */}
+        <div className="exd-main">
           {ex.videoUrl && (
-            <div className="card p-16 mb-16">
-              <div className="tiny faint uppercase font-bold mb-10">
-                <Icon name="play" size={14} className="mr-4" />
-                <span>{t('Video hướng dẫn kỹ thuật')}</span>
-              </div>
+            <Section icon="play" title="Video hướng dẫn kỹ thuật">
               <div className="video-embed-container">
-                <iframe
-                  src={ex.videoUrl}
-                  title={t('Video hướng dẫn: {name}', { name: localized.title })}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  loading="lazy"
-                />
+                <iframe src={ex.videoUrl} title={t('Video hướng dẫn: {name}', { name: localized.title })}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen loading="lazy" />
               </div>
-            </div>
+            </Section>
           )}
 
-          {/* Tư thế chuẩn bị */}
           {content?.setupPosition && (
-            <section className="card p-20 mb-16">
-              <h2 className="section-title mb-10">
-                <Icon name="user" size={18} className="primary" />
-                <span>{t('Tư thế chuẩn bị')}</span>
-              </h2>
-              <p className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6, margin: 0 }}>
-                {content.setupPosition}
-              </p>
-            </section>
+            <Section icon="user" title="Tư thế chuẩn bị"><LineList lines={toLines(content.setupPosition)} /></Section>
           )}
 
-          {/* Các bước thực hiện */}
-          {stepsList.length > 0 && (
-            <section className="card p-20 mb-16">
-              <h2 className="section-title mb-14">
-                <Icon name="checkCircle" size={18} className="primary" />
-                <span>{t('Các bước thực hiện')}</span>
-              </h2>
-              <ol className="ex-numbered-steps">
-                {stepsList.map((step, idx) => (
-                  <li key={idx} className="ex-step-item">
-                    <span className="ex-step-num">{idx + 1}</span>
-                    <span className="ex-step-text">{step}</span>
-                  </li>
+          {steps.length > 0 && (
+            <Section icon="checkCircle" title="Các bước thực hiện">
+              <ol className="exd-steps">
+                {steps.map((s, i) => (
+                  <li key={i}><span className="exd-step-num">{i + 1}</span><span className="exd-step-text">{s}</span></li>
                 ))}
               </ol>
-            </section>
+            </Section>
           )}
 
-          {/* Cách thở */}
-          {content?.breathing && (
-            <section className="card p-16 mb-16" style={{ background: 'color-mix(in srgb, var(--primary) 8%, var(--surface-2))' }}>
-              <div className="row gap-10" style={{ alignItems: 'flex-start' }}>
-                <Icon name="activity" size={20} className="primary mt-2" />
-                <div>
-                  <h3 className="tiny font-bold uppercase mb-4" style={{ color: 'var(--primary-bright)' }}>{t('Cách hít thở đúng')}</h3>
-                  <p className="small muted" style={{ margin: 0, lineHeight: 1.5 }}>{content.breathing}</p>
-                </div>
-              </div>
-            </section>
+          {(content?.breathing || content?.suggestedDose) && (
+            <div className="exd-duo">
+              {content?.breathing && (
+                <Section icon="activity" title="Cách hít thở" tone="calm"><p className="exd-text">{content.breathing}</p></Section>
+              )}
+              {content?.suggestedDose && (
+                <Section icon="clock" title="Liều tập gợi ý" tone="calm">
+                  {content.setsRepsHint && <div className="exd-dose">{content.setsRepsHint}</div>}
+                  <p className="exd-text">{content.suggestedDose}</p>
+                </Section>
+              )}
+            </div>
           )}
 
-          {/* Số hiệp/lần gợi ý */}
-          {(content?.setsRepsHint || content?.suggestedDose) && (
-            <section className="card p-16 mb-16">
-              <div className="row gap-10" style={{ alignItems: 'flex-start' }}>
-                <Icon name="clock" size={20} className="primary mt-2" />
-                <div>
-                  <h3 className="tiny font-bold uppercase mb-4">{t('Liều tập gợi ý (Sets & Reps)')}</h3>
-                  <p className="small muted" style={{ margin: 0, lineHeight: 1.5 }}>
-                    {content.setsRepsHint ? <b>{content.setsRepsHint} — </b> : null}
-                    {content.suggestedDose}
-                  </p>
-                </div>
-              </div>
-            </section>
-          )}
+          {mistakes.length > 0 && <Section icon="alert" title="Lỗi hay gặp cần tránh" tone="warn"><LineList lines={mistakes} /></Section>}
+          {safety.length > 0 && <Section icon="shield" title="Lưu ý an toàn" tone="danger"><LineList lines={safety} /></Section>}
 
-          {/* Lỗi hay gặp */}
-          {content?.commonMistakes && (
-            <section className="card p-20 mb-16" style={{ borderColor: 'color-mix(in srgb, var(--warn) 30%, var(--hairline))' }}>
-              <h2 className="section-title mb-10" style={{ color: 'var(--warn-bright)' }}>
-                <Icon name="alert" size={18} />
-                <span>{t('Lỗi sai phổ biến cần tránh')}</span>
-              </h2>
-              <p className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6, margin: 0, color: 'var(--muted)' }}>
-                {content.commonMistakes}
-              </p>
-            </section>
-          )}
-
-          {/* Lưu ý an toàn */}
-          {content?.safetyNotes && (
-            <section className="card p-20 mb-16" style={{ borderColor: 'color-mix(in srgb, var(--danger) 30%, var(--hairline))' }}>
-              <h2 className="section-title mb-10" style={{ color: 'var(--danger-bright)' }}>
-                <Icon name="shield" size={18} />
-                <span>{t('Lưu ý an toàn')}</span>
-              </h2>
-              <p className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6, margin: 0, color: 'var(--muted)' }}>
-                {content.safetyNotes}
-              </p>
-            </section>
-          )}
-
-          {/* Bài tập thay thế */}
           {ex.alternatives && ex.alternatives.length > 0 && (
-            <section className="mt-24 mb-16">
-              <h2 className="section-title mb-12">
-                <Icon name="refresh" size={18} className="primary" />
-                <span>{t('Bài tập thay thế tương đương')}</span>
-              </h2>
-              <div className="kb-grid">
+            <Section icon="refresh" title="Bài tập thay thế tương đương">
+              <div className="exd-alts">
                 {ex.alternatives.map((alt) => (
-                  <Link key={alt.id} to={`/exercises/${alt.id}`} className="card kb-card p-12 text-decoration-none">
-                    <div className="row gap-12" style={{ alignItems: 'center' }}>
-                      {alt.imageKey ? (
-                        <div style={{ width: 68, height: 50, borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
-                          <img
-                            src={`/exercise-img/${alt.imageKey}/0.jpg`}
-                            alt={exTitle(alt)}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                        </div>
-                      ) : (
-                        <div className="ex-list-thumb">
-                          <Icon name="dumbbell" size={20} />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold small line-clamp-1">{exTitle(alt)}</div>
-                        {exSub(alt) && <div className="tiny faint line-clamp-1" lang="vi">{exSub(alt)}</div>}
-                        <span className="badge badge-sm mt-4">{levelLabel[alt.level] ? levelLabel[alt.level][0] : alt.level}</span>
-                      </div>
+                  <Link key={alt.id} to={`/exercises/${alt.id}`} className="exd-alt">
+                    <ExerciseMedia imageKey={alt.imageKey} alt={exTitle(alt)} className="exd-alt-media"
+                      fallback={<div className="exd-alt-media exd-alt-empty"><Icon name="dumbbell" size={20} /></div>} />
+                    <div className="exd-alt-body">
+                      <b>{exTitle(alt)}</b>
+                      {exSub(alt) && <span className="tiny faint" lang="en">{exSub(alt)}</span>}
+                      {levelLabel[alt.level] && <Badge tone={levelLabel[alt.level][1]}>{levelLabel[alt.level][0]}</Badge>}
                     </div>
+                    <Icon name="chevronRight" size={16} />
+                  </Link>
+                ))}
+              </div>
+            </Section>
+          )}
+
+          <Section icon="scroll" title="Nguồn tham khảo & bản quyền">
+            <SourceList sources={ex.sources} origin={ex.contentOrigin} />
+            <div className="exd-gap" />
+            <HealthDisclaimer pending={ex.reviewStatus === 'PENDING'} />
+            <p className="tiny faint exd-media-credit">{mediaCredit()}</p>
+          </Section>
+        </div>
+
+        {/* ---------- Cột phải ---------- */}
+        <aside className="exd-side">
+          {(primaryMuscles.length > 0 || secondaryMuscles.length > 0) && (
+            <section className="card exd-section">
+              <h2 className="exd-section-title"><span className="exd-section-icon"><Icon name="target" size={16} /></span>{t('Bản đồ cơ bắp')}</h2>
+              <MuscleMap primary={primaryMuscles} secondary={secondaryMuscles} />
+              <div className="exd-legend">
+                <span><i className="is-primary" />{t('Cơ chính')}</span>
+                <span><i />{t('Cơ hỗ trợ')}</span>
+              </div>
+            </section>
+          )}
+          {equipment.length > 0 && (
+            <section className="card exd-section">
+              <h2 className="exd-section-title"><span className="exd-section-icon"><Icon name="dumbbell" size={16} /></span>{t('Dụng cụ cần dùng')}</h2>
+              <div className="exd-equip">
+                {equipment.map((e) => (
+                  <Link key={e.key} to={`/equipment/${e.key}`} className="exd-equip-item">
+                    <Icon name="dumbbell" size={14} /><span>{e.label}</span><Icon name="chevronRight" size={14} />
                   </Link>
                 ))}
               </div>
             </section>
           )}
-
-          {/* Nguồn tham khảo & Giấy phép minh bạch */}
-          <section className="card p-20 mb-16">
-            <h2 className="section-title mb-12">
-              <Icon name="shield" size={18} className="primary" />
-              <span>{t('Nguồn tham khảo & Bản quyền nội dung')}</span>
-            </h2>
-            <SourceList sources={ex.sources} origin={ex.contentOrigin} />
-            <div className="mt-14">
-              <HealthDisclaimer pending={ex.reviewStatus === 'PENDING'} />
-            </div>
-          </section>
-        </div>
-
-        {/* Cột phải: MuscleMap và Dụng cụ */}
-        <aside className="ex-detail-side">
-          {/* Dụng cụ tập */}
-          {ex.equipmentKeys && ex.equipmentKeys.length > 0 && (
-            <div className="card p-16 mb-16">
-              <div className="tiny faint uppercase font-bold mb-10">{t('Dụng cụ cần dùng')}</div>
-              <div className="chips">
-                {ex.equipmentKeys.map((k) => {
-                  const info = EQUIPMENT_BY_KEY.get(k as EquipmentKey);
-                  return (
-                    <Link
-                      key={k}
-                      to={`/equipment/${k}`}
-                      className="chip chip-primary"
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <Icon name="dumbbell" size={12} className="mr-4" />
-                      <span>{getLang() === 'en' ? (info?.labelEn ?? t(info?.label ?? k)) : (info?.label ?? k)}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Bản đồ nhóm cơ */}
-          {(primaryMuscles.length > 0 || secondaryMuscles.length > 0) && (
-            <div className="card p-16 mb-16">
-              <div className="tiny faint uppercase font-bold mb-10">{t('Bản đồ cơ bắp')}</div>
-              <MuscleMap primary={primaryMuscles} secondary={secondaryMuscles} />
-
-              {primaryMuscles.length > 0 && (
-                <div className="mt-12">
-                  <div className="tiny faint mb-4">{t('Cơ tác động chính:')}</div>
-                  <div className="chips">
-                    {primaryMuscles.map((m) => (
-                      <span key={m} className="chip chip-primary">
-                        {getLang() === 'en' ? (MUSCLE_BY_KEY.get(m)?.labelEn ?? t(MUSCLE_BY_KEY.get(m)?.label ?? m)) : (MUSCLE_BY_KEY.get(m)?.label ?? m)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {secondaryMuscles.length > 0 && (
-                <div className="mt-10">
-                  <div className="tiny faint mb-4">{t('Cơ hỗ trợ (phụ):')}</div>
-                  <div className="chips">
-                    {secondaryMuscles.map((m) => (
-                      <span key={m} className="chip">
-                        {getLang() === 'en' ? (MUSCLE_BY_KEY.get(m)?.labelEn ?? t(MUSCLE_BY_KEY.get(m)?.label ?? m)) : (MUSCLE_BY_KEY.get(m)?.label ?? m)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </aside>
       </div>
 
-      <p className="tiny faint mt-24">{mediaCredit()}</p>
-
-      {/* Modal Yêu cầu chỉnh sửa */}
       {rejecting && (
-        <Modal
-          title={t('Yêu cầu chỉnh sửa bài tập')}
-          onClose={() => setRejecting(false)}
-          footer={
-            <div className="row end gap-8">
-              <Button variant="ghost" onClick={() => setRejecting(false)}>{t('Hủy')}</Button>
-              <Button variant="danger" loading={reviewing} onClick={handleReject}>{t('Xác nhận trả về')}</Button>
-            </div>
-          }
-        >
-          <p className="small muted mb-12">
-            {t('Vui lòng nêu rõ các điểm cần bổ sung hoặc hiệu chỉnh để huấn luyện viên/tác giả hoàn thiện trước khi phê duyệt.')}
-          </p>
-          <Textarea
-            value={rejectNote}
-            onChange={(e) => setRejectNote(e.target.value)}
-            placeholder={t('Nhập ghi chú phản hồi…')}
-            rows={4}
-          />
+        <Modal title={t('Yêu cầu chỉnh sửa bài tập')} onClose={() => setRejecting(false)} footer={<>
+          <Button variant="ghost" onClick={() => setRejecting(false)}>{t('Huỷ')}</Button>
+          <Button variant="danger" loading={reviewing} onClick={() => void review('NEEDS_REVIEW')}>{t('Xác nhận trả về')}</Button>
+        </>}>
+          <p className="small muted">{t('Vui lòng nêu rõ các điểm cần bổ sung hoặc hiệu chỉnh để huấn luyện viên/tác giả hoàn thiện trước khi phê duyệt.')}</p>
+          <div className="exd-gap" />
+          <Textarea value={rejectNote} maxLength={500} onChange={(e) => setRejectNote(e.target.value)} placeholder={t('Nhập ghi chú phản hồi…')} rows={4} />
         </Modal>
       )}
     </div>

@@ -13,13 +13,16 @@ import java.time.LocalDateTime;
 
 public interface ForumTopicRepository extends JpaRepository<ForumTopic, Long> {
 
-    /** Collation utf8mb4_0900_ai_ci: tìm không phân biệt hoa thường và dấu ("tap chan" khớp "Tập chân"). */
+    /**
+     * Collation utf8mb4_0900_ai_ci: tìm không phân biệt hoa thường và dấu ("tap chan" khớp "Tập chân").
+     * q đã được ForumService thoát ký tự % _ \ nên người dùng gõ "%" không khớp mọi bài.
+     */
     @EntityGraph(attributePaths = "author")
     @Query("""
             select t from ForumTopic t
             where (:includeHidden = true or t.hidden = false)
               and (:category is null or t.category = :category)
-              and (:q = '' or t.title like concat('%', :q, '%') or t.body like concat('%', :q, '%'))
+              and (:q = '' or t.title like concat('%', :q, '%') escape '\\' or t.body like concat('%', :q, '%') escape '\\')
             """)
     Page<ForumTopic> search(@Param("includeHidden") boolean includeHidden,
                             @Param("category") ForumCategory category,
@@ -27,4 +30,7 @@ public interface ForumTopicRepository extends JpaRepository<ForumTopic, Long> {
                             Pageable pageable);
 
     boolean existsByAuthor_IdAndCreatedAtAfter(Long authorId, LocalDateTime after);
+
+    /** Chống đăng trùng: cùng người, cùng tiêu đề trong 24 giờ. */
+    boolean existsByAuthor_IdAndTitleAndCreatedAtAfter(Long authorId, String title, LocalDateTime after);
 }

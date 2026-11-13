@@ -129,16 +129,6 @@ export default function MyPlan() {
             { value: 'history', label: t('Lịch sử giáo án') },
           ]}
         />
-        <div className="row gap-8">
-          <Link to="/exercises" className="btn btn-ghost btn-sm" title={t('Xem thư viện bài tập và hướng dẫn')}>
-            <Icon name="dumbbell" size={15} />
-            <span>{t('Thư viện bài tập')}</span>
-          </Link>
-          <Link to="/equipment" className="btn btn-ghost btn-sm" title={t('Xem danh sách dụng cụ tập')}>
-            <Icon name="zap" size={15} />
-            <span>{t('Dụng cụ tập')}</span>
-          </Link>
-        </div>
       </div>
 
       {/* Tab: Giáo án hiện tại */}

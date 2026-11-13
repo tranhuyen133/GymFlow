@@ -113,5 +113,12 @@ export const EQUIPMENT_BY_KEY = new Map(EQUIPMENT.map((e) => [e.key, e]));
 export const parseEquipment = (csv: string | null | undefined): EquipmentKey[] =>
   (csv ?? '').split(',').map((s) => s.trim()).filter((k): k is EquipmentKey => EQUIPMENT_BY_KEY.has(k as EquipmentKey));
 
-/** Ảnh minh hoạ bài tập (public domain, tải về khi build). frame 0 = tư thế đầu, 1 = tư thế cuối. */
-export const exerciseImage = (key: string, frame: 0 | 1 = 0) => `/exercise-img/${key}/${frame}.jpg`;
+/** Mã ảnh gv-<id>: ảnh 180×180 + GIF từ exercises-dataset (media © Gym visual), V30. */
+export const isGifKey = (key: string | null | undefined): key is string => !!key && key.startsWith('gv-');
+
+/**
+ * Ảnh minh hoạ bài tập. Mã thường (Free Exercise DB): frame 0 = tư thế đầu, 1 = tư thế cuối.
+ * Mã gv-<id>: frame 0 = ảnh tĩnh .jpg, frame 1 = ảnh động .gif.
+ */
+export const exerciseImage = (key: string, frame: 0 | 1 = 0) =>
+  isGifKey(key) ? `/exercise-gif/${key.slice(3)}.${frame === 1 ? 'gif' : 'jpg'}` : `/exercise-img/${key}/${frame}.jpg`;

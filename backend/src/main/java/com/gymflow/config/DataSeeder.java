@@ -86,6 +86,12 @@ public class DataSeeder implements ApplicationRunner {
         MembershipPlan p6 = plan("Gói 6 tháng", 180, 2_500_000L, "Tiết kiệm 17%", "Tủ đồ, 2 buổi đo InBody, 1 buổi PT", true);
         MembershipPlan p12 = plan("Gói 12 tháng", 365, 4_500_000L, "Tiết kiệm 25%, bảo lưu 30 ngày", "Toàn bộ quyền lợi + 4 buổi PT", true);
         MembershipPlan pt = plan("PT 1 kèm 1 – 12 buổi", 30, 3_600_000L, "12 buổi với huấn luyện viên riêng", "Giáo án cá nhân, theo dõi dinh dưỡng", true);
+        // V33: gói PT phải là GYM_PT để trừ buổi PT; trước đây bị lưu là GYM.
+        pt.setPlanType(PlanType.GYM_PT);
+        pt.setIncludesTrainer(true);
+        pt.setPtSessions(12);
+        pt.setPtValidDays(30);
+        planRepository.save(pt);
         plan("Gói sinh viên (cũ)", 30, 350_000L, "Đã ngừng cung cấp từ quý trước", null, false);
 
         // ---------- Bài tập ----------

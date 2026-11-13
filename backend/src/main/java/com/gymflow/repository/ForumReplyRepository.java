@@ -18,4 +18,7 @@ public interface ForumReplyRepository extends JpaRepository<ForumReply, Long> {
     boolean existsByTopic_IdAndAuthor_IdNot(Long topicId, Long authorId);
 
     boolean existsByAuthor_IdAndCreatedAtAfter(Long authorId, LocalDateTime after);
+
+    /** Chống gửi trùng (bấm 2 lần, mạng chậm gửi lại): cùng người, cùng chủ đề, cùng nội dung trong vài phút. */
+    boolean existsByTopic_IdAndAuthor_IdAndBodyAndCreatedAtAfter(Long topicId, Long authorId, String body, LocalDateTime after);
 }

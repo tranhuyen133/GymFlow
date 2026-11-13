@@ -66,6 +66,8 @@ export interface TopicDetail {
   replies: ForumReply[];
   mine: boolean;
   canModerate: boolean;
+  /** Máy chủ nhận ra người xem đã đăng nhập. Giao diện còn user mà false = phiên đã hết hạn. */
+  viewerSignedIn: boolean;
 }
 
 export interface ForumReport {
