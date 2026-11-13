@@ -27,7 +27,8 @@ import { initials, PaymentInfo, PickCard } from '../../components/PaymentQr';
 import { benefitsOf, PlanCard, pickBest, savings } from '../../components/PlanCard';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Meter, Modal, PageHead, Segmented, StatusBadge, Table, Textarea } from '../../components/ui';
-import { t, tn } from '../../i18n';
+import { getLang, t, tn } from '../../i18n';
+import { localizeText } from '../../lib/planText';
 import { addDays, durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus, parseDate, subState, toIsoDate, todayIso } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 
@@ -512,13 +513,13 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
   };
 
   return (
-    <Modal title={t('Đăng ký {plan}', { plan: t(plan.name) })} onClose={onClose} footer={<>
+    <Modal title={t('Đăng ký {plan}', { plan: localizeText(plan.nameEn, plan.name) })} onClose={onClose} footer={<>
       <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
       <Button variant="primary" icon="check" loading={busy} disabled={!agree || isLegacyPt} onClick={submit}>{t('Gửi đơn đăng ký')}</Button>
     </>}>
       <div className="stack">
         <div className="plan-summary">
-          <div><span className="tiny muted">{t('Gói')}</span><b>{t(plan.name)}</b></div>
+          <div><span className="tiny muted">{t('Gói')}</span><b>{localizeText(plan.nameEn, plan.name)}</b></div>
           <div><span className="tiny muted">{t('Loại gói')}</span><b>{pt ? t('Gói Gym + PT') : t('Gói Gym')}</b></div>
           <div><span className="tiny muted">{t('Thời hạn')}</span><b>{durationLabel(plan.durationDays)}</b></div>
           <div>
@@ -634,8 +635,8 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
           )}
         </div>
 
-        {benefitsOf(plan).length > 0 && (
-          <ul className="plan-benefits">{benefitsOf(plan).map((b) => <li key={b}><Icon name="check" size={13} className="ok" />{t(b)}</li>)}</ul>
+        {benefitsOf(getLang() === 'en' && plan.benefitsEn ? { benefits: plan.benefitsEn } : plan).length > 0 && (
+          <ul className="plan-benefits">{benefitsOf(getLang() === 'en' && plan.benefitsEn ? { benefits: plan.benefitsEn } : plan).map((b) => <li key={b}><Icon name="check" size={13} className="ok" />{getLang() === 'en' && plan.benefitsEn ? b : t(b)}</li>)}</ul>
         )}
 
         {pt ? (

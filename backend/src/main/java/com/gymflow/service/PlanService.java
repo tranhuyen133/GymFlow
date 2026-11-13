@@ -214,10 +214,13 @@ public class PlanService {
         }
 
         p.setName(req.name().trim());
+        p.setNameEn(Mappers.blankToNull(req.nameEn()));
         p.setDescription(Mappers.blankToNull(req.description()));
+        p.setDescriptionEn(Mappers.blankToNull(req.descriptionEn()));
         p.setPrice(req.price());
         p.setDurationDays(req.durationDays());
         p.setBenefits(Mappers.blankToNull(req.benefits()));
+        p.setBenefitsEn(Mappers.blankToNull(req.benefitsEn()));
         p.setPlanType(type);
         p.setIncludesTrainer(type == PlanType.GYM_PT);
         p.setPtSessions(type == PlanType.GYM_PT ? req.ptSessions() : null);

@@ -20,7 +20,13 @@ public class MembershipPlan {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Column(name = "name_en", length = 100)
+    private String nameEn;
+
     private String description;
+
+    @Column(name = "description_en", columnDefinition = "TEXT")
+    private String descriptionEn;
 
     @Column(nullable = false)
     private Long price;
@@ -29,6 +35,9 @@ public class MembershipPlan {
     private Integer durationDays;
 
     private String benefits;
+
+    @Column(name = "benefits_en", columnDefinition = "TEXT")
+    private String benefitsEn;
 
     /** Gói có HLV kèm (PT): hội viên chọn HLV khi gửi đơn. Không kèm: hội viên tự soạn giáo án, tự xếp lịch (V12). */
     @Column(name = "includes_trainer", nullable = false)

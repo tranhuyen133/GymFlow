@@ -81,8 +81,8 @@ export interface PlanServiceGrant {
 }
 
 export interface MembershipPlan {
-  id: number; name: string; description: string | null; price: number; durationDays: number;
-  benefits: string | null; active: boolean; currentSubscriptions: number;
+  id: number; name: string; nameEn?: string | null; description: string | null; descriptionEn?: string | null; price: number; durationDays: number;
+  benefits: string | null; benefitsEn?: string | null; active: boolean; currentSubscriptions: number;
   /** Gói có HLV kèm (PT): hội viên chọn HLV khi đăng ký. false = tự tập, tự soạn giáo án. Backend luôn trả về. */
   includesTrainer?: boolean;
   planType?: PlanType;

@@ -113,7 +113,7 @@ const DURATIONS = [30, 90, 180, 365];
 function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; others: MembershipPlan[]; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const services = useAsync(() => api.get<ServiceItem[]>('/admin/services'), []);
-  const [f, setF] = useState({ name: plan?.name ?? '', description: plan?.description ?? '', price: String(plan?.price ?? ''), durationDays: String(plan?.durationDays ?? 30), benefits: plan?.benefits ?? '' });
+  const [f, setF] = useState({ name: plan?.name ?? '', nameEn: plan?.nameEn ?? '', description: plan?.description ?? '', descriptionEn: plan?.descriptionEn ?? '', price: String(plan?.price ?? ''), durationDays: String(plan?.durationDays ?? 30), benefits: plan?.benefits ?? '', benefitsEn: plan?.benefitsEn ?? '' });
   const [pt, setPt] = useState(plan?.planType === 'GYM_PT' || (plan?.includesTrainer ?? false));
   const [ptSessions, setPtSessions] = useState(plan?.ptSessions != null ? String(plan.ptSessions) : '12');
   const [ptValidDays, setPtValidDays] = useState(plan?.ptValidDays != null ? String(plan.ptValidDays) : String(plan?.durationDays ?? 30));
@@ -199,8 +199,11 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
     const body = {
       ...f,
       name,
+      nameEn: f.nameEn.trim() || null,
       description: f.description.trim(),
+      descriptionEn: f.descriptionEn.trim() || null,
       benefits: f.benefits.split(/[,\n]/).map((b) => b.trim()).filter(Boolean).join(', '),
+      benefitsEn: f.benefitsEn.split(/[,\n]/).map((b) => b.trim()).filter(Boolean).join(', ') || null,
       price,
       durationDays: days,
       planType: pt ? 'GYM_PT' : 'GYM',
@@ -234,6 +237,7 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
           {plan && plan.currentSubscriptions > 0 && <Alert kind="info">{t('{n} hội viên đang dùng gói này. Giá mới chỉ áp dụng cho lần đăng ký sau.', { n: plan.currentSubscriptions })}</Alert>}
           <div className="form-grid">
             <Field label="Tên gói" error={errors.name} required className="span-2"><Input maxLength={100} value={f.name} invalid={!!errors.name} onChange={(e) => set('name', e.target.value)} placeholder="VD: Gói 3 tháng" /></Field>
+            <Field label="Tên gói (EN)" className="span-2"><Input maxLength={100} value={f.nameEn} onChange={(e) => set('nameEn', e.target.value)} /></Field>
             <Field label="Mã gói" error={errors.code} hint={t('Chữ không dấu, số, - và _ (tối đa 30 ký tự)')}>
               <Input maxLength={30} value={code} invalid={!!errors.code} placeholder="VD: PT12-3T"
                 onChange={(e) => { setCode(e.target.value); if (errors.code) setErrors((x) => ({ ...x, code: '' })); }} />
@@ -248,6 +252,7 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
               {DURATIONS.map((d) => <button key={d} type="button" className={`chip ${days === d ? 'on' : ''}`} onClick={() => set('durationDays', String(d))}>{durationLabel(d)}</button>)}
             </div>
             <Field label="Mô tả" className="span-2" hint={t('{n}/500', { n: f.description.length })}><Textarea maxLength={500} value={f.description} onChange={(e) => set('description', e.target.value)} placeholder="VD: Phù hợp người mới, tập không giới hạn giờ mở cửa" /></Field>
+            <Field label="Mô tả (EN)" className="span-2"><Textarea maxLength={500} value={f.descriptionEn} onChange={(e) => set('descriptionEn', e.target.value)} /></Field>
             <Field label="Phân loại gói" className="span-2">
               <div className="pick-grid" role="radiogroup" aria-label={t('Phân loại gói')}>
                 <PickCard on={!pt} onClick={() => setPt(false)} icon="user" title={t('Gói Gym (Tự tập)')} sub={t('Hội viên tự soạn giáo án từ thư viện bài tập và tự xếp lịch')} />
@@ -278,6 +283,7 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
               <div className="span-2"><Alert kind="warning">{t('Hội viên đang dùng gói này vẫn giữ HLV hiện tại. Đổi HLV ở hồ sơ từng hội viên nếu cần.')}</Alert></div>
             )}
             <Field label="Quyền lợi" hint="Mỗi dòng hoặc dấu phẩy là một quyền lợi" className="span-2"><Textarea maxLength={1000} rows={4} value={f.benefits} onChange={(e) => set('benefits', e.target.value)} placeholder={'Tủ đồ cá nhân\nNước uống miễn phí\n1 buổi PT'} /></Field>
+            <Field label="Quyền lợi (EN)" hint="Mỗi dòng hoặc dấu phẩy là một quyền lợi" className="span-2"><Textarea maxLength={1000} rows={4} value={f.benefitsEn} onChange={(e) => set('benefitsEn', e.target.value)} /></Field>
             <Field label="Điều kiện sử dụng" className="span-2" hint={t('{n}/1000', { n: usageTerms.length })}>
               <Textarea maxLength={1000} rows={3} value={usageTerms} onChange={(e) => setUsageTerms(e.target.value)}
                 placeholder="VD: Đặt lịch PT trước 24 giờ. Đổi HLV tại quầy lễ tân." />

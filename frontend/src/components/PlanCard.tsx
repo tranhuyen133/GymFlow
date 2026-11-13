@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import type { MembershipPlan } from '../api/types';
-import { t } from '../i18n';
+import { getLang, t } from '../i18n';
 import { durationLabel, fmtMoney } from '../lib/format';
+import { localizeText } from '../lib/planText';
 import { Icon } from './Icon';
 import './packages.css';
 
-type PlanLike = Pick<MembershipPlan, 'name' | 'price' | 'durationDays' | 'description' | 'benefits' | 'includesTrainer'> &
+type PlanLike = Pick<MembershipPlan, 'name' | 'nameEn' | 'price' | 'durationDays' | 'description' | 'descriptionEn' | 'benefits' | 'benefitsEn' | 'includesTrainer'> &
   Partial<Pick<MembershipPlan, 'planType' | 'ptSessions' | 'ptValidDays' | 'serviceGrants'>> & { id?: number };
 
 export const benefitsOf = (p: Pick<MembershipPlan, 'benefits'>) => (p.benefits ?? '').split(/[,\n]/).map((b) => b.trim()).filter(Boolean);
@@ -50,7 +51,7 @@ export function PlanCard({ plan, best, saving, badge, compact, className = '', f
   plan: PlanLike; best?: boolean; saving?: number; badge?: ReactNode; compact?: boolean; className?: string;
   footer?: ReactNode; children?: ReactNode;
 }) {
-  const perks = benefitsOf(plan);
+  const perks = benefitsOf(getLang() === 'en' && plan.benefitsEn ? { benefits: plan.benefitsEn } : plan);
   return (
     <article className={`plan-card ${best ? 'best beam' : ''} ${compact ? 'compact' : ''} ${className}`}>
       {best && <span className="pc-flag"><Icon name="star" size={12} />{t('Phổ biến nhất')}</span>}
@@ -58,7 +59,7 @@ export function PlanCard({ plan, best, saving, badge, compact, className = '', f
         <span className="pc-term">{durationLabel(plan.durationDays)}</span>
         {badge}
       </div>
-      <h3 className="pc-name">{t(plan.name)}</h3>
+      <h3 className="pc-name">{localizeText(plan.nameEn, plan.name)}</h3>
       {plan.includesTrainer != null && (
         <span className={`chip ${plan.includesTrainer ? 'on' : ''}`} style={{ alignSelf: 'flex-start', marginTop: 4 }}
           title={plan.includesTrainer ? t('HLV riêng soạn giáo án và xếp lịch cho bạn') : t('Bạn tự soạn giáo án từ thư viện bài tập và tự xếp lịch')}>
@@ -86,10 +87,10 @@ export function PlanCard({ plan, best, saving, badge, compact, className = '', f
         <span>{plan.durationDays > 0 && plan.price >= 0 ? unitPrice(plan) : ''}</span>
         {saving != null && saving > 0 && <span className="pc-save">{t('Tiết kiệm {n}%', { n: saving })}</span>}
       </div>
-      {plan.description && !compact && <p className="pc-desc">{t(plan.description)}</p>}
+      {plan.description && !compact && <p className="pc-desc">{localizeText(plan.descriptionEn, plan.description)}</p>}
       {perks.length > 0 && (
         <ul className="pc-perks">
-          {perks.map((b) => <li key={b}><span className="pc-tick"><Icon name="check" size={12} /></span>{t(b)}</li>)}
+          {perks.map((b) => <li key={b}><span className="pc-tick"><Icon name="check" size={12} /></span>{getLang() === 'en' && plan.benefitsEn ? b : t(b)}</li>)}
         </ul>
       )}
       {plan.serviceGrants && plan.serviceGrants.length > 0 && (

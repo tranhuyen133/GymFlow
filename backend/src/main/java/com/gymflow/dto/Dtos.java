@@ -277,13 +277,25 @@ public final class Dtos {
             @Size(max = 30, message = "Mã gói tối đa 30 ký tự") @Pattern(regexp = "^$|^[A-Za-z0-9_-]+$", message = "Mã gói chỉ gồm chữ không dấu, số, - và _") String code,
             @Size(max = 1000, message = "Điều kiện sử dụng tối đa 1000 ký tự") String usageTerms,
             @Min(value = 15, message = "Buổi PT tối thiểu 15 phút") @Max(value = 240, message = "Buổi PT tối đa 240 phút") Integer ptSessionMinutes,
-            @Min(value = 0, message = "Số giờ báo trước không âm") @Max(value = 168, message = "Báo trước tối đa 168 giờ (7 ngày)") Integer ptCancelNoticeHours) {
+            @Min(value = 0, message = "Số giờ báo trước không âm") @Max(value = 168, message = "Báo trước tối đa 168 giờ (7 ngày)") Integer ptCancelNoticeHours,
+            @Size(max = 100) String nameEn,
+            String descriptionEn,
+            String benefitsEn) {
         /** Giữ chữ ký trước V24. */
         public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits,
                            boolean includesTrainer, PlanType planType, Integer ptSessions, Integer ptValidDays,
                            List<PlanServiceGrantDto> serviceGrants) {
             this(name, description, price, durationDays, benefits, includesTrainer, planType, ptSessions, ptValidDays,
-                    serviceGrants, null, null, null, null);
+                    serviceGrants, null, null, null, null, null, null, null);
+        }
+
+        /** Giữ chữ ký V24. */
+        public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits,
+                           boolean includesTrainer, PlanType planType, Integer ptSessions, Integer ptValidDays,
+                           List<PlanServiceGrantDto> serviceGrants, String code, String usageTerms,
+                           Integer ptSessionMinutes, Integer ptCancelNoticeHours) {
+            this(name, description, price, durationDays, benefits, includesTrainer, planType, ptSessions, ptValidDays,
+                    serviceGrants, code, usageTerms, ptSessionMinutes, ptCancelNoticeHours, null, null, null);
         }
 
         public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits) {
@@ -304,14 +316,26 @@ public final class Dtos {
                                String benefits, boolean active, long currentSubscriptions, boolean includesTrainer,
                                PlanType planType, Integer ptSessions, Integer ptValidDays,
                                List<PlanServiceGrantDto> serviceGrants,
-                               String code, String usageTerms, Integer ptSessionMinutes, Integer ptCancelNoticeHours) {
+                               String code, String usageTerms, Integer ptSessionMinutes, Integer ptCancelNoticeHours,
+                               String nameEn, String descriptionEn, String benefitsEn) {
         /** Giữ chữ ký trước V24. */
         public PlanResponse(Long id, String name, String description, Long price, Integer durationDays,
                             String benefits, boolean active, long currentSubscriptions, boolean includesTrainer,
                             PlanType planType, Integer ptSessions, Integer ptValidDays,
                             List<PlanServiceGrantDto> serviceGrants) {
             this(id, name, description, price, durationDays, benefits, active, currentSubscriptions, includesTrainer,
-                    planType, ptSessions, ptValidDays, serviceGrants, null, null, null, null);
+                    planType, ptSessions, ptValidDays, serviceGrants, null, null, null, null, null, null, null);
+        }
+
+        /** Giữ chữ ký V24. */
+        public PlanResponse(Long id, String name, String description, Long price, Integer durationDays,
+                            String benefits, boolean active, long currentSubscriptions, boolean includesTrainer,
+                            PlanType planType, Integer ptSessions, Integer ptValidDays,
+                            List<PlanServiceGrantDto> serviceGrants,
+                            String code, String usageTerms, Integer ptSessionMinutes, Integer ptCancelNoticeHours) {
+            this(id, name, description, price, durationDays, benefits, active, currentSubscriptions, includesTrainer,
+                    planType, ptSessions, ptValidDays, serviceGrants, code, usageTerms, ptSessionMinutes,
+                    ptCancelNoticeHours, null, null, null);
         }
     }
 

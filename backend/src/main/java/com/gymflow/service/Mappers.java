@@ -89,7 +89,8 @@ public class Mappers {
         return new PlanResponse(p.getId(), p.getName(), p.getDescription(), p.getPrice(), p.getDurationDays(),
                 p.getBenefits(), p.isActive(), subscriptionRepository.countCurrentByPlan(p.getId(), today()),
                 p.isIncludesTrainer(), p.getPlanType(), p.getPtSessions(), p.getPtValidDays(), grants,
-                p.getCode(), p.getUsageTerms(), p.getPtSessionMinutes(), p.getPtCancelNoticeHours());
+                p.getCode(), p.getUsageTerms(), p.getPtSessionMinutes(), p.getPtCancelNoticeHours(),
+                p.getNameEn(), p.getDescriptionEn(), p.getBenefitsEn());
     }
 
     public PlanServiceGrantDto planServiceGrant(PlanServiceGrant g) {
