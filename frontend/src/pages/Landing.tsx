@@ -142,7 +142,7 @@ export default function Landing() {
           <a href="#programs">{t('Chương trình')}</a>
           <a href="#benefits">{t('Quyền lợi')}</a>
           <a href="#plans">{t('Bảng giá')}</a>
-          <Link to="/forum">{t('Diễn đàn')}</Link>
+          <Link to={user ? '/community' : '/forum'}>{t('Diễn đàn')}</Link>
           <a href="#faq">{t('Hỏi đáp')}</a>
           <a href="#contact">{t('Hỗ trợ')}</a>
           <div className="nav-cta">
@@ -390,7 +390,7 @@ export default function Landing() {
           </div>
           <div className="stack-sm small">
             <b>{t('Pháp lý')}</b>
-            <Link className="muted" to="/forum">{t('Diễn đàn')}</Link>
+            <Link className="muted" to={user ? '/community' : '/forum'}>{t('Diễn đàn')}</Link>
             <Link className="muted" to="/policies#terms">{t('Điều khoản sử dụng')}</Link>
             <Link className="muted" to="/policies#privacy">{t('Chính sách bảo mật')}</Link>
           </div>

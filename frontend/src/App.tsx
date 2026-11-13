@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import type { Role } from './api/types';
 import { useAuth } from './auth/AuthContext';
 import { BrandMark } from './components/Brand';
@@ -64,6 +64,18 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/** Diễn đàn công khai cho khách; đã đăng nhập thì vào đúng khung ứng dụng (/community). */
+function ForumPublicOnly() {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return <Splash />;
+  if (user) {
+    const to = location.pathname.replace(/^\/forum/, '/community') + location.search;
+    return <Navigate to={to} replace />;
+  }
+  return <Outlet />;
+}
+
 /** Lớp chặn phía giao diện; backend vẫn kiểm tra quyền ở mọi API. */
 function Only({ roles, children }: { roles: Role[]; children: ReactNode }) {
   const { user } = useAuth();
@@ -110,8 +122,10 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/policies" element={<Policies />} />
-      <Route path="/forum" element={<ForumList />} />
-      <Route path="/forum/:id" element={<ForumTopicPage />} />
+      <Route element={<ForumPublicOnly />}>
+        <Route path="/forum" element={<ForumList />} />
+        <Route path="/forum/:id" element={<ForumTopicPage />} />
+      </Route>
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
         <Route path="/getting-started" element={<Navigate to="/dashboard?onboarding=1" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />

@@ -44,17 +44,30 @@ function Counter({ value, max }: { value: string; max: number }) {
 
 function PublicNav() {
   const { user } = useAuth();
+  const [menu, setMenu] = useState(false);
   return (
     <nav className="landing-nav">
       <Link to="/" aria-label={t('Về trang giới thiệu GymFlow')} title={t('Về trang giới thiệu GymFlow')}><Brand /></Link>
-      <div style={{ flex: 1 }} />
-      <ThemeToggle />
-      {user
-        ? <Link className="btn btn-primary btn-sm" to="/community"><Icon name="arrowLeft" /><span>{t('Vào ứng dụng')}</span></Link>
-        : <>
-            <Link className="btn btn-ghost btn-sm" to="/login"><span>{t('Đăng nhập')}</span></Link>
-            <Link className="btn btn-primary btn-sm" to="/register"><span>{t('Đăng ký hội viên')}</span></Link>
-          </>}
+      <div className={`nav-links ${menu ? 'open' : ''}`} onClick={() => setMenu(false)}>
+        <a href="/#programs">{t('Chương trình')}</a>
+        <a href="/#benefits">{t('Quyền lợi')}</a>
+        <a href="/#plans">{t('Bảng giá')}</a>
+        <Link to="/forum">{t('Diễn đàn')}</Link>
+        <a href="/#faq">{t('Hỏi đáp')}</a>
+        <a href="/#contact">{t('Hỗ trợ')}</a>
+        <div className="nav-cta">
+          {user ? (
+            <Link className="btn btn-primary btn-sm" to="/community"><Icon name="arrowLeft" /><span>{t('Vào ứng dụng')}</span></Link>
+          ) : (
+            <>
+              <Link className="btn btn-ghost btn-sm" to="/login"><span>{t('Đăng nhập')}</span></Link>
+              <Link className="btn btn-primary btn-sm" to="/register"><span>{t('Đăng ký hội viên')}</span></Link>
+            </>
+          )}
+        </div>
+      </div>
+      <ThemeToggle className="nav-theme" />
+      <Button className="nav-toggle" variant="ghost" icon={menu ? 'x' : 'menu'} aria-label={menu ? 'Đóng menu' : 'Mở menu'} aria-expanded={menu} onClick={() => setMenu((m) => !m)} />
     </nav>
   );
 }
