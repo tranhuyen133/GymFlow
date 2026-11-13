@@ -268,7 +268,8 @@ public class Mappers {
     }
 
     public ArticleSummary articleSummary(Article a) {
-        return new ArticleSummary(a.getId(), a.getSlug(), a.getTitle(), a.getCategory(), a.getSummary(), a.getPublishedAt());
+        return new ArticleSummary(a.getId(), a.getSlug(), a.getTitle(), a.getCategory(), a.getSummary(), a.getPublishedAt(),
+                a.getTitleEn(), a.getSummaryEn());
     }
 
     /** internal = false: trang công khai, ẩn ghi chú duyệt và tên người duyệt/tác giả. */
@@ -280,7 +281,8 @@ public class Mappers {
                 internal && a.getAuthor() != null ? a.getAuthor().getId() : null,
                 internal && a.getReviewedBy() != null ? a.getReviewedBy().getFullName() : null,
                 a.getReviewedAt(), a.getPublishedAt(),
-                internal ? a.getCreatedAt() : null, a.getUpdatedAt(), sources(a.getSources()));
+                internal ? a.getCreatedAt() : null, a.getUpdatedAt(), sources(a.getSources()),
+                a.getTitleEn(), a.getSummaryEn(), a.getBodyEn());
     }
 
     public static List<ExerciseGoal> parseGoals(String csv) {

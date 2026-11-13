@@ -8,6 +8,7 @@ import { Badge, Empty, ErrorState, LoadingBlock, Modal, PageHead } from '../../c
 import { getLang, t } from '../../i18n';
 import { MUSCLE_BY_KEY, type MuscleKey } from '../../lib/anatomy';
 import { localizeExercise, localizeExerciseContent } from '../../lib/exercise';
+import { localizeText } from '../../lib/planText';
 import { exTitle, exSub } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 import './kb.css';
@@ -266,7 +267,7 @@ function ArticleReaderModal({ slug, onClose }: { slug: string; onClose: () => vo
   const fallback = GUIDE_ARTICLES.find((g) => g.slug === slug);
 
   return (
-    <Modal title={art?.title || fallback?.title || t('Hướng dẫn tập luyện')} onClose={onClose} size="wide">
+    <Modal title={art ? localizeText(art.titleEn, art.title) : fallback?.title || t('Hướng dẫn tập luyện')} onClose={onClose} size="wide">
       {loading ? (
         <LoadingBlock rows={6} />
       ) : error || !art ? (
@@ -290,12 +291,12 @@ function ArticleReaderModal({ slug, onClose }: { slug: string; onClose: () => vo
               </span>
             )}
           </div>
-          <h1 style={{ fontSize: 22, lineHeight: 1.3, marginBottom: 12 }}>{art.title}</h1>
+          <h1 style={{ fontSize: 22, lineHeight: 1.3, marginBottom: 12 }}>{localizeText(art.titleEn, art.title)}</h1>
           <p className="lead muted mb-16" style={{ fontStyle: 'italic', borderLeft: '3px solid var(--primary)', paddingLeft: 12 }}>
-            {art.summary}
+            {localizeText(art.summaryEn, art.summary)}
           </p>
           <div className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.7 }}>
-            {art.body}
+            {localizeText(art.bodyEn, art.body)}
           </div>
         </article>
       )}

@@ -20,6 +20,7 @@ import { useToast } from '../../components/Toast';
 import { Badge, Button, Empty, ErrorState, LoadingBlock, Modal, Pager, SearchInput } from '../../components/ui';
 import { articleCategoryLabel, fmtDateTime, formatEquipment, levelLabel, locationLabel } from '../../lib/format';
 import { errMsg, useAsync, useDebounced, usePaged } from '../../lib/hooks';
+import { localizeText } from '../../lib/planText';
 import { t, useLang } from '../../i18n';
 import { EQUIPMENT, EQUIPMENT_BY_KEY, isGifKey, isMuscleKey, type EquipmentKey, type MuscleKey } from '../../lib/anatomy';
 import {
@@ -570,15 +571,15 @@ export default function Knowledge() {
           ) : (
             <div className="guide-grid-layout">
               {(guidesData ?? [])
-                .filter((a) => !q.trim() || fold(t(a.title)).includes(fold(q.trim())) || fold(a.title).includes(fold(q.trim())) || fold(t(a.summary)).includes(fold(q.trim())) || fold(a.summary).includes(fold(q.trim())))
+                .filter((a) => !q.trim() || fold(t(a.title)).includes(fold(q.trim())) || fold(a.titleEn ?? '').includes(fold(q.trim())) || fold(a.title).includes(fold(q.trim())) || fold(t(a.summary)).includes(fold(q.trim())) || fold(a.summaryEn ?? '').includes(fold(q.trim())) || fold(a.summary).includes(fold(q.trim())))
                 .map((art) => (
                   <article key={art.id} className="guide-card" onClick={() => setSelectedArticle(art)}>
                     <div className="row between mb-8">
                       <Badge tone="blue">{t(articleCategoryLabel[art.category] ?? art.category)}</Badge>
                       <span className="tiny faint">{fmtDateTime(art.publishedAt)}</span>
                     </div>
-                    <h3 className="font-bold mb-8" style={{ fontSize: 17, lineHeight: 1.3 }}>{t(art.title)}</h3>
-                    <p className="small muted mb-12 line-clamp-3" style={{ margin: 0, flex: 1 }}>{t(art.summary)}</p>
+                    <h3 className="font-bold mb-8" style={{ fontSize: 17, lineHeight: 1.3 }}>{localizeText(art.titleEn, art.title)}</h3>
+                    <p className="small muted mb-12 line-clamp-3" style={{ margin: 0, flex: 1 }}>{localizeText(art.summaryEn, art.summary)}</p>
                     <div className="row between pt-10" style={{ borderTop: '1px solid var(--hairline-soft)', alignItems: 'center' }}>
                       <span className="tiny faint">{art.authorName || 'GymFlow Team'}</span>
                       <span className="small primary font-bold">{t('Đọc hướng dẫn')} →</span>
@@ -589,14 +590,14 @@ export default function Knowledge() {
           )}
 
           {selectedArticle && (
-            <Modal title={t(selectedArticle.title)} onClose={() => setSelectedArticle(null)}>
+            <Modal title={localizeText(selectedArticle.titleEn, selectedArticle.title)} onClose={() => setSelectedArticle(null)}>
               <div className="flow" style={{ gap: 14 }}>
                 <div className="row between" style={{ alignItems: 'center' }}>
                   <Badge tone="blue">{t(articleCategoryLabel[selectedArticle.category] ?? selectedArticle.category)}</Badge>
                   <span className="tiny faint">{fmtDateTime(selectedArticle.publishedAt)}</span>
                 </div>
-                <p className="font-bold muted" style={{ fontSize: 15, lineHeight: 1.5, margin: 0 }}>{t(selectedArticle.summary)}</p>
-                <div className="article-body mt-12" style={{ whiteSpace: 'pre-line', lineHeight: 1.7, fontSize: 15 }}>{selectedArticle.body}</div>
+                <p className="font-bold muted" style={{ fontSize: 15, lineHeight: 1.5, margin: 0 }}>{localizeText(selectedArticle.summaryEn, selectedArticle.summary)}</p>
+                <div className="article-body mt-12" style={{ whiteSpace: 'pre-line', lineHeight: 1.7, fontSize: 15 }}>{localizeText(selectedArticle.bodyEn, selectedArticle.body)}</div>
               </div>
             </Modal>
           )}

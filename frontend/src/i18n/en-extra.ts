@@ -2265,6 +2265,8 @@ export const EN_EXTRA: Record<string, string> = {
   'Ghi chú chung (EN)': 'General notes (EN)',
   'Ghi chú EN…': 'English note…',
   'Tiêu đề (EN)': 'Title (EN)',
+  'Tóm tắt (EN)': 'Summary (EN)',
+  'Nội dung (EN)': 'Content (EN)',
   'Ghi chú (EN)': 'Notes (EN)',
   'Cách sử dụng (EN)': 'How to use (EN)',
   'Cách điều chỉnh máy / thiết bị (EN)': 'Equipment adjustment guide (EN)',

@@ -7,6 +7,7 @@ import { HealthDisclaimer, Prose, SourceList } from '../../components/Content';
 import { useToast } from '../../components/Toast';
 import { Alert, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, SearchInput, Select, StatusBadge, Table, Textarea } from '../../components/ui';
 import { articleCategoryLabel, articleStatusLabel, fmtDateTime } from '../../lib/format';
+import { localizeText } from '../../lib/planText';
 import { errMsg, fieldErrs, useAsync, usePaged } from '../../lib/hooks';
 import { t } from '../../i18n';
 
@@ -28,7 +29,7 @@ export default function Articles() {
   const [q, setQ] = useState('');
   const [category, setCategory] = useState<'' | ArticleCategory>('');
   const list = useMemo(() => (data ?? []).filter((a) => (!category || a.category === category)
-    && (!q || `${a.title} ${a.slug} ${a.authorName ?? ''}`.toLowerCase().includes(q.toLowerCase()))), [data, category, q]);
+    && (!q || `${a.title} ${a.titleEn ?? ''} ${a.slug} ${a.authorName ?? ''}`.toLowerCase().includes(q.toLowerCase()))), [data, category, q]);
   const paged = usePaged(list, 'articles', `${status}|${category}|${q}`);
   const viewing = data?.find((a) => a.id === viewingId) ?? null;
   const canEdit = (a: Article) => isAdmin || a.authorId === me.id;
@@ -58,7 +59,7 @@ export default function Articles() {
             <tbody>
               {paged.items.map((a) => (
                 <tr key={a.id}>
-                  <td><b>{a.title}</b><div className="tiny muted">/{a.slug}{a.authorName && ` · ${a.authorName}`}</div></td>
+                  <td><b>{localizeText(a.titleEn, a.title)}</b><div className="tiny muted">/{a.slug}{a.authorName && ` · ${a.authorName}`}</div></td>
                   <td>{articleCategoryLabel[a.category]}</td>
                   <td><StatusBadge map={articleStatusLabel} value={a.status} /></td>
                   <td>{a.sources.length}</td>
@@ -100,7 +101,7 @@ function ArticleReview({ article: a, isAdmin, canEdit, onClose, onChanged }: { a
   };
 
   return (
-    <Modal title={a.title} size="wide" onClose={onClose}>
+    <Modal title={localizeText(a.titleEn, a.title)} size="wide" onClose={onClose}>
       <div className="stack">
         <div className="row row-wrap">
           <StatusBadge map={articleStatusLabel} value={a.status} />
@@ -108,9 +109,9 @@ function ArticleReview({ article: a, isAdmin, canEdit, onClose, onChanged }: { a
           <span className="tiny faint">{a.authorName ? t('Tác giả: {name}', { name: a.authorName }) : t('Dữ liệu khởi tạo')}{a.reviewedByName && ` · ${t('Duyệt bởi {name} lúc {d}', { name: a.reviewedByName, d: fmtDateTime(a.reviewedAt) })}`}</span>
         </div>
         {a.reviewNote && <Alert kind={a.status === 'DRAFT' ? 'warning' : 'info'}>{t('Ghi chú duyệt:')} {a.reviewNote}</Alert>}
-        <p className="lead small">{a.summary}</p>
+        <p className="lead small">{localizeText(a.summaryEn, a.summary)}</p>
         <HealthDisclaimer pending={a.status !== 'PUBLISHED'} />
-        <Prose text={a.body} />
+        <Prose text={localizeText(a.bodyEn, a.body)} />
         <div><b className="small">{t('Nguồn tham khảo và giấy phép')}</b><div className="mt-8"><SourceList sources={a.sources} origin={a.contentOrigin} /></div></div>
 
         <Card title="Thao tác" icon="shield">
@@ -145,8 +146,8 @@ function ArticleForm({ article, isAdmin, onClose, onSaved }: { article?: Article
   const toast = useToast();
   const sources = useAsync(() => api.get<Source[]>('/content-sources'), []);
   const [f, setF] = useState({
-    title: article?.title ?? '', slug: article?.slug ?? '', category: article?.category ?? ('NUTRITION' as ArticleCategory),
-    summary: article?.summary ?? '', body: article?.body ?? '', contentOrigin: article?.contentOrigin ?? ('SELF_AUTHORED' as ContentOrigin),
+    title: article?.title ?? '', titleEn: article?.titleEn ?? '', slug: article?.slug ?? '', category: article?.category ?? ('NUTRITION' as ArticleCategory),
+    summary: article?.summary ?? '', summaryEn: article?.summaryEn ?? '', body: article?.body ?? '', bodyEn: article?.bodyEn ?? '', contentOrigin: article?.contentOrigin ?? ('SELF_AUTHORED' as ContentOrigin),
     sourceIds: article?.sources.map((s) => s.id) ?? ([] as number[]),
   });
   const [slugTouched, setSlugTouched] = useState(!!article);
@@ -183,6 +184,9 @@ function ArticleForm({ article, isAdmin, onClose, onSaved }: { article?: Article
           <Field label="Tiêu đề" error={errors.title} required className="span-2">
             <Input maxLength={200} value={f.title} onChange={(e) => { set('title', e.target.value); if (!slugTouched) set('slug', slugify(e.target.value)); }} />
           </Field>
+          <Field label="Tiêu đề (EN)" className="span-2">
+            <Input maxLength={200} value={f.titleEn} onChange={(e) => set('titleEn', e.target.value)} />
+          </Field>
           <Field label="Đường dẫn" error={errors.slug} required hint={`/knowledge/${f.slug || '…'}`}>
             <Input maxLength={120} value={f.slug} onChange={(e) => { setSlugTouched(true); set('slug', e.target.value); }} />
           </Field>
@@ -190,8 +194,12 @@ function ArticleForm({ article, isAdmin, onClose, onSaved }: { article?: Article
             <Select value={f.category} onChange={(e) => set('category', e.target.value as ArticleCategory)}>{CATEGORIES.map((c) => <option key={c} value={c}>{articleCategoryLabel[c]}</option>)}</Select>
           </Field>
           <Field label="Tóm tắt" error={errors.summary} required className="span-2"><Textarea maxLength={500} rows={2} value={f.summary} onChange={(e) => set('summary', e.target.value)} /></Field>
+          <Field label="Tóm tắt (EN)" className="span-2"><Textarea maxLength={500} rows={2} value={f.summaryEn} onChange={(e) => set('summaryEn', e.target.value)} /></Field>
           <Field label="Nội dung" error={errors.body} required className="span-2" hint="Dòng trống tách đoạn · “## ” là tiêu đề · “- ” là gạch đầu dòng. Không chẩn đoán bệnh, không ghi số liệu khi chưa có nguồn.">
             <Textarea maxLength={20000} rows={12} value={f.body} onChange={(e) => set('body', e.target.value)} />
+          </Field>
+          <Field label="Nội dung (EN)" className="span-2">
+            <Textarea maxLength={20000} rows={12} value={f.bodyEn} onChange={(e) => set('bodyEn', e.target.value)} />
           </Field>
           <Field label="Nguồn gốc nội dung" className="span-2">
             <Select value={f.contentOrigin} onChange={(e) => set('contentOrigin', e.target.value as ContentOrigin)}>

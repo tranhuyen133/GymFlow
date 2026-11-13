@@ -689,7 +689,14 @@ public final class Dtos {
             @NotBlank(message = "Vui lòng nhập tóm tắt") @Size(max = 500, message = "Tóm tắt tối đa 500 ký tự") String summary,
             @NotBlank(message = "Vui lòng nhập nội dung") @Size(max = 20000, message = "Nội dung tối đa 20.000 ký tự") String body,
             ContentOrigin contentOrigin,
-            List<Long> sourceIds) {
+            List<Long> sourceIds,
+            String titleEn,
+            String summaryEn,
+            String bodyEn) {
+        public ArticleRequest(String title, String slug, ArticleCategory category, String summary, String body,
+                              ContentOrigin contentOrigin, List<Long> sourceIds) {
+            this(title, slug, category, summary, body, contentOrigin, sourceIds, null, null, null);
+        }
     }
 
     /** SUBMIT (gửi duyệt) · APPROVE (xuất bản) · REJECT (trả về bản nháp) · ARCHIVE (gỡ) · RESTORE (khôi phục về nháp) */
@@ -702,14 +709,26 @@ public final class Dtos {
 
     /** Bản rút gọn cho danh sách công khai (không kèm thân bài). */
     public record ArticleSummary(Long id, String slug, String title, ArticleCategory category, String summary,
-                                 LocalDateTime publishedAt) {
+                                 LocalDateTime publishedAt, String titleEn, String summaryEn) {
+        public ArticleSummary(Long id, String slug, String title, ArticleCategory category, String summary,
+                              LocalDateTime publishedAt) {
+            this(id, slug, title, category, summary, publishedAt, null, null);
+        }
     }
 
     public record ArticleResponse(Long id, String slug, String title, ArticleCategory category, String summary,
                                   String body, ContentOrigin contentOrigin, ArticleStatus status, String reviewNote,
                                   String authorName, Long authorId, String reviewedByName, LocalDateTime reviewedAt,
                                   LocalDateTime publishedAt, LocalDateTime createdAt, LocalDateTime updatedAt,
-                                  List<SourceResponse> sources) {
+                                  List<SourceResponse> sources, String titleEn, String summaryEn, String bodyEn) {
+        public ArticleResponse(Long id, String slug, String title, ArticleCategory category, String summary,
+                               String body, ContentOrigin contentOrigin, ArticleStatus status, String reviewNote,
+                               String authorName, Long authorId, String reviewedByName, LocalDateTime reviewedAt,
+                               LocalDateTime publishedAt, LocalDateTime createdAt, LocalDateTime updatedAt,
+                               List<SourceResponse> sources) {
+            this(id, slug, title, category, summary, body, contentOrigin, status, reviewNote, authorName, authorId,
+                    reviewedByName, reviewedAt, publishedAt, createdAt, updatedAt, sources, null, null, null);
+        }
     }
 
     // ===================== Workout plan =====================

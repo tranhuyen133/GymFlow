@@ -139,10 +139,13 @@ public class ArticleService {
 
     private void apply(Article a, ArticleRequest req) {
         a.setTitle(req.title().trim());
+        a.setTitleEn(Mappers.blankToNull(req.titleEn()));
         a.setSlug(req.slug());
         a.setCategory(req.category());
         a.setSummary(req.summary().trim());
+        a.setSummaryEn(Mappers.blankToNull(req.summaryEn()));
         a.setBody(req.body().trim());
+        a.setBodyEn(Mappers.blankToNull(req.bodyEn()));
         if (req.contentOrigin() != null) a.setContentOrigin(req.contentOrigin());
         if (req.sourceIds() != null) a.setSources(ExerciseService.resolveSources(sourceRepository, req.sourceIds()));
     }

@@ -372,9 +372,9 @@ export interface FavoriteToggleResult {
 }
 export type ArticleStatus = 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'ARCHIVED';
 export type ArticleAction = 'SUBMIT' | 'APPROVE' | 'REJECT' | 'ARCHIVE' | 'RESTORE';
-export interface ArticleSummary { id: number; slug: string; title: string; category: ArticleCategory; summary: string; publishedAt: string | null }
+export interface ArticleSummary { id: number; slug: string; title: string; titleEn?: string | null; category: ArticleCategory; summary: string; summaryEn?: string | null; publishedAt: string | null }
 export interface Article {
-  id: number; slug: string; title: string; category: ArticleCategory; summary: string; body: string; contentOrigin: ContentOrigin;
+  id: number; slug: string; title: string; titleEn?: string | null; category: ArticleCategory; summary: string; summaryEn?: string | null; body: string; bodyEn?: string | null; contentOrigin: ContentOrigin;
   status: ArticleStatus; reviewNote: string | null; authorName: string | null; authorId: number | null; reviewedByName: string | null;
   reviewedAt: string | null; publishedAt: string | null; createdAt: string | null; updatedAt: string | null; sources: Source[];
 }

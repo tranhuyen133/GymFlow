@@ -25,6 +25,9 @@ public class Article {
     @Column(nullable = false, length = 200)
     private String title;
 
+    @Column(name = "title_en", length = 200)
+    private String titleEn;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ArticleCategory category;
@@ -32,8 +35,14 @@ public class Article {
     @Column(nullable = false, length = 500)
     private String summary;
 
+    @Column(name = "summary_en", length = 500)
+    private String summaryEn;
+
     @Column(nullable = false)
     private String body;
+
+    @Column(name = "body_en", columnDefinition = "TEXT")
+    private String bodyEn;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "content_origin", nullable = false)
