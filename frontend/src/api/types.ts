@@ -467,6 +467,11 @@ export interface AdminDashboard {
 export interface TrainerDashboard {
   memberCount: number; sessionsToday: number; sessionsThisWeek: number; completedThisWeek: number; missedThisWeek: number;
   completionRate: number | null; activePlans: number; todaySessions: Schedule[]; expiringMembers: Subscription[]; weekLoad: LabelValue[];
+  assignedMembers?: TrainerMemberProgress[];
+}
+export interface TrainerMemberProgress {
+  memberId: number; code: string; fullName: string;
+  attendanceThisWeek: number | null; streakWeeks: number; nextSession: Schedule | null;
 }
 export interface MemberDashboard {
   member: Member; currentSubscription: Subscription | null; nextSession: Schedule | null; weekSessions: Schedule[];
