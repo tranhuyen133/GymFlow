@@ -12,6 +12,14 @@ export const EN_V2: Record<string, string> = {
   'Biểu đồ calo theo ngày': 'Daily calorie chart',
   'Hoàn thành buổi tập để hệ thống ước tính calo theo MET.': 'Complete a workout and the system will estimate calories using MET.',
   'Khởi động, chuyển bài & giãn cơ': 'Warm-up, transitions & stretching',
+  'buổi tập': 'sessions',
+  'phút vận động': 'active minutes',
+  'kcal / buổi': 'kcal / session',
+  'TB {n}': 'Avg {n}',
+  'buổi': 'sessions',
+  'Tuần đầu tiên có số liệu': 'First week with data',
+  'Ngày đốt nhiều nhất: {day} · {n} kcal': 'Best day: {day} · {n} kcal',
+  'Ước tính theo MET · cân nặng gần nhất': 'MET-based estimate · latest weight',
 
   // Huấn luyện viên
   'Tìm theo tên, chuyên môn, chứng chỉ…': 'Search by name, specialty, certificate…',
@@ -54,6 +62,24 @@ export const EN_V2: Record<string, string> = {
   'Phục hồi chức năng': 'Rehabilitation',
   'Dinh dưỡng thể thao': 'Sports nutrition',
   'Mobility': 'Mobility',
+
+  // Giới thiệu + chứng chỉ của HLV mẫu (DataSeeder + V46). HLV tự sửa giới thiệu thì hiển thị đúng nội dung đã nhập.
+  '6 năm huấn luyện, chuyên giáo án giảm mỡ cho người đi làm.': '6 years of coaching, specialising in fat-loss plans for working professionals.',
+  'Chuyên các bài mobility và phục hồi chấn thương nhẹ.': 'Specialises in mobility work and recovery from minor injuries.',
+  'Từng thi đấu powerlifting, tập trung kỹ thuật squat – deadlift.': 'Former competitive powerlifter, focused on squat and deadlift technique.',
+  'Chuyên giáo án tăng cơ cho người mới đến trung cấp: chia buổi theo nhóm cơ, tăng tạ có kế hoạch và theo dõi số đo mỗi tháng.':
+    'Builds muscle-gain plans for beginner to intermediate lifters: muscle-group splits, planned load progression and monthly body measurements.',
+  'Tập trung vào tư thế, cơ lõi và phục hồi sau chấn thương nhẹ vùng lưng – gối. Phù hợp dân văn phòng ngồi nhiều.':
+    'Focuses on posture, core strength and recovery from minor back and knee injuries. Ideal for people who sit at a desk all day.',
+  'Buổi tập ngắn 30–45 phút cường độ cao, kết hợp tạ và cardio để giảm mỡ nhưng vẫn giữ cơ. Luôn có bài thay thế cho người mới.':
+    'Short, high-intensity 30–45 minute sessions mixing weights and cardio to lose fat while keeping muscle. Beginner alternatives for every exercise.',
+  'Hơn 9 năm dạy yoga: cải thiện độ linh hoạt, hơi thở và giấc ngủ. Có lớp mobility bổ trợ cho người tập tạ.':
+    'Over 9 years teaching yoga: better flexibility, breathing and sleep. Also runs mobility sessions to support lifters.',
+  'Hướng dẫn kỹ thuật squat – bench – deadlift an toàn, lập chu kỳ tập theo phần trăm 1RM và chuẩn bị cho giải phong trào.':
+    'Coaches safe squat, bench and deadlift technique, programs training cycles by %1RM and prepares lifters for amateur meets.',
+  'Kết hợp tập luyện với thực đơn dễ làm theo khẩu phần Việt, theo dõi cân nặng hằng tuần và điều chỉnh calo hợp lý.':
+    'Pairs training with easy meal plans based on Vietnamese portions, tracks weight weekly and adjusts calories sensibly.',
+  'Sơ cứu cơ bản': 'Basic first aid',
 
   // Tin nhắn
   'Mỗi lần chỉ gửi được 1 tệp – đã chọn tệp đầu tiên': 'Only 1 file per message – the first file was selected',

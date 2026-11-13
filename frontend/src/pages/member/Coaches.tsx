@@ -8,7 +8,7 @@ import { Avatar, Button, Card, Empty, ErrorState, LoadingBlock, PageHead, Search
 import { DAYS } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import { t } from '../../i18n';
-import { allSpecialties, canMessage, certificateList, isoDay, matchesCoach, splitSpecialties, todayShift, weeklyHours } from './coachRules';
+import { allSpecialties, canMessage, certificateList, fold, isoDay, matchesCoach, specialtyCounts, splitSpecialties, todayShift, weeklyHours } from './coachRules';
 import './coaches.css';
 
 /** HLV đang phụ trách hội viên (được gán hoặc HLV của giáo án đang áp dụng); null = chưa biết. */
@@ -33,6 +33,7 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
   const [startingChatId, setStartingChatId] = useState<number | null>(null);
 
   const specialties = useMemo(() => allSpecialties(data ?? []), [data]);
+  const counts = useMemo(() => specialtyCounts(data ?? []), [data]);
   const filtered = useMemo(() => {
     const list = (data ?? []).filter((tr) => matchesCoach(tr, search, specialty));
     // HLV đang phụ trách lên đầu, sau đó theo kinh nghiệm
@@ -63,14 +64,28 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
       )}
 
       <div className="cz-toolbar">
-        <div className="cz-search"><SearchInput placeholder={t('Tìm theo tên, chuyên môn, chứng chỉ…')} value={search} onChange={setSearch} /></div>
+        <div className="cz-toolbar-top">
+          <div className="cz-search"><SearchInput placeholder={t('Tìm theo tên, chuyên môn, chứng chỉ…')} value={search} onChange={setSearch} /></div>
+          {data && (
+            <div className="cz-total">
+              <b>{filtered.length}</b><span>/ {data.length} {t('huấn luyện viên')}</span>
+            </div>
+          )}
+        </div>
         {specialties.length > 0 && (
-          <div className="cz-filters" role="group" aria-label={t('Chuyên môn')}>
-            <button type="button" className={`chip ${!specialty ? 'on' : ''}`} onClick={() => setSpecialty(null)}>{t('Tất cả')}</button>
-            {specialties.map((sp) => (
-              <button key={sp} type="button" className={`chip ${specialty === sp ? 'on' : ''}`} aria-pressed={specialty === sp}
-                onClick={() => setSpecialty(sp === specialty ? null : sp)}>{t(sp)}</button>
-            ))}
+          <div className="cz-filter">
+            <span className="cz-filter-label"><Icon name="filter" size={14} />{t('Chuyên môn')}</span>
+            <div className="cz-tabs" role="group" aria-label={t('Chuyên môn')}>
+              <button type="button" className={`cz-tab ${!specialty ? 'active' : ''}`} aria-pressed={!specialty} onClick={() => setSpecialty(null)}>
+                {t('Tất cả')}<i>{data?.length ?? 0}</i>
+              </button>
+              {specialties.map((sp) => (
+                <button key={sp} type="button" className={`cz-tab ${specialty === sp ? 'active' : ''}`} aria-pressed={specialty === sp}
+                  onClick={() => setSpecialty(sp === specialty ? null : sp)}>
+                  {t(sp)}<i>{counts.get(fold(sp)) ?? 0}</i>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -89,7 +104,7 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
         </Card>
       ) : (
         <>
-          <p className="tiny faint cz-count">{t('{n} huấn luyện viên', { n: filtered.length })}</p>
+
           <div className="cz-grid">
             {filtered.map((tr) => {
               const days = new Set(tr.shifts.map((s) => s.dayOfWeek));
@@ -128,14 +143,14 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
                   </div>
 
                   {certs.length > 0 && (
-                    <div className="cz-certs" title={certs.join(', ')}>
+                    <div className="cz-certs" title={certs.map((c) => t(c)).join(', ')}>
                       <Icon name="badge" size={14} />
-                      {certs.slice(0, 2).map((c) => <span key={c}>{c}</span>)}
+                      {certs.slice(0, 2).map((c) => <span key={c}>{t(c)}</span>)}
                       {certs.length > 2 && <span className="more">+{certs.length - 2}</span>}
                     </div>
                   )}
 
-                  {tr.bio && <p className="cz-bio">{tr.bio}</p>}
+                  {tr.bio && <p className="cz-bio">{t(tr.bio.trim())}</p>}
 
                   <div className="cz-week" aria-label={t('Ngày có ca trong tuần')}>
                     {DAYS.map((d, i) => (

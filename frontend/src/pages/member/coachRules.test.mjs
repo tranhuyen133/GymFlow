@@ -23,6 +23,13 @@ test('bộ lọc chuyên môn gộp mọi HLV, không trùng, sắp xếp tiến
   assert.deepEqual(R.allSpecialties(list), ['Phục hồi chức năng', 'Powerlifting', 'Sức mạnh', 'Yoga']);
 });
 
+test('đếm HLV theo chuyên môn: không phân biệt hoa thường / dấu, mỗi HLV tính 1 lần', () => {
+  const c = R.specialtyCounts([{ specialty: 'Yoga, yoga, Giảm mỡ' }, { specialty: 'giảm mỡ' }, { specialty: null }]);
+  assert.equal(c.get('yoga'), 1);
+  assert.equal(c.get('giam mo'), 2);
+  assert.equal(c.size, 2);
+});
+
 test('tìm kiếm không dấu, nhiều từ, theo tên / chuyên môn / chứng chỉ', () => {
   assert.equal(R.matchesCoach(coach(), 'giam mo', null), true);
   assert.equal(R.matchesCoach(coach(), 'PHUC nasm', null), true);

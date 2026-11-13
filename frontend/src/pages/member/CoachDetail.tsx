@@ -92,7 +92,7 @@ export default function CoachDetail() {
         <div className="cd-main">
           <section className="cd-section">
             <h3><span className="cd-ic"><Icon name="user" size={16} /></span>{t('Giới thiệu')}</h3>
-            <p className="cd-text">{coach.bio || t('Huấn luyện viên chưa cập nhật phần giới thiệu.')}</p>
+            <p className="cd-text">{coach.bio?.trim() ? t(coach.bio.trim()) : t('Huấn luyện viên chưa cập nhật phần giới thiệu.')}</p>
           </section>
 
           <section className="cd-section">
@@ -121,7 +121,7 @@ export default function CoachDetail() {
           <section className="cd-section">
             <h3><span className="cd-ic"><Icon name="badge" size={16} /></span>{t('Bằng cấp & Chứng chỉ')}</h3>
             {certs.length ? (
-              <div className="cd-certs">{certs.map((c) => <span key={c} className="cd-cert"><Icon name="checkCircle" size={14} />{c}</span>)}</div>
+              <div className="cd-certs">{certs.map((c) => <span key={c} className="cd-cert"><Icon name="checkCircle" size={14} />{t(c)}</span>)}</div>
             ) : <p className="cd-text">{t('Chưa cập nhật chứng chỉ.')}</p>}
           </section>
           {shift && (

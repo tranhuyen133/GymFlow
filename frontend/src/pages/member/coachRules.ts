@@ -31,6 +31,21 @@ export function allSpecialties(list: { specialty: string | null }[]): string[] {
   return [...map.values()].sort((a, b) => a.localeCompare(b, 'vi'));
 }
 
+/** Số HLV theo từng chuyên môn (mỗi HLV tính 1 lần cho mỗi chuyên môn), dùng cho nhãn đếm ở bộ lọc. */
+export function specialtyCounts(list: { specialty: string | null }[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const tr of list) {
+    const seen = new Set<string>();
+    for (const sp of splitSpecialties(tr.specialty)) {
+      const key = fold(sp);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
 /** Bỏ dấu tiếng Việt + chữ thường để tìm "giam mo" vẫn ra "Giảm mỡ". */
 export function fold(s: string | null | undefined): string {
   return (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase().trim();
