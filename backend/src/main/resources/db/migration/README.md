@@ -15,6 +15,8 @@
 | `V27__calorie_backfill.sql` | Ước tính calo MET | Bổ sung dữ liệu calo và bảng met_references |
 | `V28__messaging_enhancements.sql` | Tin nhắn HLV ↔ Hội viên & Admin | Bổ sung updated_at cho conversations, sender_role, attachment_url, deleted_at cho messages, index tối ưu truy vấn |
 | `V29__fix_exercise_subcategory.sql` | TASK 01 / SCRUM-229 | Chuẩn hoá sub_category bài tập (LEGS vs GLUTES, BICEPS vs TRICEPS, CARDIO), ẩn bài trùng #145 |
+| `V30__exercise_description_en.sql` | Song ngữ bài tập / SCRUM-229 | Thêm cột description_en, chuẩn hoá tên tiếng Việt cho 33 bài tập và cập nhật mô tả tiếng Anh cho 164 bài |
+| `V31__exercise_content_en.sql` | Song ngữ nội dung chi tiết / SCRUM-229 | Thêm các cột `*_en` cho hướng dẫn, hít thở, lỗi sai, an toàn, liều tập và nạp bản dịch cho 164 bài |
 
 Quy tắc:
 - Không sửa file đã merge. Tạo migration với số cao hơn migration mới nhất đã áp dụng; bỏ qua được V9–V12 trên một số CSDL demo cũ bằng cấu hình Flyway.

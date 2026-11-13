@@ -205,7 +205,7 @@ public class Mappers {
         List<KnowledgeDtos.EquipmentSummary> eqSummaries = e.getEquipments() == null ? List.of() :
                 e.getEquipments().stream().map(eq -> new KnowledgeDtos.EquipmentSummary(eq.getKey(), eq.getName(), eq.getCategory(), eq.getImageKey())).toList();
         return new ExerciseResponse(e.getId(), e.getName(), e.getMuscleGroup(), e.getEquipment(), e.getLevel(),
-                e.getDescription(), e.getInstructions(), e.getVideoUrl(), e.isHidden(),
+                e.getDescription(), e.getDescriptionEn(), e.getInstructions(), e.getVideoUrl(), e.isHidden(),
                 planItemRepository.countByExerciseId(e.getId()),
                 e.getCreatedBy() == null ? null : e.getCreatedBy().getFullName(),
                 e.getNameEn(), e.getAliases(), e.getSecondaryMuscles(), e.getLocation(), parseGoals(e.getGoals()),
@@ -231,7 +231,10 @@ public class Mappers {
                 e.getExerciseType(),
                 e.getSubCategory(),
                 isFavorite,
-                eqSummaries);
+                eqSummaries,
+                e.getInstructionsEn(), e.getStepsEn(), e.getSetupPositionEn(), e.getBreathingEn(),
+                e.getCommonMistakesEn(), e.getSafetyNotesEn(), e.getSuggestedDoseEn(), e.getSetsRepsHintEn(),
+                e.getVariationsEn());
     }
 
     public ExerciseSummary exerciseSummary(Exercise e) {

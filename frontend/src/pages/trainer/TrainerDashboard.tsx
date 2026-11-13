@@ -23,6 +23,7 @@ export default function TrainerDashboard() {
   if (loading || !data) return <div className="page"><PageHead title="Tổng quan" /><LoadingBlock rows={6} /></div>;
   const now = new Date();
   const next = data.todaySessions.find((s) => s.status === 'SCHEDULED' && parseDateTime(s.endTime) > now);
+  const assignedMembers = data.assignedMembers ?? [];
 
   return (
     <div className="page">
@@ -79,6 +80,27 @@ export default function TrainerDashboard() {
                   <td>{t(s.planName)}</td>
                   <td>{fmtDate(s.endDate)}</td>
                   <td className="right"><Badge tone="amber">{s.daysLeft} ngày</Badge></td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Card>
+      <Card className="mt-24" title="Hội viên phụ trách & tiến độ" icon="users" flush>
+        {assignedMembers.length === 0 ? <Empty icon="users" title="Chưa có hội viên phụ trách" /> : (
+          <Table caption="Hội viên phụ trách & tiến độ">
+            <thead><tr><th>Hội viên</th><th className="right">Đi tập tuần này</th><th className="right">Chuỗi tuần</th><th>Buổi tiếp theo</th></tr></thead>
+            <tbody>
+              {assignedMembers.map((m) => (
+                <tr key={m.memberId} className="clickable" onClick={() => navigate(`/members/${m.memberId}`)}>
+                  <td><Person name={m.fullName} sub={m.code} size="sm" /></td>
+                  <td className="right">
+                    <Badge tone={m.attendanceThisWeek == null ? 'muted' : m.attendanceThisWeek >= 80 ? 'green' : m.attendanceThisWeek >= 50 ? 'amber' : 'red'}>
+                      {m.attendanceThisWeek == null ? '—' : `${m.attendanceThisWeek}%`}
+                    </Badge>
+                  </td>
+                  <td className="right">{t('{n} tuần', { n: m.streakWeeks })}</td>
+                  <td>{m.nextSession ? <span className="nowrap">{fmtDate(m.nextSession.startTime)} · {fmtTime(m.nextSession.startTime)}</span> : <span className="muted">{t('Chưa có lịch')}</span>}</td>
                 </tr>
               ))}
             </tbody>

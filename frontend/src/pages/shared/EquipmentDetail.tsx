@@ -13,6 +13,7 @@ import { errMsg, useAsync } from '../../lib/hooks';
 import { Badge, Empty, ErrorState, LoadingBlock, PageHead, Pager } from '../../components/ui';
 import { getLang, t } from '../../i18n';
 import { EQUIPMENT_BY_KEY, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey, type MuscleKey } from '../../lib/anatomy';
+import { localizeExercise } from '../../lib/exercise';
 import { exSub, exTitle, levelLabel } from '../../lib/format';
 import { useAsync, usePaged } from '../../lib/hooks';
 import './kb.css';
@@ -66,7 +67,7 @@ export default function EquipmentDetail() {
     });
   }, [eq, selectedLevel, selectedMuscle]);
 
-  const paged = usePaged(filteredExercises, 'equipment-exercises-page', [key, selectedLevel, selectedMuscle], 12);
+  const paged = usePaged(filteredExercises, 'equipment-exercises-page', `${key}|${selectedLevel}|${selectedMuscle}`, 12);
 
   if (loading) return <div className="page"><LoadingBlock rows={8} /></div>;
   if (error || !eq) return <div className="page"><ErrorState message={error || 'Không tìm thấy dụng cụ'} onRetry={reload} /></div>;
@@ -253,9 +254,9 @@ export default function EquipmentDetail() {
                           {exSub(e) && <div className="tiny faint" lang="vi">{exSub(e)}</div>}
                         </div>
 
-                        {e.description && (
+                        {localizeExercise(e, getLang()).description && (
                           <p className="small muted line-clamp-2" style={{ margin: 0 }}>
-                            {e.description}
+                            {localizeExercise(e, getLang()).description}
                           </p>
                         )}
 

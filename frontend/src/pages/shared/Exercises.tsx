@@ -10,8 +10,9 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, SearchInput, Segmented, Select, StatusBadge, Textarea } from '../../components/ui';
 import { exSub, exTitle, fmtDateTime, formatEquipment, goalLabel, levelLabel, locationLabel, muscleLabel, reviewLabel } from '../../lib/format';
+import { localizeExercise, localizeExerciseContent } from '../../lib/exercise';
 import { errMsg, fieldErrs, useAsync, useDebounced, usePaged } from '../../lib/hooks';
-import { t } from '../../i18n';
+import { getLang, t } from '../../i18n';
 import './exercises.css';
 import { EQUIPMENT, EQUIPMENT_BY_KEY, isMuscleKey, MUSCLE_BY_KEY, MUSCLES, type EquipmentKey, type MuscleKey } from '../../lib/anatomy';
 import { autoChecks, countSteps, exerciseFieldErrors, MANUAL_CHECKS, MIN_DESCRIPTION, MIN_STEPS } from '../../lib/validation';
@@ -115,7 +116,7 @@ export default function Exercises() {
     const norm = fold(q.trim());
     if (!norm || norm.length < 2 || !data) return [];
     return data
-      .filter((e) => fold(e.name).includes(norm) || (e.nameEn && fold(e.nameEn).includes(norm)) || (e.aliases && fold(e.aliases).includes(norm)))
+      .filter((e) => fold(e.name).includes(norm) || (e.nameEn && fold(e.nameEn).includes(norm)) || (e.aliases && fold(e.aliases).includes(norm)) || (e.description && fold(e.description).includes(norm)) || (e.descriptionEn && fold(e.descriptionEn).includes(norm)))
       .slice(0, 6);
   }, [data, q]);
 
@@ -371,7 +372,7 @@ export default function Exercises() {
                     </div>
                     <StatusBadge map={levelLabel} value={e.level} />
                   </div>
-                  {e.description && <p className="small muted" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{e.description}</p>}
+                  {localizeExercise(e, getLang()).description && <p className="small muted" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{localizeExercise(e, getLang()).description}</p>}
                   <div className="row row-wrap" style={{ gap: 6 }}>
                     <StatusBadge map={reviewLabel} value={e.reviewStatus} />
                     <span className="tiny faint">{e.sources.length > 0 ? t('{n} nguồn', { n: e.sources.length }) : t('Chưa có nguồn')}</span>
@@ -506,6 +507,7 @@ function ExerciseDetail({ exercise: e, canReview, queue, onClose, onEdit, onRevi
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const auto = autoChecks(reviewable(e));
   const autoOk = auto.every((c) => c.ok);
+  const content = localizeExerciseContent(e, getLang());
   const manualOk = MANUAL_CHECKS.every((c) => ticked[c.id]);
   const missing = auto.filter((c) => !c.ok);
 
@@ -560,7 +562,7 @@ function ExerciseDetail({ exercise: e, canReview, queue, onClose, onEdit, onRevi
           </div>
         </div>
         <HealthDisclaimer pending={e.reviewStatus !== 'APPROVED'} />
-        {e.description ? <p className="muted">{e.description}</p> : <p className="small"><Missing /></p>}
+        {localizeExercise(e, getLang()).description ? <p className="muted">{localizeExercise(e, getLang()).description}</p> : <p className="small"><Missing /></p>}
 
         <div className="info-grid">
           <InfoRow label={t('Tên tiếng Anh')} value={e.nameEn} />
@@ -569,14 +571,14 @@ function ExerciseDetail({ exercise: e, canReview, queue, onClose, onEdit, onRevi
           <InfoRow label={t('Cơ phụ trợ')} value={e.secondaryMuscles} />
         </div>
 
-        <TextBlock title={t('Hướng dẫn thực hiện')} text={e.instructions} />
+        <TextBlock title={t('Hướng dẫn thực hiện')} text={content.steps || content.instructions} />
         <div className="grid grid-2" style={{ gap: 16 }}>
-          <TextBlock title={t('Hơi thở')} text={e.breathing} />
-          <TextBlock title="Liều gợi ý" text={e.suggestedDose} />
-          <TextBlock title="Lỗi thường gặp" text={e.commonMistakes} />
-          <TextBlock title="Biến thể" text={e.variations} />
+          <TextBlock title={t('Hơi thở')} text={content.breathing} />
+          <TextBlock title="Liều gợi ý" text={content.suggestedDose} />
+          <TextBlock title="Lỗi thường gặp" text={content.commonMistakes} />
+          <TextBlock title="Biến thể" text={content.variations} />
         </div>
-        <TextBlock title="Lưu ý an toàn" text={e.safetyNotes} />
+        <TextBlock title="Lưu ý an toàn" text={content.safetyNotes} />
         {e.videoUrl && <a className="btn btn-info" href={e.videoUrl} target="_blank" rel="noreferrer noopener"><Icon name="play" /><span>{t('Xem video hướng dẫn')}</span></a>}
 
         <div>
@@ -657,7 +659,9 @@ const TABS: { id: Tab; label: string; desc?: string }[] = [
 ];
 // Ô nào thuộc tab nào – để nhảy tới đúng tab khi có lỗi (kể cả lỗi theo trường do backend trả về)
 const FIELD_TAB: Record<string, Tab> = {
-  name: 'basic', nameEn: 'basic', aliases: 'basic', description: 'basic',
+  name: 'basic', nameEn: 'basic', aliases: 'basic', description: 'basic', descriptionEn: 'basic',
+  setupPositionEn: 'guide', stepsEn: 'guide', breathingEn: 'guide', commonMistakesEn: 'guide',
+  safetyNotesEn: 'safety', suggestedDoseEn: 'safety', setsRepsHintEn: 'safety', variationsEn: 'guide',
   muscleGroup: 'class', secondaryMuscles: 'class', level: 'class', location: 'class', equipment: 'class', goals: 'class',
   targetMuscles: 'class', secondaryMuscleKeys: 'class', equipmentKeys: 'class', imageKey: 'class',
   instructions: 'guide', breathing: 'guide', commonMistakes: 'guide', variations: 'guide', videoUrl: 'guide',
@@ -700,11 +704,11 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
     equipment: base?.equipment ?? '', level: base?.level ?? ('BEGINNER' as Level),
     location: (base?.location ?? '') as ExerciseLocation | '', goals: base?.goals ?? ([] as ExerciseGoal[]),
     primaryGoal: (base?.primaryGoal ?? (base?.goals?.[0] ?? '')) as ExerciseGoal | '',
-    description: base?.description ?? '', instructions: base?.instructions ?? '',
-    setupPosition: base?.setupPosition ?? '', steps: base?.steps ?? base?.instructions ?? '',
-    breathing: base?.breathing ?? '', commonMistakes: base?.commonMistakes ?? '',
-    safetyNotes: base?.safetyNotes ?? '', variations: base?.variations ?? '',
-    suggestedDose: base?.suggestedDose ?? '', setsRepsHint: base?.setsRepsHint ?? '',
+    description: base?.description ?? '', descriptionEn: base?.descriptionEn ?? '', instructions: base?.instructions ?? '',
+    setupPosition: base?.setupPosition ?? '', setupPositionEn: base?.setupPositionEn ?? '', steps: base?.steps ?? base?.instructions ?? '', stepsEn: base?.stepsEn ?? base?.instructionsEn ?? '',
+    breathing: base?.breathing ?? '', breathingEn: base?.breathingEn ?? '', commonMistakes: base?.commonMistakes ?? '', commonMistakesEn: base?.commonMistakesEn ?? '',
+    safetyNotes: base?.safetyNotes ?? '', safetyNotesEn: base?.safetyNotesEn ?? '', variations: base?.variations ?? '', variationsEn: base?.variationsEn ?? '',
+    suggestedDose: base?.suggestedDose ?? '', suggestedDoseEn: base?.suggestedDoseEn ?? '', setsRepsHint: base?.setsRepsHint ?? '', setsRepsHintEn: base?.setsRepsHintEn ?? '',
     videoUrl: base?.videoUrl ?? '', alternativeIds: base?.alternatives?.map((a) => a.id) ?? ([] as number[]),
     contentOrigin: base?.contentOrigin ?? ('SELF_AUTHORED' as ContentOrigin), sourceIds: base?.sources.map((s) => s.id) ?? ([] as number[]),
     targetMuscles: base ? targetOf(base) : ([] as MuscleKey[]), secondaryMuscleKeys: base ? secondaryOf(base) : ([] as MuscleKey[]),
@@ -784,6 +788,10 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
     try {
       const body = {
         ...f, name: blank(f.name).replace(/\s+/g, " "), nameEn: blank(f.nameEn), aliases: blank(f.aliases), secondaryMuscles: blank(f.secondaryMuscles),
+        description: blank(f.description), descriptionEn: blank(f.descriptionEn),
+        setupPositionEn: blank(f.setupPositionEn), stepsEn: blank(f.stepsEn), breathingEn: blank(f.breathingEn),
+        commonMistakesEn: blank(f.commonMistakesEn), safetyNotesEn: blank(f.safetyNotesEn), variationsEn: blank(f.variationsEn),
+        suggestedDoseEn: blank(f.suggestedDoseEn), setsRepsHintEn: blank(f.setsRepsHintEn),
         equipment: blank(f.equipment), breathing: blank(f.breathing), suggestedDose: blank(f.suggestedDose), videoUrl: blank(f.videoUrl),
         setupPosition: blank(f.setupPosition), steps: blank(f.steps), setsRepsHint: blank(f.setsRepsHint),
         primaryGoal: f.primaryGoal || null, alternativeIds: f.alternativeIds,
@@ -854,6 +862,10 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
             <Field label="Mô tả ngắn" className="span-2" hint={t('Tối thiểu {n} ký tự để được duyệt', { n: MIN_DESCRIPTION })}>
               <Textarea maxLength={1000} rows={2} value={f.description} onChange={(e) => set('description', e.target.value)} />
               <Count value={f.description} max={1000} />
+            </Field>
+            <Field label="Mô tả tiếng Anh" className="span-2" hint={t('Dùng cho giao diện tiếng Anh; để trống sẽ hiển thị mô tả tiếng Việt')}>
+              <Textarea maxLength={1000} rows={2} value={f.descriptionEn} onChange={(e) => set('descriptionEn', e.target.value)} />
+              <Count value={f.descriptionEn} max={1000} />
             </Field>
           </FormSection>
 
@@ -971,18 +983,35 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
               <Textarea maxLength={1000} rows={2} value={f.setupPosition} onChange={(e) => set('setupPosition', e.target.value)} placeholder="Đứng thẳng, chân mở rộng bằng vai..." />
               <Count value={f.setupPosition} max={1000} />
             </Field>
+            <Field label="Tư thế chuẩn bị (EN)" className="span-2">
+              <Textarea maxLength={1000} rows={2} value={f.setupPositionEn} onChange={(e) => set('setupPositionEn', e.target.value)} />
+              <Count value={f.setupPositionEn} max={1000} />
+            </Field>
             <Field label="Các bước thực hiện (đánh số)" className="span-2" hint={t('Mỗi bước một dòng, cần ít nhất {n} bước · hiện có {k} bước', { n: MIN_STEPS, k: countSteps(f.steps || f.instructions) })}>
               <Textarea maxLength={2000} rows={5} value={f.steps} onChange={(e) => set('steps', e.target.value)} placeholder="1. Hạ tạ xuống...&#10;2. Đẩy mạnh lên..." />
               <Count value={f.steps} max={2000} />
             </Field>
+            <Field label="Các bước thực hiện (EN)" className="span-2" hint={t('Mỗi bước một dòng, giữ đúng số bước như bản tiếng Việt')}>
+              <Textarea maxLength={2000} rows={5} value={f.stepsEn} onChange={(e) => set('stepsEn', e.target.value)} />
+              <Count value={f.stepsEn} max={2000} />
+            </Field>
             <Field label="Hơi thở" className="span-2"><Input maxLength={500} value={f.breathing} onChange={(e) => set('breathing', e.target.value)} placeholder="VD: Hít vào khi hạ người, thở ra khi đứng lên" /></Field>
+            <Field label="Hơi thở (EN)" className="span-2"><Input maxLength={500} value={f.breathingEn} onChange={(e) => set('breathingEn', e.target.value)} /></Field>
             <Field label="Lỗi thường gặp">
               <Textarea maxLength={2000} rows={3} value={f.commonMistakes} onChange={(e) => set('commonMistakes', e.target.value)} />
               <Count value={f.commonMistakes} max={2000} />
             </Field>
+            <Field label="Lỗi thường gặp (EN)">
+              <Textarea maxLength={2000} rows={3} value={f.commonMistakesEn} onChange={(e) => set('commonMistakesEn', e.target.value)} />
+              <Count value={f.commonMistakesEn} max={2000} />
+            </Field>
             <Field label="Biến thể">
               <Textarea maxLength={2000} rows={3} value={f.variations} onChange={(e) => set('variations', e.target.value)} />
               <Count value={f.variations} max={2000} />
+            </Field>
+            <Field label="Biến thể (EN)">
+              <Textarea maxLength={2000} rows={3} value={f.variationsEn} onChange={(e) => set('variationsEn', e.target.value)} />
+              <Count value={f.variationsEn} max={2000} />
             </Field>
             <Field label="Link video (YouTube / Vimeo)" error={errors.videoUrl} className="span-2" hint="Chấp nhận link youtube.com, youtu.be, vimeo.com">
               <Input maxLength={255} value={f.videoUrl} invalid={!!errors.videoUrl} onBlur={() => blurCheck('videoUrl')} onChange={(e) => set('videoUrl', e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
@@ -1002,10 +1031,18 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
               <Textarea maxLength={2000} rows={3} value={f.safetyNotes} onChange={(e) => set('safetyNotes', e.target.value)} />
               <Count value={f.safetyNotes} max={2000} />
             </Field>
+            <Field label="Lưu ý an toàn (EN)" className="span-2">
+              <Textarea maxLength={2000} rows={3} value={f.safetyNotesEn} onChange={(e) => set('safetyNotesEn', e.target.value)} />
+              <Count value={f.safetyNotesEn} max={2000} />
+            </Field>
             <Field label="Gợi ý số hiệp & số lần (Sets & Reps)" className="span-2" hint="VD: 3 hiệp x 10–12 lần">
               <Input maxLength={100} value={f.setsRepsHint} onChange={(e) => set('setsRepsHint', e.target.value)} placeholder="VD: 3 hiệp x 10–12 lần" />
             </Field>
+            <Field label="Sets & Reps (EN)" className="span-2">
+              <Input maxLength={100} value={f.setsRepsHintEn} onChange={(e) => set('setsRepsHintEn', e.target.value)} />
+            </Field>
             <Field label="Liều gợi ý" hint="Chỉ ghi khi có nguồn; để trống sẽ hiện “Chưa có dữ liệu”" className="span-2"><Input maxLength={255} value={f.suggestedDose} onChange={(e) => set('suggestedDose', e.target.value)} /></Field>
+            <Field label="Liều gợi ý (EN)" className="span-2"><Input maxLength={255} value={f.suggestedDoseEn} onChange={(e) => set('suggestedDoseEn', e.target.value)} /></Field>
           </FormSection>
 
           <FormSection id="source" active={tab}>

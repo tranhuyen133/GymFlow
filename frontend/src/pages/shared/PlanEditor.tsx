@@ -160,7 +160,7 @@ export default function PlanEditor() {
     return approvedLib
       .filter((e) => !groupFilter || e.muscleGroup === groupFilter)
       .filter((e) => !muscleFilter || targetOf(e).includes(muscleFilter))
-      .filter((e) => !k || `${e.name} ${e.nameEn ?? ''} ${e.aliases ?? ''} ${e.equipment ?? ''}`.toLowerCase().includes(k))
+      .filter((e) => !k || `${e.name} ${e.nameEn ?? ''} ${e.aliases ?? ''} ${e.equipment ?? ''} ${e.description ?? ''} ${e.descriptionEn ?? ''}`.toLowerCase().includes(k))
       .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
   }, [approvedLib, groupFilter, muscleFilter, libQ]);
   // Số hiệp mỗi vùng cơ chính nhận được trong cả tuần: thấy ngay nhóm nào đang bị bỏ quên

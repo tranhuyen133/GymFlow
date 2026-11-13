@@ -298,7 +298,10 @@ export type ExerciseType = 'STRENGTH' | 'WARMUP' | 'CARDIO';
 
 export interface Exercise {
   id: number; name: string; muscleGroup: MuscleGroup; equipment: string | null; level: Level;
-  description: string | null; instructions: string | null; videoUrl: string | null; hidden: boolean;
+  description: string | null; descriptionEn?: string | null; instructions: string | null; videoUrl: string | null; hidden: boolean;
+  instructionsEn?: string | null; stepsEn?: string | null;
+  setupPositionEn?: string | null; breathingEn?: string | null; commonMistakesEn?: string | null;
+  safetyNotesEn?: string | null; suggestedDoseEn?: string | null; setsRepsHintEn?: string | null; variationsEn?: string | null;
   usageCount: number; createdByName: string | null;
   nameEn: string | null; aliases: string | null; secondaryMuscles: string | null; location: ExerciseLocation | null;
   goals: ExerciseGoal[]; breathing: string | null; commonMistakes: string | null; safetyNotes: string | null;
@@ -483,6 +486,11 @@ export interface AdminDashboard {
 export interface TrainerDashboard {
   memberCount: number; sessionsToday: number; sessionsThisWeek: number; completedThisWeek: number; missedThisWeek: number;
   completionRate: number | null; activePlans: number; todaySessions: Schedule[]; expiringMembers: Subscription[]; weekLoad: LabelValue[];
+  assignedMembers?: TrainerMemberProgress[];
+}
+export interface TrainerMemberProgress {
+  memberId: number; code: string; fullName: string;
+  attendanceThisWeek: number | null; streakWeeks: number; nextSession: Schedule | null;
 }
 export interface MemberDashboard {
   member: Member; currentSubscription: Subscription | null; nextSession: Schedule | null; weekSessions: Schedule[];
