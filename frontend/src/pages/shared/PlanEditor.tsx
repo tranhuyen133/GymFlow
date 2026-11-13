@@ -11,6 +11,7 @@ import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, SearchInput, Select, StatusBadge, Textarea } from '../../components/ui';
 import { getLang, t, tn } from '../../i18n';
 import { localizeExercise } from '../../lib/exercise';
+import { localizePlanName, localizeText } from '../../lib/planText';
 import { addDays, DAYS, DAY_NAMES, formatEquipment, levelLabel, muscleColor, muscleLabel, planStatus, toIsoDate } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { checkPlanName, itemProblems, type ItemField } from '../../lib/validation';
@@ -22,11 +23,12 @@ type Draft = PlanItem & { key: number };
 let keySeq = 1;
 
 /** Ảnh chụp nội dung form để so với bản đã lưu: chỉ hỏi "rời trang?" khi thật sự có thay đổi. */
-function snapshot(v: { memberId: string; name: string; goal: string; start: string; end: string; note: string; items: PlanItem[] }) {
+function snapshot(v: { memberId: string; name: string; nameEn?: string; goal: string; goalEn?: string; start: string; end: string; note: string; noteEn?: string; items: PlanItem[] }) {
   return JSON.stringify({
-    m: v.memberId, n: v.name.trim(), g: v.goal.trim(), s: v.start, e: v.end, o: v.note.trim(),
+    m: v.memberId, n: v.name.trim(), ne: (v.nameEn ?? '').trim(), g: v.goal.trim(), ge: (v.goalEn ?? '').trim(),
+    s: v.start, e: v.end, o: v.note.trim(), oe: (v.noteEn ?? '').trim(),
     i: [...v.items].sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.sortOrder - b.sortOrder)
-      .map((x) => [x.exerciseId, x.dayOfWeek, x.sets, x.reps.trim(), x.weightKg, x.restSeconds, x.durationMinutes, (x.note ?? '').trim()]),
+      .map((x) => [x.exerciseId, x.dayOfWeek, x.sets, x.reps.trim(), x.weightKg, x.restSeconds, x.durationMinutes, (x.note ?? '').trim(), (x.noteEn ?? '').trim()]),
   });
 }
 
@@ -47,10 +49,13 @@ export default function PlanEditor() {
   const [memberId, setMemberId] = useState(self ? String(me.memberId ?? '') : params.get('memberId') ?? '');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [name, setName] = useState('');
+  const [nameEn, setNameEn] = useState('');
   const [goal, setGoal] = useState('');
+  const [goalEn, setGoalEn] = useState('');
   const [start, setStart] = useState(toIsoDate(new Date()));
   const [end, setEnd] = useState(toIsoDate(addDays(new Date(), 55)));
   const [note, setNote] = useState('');
+  const [noteEn, setNoteEn] = useState('');
   const [items, setItems] = useState<Draft[]>([]);
   const [day, setDay] = useState(1);
   const [selectedDays, setSelectedDays] = useState<Set<number>>(() => new Set([1, 3, 5]));
@@ -75,13 +80,13 @@ export default function PlanEditor() {
   useEffect(() => {
     const p = plan.data;
     if (!p) return;
-    setMemberId(String(p.summary.memberId)); setName(p.summary.name); setGoal(p.summary.goal ?? '');
-    setStart(p.summary.startDate); setEnd(p.summary.endDate); setNote(p.note ?? '');
+    setMemberId(String(p.summary.memberId)); setName(p.summary.name); setNameEn(p.summary.nameEn ?? ''); setGoal(p.summary.goal ?? ''); setGoalEn(p.summary.goalEn ?? '');
+    setStart(p.summary.startDate); setEnd(p.summary.endDate); setNote(p.note ?? ''); setNoteEn(p.noteEn ?? '');
     setItems(p.items.map((i) => ({ ...i, key: keySeq++ })));
     setDay(p.items[0]?.dayOfWeek ?? 1);
     const dows = new Set(p.items.map((i) => i.dayOfWeek));
     if (dows.size > 0) setSelectedDays(dows);
-    setBaseline(snapshot({ memberId: String(p.summary.memberId), name: p.summary.name, goal: p.summary.goal ?? '', start: p.summary.startDate, end: p.summary.endDate, note: p.note ?? '', items: p.items }));
+    setBaseline(snapshot({ memberId: String(p.summary.memberId), name: p.summary.name, nameEn: p.summary.nameEn ?? '', goal: p.summary.goal ?? '', goalEn: p.summary.goalEn ?? '', start: p.summary.startDate, end: p.summary.endDate, note: p.note ?? '', noteEn: p.noteEn ?? '', items: p.items }));
   }, [plan.data]);
 
   const toggleDay = (d: number) => {
@@ -104,7 +109,7 @@ export default function PlanEditor() {
     }
   };
 
-  const current = snapshot({ memberId, name, goal, start, end, note, items });
+  const current = snapshot({ memberId, name, nameEn, goal, goalEn, start, end, note, noteEn, items });
   // Tạo mới: chỉ tính là "có thay đổi" khi đã tự nhập tên, ghi chú hoặc thêm bài (hội viên, mục tiêu, ngày được điền sẵn)
   const dirty = isNew ? items.length > 0 || !!name.trim() || !!note.trim() : baseline !== null && current !== baseline;
 
@@ -273,10 +278,13 @@ export default function PlanEditor() {
     }
     setBusy(true);
     const body = {
-      memberId: Number(memberId), name: name.trim().replace(/\s+/g, ' '), goal: goal.trim() || null, startDate: start, endDate: end, note: note.trim() || null,
+      memberId: Number(memberId), name: name.trim().replace(/\s+/g, ' '), nameEn: nameEn.trim() || null,
+      goal: goal.trim() || null, goalEn: goalEn.trim() || null, startDate: start, endDate: end,
+      note: note.trim() || null, noteEn: noteEn.trim() || null,
       items: [...items].sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.sortOrder - b.sortOrder).map((i) => ({
         exerciseId: i.exerciseId, dayOfWeek: i.dayOfWeek, sortOrder: i.sortOrder, sets: i.sets, reps: i.reps.trim(),
-        weightKg: i.weightKg, restSeconds: i.restSeconds, durationMinutes: i.durationMinutes, note: i.note?.trim() || null,
+        weightKg: i.weightKg, restSeconds: i.restSeconds, durationMinutes: i.durationMinutes,
+        note: i.note?.trim() || null, noteEn: i.noteEn?.trim() || null,
       })),
     };
     try {
@@ -300,7 +308,7 @@ export default function PlanEditor() {
   if (self && summary && summary.trainerId != null) {
     return (
       <div className="page">
-        <PageHead eyebrow={t('Tập luyện')} title={summary.name} />
+        <PageHead eyebrow={t('Tập luyện')} title={localizePlanName(summary)} />
         <Alert kind="info" action={<Link to="/me/plan" className="btn btn-secondary btn-sm"><span>{t('Giáo án của tôi')}</span></Link>}>
           {t('Giáo án này do HLV {name} soạn nên bạn chỉ xem được. Cần đổi bài, hãy nhắn HLV.', { name: summary.trainerName ?? '' })}
         </Alert>
@@ -319,7 +327,7 @@ export default function PlanEditor() {
       >
         <Icon name="arrowLeft" size={15} />{self ? t('Giáo án của tôi') : t('Danh sách giáo án')}
       </button>
-      <PageHead eyebrow={isNew ? 'Giáo án mới' : t('Giáo án #{id}', { id })} title={isNew ? 'Soạn giáo án' : name || 'Giáo án'}
+      <PageHead eyebrow={isNew ? t('Giáo án mới') : t('Giáo án #{id}', { id })} title={isNew ? t('Soạn giáo án') : localizeText(nameEn, name) || t('Giáo án')}
         desc={summary ? <span className="row" style={{ gap: 8 }}><StatusBadge map={planStatus} value={summary.status} /> {ownDesc ?? (summary.trainerId == null
           ? tn('Hội viên tự soạn · {member}', { member: summary.memberName })
           : tn('HLV {trainer} · {member}', { trainer: summary.trainerName ?? '—', member: summary.memberName }))}</span>
@@ -426,6 +434,7 @@ export default function PlanEditor() {
                       {notApproved && <span title={t('Bài này không còn ở trạng thái đã duyệt. Vẫn giữ được trong giáo án, nhưng không thêm mới được.')}><Badge tone="amber">{ex?.hidden ? t('Đã ẩn') : t('Chờ duyệt lại')}</Badge></span>}
                     </div>
                     <input className="input" style={{ height: 28, marginTop: 4, fontSize: 12 }} maxLength={255} placeholder={t('Ghi chú…')} value={it.note ?? ''} onChange={(e) => update(it.key, { note: e.target.value })} />
+                    <input className="input" style={{ height: 28, marginTop: 4, fontSize: 12 }} maxLength={255} placeholder={t('Ghi chú EN…')} value={it.noteEn ?? ''} onChange={(e) => update(it.key, { noteEn: e.target.value })} />
                     {msgs.length > 0 && <div className="tiny" style={{ color: 'var(--bad)', marginTop: 4 }}>{msgs.map((m) => t(m)).join(' · ')}</div>}
                   </div>
                   <input className={`input ${errOf(it, 'sets') ? 'has-err' : ''}`} type="number" inputMode="numeric" min={1} max={20} step={1} value={Number.isNaN(it.sets) ? '' : it.sets}
@@ -477,12 +486,17 @@ export default function PlanEditor() {
                   onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((x) => ({ ...x, name: checkPlanName(e.target.value) ?? '' })); }}
                   onBlur={() => setErrors((x) => ({ ...x, name: name.trim() ? checkPlanName(name) ?? '' : x.name ?? '' }))} />
               </Field>
+              <Field label="Tên giáo án (EN)" hint="Dùng khi giao diện chuyển sang tiếng Anh">
+                <Input maxLength={120} value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
+              </Field>
               <Field label="Mục tiêu"><Input maxLength={255} value={goal} onChange={(e) => setGoal(e.target.value)} /></Field>
+              <Field label="Mục tiêu (EN)"><Input maxLength={255} value={goalEn} onChange={(e) => setGoalEn(e.target.value)} /></Field>
               <div className="form-grid">
                 <Field label="Bắt đầu" required><Input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></Field>
                 <Field label="Kết thúc" required error={errors.end}><Input type="date" value={end} min={start} invalid={!!errors.end} onChange={(e) => { setEnd(e.target.value); setErrors((x) => ({ ...x, end: '' })); }} /></Field>
               </div>
               <Field label="Ghi chú chung"><Textarea maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Khởi động, dinh dưỡng, lưu ý chấn thương…" /></Field>
+              <Field label="Ghi chú chung (EN)"><Textarea maxLength={1000} value={noteEn} onChange={(e) => setNoteEn(e.target.value)} /></Field>
             </div>
           </Card>
           <Card title={t('Thêm bài vào {day}', { day: DAYS[day - 1] })} icon="plus"

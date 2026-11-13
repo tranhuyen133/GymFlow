@@ -28,12 +28,18 @@ public class WorkoutPlanHistory {
     @Column(name = "old_plan_name", length = 120)
     private String oldPlanName;
 
+    @Column(name = "old_plan_name_en", length = 120)
+    private String oldPlanNameEn;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "new_plan_id", nullable = false)
     private WorkoutPlan newPlan;
 
     @Column(name = "new_plan_name", nullable = false, length = 120)
     private String newPlanName;
+
+    @Column(name = "new_plan_name_en", length = 120)
+    private String newPlanNameEn;
 
     @Column(name = "applied_at", nullable = false)
     private LocalDateTime appliedAt;
@@ -46,6 +52,9 @@ public class WorkoutPlanHistory {
 
     @Column(length = 255)
     private String note;
+
+    @Column(name = "note_en", length = 255)
+    private String noteEn;
 
     @PrePersist
     void onCreate() {

@@ -46,4 +46,7 @@ public class WorkoutPlanItem {
     private Integer durationMinutes;
 
     private String note;
+
+    @Column(name = "note_en", length = 255)
+    private String noteEn;
 }

@@ -146,11 +146,13 @@ public class WorkoutPlanService {
 
         WorkoutPlan oldPlan = null;
         String oldPlanName = null;
+        String oldPlanNameEn = null;
         int cancelledFutureCount = 0;
 
         if (activeOpt.isPresent()) {
             oldPlan = activeOpt.get();
             oldPlanName = oldPlan.getName();
+            oldPlanNameEn = oldPlan.getNameEn();
             if (!oldPlan.getId().equals(newPlan.getId())) {
                 oldPlan.setStatus(PlanStatus.ARCHIVED);
                 planRepository.save(oldPlan);
@@ -175,12 +177,15 @@ public class WorkoutPlanService {
             history.setMember(m);
             history.setOldPlan(oldPlan);
             history.setOldPlanName(oldPlanName);
+            history.setOldPlanNameEn(oldPlanNameEn);
             history.setNewPlan(newPlan);
             history.setNewPlanName(newPlan.getName());
+            history.setNewPlanNameEn(newPlan.getNameEn());
             history.setAppliedAt(now);
             history.setEndedAt(now);
             history.setCancelledFutureSessions(cancelledFutureCount);
             history.setNote(req.note());
+            history.setNoteEn(req.noteEn());
             historyRepository.save(history);
         }
 
@@ -238,10 +243,13 @@ public class WorkoutPlanService {
         // Bài đã có trong giáo án được giữ dù sau đó bị ẩn hoặc trả về chỉnh sửa; bài thêm mới phải đã duyệt và đang hiện.
         Set<Long> existing = p.getItems().stream().map(i -> i.getExercise().getId()).collect(Collectors.toSet());
         p.setName(req.name().trim());
+        p.setNameEn(Mappers.blankToNull(req.nameEn()));
         p.setGoal(Mappers.blankToNull(req.goal()));
+        p.setGoalEn(Mappers.blankToNull(req.goalEn()));
         p.setStartDate(req.startDate());
         p.setEndDate(req.endDate());
         p.setNote(Mappers.blankToNull(req.note()));
+        p.setNoteEn(Mappers.blankToNull(req.noteEn()));
         p.getItems().clear();
         int order = 0;
         for (PlanItemRequest r : req.items()) {
@@ -260,6 +268,7 @@ public class WorkoutPlanService {
             i.setRestSeconds(r.restSeconds());
             i.setDurationMinutes(r.durationMinutes());
             i.setNote(Mappers.blankToNull(r.note()));
+            i.setNoteEn(Mappers.blankToNull(r.noteEn()));
             p.getItems().add(i);
             order++;
         }

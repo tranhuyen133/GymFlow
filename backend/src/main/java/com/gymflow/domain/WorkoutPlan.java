@@ -31,7 +31,13 @@ public class WorkoutPlan {
     @Column(nullable = false, length = 120)
     private String name;
 
+    @Column(name = "name_en", length = 120)
+    private String nameEn;
+
     private String goal;
+
+    @Column(name = "goal_en", length = 255)
+    private String goalEn;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
@@ -44,6 +50,9 @@ public class WorkoutPlan {
     private PlanStatus status = PlanStatus.ACTIVE;
 
     private String note;
+
+    @Column(name = "note_en", columnDefinition = "TEXT")
+    private String noteEn;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -99,13 +99,13 @@ export default function MyJourney({ embedded = false }: { embedded?: boolean } =
     };
   }, [data.data]);
 
-  if (!me.memberId) return <div className={embedded ? 'embedded-view' : 'page'}><ErrorState message="Tài khoản chưa có hồ sơ hội viên" /></div>;
+  if (!me.memberId) return <div className={embedded ? 'embedded-view' : 'page'}><ErrorState message={t('Tài khoản chưa có hồ sơ hội viên')} /></div>;
 
   return (
     <div className={embedded ? 'embedded-view' : 'page'}>
       {!embedded && (
-        <PageHead eyebrow="Tập luyện" title="Hành trình của tôi"
-          desc="Bạn bắt đầu từ đâu, đã đi được bao xa. Mọi con số được tính từ buổi tập đã hoàn thành và cân nặng bạn đã ghi." />
+        <PageHead eyebrow={t('Tập luyện')} title={t('Hành trình của tôi')}
+          desc={t('Bạn bắt đầu từ đâu, đã đi được bao xa. Mọi con số được tính từ buổi tập đã hoàn thành và cân nặng bạn đã ghi.')} />
       )}
 
       {data.error ? <ErrorState message={data.error} onRetry={data.reload} /> : !data.data || !view ? <LoadingBlock rows={6} /> : (() => {
@@ -134,14 +134,14 @@ export default function MyJourney({ embedded = false }: { embedded?: boolean } =
 
             {sessions.length === 0 && view.weights.length === 0 ? (
               <Card className="mt-16">
-                <Empty icon="target" title="Hành trình của bạn bắt đầu từ buổi tập đầu tiên"
-                  desc="Khi huấn luyện viên đánh dấu hoàn thành buổi tập hoặc bạn ghi cân nặng, các cột mốc sẽ xuất hiện tại đây."
+                <Empty icon="target" title={t('Hành trình của bạn bắt đầu từ buổi tập đầu tiên')}
+                  desc={t('Khi huấn luyện viên đánh dấu hoàn thành buổi tập hoặc bạn ghi cân nặng, các cột mốc sẽ xuất hiện tại đây.')}
                   action={<Link className="btn btn-primary" to="/me/schedule"><Icon name="calendar" /><span>{t('Xem lịch tập')}</span></Link>} />
               </Card>
             ) : (
               <div className="grid grid-main mt-16" style={{ alignItems: 'start' }}>
                 <div className="stack" style={{ gap: 18 }}>
-                  <Card title="Cân nặng: điểm xuất phát → hiện tại" icon="scale">
+                  <Card title={t('Cân nặng: điểm xuất phát → hiện tại')} icon="scale">
                     {first ? (
                       <>
                         <div className="journey-compare">
@@ -155,7 +155,7 @@ export default function MyJourney({ embedded = false }: { embedded?: boolean } =
                       </>
                     ) : <Empty icon="scale" title="Chưa ghi cân nặng" action={<Link className="btn btn-secondary" to="/profile?tab=progress"><span>{t('Ghi cân nặng')}</span></Link>} />}
                   </Card>
-                  <Card title="Số buổi tập 12 tháng gần nhất" icon="chart">
+                  <Card title={t('Số buổi tập 12 tháng gần nhất')} icon="chart">
                     <div className="journey-months" role="img" aria-label={t('Biểu đồ số buổi tập theo tháng')}>
                       {view.months.map((m) => (
                         <div key={m.key} className="journey-month" title={t('{n} buổi', { n: m.count })}>
@@ -168,7 +168,7 @@ export default function MyJourney({ embedded = false }: { embedded?: boolean } =
                   </Card>
                 </div>
 
-                <Card title="Cột mốc" icon="trophy">
+                <Card title={t('Cột mốc')} icon="trophy">
                   <ol className="timeline">
                     {view.milestones.map((m, i) => (
                       <li key={`${m.kind}-${m.date}-${i}`} className={`tl-${m.kind}`}>

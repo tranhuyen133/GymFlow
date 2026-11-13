@@ -305,15 +305,16 @@ public class Mappers {
         int days = (int) p.getItems().stream().map(WorkoutPlanItem::getDayOfWeek).distinct().count();
         return new WorkoutPlanSummary(p.getId(), p.getMember().getId(), p.getMember().getUser().getFullName(),
                 t == null ? null : t.getId(), t == null ? null : t.getUser().getFullName(), p.getName(), p.getGoal(),
-                p.getStartDate(), p.getEndDate(), p.getStatus(), p.getItems().size(), days, p.getCreatedAt());
+                p.getStartDate(), p.getEndDate(), p.getStatus(), p.getItems().size(), days, p.getCreatedAt(),
+                p.getNameEn(), p.getGoalEn());
     }
 
     public WorkoutPlanResponse planDetail(WorkoutPlan p) {
         List<PlanItemResponse> items = p.getItems().stream().map(i -> new PlanItemResponse(i.getId(),
                 i.getExercise().getId(), i.getExercise().getName(), i.getExercise().getNameEn(), i.getExercise().getMuscleGroup(),
                 i.getExercise().getEquipment(), i.getDayOfWeek(), i.getSortOrder(), i.getSets(), i.getReps(),
-                i.getWeightKg(), i.getRestSeconds(), i.getDurationMinutes(), i.getNote())).toList();
-        return new WorkoutPlanResponse(planSummary(p), p.getNote(), items);
+                i.getWeightKg(), i.getRestSeconds(), i.getDurationMinutes(), i.getNote(), i.getNoteEn())).toList();
+        return new WorkoutPlanResponse(planSummary(p), p.getNote(), items, p.getNoteEn());
     }
 
     public WorkoutPlanHistoryResponse planHistory(WorkoutPlanHistory h) {
@@ -327,7 +328,10 @@ public class Mappers {
                 h.getAppliedAt(),
                 h.getEndedAt(),
                 h.getCancelledFutureSessions(),
-                h.getNote()
+                h.getNote(),
+                h.getOldPlanNameEn(),
+                h.getNewPlanNameEn(),
+                h.getNoteEn()
         );
     }
 
@@ -338,7 +342,8 @@ public class Mappers {
         return new ScheduleResponse(s.getId(), s.getMember().getId(), s.getMember().getUser().getFullName(),
                 t == null ? null : t.getId(), t == null ? null : t.getUser().getFullName(),
                 p == null ? null : p.getId(), p == null ? null : p.getName(), s.getTitle(), s.getStartTime(),
-                s.getEndTime(), s.getStatus(), s.getNote(), log == null ? null : log(log));
+                s.getEndTime(), s.getStatus(), s.getNote(), log == null ? null : log(log),
+                p == null ? null : p.getNameEn(), s.getTitleEn(), s.getNoteEn());
     }
 
     public ScheduleResponse schedule(WorkoutSchedule s) {

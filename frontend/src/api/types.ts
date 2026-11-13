@@ -377,25 +377,28 @@ export interface Article {
 export interface PlanItem {
   id?: number; exerciseId: number; exerciseName?: string; exerciseNameEn?: string | null; muscleGroup?: MuscleGroup; equipment?: string | null;
   dayOfWeek: number; sortOrder: number; sets: number; reps: string; weightKg: number | null;
-  restSeconds: number | null; durationMinutes: number | null; note: string | null;
+  restSeconds: number | null; durationMinutes: number | null; note: string | null; noteEn?: string | null;
 }
 export interface WorkoutPlanSummary {
   id: number; memberId: number; memberName: string; trainerId: number | null; trainerName: string | null;
-  name: string; goal: string | null; startDate: string; endDate: string; status: PlanStatus;
+  name: string; nameEn?: string | null; goal: string | null; goalEn?: string | null; startDate: string; endDate: string; status: PlanStatus;
   itemCount: number; trainingDays: number; createdAt: string;
 }
-export interface WorkoutPlan { summary: WorkoutPlanSummary; note: string | null; items: PlanItem[] }
+export interface WorkoutPlan { summary: WorkoutPlanSummary; note: string | null; noteEn?: string | null; items: PlanItem[] }
 export interface WorkoutPlanHistory {
   id: number;
   memberId: number;
   oldPlanId: number | null;
   oldPlanName: string | null;
+  oldPlanNameEn?: string | null;
   newPlanId: number;
   newPlanName: string;
+  newPlanNameEn?: string | null;
   appliedAt: string;
   endedAt: string | null;
   cancelledFutureSessions: number;
   note: string | null;
+  noteEn?: string | null;
 }
 
 // ---------- Schedules ----------
@@ -411,8 +414,8 @@ export interface WorkoutLog {
 }
 export interface Schedule {
   id: number; memberId: number; memberName: string; trainerId: number | null; trainerName: string | null;
-  planId: number | null; planName: string | null; title: string; startTime: string; endTime: string;
-  status: ScheduleStatus; note: string | null; log: WorkoutLog | null;
+  planId: number | null; planName: string | null; planNameEn?: string | null; title: string; titleEn?: string | null; startTime: string; endTime: string;
+  status: ScheduleStatus; note: string | null; noteEn?: string | null; log: WorkoutLog | null;
 }
 export interface ScheduleCreated { created: Schedule[]; skipped: string[] }
 
@@ -424,7 +427,7 @@ export interface CalorieExercise {
   activeMinutes: number; calories: number | null; dataSource: 'PLAN' | 'FALLBACK';
 }
 export interface CaloriePreview {
-  scheduleId: number; title: string; date: string; durationMinutes: number; weightKg: number | null;
+  scheduleId: number; title: string; titleEn?: string | null; date: string; durationMinutes: number; weightKg: number | null;
   weightSource: string; intensity: ExerciseIntensity; exercises: CalorieExercise[]; totalCalories: number | null;
   activeMinutes: number; estimateStatus: EstimateStatus; estimateQuality: EstimateQuality | null; disclaimer: string;
 }
@@ -438,7 +441,7 @@ export interface CalorieSummary {
   topDay: CalorieTopDay | null; previous: CaloriePeriodSummary; disclaimer: string;
 }
 export interface CalorieSession {
-  logId: number; scheduleId: number | null; title: string; completedAt: string; durationMinutes: number | null;
+  logId: number; scheduleId: number | null; title: string; titleEn?: string | null; completedAt: string; durationMinutes: number | null;
   activeMinutes: number | null; calories: number | null; intensity: ExerciseIntensity | null;
   weightKgUsed: number | null; estimateStatus: EstimateStatus; estimateQuality: EstimateQuality | null;
   formulaVersion: string | null; exercises: CalorieExercise[];

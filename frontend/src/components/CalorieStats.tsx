@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../api/client';
 import type { CalorieBackfillResult, CalorieSession, CalorieSummary } from '../api/types';
 import { getLang, t } from '../i18n';
+import { localizeText } from '../lib/planText';
 import { addDays, fmtDate, fmtDateTime, fmtNum, parseDate, toIsoDate } from '../lib/format';
 import { useAsync } from '../lib/hooks';
 import { Icon } from './Icon';
@@ -97,7 +98,7 @@ export function CalorieStats({ memberId }: { memberId: number }) {
               {filtered.map((s) => (
                 <tr key={s.logId} onClick={() => setDetail(s)} style={{ cursor: 'pointer' }}>
                   <td>{fmtDate(s.completedAt.slice(0, 10))}</td>
-                  <td>{t(s.title)}</td>
+                  <td>{localizeText(s.titleEn, s.title)}</td>
                   <td className="num">{s.durationMinutes != null ? `${s.durationMinutes} ${t('phút')}` : '—'}</td>
                   <td className="num">{s.calories != null ? `${s.calories} kcal` : '—'}</td>
                   <td>{s.estimateStatus === 'OK'
@@ -113,7 +114,7 @@ export function CalorieStats({ memberId }: { memberId: number }) {
       </Card>
 
       {detail && (
-        <Modal title={t(detail.title)} onClose={() => setDetail(null)} size="medium">
+        <Modal title={localizeText(detail.titleEn, detail.title)} onClose={() => setDetail(null)} size="medium">
           <div className="stack">
             <div className="grid grid-3 small">
               <div><div className="faint tiny">{t('Thời điểm')}</div><b>{fmtDateTime(detail.completedAt)}</b></div>

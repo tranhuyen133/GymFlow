@@ -14,6 +14,7 @@ import { useToast } from '../../components/Toast';
 import { WeekCalendar } from '../../components/WeekCalendar';
 import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
 import { getLang, t, tn } from '../../i18n';
+import { localizeScheduleNote, localizeScheduleTitle, localizeText } from '../../lib/planText';
 import { addDays, DAY_NAMES, fmtDate, fmtDateTime, fmtTime, fmtWeekday, formatEquipment, exTitle, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
 import { covered, fromMin, GYM_CLOSE, GYM_OPEN, hm, timeOptions, toMin, type WeekSlot } from '../../lib/hours';
 import '../../components/week-slots.css';
@@ -152,7 +153,7 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
 
   return (
     <>
-      <Modal title={t(session.title)} onClose={onClose} footer={<>
+      <Modal title={localizeScheduleTitle(session)} onClose={onClose} footer={<>
         {manage && session.status === 'SCHEDULED' && <>
           <Button variant="danger" icon="ban" onClick={() => setConfirm('cancel')}>{t('Huỷ buổi')}</Button>
           {staff && started && <Button icon="x" onClick={() => setConfirm('missed')}>{t('Đánh vắng')}</Button>}
@@ -169,8 +170,8 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
           <dl className="kv">
             <dt>{t('Hội viên')}</dt><dd><Person name={session.memberName} size="sm" /></dd>
             <dt>{t('Huấn luyện viên')}</dt><dd>{session.trainerName ?? <span className="faint">{t('Tự tập')}</span>}</dd>
-            <dt>{t('Giáo án')}</dt><dd>{session.planName ? t(session.planName) : <span className="faint">{t('Không gắn')}</span>}</dd>
-            {session.note && <><dt>{t('Ghi chú')}</dt><dd>{session.note}</dd></>}
+            <dt>{t('Giáo án')}</dt><dd>{session.planName ? localizeText(session.planNameEn, session.planName) : <span className="faint">{t('Không gắn')}</span>}</dd>
+            {session.note && <><dt>{t('Ghi chú')}</dt><dd>{localizeScheduleNote(session)}</dd></>}
           </dl>
           {!started && session.status === 'SCHEDULED' && <Alert kind="info">{t('Chỉ đánh dấu hoàn thành được khi đã đến giờ tập.')}</Alert>}
           {session.status === 'MISSED' && canComplete && <Alert kind="warning">{t('Buổi này đang bị đánh vắng. Nếu bạn đã tập, có thể ghi nhận bù trong vòng 7 ngày.')}</Alert>}
@@ -247,7 +248,7 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
       <Button variant="primary" icon="check" loading={busy} onClick={submit}>{t('Lưu kết quả')}</Button>
     </>}>
       <div className="stack">
-        <div className="muted small">{t(session.title)} · {fmtTime(session.startTime)}–{fmtTime(session.endTime)}</div>
+        <div className="muted small">{localizeScheduleTitle(session)} · {fmtTime(session.startTime)}–{fmtTime(session.endTime)}</div>
         {isPt && (
           activePtSub ? (
             <Alert kind={activePtSub.ptSessionsRemaining && activePtSub.ptSessionsRemaining > 0 ? 'info' : 'warning'}>
@@ -336,12 +337,14 @@ export function ScheduleForm({ edit, presetMemberId, presetExerciseId, onClose, 
   const [trainerId, setTrainerId] = useState<string>(edit?.trainerId ? String(edit.trainerId) : '');
   const [planId, setPlanId] = useState<string>(edit?.planId ? String(edit.planId) : '');
   const [title, setTitle] = useState(edit?.title ?? defaultTitle);
+  const [titleEn, setTitleEn] = useState(edit?.titleEn ?? '');
   const [date, setDate] = useState(toIsoDate(start0));
   const [time, setTime] = useState(`${String(start0.getHours()).padStart(2, '0')}:${String(start0.getMinutes()).padStart(2, '0')}`);
   const [duration, setDuration] = useState(edit ? String(Math.round((parseDateTime(edit.endTime).getTime() - start0.getTime()) / 60000)) : '60');
   const [repeat, setRepeat] = useState('0');
   const [autoFromPlan, setAutoFromPlan] = useState(false);
   const [note, setNote] = useState(edit?.note ?? '');
+  const [noteEn, setNoteEn] = useState(edit?.noteEn ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [sameDayWarning, setSameDayWarning] = useState<string | null>(null);
@@ -426,7 +429,9 @@ export function ScheduleForm({ edit, presetMemberId, presetExerciseId, onClose, 
 
     const body = {
       trainerId: trainerId ? Number(trainerId) : null, planId: planId ? Number(planId) : null, title: title.trim(),
+      titleEn: titleEn.trim() || null,
       startTime: toIsoDateTime(start), endTime: toIsoDateTime(end), note: note.trim() || null,
+      noteEn: noteEn.trim() || null,
       confirmDuplicateDay: forceDuplicate,
     };
     try {
@@ -534,6 +539,7 @@ export function ScheduleForm({ edit, presetMemberId, presetExerciseId, onClose, 
             </div>
           )}
           <Field label={t('Tiêu đề')} error={errors.title} required className="span-2"><Input maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
+          <Field label={t('Tiêu đề (EN)')} className="span-2"><Input maxLength={120} value={titleEn} onChange={(e) => setTitleEn(e.target.value)} /></Field>
           <Field label={t('Ngày')} error={errors.date} required><Input type="date" value={date} min={toIsoDate(new Date())} onChange={(e) => setDate(e.target.value)} /></Field>
           <Field label={t('Giờ bắt đầu')} error={errors.time} required hint={t('Mở cửa {open}–{close}', { open: GYM_OPEN, close: GYM_CLOSE })}>
             <Select value={time} invalid={!!errors.time} onChange={(e) => { setTime(e.target.value); setErrors((x) => ({ ...x, time: '' })); }}>
@@ -582,6 +588,7 @@ export function ScheduleForm({ edit, presetMemberId, presetExerciseId, onClose, 
             </Field>
           )}
           <Field label={t('Ghi chú')} className="span-2"><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder={self ? 'VD: chân, 45 phút' : 'VD: tập trung kỹ thuật squat'} /></Field>
+          <Field label={t('Ghi chú (EN)')} className="span-2"><Textarea maxLength={255} value={noteEn} onChange={(e) => setNoteEn(e.target.value)} /></Field>
         </div>
         {!edit && Number(repeat) > 0 && <Badge tone="blue">{t('Sẽ tạo tối đa {n} buổi vào {day} hằng tuần', { n: Number(repeat) + 1, day: fmtWeekday(`${date}T${time}:00`).split(',')[0] })}</Badge>}
       </div>

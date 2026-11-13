@@ -690,7 +690,12 @@ public final class Dtos {
             @DecimalMin(value = "0", message = "Mức tạ không âm") @DecimalMax(value = "500", message = "Mức tạ tối đa 500 kg") Double weightKg,
             @Min(value = 0, message = "Nghỉ không âm") @Max(value = 900, message = "Nghỉ tối đa 900 giây") Integer restSeconds,
             @Min(value = 1, message = "Tối thiểu 1 phút") @Max(value = 300, message = "Tối đa 300 phút") Integer durationMinutes,
-            @Size(max = 255) String note) {
+            @Size(max = 255) String note,
+            @Size(max = 255) String noteEn) {
+        public PlanItemRequest(Long exerciseId, Integer dayOfWeek, Integer sortOrder, Integer sets, String reps,
+                               Double weightKg, Integer restSeconds, Integer durationMinutes, String note) {
+            this(exerciseId, dayOfWeek, sortOrder, sets, reps, weightKg, restSeconds, durationMinutes, note, null);
+        }
     }
 
     public record WorkoutPlanRequest(
@@ -701,7 +706,14 @@ public final class Dtos {
             @NotNull(message = "Chọn ngày bắt đầu") LocalDate startDate,
             @NotNull(message = "Chọn ngày kết thúc") LocalDate endDate,
             @Size(max = 1000) String note,
-            @NotNull @Size(max = 100, message = "Tối đa 100 bài tập") @Valid List<PlanItemRequest> items) {
+            @NotNull @Size(max = 100, message = "Tối đa 100 bài tập") @Valid List<PlanItemRequest> items,
+            @Size(max = 120) String nameEn,
+            @Size(max = 255) String goalEn,
+            @Size(max = 1000) String noteEn) {
+        public WorkoutPlanRequest(Long memberId, String name, String goal, LocalDate startDate, LocalDate endDate,
+                                  String note, List<PlanItemRequest> items) {
+            this(memberId, name, goal, startDate, endDate, note, items, null, null, null);
+        }
     }
 
     public record PlanStatusRequest(@NotNull PlanStatus status) {
@@ -709,15 +721,31 @@ public final class Dtos {
 
     public record PlanItemResponse(Long id, Long exerciseId, String exerciseName, String exerciseNameEn, MuscleGroup muscleGroup,
                                    String equipment, Integer dayOfWeek, Integer sortOrder, Integer sets, String reps,
-                                   Double weightKg, Integer restSeconds, Integer durationMinutes, String note) {
+                                   Double weightKg, Integer restSeconds, Integer durationMinutes, String note, String noteEn) {
+        public PlanItemResponse(Long id, Long exerciseId, String exerciseName, String exerciseNameEn, MuscleGroup muscleGroup,
+                                String equipment, Integer dayOfWeek, Integer sortOrder, Integer sets, String reps,
+                                Double weightKg, Integer restSeconds, Integer durationMinutes, String note) {
+            this(id, exerciseId, exerciseName, exerciseNameEn, muscleGroup, equipment, dayOfWeek, sortOrder, sets, reps,
+                    weightKg, restSeconds, durationMinutes, note, null);
+        }
     }
 
     public record WorkoutPlanSummary(Long id, Long memberId, String memberName, Long trainerId, String trainerName,
                                      String name, String goal, LocalDate startDate, LocalDate endDate,
-                                     PlanStatus status, int itemCount, int trainingDays, LocalDateTime createdAt) {
+                                     PlanStatus status, int itemCount, int trainingDays, LocalDateTime createdAt,
+                                     String nameEn, String goalEn) {
+        public WorkoutPlanSummary(Long id, Long memberId, String memberName, Long trainerId, String trainerName,
+                                  String name, String goal, LocalDate startDate, LocalDate endDate,
+                                  PlanStatus status, int itemCount, int trainingDays, LocalDateTime createdAt) {
+            this(id, memberId, memberName, trainerId, trainerName, name, goal, startDate, endDate, status,
+                    itemCount, trainingDays, createdAt, null, null);
+        }
     }
 
-    public record WorkoutPlanResponse(WorkoutPlanSummary summary, String note, List<PlanItemResponse> items) {
+    public record WorkoutPlanResponse(WorkoutPlanSummary summary, String note, List<PlanItemResponse> items, String noteEn) {
+        public WorkoutPlanResponse(WorkoutPlanSummary summary, String note, List<PlanItemResponse> items) {
+            this(summary, note, items, null);
+        }
     }
 
     public record WorkoutPlanHistoryResponse(
@@ -725,12 +753,23 @@ public final class Dtos {
             Long oldPlanId, String oldPlanName,
             Long newPlanId, String newPlanName,
             LocalDateTime appliedAt, LocalDateTime endedAt,
-            int cancelledFutureSessions, String note) {
+            int cancelledFutureSessions, String note,
+            String oldPlanNameEn, String newPlanNameEn, String noteEn) {
+        public WorkoutPlanHistoryResponse(Long id, Long memberId, Long oldPlanId, String oldPlanName,
+                                          Long newPlanId, String newPlanName, LocalDateTime appliedAt,
+                                          LocalDateTime endedAt, int cancelledFutureSessions, String note) {
+            this(id, memberId, oldPlanId, oldPlanName, newPlanId, newPlanName, appliedAt, endedAt,
+                    cancelledFutureSessions, note, null, null, null);
+        }
     }
 
     public record SwitchPlanRequest(
             @NotNull(message = "Vui lòng chọn giáo án mới") Long newPlanId,
-            String note) {
+            String note,
+            String noteEn) {
+        public SwitchPlanRequest(Long newPlanId, String note) {
+            this(newPlanId, note, null);
+        }
     }
 
     // ===================== Schedule =====================
@@ -743,9 +782,16 @@ public final class Dtos {
             @NotNull(message = "Chọn giờ kết thúc") LocalDateTime endTime,
             @Size(max = 255) String note,
             @Min(value = 0, message = "Số tuần lặp không âm") @Max(value = 12, message = "Lặp tối đa 12 tuần") Integer repeatWeeks,
-            Boolean confirmDuplicateDay) {
+            Boolean confirmDuplicateDay,
+            @Size(max = 120) String titleEn,
+            @Size(max = 255) String noteEn) {
         public ScheduleRequest(Long memberId, Long trainerId, Long planId, String title, LocalDateTime startTime, LocalDateTime endTime, String note, Integer repeatWeeks) {
-            this(memberId, trainerId, planId, title, startTime, endTime, note, repeatWeeks, false);
+            this(memberId, trainerId, planId, title, startTime, endTime, note, repeatWeeks, false, null, null);
+        }
+
+        public ScheduleRequest(Long memberId, Long trainerId, Long planId, String title, LocalDateTime startTime,
+                               LocalDateTime endTime, String note, Integer repeatWeeks, Boolean confirmDuplicateDay) {
+            this(memberId, trainerId, planId, title, startTime, endTime, note, repeatWeeks, confirmDuplicateDay, null, null);
         }
     }
 
@@ -756,9 +802,16 @@ public final class Dtos {
             @NotNull(message = "Chọn giờ bắt đầu") LocalDateTime startTime,
             @NotNull(message = "Chọn giờ kết thúc") LocalDateTime endTime,
             @Size(max = 255) String note,
-            Boolean confirmDuplicateDay) {
+            Boolean confirmDuplicateDay,
+            @Size(max = 120) String titleEn,
+            @Size(max = 255) String noteEn) {
         public ScheduleUpdateRequest(Long trainerId, Long planId, String title, LocalDateTime startTime, LocalDateTime endTime, String note) {
-            this(trainerId, planId, title, startTime, endTime, note, false);
+            this(trainerId, planId, title, startTime, endTime, note, false, null, null);
+        }
+
+        public ScheduleUpdateRequest(Long trainerId, Long planId, String title, LocalDateTime startTime,
+                                     LocalDateTime endTime, String note, Boolean confirmDuplicateDay) {
+            this(trainerId, planId, title, startTime, endTime, note, confirmDuplicateDay, null, null);
         }
     }
 
@@ -799,7 +852,15 @@ public final class Dtos {
                                          Double weightKg, String weightSource, ExerciseIntensity intensity,
                                          List<CalorieExerciseResponse> exercises, Integer totalCalories,
                                          Double activeMinutes, EstimateStatus estimateStatus,
-                                         EstimateQuality estimateQuality, String disclaimer) {
+                                         EstimateQuality estimateQuality, String disclaimer, String titleEn) {
+        public CaloriePreviewResponse(Long scheduleId, String title, LocalDate date, Integer durationMinutes,
+                                      Double weightKg, String weightSource, ExerciseIntensity intensity,
+                                      List<CalorieExerciseResponse> exercises, Integer totalCalories,
+                                      Double activeMinutes, EstimateStatus estimateStatus,
+                                      EstimateQuality estimateQuality, String disclaimer) {
+            this(scheduleId, title, date, durationMinutes, weightKg, weightSource, intensity, exercises,
+                    totalCalories, activeMinutes, estimateStatus, estimateQuality, disclaimer, null);
+        }
     }
 
     public record CalorieBucket(String key, String label, LocalDate from, LocalDate to,
@@ -825,7 +886,15 @@ public final class Dtos {
                                          Integer durationMinutes, Double activeMinutes, Integer calories,
                                          ExerciseIntensity intensity, Double weightKgUsed,
                                          EstimateStatus estimateStatus, EstimateQuality estimateQuality,
-                                         String formulaVersion, List<CalorieExerciseResponse> exercises) {
+                                         String formulaVersion, List<CalorieExerciseResponse> exercises, String titleEn) {
+        public CalorieSessionResponse(Long logId, Long scheduleId, String title, LocalDateTime completedAt,
+                                      Integer durationMinutes, Double activeMinutes, Integer calories,
+                                      ExerciseIntensity intensity, Double weightKgUsed,
+                                      EstimateStatus estimateStatus, EstimateQuality estimateQuality,
+                                      String formulaVersion, List<CalorieExerciseResponse> exercises) {
+            this(logId, scheduleId, title, completedAt, durationMinutes, activeMinutes, calories, intensity,
+                    weightKgUsed, estimateStatus, estimateQuality, formulaVersion, exercises, null);
+        }
     }
 
     public record CalorieBackfillResponse(int processed, int estimated, int missingWeight, int noExerciseData,
@@ -834,7 +903,14 @@ public final class Dtos {
 
     public record ScheduleResponse(Long id, Long memberId, String memberName, Long trainerId, String trainerName,
                                    Long planId, String planName, String title, LocalDateTime startTime,
-                                   LocalDateTime endTime, ScheduleStatus status, String note, WorkoutLogResponse log) {
+                                   LocalDateTime endTime, ScheduleStatus status, String note, WorkoutLogResponse log,
+                                   String planNameEn, String titleEn, String noteEn) {
+        public ScheduleResponse(Long id, Long memberId, String memberName, Long trainerId, String trainerName,
+                                Long planId, String planName, String title, LocalDateTime startTime,
+                                LocalDateTime endTime, ScheduleStatus status, String note, WorkoutLogResponse log) {
+            this(id, memberId, memberName, trainerId, trainerName, planId, planName, title, startTime,
+                    endTime, status, note, log, null, null, null);
+        }
     }
 
     public record ScheduleCreatedResponse(List<ScheduleResponse> created, List<String> skipped) {

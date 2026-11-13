@@ -32,6 +32,9 @@ public class WorkoutSchedule {
     @Column(nullable = false, length = 120)
     private String title;
 
+    @Column(name = "title_en", length = 120)
+    private String titleEn;
+
     @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
 
@@ -43,6 +46,9 @@ public class WorkoutSchedule {
     private ScheduleStatus status = ScheduleStatus.SCHEDULED;
 
     private String note;
+
+    @Column(name = "note_en", length = 255)
+    private String noteEn;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

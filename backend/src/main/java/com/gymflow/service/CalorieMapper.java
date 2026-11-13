@@ -31,11 +31,12 @@ public final class CalorieMapper {
                 schedule.getId(), schedule.getTitle(), schedule.getStartTime().toLocalDate(), durationMinutes,
                 est.weightKg(), est.weightSource(), est.intensity(), exercises(est.exercises()),
                 est.totalCalories(), est.activeMinutes(), est.status(), est.quality(),
-                CalorieEstimationService.DISCLAIMER);
+                CalorieEstimationService.DISCLAIMER, schedule.getTitleEn());
     }
 
     public static CalorieSessionResponse session(WorkoutLog log, List<WorkoutLogExercise> rows) {
         String title = log.getSchedule() == null ? "Buổi tập" : log.getSchedule().getTitle();
+        String titleEn = log.getSchedule() == null ? "Workout session" : log.getSchedule().getTitleEn();
         List<CalorieExerciseResponse> exercises = rows.stream()
                 .map(CalorieMapper::exercise)
                 .toList();
@@ -52,7 +53,8 @@ public final class CalorieMapper {
                 log.getEstimateStatus(),
                 log.getEstimateQuality(),
                 log.getFormulaVersion(),
-                exercises);
+                exercises,
+                titleEn);
     }
 
     private static CalorieExerciseResponse exercise(WorkoutLogExercise e) {

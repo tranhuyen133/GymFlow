@@ -12,6 +12,7 @@ import { Icon } from '../../components/Icon';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, LoadingBlock, Modal, PageHead, Segmented, Select, StatusBadge, Table } from '../../components/ui';
 import { t, tn } from '../../i18n';
 import { fmtDate, fmtDateTime, planStatus } from '../../lib/format';
+import { localizePlanGoal, localizePlanName, localizeText } from '../../lib/planText';
 import { errMsg, useAsync } from '../../lib/hooks';
 import Programs from '../shared/Programs';
 
@@ -52,7 +53,7 @@ export default function MyPlan() {
     if (!confirmSwitch) return;
     try {
       await api.post('/workout-plans/switch', { newPlanId: confirmSwitch.id });
-      toast.success(t('Đã chuyển sang giáo án {name}', { name: t(confirmSwitch.name) }));
+      toast.success(t('Đã chuyển sang giáo án {name}', { name: localizePlanName(confirmSwitch) }));
       setConfirmSwitch(null);
       setSwitchModalOpen(false);
       reloadAll();
@@ -91,7 +92,7 @@ export default function MyPlan() {
     <div className="page">
       <PageHead
         eyebrow={t('Tập luyện')}
-        title={data ? t(data.summary.name) : t('Giáo án của tôi')}
+        title={data ? localizePlanName(data.summary) : t('Giáo án của tôi')}
         desc={
           data
             ? data.summary.trainerId == null
@@ -185,12 +186,12 @@ export default function MyPlan() {
                   <div className="stack">
                     <div>
                       <div className="tiny faint">{t('Mục tiêu')}</div>
-                      <b>{data.summary.goal ? t(data.summary.goal) : '—'}</b>
+                      <b>{localizePlanGoal(data.summary) || '—'}</b>
                     </div>
                     {data.note && (
                       <div>
                         <div className="tiny faint">{data.summary.trainerId == null ? t('Ghi chú') : t('Lời dặn của HLV')}</div>
-                        <p className="small muted mt-4" style={{ whiteSpace: 'pre-line' }}>{t(data.note)}</p>
+                        <p className="small muted mt-4" style={{ whiteSpace: 'pre-line' }}>{localizeText(data.noteEn, data.note)}</p>
                       </div>
                     )}
                     <div className="divider" />
@@ -241,10 +242,10 @@ export default function MyPlan() {
                   <tr key={h.id}>
                     <td className="small nowrap">{fmtDateTime(h.appliedAt)}</td>
                     <td>
-                      {h.oldPlanName ? <b>{t(h.oldPlanName)}</b> : <span className="faint">{t('Bắt đầu mới')}</span>}
+                      {h.oldPlanName ? <b>{localizeText(h.oldPlanNameEn, h.oldPlanName)}</b> : <span className="faint">{t('Bắt đầu mới')}</span>}
                     </td>
                     <td>
-                      <b className="ok">{t(h.newPlanName)}</b>
+                      <b className="ok">{localizeText(h.newPlanNameEn, h.newPlanName)}</b>
                     </td>
                     <td>
                       {h.cancelledFutureSessions > 0 ? (
@@ -253,7 +254,7 @@ export default function MyPlan() {
                         <span className="tiny faint">{t('Không có')}</span>
                       )}
                     </td>
-                    <td className="small muted">{h.note ?? '—'}</td>
+                    <td className="small muted">{localizeText(h.noteEn, h.note) || '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -296,7 +297,7 @@ export default function MyPlan() {
                   <option value="">{t('-- Chọn giáo án --')}</option>
                   {otherPlans.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {t(p.name)} ({p.trainingDays} {t('buổi/tuần')} · {fmtDate(p.startDate)} → {fmtDate(p.endDate)})
+                      {localizePlanName(p)} ({p.trainingDays} {t('buổi/tuần')} · {fmtDate(p.startDate)} → {fmtDate(p.endDate)})
                     </option>
                   ))}
                 </Select>
@@ -311,7 +312,7 @@ export default function MyPlan() {
         <Confirm
           title={t('Xác nhận đổi giáo án?')}
           message={tn('Khi đổi sang giáo án "{name}", các buổi tập trong tương lai của giáo án cũ sẽ bị hủy. Các buổi đã tập trong quá khứ vẫn được giữ nguyên. Bạn có chắc chắn muốn đổi?', {
-            name: <b>{t(confirmSwitch.name)}</b>,
+            name: <b>{localizePlanName(confirmSwitch)}</b>,
           })}
           confirmText={t('Đổi giáo án')}
           onConfirm={handleSwitch}

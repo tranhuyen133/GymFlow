@@ -112,9 +112,11 @@ public class ScheduleService {
             s.setTrainer(trainer);
             s.setPlan(plan);
             s.setTitle(req.title().trim());
+            s.setTitleEn(Mappers.blankToNull(req.titleEn()));
             s.setStartTime(start);
             s.setEndTime(end);
             s.setNote(Mappers.blankToNull(req.note()));
+            s.setNoteEn(Mappers.blankToNull(req.noteEn()));
             s.setStatus(ScheduleStatus.SCHEDULED);
             created.add(scheduleRepository.saveAndFlush(s));
         }
@@ -140,9 +142,11 @@ public class ScheduleService {
         s.setTrainer(trainer);
         s.setPlan(resolvePlan(s.getMember(), req.planId()));
         s.setTitle(req.title().trim());
+        s.setTitleEn(Mappers.blankToNull(req.titleEn()));
         s.setStartTime(req.startTime());
         s.setEndTime(req.endTime());
         s.setNote(Mappers.blankToNull(req.note()));
+        s.setNoteEn(Mappers.blankToNull(req.noteEn()));
         scheduleRepository.saveAndFlush(s);
         auditService.log("SCHEDULE_UPDATE", "SCHEDULE", s.getId(), before + " → " + s.getStartTime().format(FMT));
         return mappers.schedule(s);
@@ -347,6 +351,7 @@ public class ScheduleService {
     }
 
     private static final String[] DOW_NAMES = {"Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"};
+    private static final String[] DOW_NAMES_EN = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
 
     /**
      * Tự sinh lịch tập theo các thứ trong tuần của giáo án mẫu.
@@ -409,19 +414,27 @@ public class ScheduleService {
 
                 List<WorkoutPlanItem> dayItems = itemsByDay.get(dow);
                 String dayTitle = plan.getName() + " (" + DOW_NAMES[dow - 1] + ")";
+                String dayTitleEn = (plan.getNameEn() != null ? plan.getNameEn() : plan.getName()) + " (" + DOW_NAMES_EN[dow - 1] + ")";
                 String notes = dayItems.stream()
                         .map(it -> it.getExercise().getName() + " (" + it.getSets() + " hiệp)")
                         .collect(java.util.stream.Collectors.joining(", "));
+                String notesEn = dayItems.stream()
+                        .map(it -> (it.getExercise().getNameEn() != null ? it.getExercise().getNameEn() : it.getExercise().getName())
+                                + " (" + it.getSets() + " sets)")
+                        .collect(java.util.stream.Collectors.joining(", "));
                 if (notes.length() > 255) notes = notes.substring(0, 252) + "...";
+                if (notesEn.length() > 255) notesEn = notesEn.substring(0, 252) + "...";
 
                 WorkoutSchedule s = new WorkoutSchedule();
                 s.setMember(member);
                 s.setTrainer(trainer);
                 s.setPlan(plan);
                 s.setTitle(dayTitle.length() > 120 ? dayTitle.substring(0, 120) : dayTitle);
+                s.setTitleEn(dayTitleEn.length() > 120 ? dayTitleEn.substring(0, 120) : dayTitleEn);
                 s.setStartTime(start);
                 s.setEndTime(end);
                 s.setNote(notes);
+                s.setNoteEn(notesEn);
                 s.setStatus(ScheduleStatus.SCHEDULED);
                 created.add(scheduleRepository.saveAndFlush(s));
             }
