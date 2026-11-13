@@ -4,13 +4,13 @@ import { api } from '../../api/client';
 import type { Exercise } from '../../api/types';
 import { useAuth } from '../../auth/AuthContext';
 import { HealthDisclaimer, SourceList } from '../../components/Content';
-import { mediaCredit } from '../../components/ExerciseMedia';
+import { GYM_VISUAL_CREDIT, mediaCredit } from '../../components/ExerciseMedia';
 import { Icon } from '../../components/Icon';
 import { MuscleMap } from '../../components/MuscleMap';
 import { useToast } from '../../components/Toast';
 import { Badge, Button, ErrorState, LoadingBlock, Modal, PageHead, Textarea } from '../../components/ui';
 import { getLang, t } from '../../i18n';
-import { EQUIPMENT_BY_KEY, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey } from '../../lib/anatomy';
+import { EQUIPMENT_BY_KEY, exerciseImage, isGifKey, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey } from '../../lib/anatomy';
 import { localizeExercise, localizeExerciseContent } from '../../lib/exercise';
 import { exTitle, exSub, goalLabel, levelLabel } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
@@ -202,8 +202,25 @@ export default function ExerciseDetail() {
 
       <div className="ex-detail-grid mt-16">
         <div className="ex-detail-main">
-          {/* Ảnh minh hoạ tư thế đầu / cuối nếu có */}
-          {ex.imageKey ? (
+          {/* Ảnh động 180×180 (exercises-dataset, © Gym visual) — giữ nguyên kích thước gốc */}
+          {isGifKey(ex.imageKey) ? (
+            <div className="card p-16 mb-16 ex-gif-hero">
+              <div className="ex-gif-stage">
+                <img src={exerciseImage(ex.imageKey, 1)} alt={localized.title} width={180} height={180} />
+              </div>
+              <div className="ex-gif-info">
+                <span className="tiny faint uppercase font-bold">{t('Ảnh động minh hoạ động tác')}</span>
+                <div className="row gap-6 wrap mt-8">
+                  {primaryMuscles.map((m) => (
+                    <span key={m} className="chip chip-primary tiny">
+                      {getLang() === 'en' ? (MUSCLE_BY_KEY.get(m)?.labelEn ?? m) : (MUSCLE_BY_KEY.get(m)?.label ?? m)}
+                    </span>
+                  ))}
+                </div>
+                <a className="tiny faint mt-8" href="https://gymvisual.com/" target="_blank" rel="noreferrer">{GYM_VISUAL_CREDIT}</a>
+              </div>
+            </div>
+          ) : ex.imageKey ? (
             <div className="card p-16 mb-16">
               <div className="row between wrap mb-10" style={{ alignItems: 'center' }}>
                 <span className="tiny faint uppercase font-bold">{t('Tư thế động tác (Bấm ảnh để chuyển tư thế)')}</span>
@@ -387,9 +404,9 @@ export default function ExerciseDetail() {
                       {alt.imageKey ? (
                         <div style={{ width: 68, height: 50, borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
                           <img
-                            src={`/exercise-img/${alt.imageKey}/0.jpg`}
+                            src={exerciseImage(alt.imageKey, 0)}
                             alt={exTitle(alt)}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            style={{ width: '100%', height: '100%', objectFit: isGifKey(alt.imageKey) ? 'contain' : 'cover', background: '#fff' }}
                           />
                         </div>
                       ) : (

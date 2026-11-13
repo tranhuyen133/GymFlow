@@ -1,0 +1,3 @@
+Ảnh 180×180 (.jpg) và ảnh động (.gif) trong thư mục này: © Gym visual — https://gymvisual.com/
+Phân phối lại qua https://github.com/hasaneyldrm/exercises-dataset (giữ nguyên kích thước 180×180 và ghi nguồn).
+Điều khoản sử dụng: https://gymvisual.com/content/3-terms-and-conditions-of-use

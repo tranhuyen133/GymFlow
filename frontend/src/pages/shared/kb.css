@@ -135,3 +135,13 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* V30 · Chi tiết bài tập có ảnh động 180×180 (© Gym visual) */
+.ex-gif-hero { display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 14%, var(--surface-2)), var(--surface-2) 60%); }
+.ex-gif-stage { flex: none; display: grid; place-items: center; width: 212px; height: 212px; border-radius: var(--r-lg);
+  background: #fff; box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(0, 0, 0, 0.04); }
+.ex-gif-stage img { width: 180px; height: 180px; object-fit: contain; }
+.ex-gif-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.ex-gif-info a { color: var(--faint); text-decoration: none; }
+.ex-gif-info a:hover { color: var(--primary-bright); }

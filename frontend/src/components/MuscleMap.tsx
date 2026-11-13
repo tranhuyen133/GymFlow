@@ -3,22 +3,32 @@
  *  - lọc thư viện / trình soạn giáo án theo vùng cơ (onSelect + counts tô đậm theo số bài),
  *  - minh hoạ cơ chính (primary) và cơ phụ (secondary) của một bài tập.
  */
-import { useState, type KeyboardEvent } from 'react';
-import { t } from '../i18n';
+import { useEffect, useState, type KeyboardEvent } from 'react';
+import { t, useLang } from '../i18n';
 import { MUSCLE_BY_KEY, type MuscleKey } from '../lib/anatomy';
 import { BACK, FRONT, type BodyPart, type BodyShape } from './bodyShapes';
 import './muscle-map.css';
 
 const asMuscle = (p: BodyPart): MuscleKey | null => (p === 'head' || p === 'knees' ? null : p === 'soleus' ? 'calves' : p);
 
-export function MuscleMap({ primary = [], secondary = [], selected = null, counts, onSelect, size = 'md', views = 'both', className = '' }: {
+/** Tên vùng cơ theo ngôn ngữ đang chọn. */
+export const muscleName = (k: MuscleKey, lang: string) => {
+  const m = MUSCLE_BY_KEY.get(k);
+  return m ? (lang === 'en' ? m.labelEn : m.label) : k;
+};
+
+export function MuscleMap({ primary = [], secondary = [], selected = null, counts, onSelect, onHover, size = 'md', views = 'both', hideTip = false, className = '' }: {
   primary?: MuscleKey[]; secondary?: MuscleKey[]; selected?: MuscleKey | null;
   /** Số bài theo vùng cơ: vùng nhiều bài tô đậm hơn, vùng 0 bài mờ và không bấm được. */
   counts?: Partial<Record<MuscleKey, number>>;
   onSelect?: (k: MuscleKey | null) => void;
-  size?: 'sm' | 'md' | 'lg'; views?: 'both' | 'front' | 'back'; className?: string;
+  /** Báo vùng cơ đang rê chuột (để trang ngoài tô sáng danh sách). */
+  onHover?: (k: MuscleKey | null) => void;
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'; views?: 'both' | 'front' | 'back'; hideTip?: boolean; className?: string;
 }) {
+  const { lang } = useLang();
   const [hover, setHover] = useState<MuscleKey | null>(null);
+  useEffect(() => { onHover?.(hover); }, [hover]);
   const max = counts ? Math.max(1, ...Object.values(counts).map((n) => n ?? 0)) : 1;
   const interactive = !!onSelect;
 
@@ -51,7 +61,7 @@ export function MuscleMap({ primary = [], secondary = [], selected = null, count
             <g key={part} className={cls} data-disabled={disabled || undefined}
               tabIndex={interactive && !disabled ? 0 : undefined} role={interactive ? 'button' : undefined}
               aria-pressed={interactive ? selected === m : undefined}
-              aria-label={interactive ? `${t(info?.label ?? m)}${counts ? ` · ${t('{n} bài', { n: counts[m] ?? 0 })}` : ''}` : undefined}
+              aria-label={interactive ? `${info ? muscleName(m, lang) : m}${counts ? ` · ${t('{n} bài', { n: counts[m] ?? 0 })}` : ''}` : undefined}
               onClick={() => pick(m)} onKeyDown={onKey(m)}
               onMouseEnter={() => setHover(m)} onMouseLeave={() => setHover((h) => (h === m ? null : h))}>
               {points.map((p) => <polygon key={p} points={p} />)}
@@ -71,10 +81,10 @@ export function MuscleMap({ primary = [], secondary = [], selected = null, count
         {views !== 'back' && render(FRONT, t('Mặt trước'))}
         {views !== 'front' && render(BACK, t('Mặt sau'))}
       </div>
-      {interactive && (
+      {interactive && !hideTip && (
         <div className="mm-tip" aria-live="polite">
           {info ? <>
-            <b>{t(info.label)}</b>
+            <b>{muscleName(info.key, lang)}</b>
             {counts && <span className="mm-count">{t('{n} bài', { n: counts[info.key] ?? 0 })}</span>}
             <span className="tiny muted">{t(info.hint)}</span>
           </> : <span className="tiny muted">{t('Chạm vào một vùng cơ để xem các bài tập')}</span>}
@@ -82,8 +92,8 @@ export function MuscleMap({ primary = [], secondary = [], selected = null, count
       )}
       {!interactive && (primary.length > 0 || secondary.length > 0) && (
         <div className="mm-legend">
-          {primary.length > 0 && <span><i className="dot primary" />{primary.map((k) => t(MUSCLE_BY_KEY.get(k)?.label ?? k)).join(', ')}</span>}
-          {secondary.length > 0 && <span><i className="dot secondary" />{secondary.map((k) => t(MUSCLE_BY_KEY.get(k)?.label ?? k)).join(', ')}</span>}
+          {primary.length > 0 && <span><i className="dot primary" />{primary.map((k) => muscleName(k, lang)).join(', ')}</span>}
+          {secondary.length > 0 && <span><i className="dot secondary" />{secondary.map((k) => muscleName(k, lang)).join(', ')}</span>}
         </div>
       )}
     </div>
