@@ -223,7 +223,10 @@ public class Mappers {
                 e.getExerciseType(),
                 e.getSubCategory(),
                 isFavorite,
-                eqSummaries);
+                eqSummaries,
+                e.getInstructionsEn(), e.getStepsEn(), e.getSetupPositionEn(), e.getBreathingEn(),
+                e.getCommonMistakesEn(), e.getSafetyNotesEn(), e.getSuggestedDoseEn(), e.getSetsRepsHintEn(),
+                e.getVariationsEn());
     }
 
     public ExerciseSummary exerciseSummary(Exercise e) {

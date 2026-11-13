@@ -412,7 +412,16 @@ public final class Dtos {
             ExerciseGoal primaryGoal,
             List<Long> alternativeIds,
             ExerciseType exerciseType,
-            String subCategory) {
+            String subCategory,
+            @Size(max = 2000) String instructionsEn,
+            @Size(max = 2000) String stepsEn,
+            @Size(max = 2000) String setupPositionEn,
+            @Size(max = 500) String breathingEn,
+            @Size(max = 2000) String commonMistakesEn,
+            @Size(max = 2000) String safetyNotesEn,
+            @Size(max = 255) String suggestedDoseEn,
+            @Size(max = 100) String setsRepsHintEn,
+            @Size(max = 2000) String variationsEn) {
 
         /** Giữ chữ ký V18 (trước V26). */
         public ExerciseRequest(String name, MuscleGroup muscleGroup, String equipment, Level level, String description,
@@ -425,7 +434,8 @@ public final class Dtos {
             this(name, muscleGroup, equipment, level, description, null, instructions, videoUrl, nameEn, aliases, secondaryMuscles,
                     location, goals, breathing, commonMistakes, safetyNotes, variations, suggestedDose, contentOrigin, sourceIds,
                     targetMuscles, secondaryMuscleKeys, equipmentKeys, imageKey, setupPosition, steps, setsRepsHint,
-                    primaryGoal, alternativeIds, ExerciseType.STRENGTH, null);
+                    primaryGoal, alternativeIds, ExerciseType.STRENGTH, null,
+                    null, null, null, null, null, null, null, null, null);
         }
 
         /** Giữ chữ ký V13 */
@@ -504,7 +514,10 @@ public final class Dtos {
                                    String setupPosition, String steps, String setsRepsHint,
                                    ExerciseGoal primaryGoal, List<ExerciseSummary> alternatives,
                                    ExerciseType exerciseType, String subCategory, Boolean isFavorite,
-                                   List<KnowledgeDtos.EquipmentSummary> equipments) {
+                                   List<KnowledgeDtos.EquipmentSummary> equipments,
+                                   String instructionsEn, String stepsEn, String setupPositionEn, String breathingEn,
+                                   String commonMistakesEn, String safetyNotesEn, String suggestedDoseEn, String setsRepsHintEn,
+                                   String variationsEn) {
 
         /** Giữ chữ ký V18 (trước V26). */
         public ExerciseResponse(Long id, String name, MuscleGroup muscleGroup, String equipment, Level level,
@@ -523,7 +536,8 @@ public final class Dtos {
                     nameEn, aliases, secondaryMuscles, location, goals, breathing, commonMistakes, safetyNotes, variations,
                     suggestedDose, contentOrigin, reviewStatus, reviewNote, reviewedByName, reviewedAt, updatedAt, sources,
                     targetMuscles, secondaryMuscleKeys, equipmentKeys, imageKey, setupPosition, steps, setsRepsHint,
-                    primaryGoal, alternatives, ExerciseType.STRENGTH, null, false, List.of());
+                    primaryGoal, alternatives, ExerciseType.STRENGTH, null, false, List.of(),
+                    null, null, null, null, null, null, null, null, null);
         }
 
         /** Giữ chữ ký V13 (chưa có trường mới V18). */

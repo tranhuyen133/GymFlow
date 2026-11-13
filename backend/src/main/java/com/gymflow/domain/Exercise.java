@@ -83,27 +83,54 @@ public class Exercise {
 
     private String instructions;
 
+    @Column(name = "instructions_en", columnDefinition = "TEXT")
+    private String instructionsEn;
+
     @Column(name = "setup_position", columnDefinition = "TEXT")
     private String setupPosition;
+
+    @Column(name = "setup_position_en", columnDefinition = "TEXT")
+    private String setupPositionEn;
 
     @Column(columnDefinition = "TEXT")
     private String steps;
 
+    @Column(name = "steps_en", columnDefinition = "TEXT")
+    private String stepsEn;
+
     private String breathing;
+
+    @Column(name = "breathing_en", length = 500)
+    private String breathingEn;
 
     @Column(name = "common_mistakes")
     private String commonMistakes;
 
+    @Column(name = "common_mistakes_en", columnDefinition = "TEXT")
+    private String commonMistakesEn;
+
     @Column(name = "safety_notes")
     private String safetyNotes;
 
+    @Column(name = "safety_notes_en", columnDefinition = "TEXT")
+    private String safetyNotesEn;
+
     private String variations;
+
+    @Column(name = "variations_en", columnDefinition = "TEXT")
+    private String variationsEn;
 
     @Column(name = "suggested_dose")
     private String suggestedDose;
 
+    @Column(name = "suggested_dose_en", length = 255)
+    private String suggestedDoseEn;
+
     @Column(name = "sets_reps_hint", length = 100)
     private String setsRepsHint;
+
+    @Column(name = "sets_reps_hint_en", length = 100)
+    private String setsRepsHintEn;
 
     @Column(name = "video_url")
     private String videoUrl;

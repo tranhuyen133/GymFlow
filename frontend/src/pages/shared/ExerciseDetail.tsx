@@ -11,7 +11,7 @@ import { useToast } from '../../components/Toast';
 import { Badge, Button, ErrorState, LoadingBlock, Modal, PageHead, Textarea } from '../../components/ui';
 import { getLang, t } from '../../i18n';
 import { EQUIPMENT_BY_KEY, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey } from '../../lib/anatomy';
-import { localizeExercise } from '../../lib/exercise';
+import { localizeExercise, localizeExerciseContent } from '../../lib/exercise';
 import { exTitle, exSub, goalLabel, levelLabel } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import './kb.css';
@@ -61,16 +61,17 @@ export default function ExerciseDetail() {
 
   const primaryMuscles = useMemo(() => parseMuscles(ex?.targetMuscles?.join(',') ?? ''), [ex]);
   const secondaryMuscles = useMemo(() => parseMuscles(ex?.secondaryMuscleKeys?.join(',') ?? ''), [ex]);
+  const content = ex ? localizeExerciseContent(ex, getLang()) : null;
 
   const stepsList = useMemo(() => {
-    const raw = ex?.steps || ex?.instructions;
+    const raw = content?.steps || content?.instructions;
     if (!raw) return [];
     return raw
       .split('\n')
       .map((s) => s.trim())
       .filter(Boolean)
       .map((s) => s.replace(/^\d+[\.\)]\s*/, ''));
-  }, [ex]);
+  }, [content]);
 
   const handleApprove = async () => {
     if (!ex) return;
@@ -287,14 +288,14 @@ export default function ExerciseDetail() {
           )}
 
           {/* Tư thế chuẩn bị */}
-          {ex.setupPosition && (
+          {content?.setupPosition && (
             <section className="card p-20 mb-16">
               <h2 className="section-title mb-10">
                 <Icon name="user" size={18} className="primary" />
                 <span>{t('Tư thế chuẩn bị')}</span>
               </h2>
               <p className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6, margin: 0 }}>
-                {ex.setupPosition}
+                {content.setupPosition}
               </p>
             </section>
           )}
@@ -318,28 +319,28 @@ export default function ExerciseDetail() {
           )}
 
           {/* Cách thở */}
-          {ex.breathing && (
+          {content?.breathing && (
             <section className="card p-16 mb-16" style={{ background: 'color-mix(in srgb, var(--primary) 8%, var(--surface-2))' }}>
               <div className="row gap-10" style={{ alignItems: 'flex-start' }}>
                 <Icon name="activity" size={20} className="primary mt-2" />
                 <div>
                   <h3 className="tiny font-bold uppercase mb-4" style={{ color: 'var(--primary-bright)' }}>{t('Cách hít thở đúng')}</h3>
-                  <p className="small muted" style={{ margin: 0, lineHeight: 1.5 }}>{ex.breathing}</p>
+                  <p className="small muted" style={{ margin: 0, lineHeight: 1.5 }}>{content.breathing}</p>
                 </div>
               </div>
             </section>
           )}
 
           {/* Số hiệp/lần gợi ý */}
-          {(ex.setsRepsHint || ex.suggestedDose) && (
+          {(content?.setsRepsHint || content?.suggestedDose) && (
             <section className="card p-16 mb-16">
               <div className="row gap-10" style={{ alignItems: 'flex-start' }}>
                 <Icon name="clock" size={20} className="primary mt-2" />
                 <div>
                   <h3 className="tiny font-bold uppercase mb-4">{t('Liều tập gợi ý (Sets & Reps)')}</h3>
                   <p className="small muted" style={{ margin: 0, lineHeight: 1.5 }}>
-                    {ex.setsRepsHint ? <b>{ex.setsRepsHint} — </b> : null}
-                    {ex.suggestedDose}
+                    {content.setsRepsHint ? <b>{content.setsRepsHint} — </b> : null}
+                    {content.suggestedDose}
                   </p>
                 </div>
               </div>
@@ -347,27 +348,27 @@ export default function ExerciseDetail() {
           )}
 
           {/* Lỗi hay gặp */}
-          {ex.commonMistakes && (
+          {content?.commonMistakes && (
             <section className="card p-20 mb-16" style={{ borderColor: 'color-mix(in srgb, var(--warn) 30%, var(--hairline))' }}>
               <h2 className="section-title mb-10" style={{ color: 'var(--warn-bright)' }}>
                 <Icon name="alert" size={18} />
                 <span>{t('Lỗi sai phổ biến cần tránh')}</span>
               </h2>
               <p className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6, margin: 0, color: 'var(--muted)' }}>
-                {ex.commonMistakes}
+                {content.commonMistakes}
               </p>
             </section>
           )}
 
           {/* Lưu ý an toàn */}
-          {ex.safetyNotes && (
+          {content?.safetyNotes && (
             <section className="card p-20 mb-16" style={{ borderColor: 'color-mix(in srgb, var(--danger) 30%, var(--hairline))' }}>
               <h2 className="section-title mb-10" style={{ color: 'var(--danger-bright)' }}>
                 <Icon name="shield" size={18} />
                 <span>{t('Lưu ý an toàn')}</span>
               </h2>
               <p className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6, margin: 0, color: 'var(--muted)' }}>
-                {ex.safetyNotes}
+                {content.safetyNotes}
               </p>
             </section>
           )}

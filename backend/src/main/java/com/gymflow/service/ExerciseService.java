@@ -276,7 +276,11 @@ public class ExerciseService {
 
     private static boolean matches(Exercise e, String needle) {
         for (String field : new String[]{e.getName(), e.getNameEn(), e.getAliases(), e.getEquipment(), e.getSecondaryMuscles(),
-                e.getDescription(), e.getDescriptionEn()}) {
+                e.getDescription(), e.getDescriptionEn(), e.getInstructions(), e.getInstructionsEn(),
+                e.getSteps(), e.getStepsEn(), e.getSetupPosition(), e.getSetupPositionEn(),
+                e.getBreathing(), e.getBreathingEn(), e.getCommonMistakes(), e.getCommonMistakesEn(),
+                e.getSafetyNotes(), e.getSafetyNotesEn(), e.getSuggestedDose(), e.getSuggestedDoseEn(),
+                e.getVariations(), e.getVariationsEn()}) {
             if (field != null && stripAccents(field).contains(needle)) return true;
         }
         return false;
@@ -477,10 +481,14 @@ public class ExerciseService {
         e.setDescription(Mappers.blankToNull(req.description()));
         e.setDescriptionEn(Mappers.blankToNull(req.descriptionEn()));
         e.setInstructions(Mappers.blankToNull(req.instructions()));
+        e.setInstructionsEn(Mappers.blankToNull(req.instructionsEn()));
         e.setVideoUrl(sanitizeVideoUrl(req.videoUrl()));
         e.setSetupPosition(Mappers.blankToNull(req.setupPosition()));
+        e.setSetupPositionEn(Mappers.blankToNull(req.setupPositionEn()));
         e.setSteps(Mappers.blankToNull(req.steps() != null ? req.steps() : req.instructions()));
+        e.setStepsEn(Mappers.blankToNull(req.stepsEn() != null ? req.stepsEn() : req.instructionsEn()));
         e.setSetsRepsHint(Mappers.blankToNull(req.setsRepsHint()));
+        e.setSetsRepsHintEn(Mappers.blankToNull(req.setsRepsHintEn()));
         e.setPrimaryGoal(req.primaryGoal() != null ? req.primaryGoal() : (req.goals() != null && !req.goals().isEmpty() ? req.goals().get(0) : null));
         e.setNameEn(Mappers.blankToNull(req.nameEn()));
         e.setAliases(Mappers.blankToNull(req.aliases()));
@@ -488,10 +496,15 @@ public class ExerciseService {
         e.setLocation(req.location());
         e.setGoals(Mappers.joinGoals(req.goals()));
         e.setBreathing(Mappers.blankToNull(req.breathing()));
+        e.setBreathingEn(Mappers.blankToNull(req.breathingEn()));
         e.setCommonMistakes(Mappers.blankToNull(req.commonMistakes()));
+        e.setCommonMistakesEn(Mappers.blankToNull(req.commonMistakesEn()));
         e.setSafetyNotes(Mappers.blankToNull(req.safetyNotes()));
+        e.setSafetyNotesEn(Mappers.blankToNull(req.safetyNotesEn()));
         e.setVariations(Mappers.blankToNull(req.variations()));
+        e.setVariationsEn(Mappers.blankToNull(req.variationsEn()));
         e.setSuggestedDose(Mappers.blankToNull(req.suggestedDose()));
+        e.setSuggestedDoseEn(Mappers.blankToNull(req.suggestedDoseEn()));
         if (req.contentOrigin() != null) e.setContentOrigin(req.contentOrigin());
         if (req.sourceIds() != null) e.setSources(resolveSources(sourceRepository, req.sourceIds()));
         if (req.targetMuscles() != null) e.setTargetMuscles(joinKeys(req.targetMuscles(), MUSCLE_KEYS, "vùng cơ"));
