@@ -17,6 +17,13 @@
 | `V29__fix_exercise_subcategory.sql` | TASK 01 / SCRUM-229 | Chuẩn hoá sub_category bài tập (LEGS vs GLUTES, BICEPS vs TRICEPS, CARDIO), ẩn bài trùng #145 |
 | `V30__exercise_description_en.sql` | Song ngữ bài tập / SCRUM-229 | Thêm cột description_en, chuẩn hoá tên tiếng Việt cho 33 bài tập và cập nhật mô tả tiếng Anh cho 164 bài |
 | `V31__exercise_content_en.sql` | Song ngữ nội dung chi tiết / SCRUM-229 | Thêm các cột `*_en` cho hướng dẫn, hít thở, lỗi sai, an toàn, liều tập và nạp bản dịch cho 164 bài |
+| `V32__exercise_dataset_gifs.sql` | Kho kiến thức | Ảnh động GIF cho bài tập và bổ sung bài phổ biến |
+| `V33__forum_unlock_and_sample_plans.sql` | Diễn đàn / Gói tập | Mở khoá chủ đề chào mừng và thêm gói Gym/Gym + PT mẫu |
+| `V34__exercise_en_batch3.sql` | Song ngữ nội dung chi tiết / SCRUM-229 | Bản dịch lỗi thường gặp cho bài tập id 165–190 |
+| `V35__exercise_en_batch4.sql` | Song ngữ nội dung chi tiết / SCRUM-229 | Bản dịch lỗi thường gặp cho bài tập id 191–216 |
+| `V36__exercise_en_batch5.sql` | Song ngữ nội dung chi tiết / SCRUM-229 | Bản dịch lỗi thường gặp cho bài tập id 217–242 |
+| `V37__exercise_en_batch6.sql` | Song ngữ nội dung chi tiết / SCRUM-229 | Bản dịch lỗi thường gặp cho bài tập id 243–268 |
+| `V38__exercise_en_batch7.sql` | Song ngữ nội dung chi tiết / SCRUM-229 | Bản dịch lỗi thường gặp cho bài tập id 269–291 |
 
 Quy tắc:
 - Không sửa file đã merge. Tạo migration với số cao hơn migration mới nhất đã áp dụng; bỏ qua được V9–V12 trên một số CSDL demo cũ bằng cấu hình Flyway.
