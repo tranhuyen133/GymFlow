@@ -971,23 +971,39 @@ public final class Dtos {
                                         List<ShiftResponse> shifts) {
     }
 
-    public record CreateConversationRequest(@NotNull(message = "Vui lòng chọn huấn luyện viên") Long trainerId) {
+    public record CreateConversationRequest(Long trainerId, Long memberId) {
     }
 
     public record SendMessageRequest(
             @NotBlank(message = "Nội dung tin nhắn không được để trống")
             @Size(max = 2000, message = "Tin nhắn tối đa 2000 ký tự")
-            String body) {
+            String body,
+            @Size(max = 500, message = "Đường dẫn đính kèm tối đa 500 ký tự")
+            String attachmentUrl) {
+        public SendMessageRequest(String body) {
+            this(body, null);
+        }
     }
 
     public record MessageResponseDto(Long id, Long conversationId, Long senderUserId, String senderName,
+                                     String senderRole, String attachmentUrl,
                                      String body, LocalDateTime createdAt, LocalDateTime readAt) {
+        public MessageResponseDto(Long id, Long conversationId, Long senderUserId, String senderName,
+                                  String body, LocalDateTime createdAt, LocalDateTime readAt) {
+            this(id, conversationId, senderUserId, senderName, null, null, body, createdAt, readAt);
+        }
     }
 
     public record ConversationResponse(Long id, Long memberId, String memberName, String memberAvatar,
                                        Long trainerId, String trainerName, String trainerAvatar,
                                        LocalDateTime createdAt, LocalDateTime lastMessageAt,
                                        MessageResponseDto lastMessage, long unreadCount, String relation) {
+    }
+
+    public record AdminConversationSummary(Long id, Long memberId, String memberName, String memberAvatar,
+                                           Long trainerId, String trainerName, String trainerAvatar,
+                                           String lastMessageSnippet, LocalDateTime lastMessageAt,
+                                           long messageCount, LocalDateTime updatedAt, LocalDateTime createdAt) {
     }
 
     public record UnreadCountResponse(long unreadCount) {

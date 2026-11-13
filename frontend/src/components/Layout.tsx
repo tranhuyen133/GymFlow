@@ -38,11 +38,12 @@ export const NAV: NavItem[] = [
   { to: '/me/plan', label: 'Giáo án', icon: 'clipboard', roles: ['MEMBER'], tab: true },
   { to: '/knowledge', label: 'Kho kiến thức', icon: 'dumbbell', roles: ['MEMBER'], tab: true },
   { to: '/me/packages', label: 'Gói & Dịch vụ', icon: 'ticket', roles: ['MEMBER'] },
+  { to: '/messages', label: 'Tin nhắn', icon: 'message', roles: ['MEMBER'] },
   { to: '/profile', label: 'Tài khoản', icon: 'user', roles: ['MEMBER'], tab: true },
 
   // --- Huấn luyện viên (PT) ---
   { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard', roles: ['TRAINER'], tab: true },
-  { to: '/messages', label: 'Tin nhắn', icon: 'message', roles: ['TRAINER'], tab: true },
+  { to: '/messages', label: 'Tin nhắn', icon: 'message', roles: ['TRAINER'], group: 'Huấn luyện', tab: true },
   { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['TRAINER'], tab: true },
   { to: '/members', label: 'Hội viên', icon: 'users', roles: ['TRAINER'], group: 'Huấn luyện', tab: true },
   { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['TRAINER'], group: 'Huấn luyện' },
@@ -61,6 +62,7 @@ export const NAV: NavItem[] = [
   { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['ADMIN'], group: 'Huấn luyện' },
   { to: '/knowledge', label: 'Kho kiến thức', icon: 'layers', roles: ['ADMIN'], group: 'Kiến thức' },
   { to: '/programs', label: 'Lịch tập mẫu', icon: 'clipboard', roles: ['ADMIN'], group: 'Kiến thức' },
+  { to: '/admin/conversations', label: 'Tin nhắn', icon: 'message', roles: ['ADMIN'], group: 'Huấn luyện' },
   { to: '/knowledge', label: 'Kho kiến thức', icon: 'dumbbell', roles: ['ADMIN'], group: 'Kiến thức' },
   { to: '/programs', label: 'Lịch tập mẫu', icon: 'layers', roles: ['ADMIN'], group: 'Kiến thức' },
   { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['ADMIN'], group: 'Kiến thức' },

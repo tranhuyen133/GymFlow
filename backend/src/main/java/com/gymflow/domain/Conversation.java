@@ -30,6 +30,9 @@ public class Conversation {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
     @Column(name = "last_message_at")
     private LocalDateTime lastMessageAt;
 

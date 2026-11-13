@@ -15,4 +15,6 @@ public interface WorkoutPlanRepository extends JpaRepository<WorkoutPlan, Long> 
     List<WorkoutPlan> findAllByOrderByCreatedAtDesc();
 
     Optional<WorkoutPlan> findFirstByMemberIdAndStatusOrderByStartDateDesc(Long memberId, PlanStatus status);
+
+    boolean existsByMemberIdAndTrainerIdAndStatus(Long memberId, Long trainerId, PlanStatus status);
 }

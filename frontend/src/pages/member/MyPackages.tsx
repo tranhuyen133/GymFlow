@@ -64,7 +64,7 @@ export default function MyPackages() {
   if (subs.error) return <ErrorState message={subs.error} onRetry={subs.reload} />;
   if (subs.loading || !subs.data) return (
     <div className="page">
-      <PageHead title={t('Gói tập & Dịch vụ')} />
+      <PageHead eyebrow={t('Thành viên')} title={t('Gói tập & Dịch vụ')} />
       <LoadingBlock rows={6} />
     </div>
   );

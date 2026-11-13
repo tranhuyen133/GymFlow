@@ -228,10 +228,63 @@ public class ExerciseService {
         return new PageResponse<>(content, p, pageSize, totalElements, totalPages);
     }
 
+    private static final Map<String, String> SUBCAT_VI_TO_CODE = Map.ofEntries(
+            // Strength
+            Map.entry("nguc", "CHEST"),
+            Map.entry("lung", "BACK"),
+            Map.entry("vai", "SHOULDERS"),
+            Map.entry("tay truoc", "BICEPS"),
+            Map.entry("tay sau", "TRICEPS"),
+            Map.entry("bung", "CORE"),
+            Map.entry("co bung", "CORE"),
+            Map.entry("co bung - loi", "CORE"),
+            Map.entry("co bung loi", "CORE"),
+            Map.entry("loi", "CORE"),
+            Map.entry("chan", "LEGS"),
+            Map.entry("mong", "GLUTES"),
+            Map.entry("toan than", "FULL_BODY"),
+            // Warmup
+            Map.entry("khoi dong chung", "FULL_BODY_WARMUP"),
+            Map.entry("kich hoat vai & nguc", "SHOULDER_WARMUP"),
+            Map.entry("kich hoat vai va nguc", "SHOULDER_WARMUP"),
+            Map.entry("kich hoat vai", "SHOULDER_WARMUP"),
+            Map.entry("khoi dong vai", "SHOULDER_WARMUP"),
+            Map.entry("kich hoat mong & hong", "HIP_WARMUP"),
+            Map.entry("kich hoat mong va hong", "HIP_WARMUP"),
+            Map.entry("kich hoat mong", "HIP_WARMUP"),
+            Map.entry("khoi dong hong", "HIP_WARMUP"),
+            Map.entry("khoi dong khop goi", "KNEE_WARMUP"),
+            Map.entry("khoi dong goi", "KNEE_WARMUP"),
+            Map.entry("xoay khop", "JOINT_ROTATION"),
+            Map.entry("gian co dong", "DYNAMIC_STRETCH"),
+            Map.entry("kich hoat co bap", "MUSCLE_ACTIVATION"),
+            // Cardio
+            Map.entry("chay bo", "RUNNING"),
+            Map.entry("chay", "RUNNING"),
+            Map.entry("di bo", "WALKING"),
+            Map.entry("dap xe", "CYCLING"),
+            Map.entry("nhay day", "JUMP_ROPE"),
+            Map.entry("may cheo thuyen", "ROWING"),
+            Map.entry("cheo thuyen", "ROWING"),
+            Map.entry("leo cau thang", "STAIR_CLIMBER"),
+            Map.entry("stair climber", "STAIR_CLIMBER"),
+            Map.entry("leo bac", "STAIR_CLIMBER"),
+            Map.entry("leo thang", "STAIR_CLIMBER"),
+            Map.entry("hiit", "HIIT")
+    );
+
     private static boolean matchesSubCategory(Exercise e, String subCategory) {
         if (subCategory == null || subCategory.isBlank()) return true;
         if (e.getSubCategory() == null) return false;
-        return stripAccents(e.getSubCategory()).equalsIgnoreCase(stripAccents(subCategory.trim()));
+        String trimmed = subCategory.trim();
+        String eSub = e.getSubCategory().trim();
+        if (eSub.equalsIgnoreCase(trimmed)) return true;
+        String normalizedTarget = stripAccents(eSub).toLowerCase();
+        String normalizedQuery = stripAccents(trimmed).toLowerCase();
+        if (normalizedTarget.equals(normalizedQuery)) return true;
+        String mappedCode = SUBCAT_VI_TO_CODE.get(normalizedQuery);
+        if (mappedCode != null && eSub.equalsIgnoreCase(mappedCode)) return true;
+        return false;
     }
 
     private static boolean matchesMuscle(Exercise e, String muscle) {

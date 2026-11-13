@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Exercise, Level } from '../../api/types';
+import type { Exercise } from '../../api/types';
 import { useAuth } from '../../auth/AuthContext';
 import { HealthDisclaimer, SourceList } from '../../components/Content';
 import { mediaCredit } from '../../components/ExerciseMedia';
@@ -11,15 +11,9 @@ import { useToast } from '../../components/Toast';
 import { Badge, Button, ErrorState, LoadingBlock, Modal, PageHead, Textarea } from '../../components/ui';
 import { getLang, t } from '../../i18n';
 import { EQUIPMENT_BY_KEY, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey } from '../../lib/anatomy';
-import { exTitle, exSub } from '../../lib/format';
+import { exTitle, exSub, goalLabel, levelLabel } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import './kb.css';
-
-const LEVEL_LABELS: Record<Level, string> = {
-  BEGINNER: 'Người mới',
-  INTERMEDIATE: 'Trung cấp',
-  ADVANCED: 'Nâng cao',
-};
 
 export default function ExerciseDetail() {
   const { id = '' } = useParams<{ id: string }>();
@@ -154,6 +148,8 @@ export default function ExerciseDetail() {
             {ex.cardioIntensity && <Badge tone="red">{t('Cường độ {i}', { i: ex.cardioIntensity })}</Badge>}
             <Badge tone="blue">{t(LEVEL_LABELS[ex.level] || ex.level)}</Badge>
             {ex.primaryGoal && <Badge tone="muted">{ex.primaryGoal}</Badge>}
+            <Badge tone="blue">{levelLabel[ex.level] ? levelLabel[ex.level][0] : ex.level}</Badge>
+            {ex.primaryGoal && <Badge tone="muted">{goalLabel[ex.primaryGoal] || ex.primaryGoal}</Badge>}
             {ex.hidden && <Badge tone="amber">{t('Đang ẩn')}</Badge>}
             {ex.reviewStatus === 'PENDING' && <Badge tone="amber">{t('Chờ duyệt')}</Badge>}
 
@@ -280,10 +276,14 @@ export default function ExerciseDetail() {
                   </p>
                   <div className="row gap-6 wrap">
                     {primaryMuscles.map((m) => (
-                      <span key={m} className="chip chip-primary tiny">{t(MUSCLE_BY_KEY.get(m)?.label ?? m)}</span>
+                      <span key={m} className="chip chip-primary tiny">
+                        {getLang() === 'en' ? (MUSCLE_BY_KEY.get(m)?.labelEn ?? t(MUSCLE_BY_KEY.get(m)?.label ?? m)) : (MUSCLE_BY_KEY.get(m)?.label ?? m)}
+                      </span>
                     ))}
                     {secondaryMuscles.map((m) => (
-                      <span key={m} className="chip tiny">{t(MUSCLE_BY_KEY.get(m)?.label ?? m)}</span>
+                      <span key={m} className="chip tiny">
+                        {getLang() === 'en' ? (MUSCLE_BY_KEY.get(m)?.labelEn ?? t(MUSCLE_BY_KEY.get(m)?.label ?? m)) : (MUSCLE_BY_KEY.get(m)?.label ?? m)}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -423,7 +423,7 @@ export default function ExerciseDetail() {
                       <div className="min-w-0 flex-1">
                         <div className="font-bold small line-clamp-1">{exTitle(alt)}</div>
                         {exSub(alt) && <div className="tiny faint line-clamp-1" lang="vi">{exSub(alt)}</div>}
-                        <span className="badge badge-sm mt-4">{t(LEVEL_LABELS[alt.level] || alt.level)}</span>
+                        <span className="badge badge-sm mt-4">{levelLabel[alt.level] ? levelLabel[alt.level][0] : alt.level}</span>
                       </div>
                     </div>
                   </Link>
@@ -462,7 +462,7 @@ export default function ExerciseDetail() {
                       style={{ textDecoration: 'none' }}
                     >
                       <Icon name="dumbbell" size={12} className="mr-4" />
-                      <span>{info?.label ?? k}</span>
+                      <span>{getLang() === 'en' ? (info?.labelEn ?? t(info?.label ?? k)) : (info?.label ?? k)}</span>
                     </Link>
                   );
                 })}
@@ -481,7 +481,9 @@ export default function ExerciseDetail() {
                   <div className="tiny faint mb-4">{t('Cơ tác động chính:')}</div>
                   <div className="chips">
                     {primaryMuscles.map((m) => (
-                      <span key={m} className="chip chip-primary">{MUSCLE_BY_KEY.get(m)?.label ?? m}</span>
+                      <span key={m} className="chip chip-primary">
+                        {getLang() === 'en' ? (MUSCLE_BY_KEY.get(m)?.labelEn ?? t(MUSCLE_BY_KEY.get(m)?.label ?? m)) : (MUSCLE_BY_KEY.get(m)?.label ?? m)}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -492,7 +494,9 @@ export default function ExerciseDetail() {
                   <div className="tiny faint mb-4">{t('Cơ hỗ trợ (phụ):')}</div>
                   <div className="chips">
                     {secondaryMuscles.map((m) => (
-                      <span key={m} className="chip">{MUSCLE_BY_KEY.get(m)?.label ?? m}</span>
+                      <span key={m} className="chip">
+                        {getLang() === 'en' ? (MUSCLE_BY_KEY.get(m)?.labelEn ?? t(MUSCLE_BY_KEY.get(m)?.label ?? m)) : (MUSCLE_BY_KEY.get(m)?.label ?? m)}
+                      </span>
                     ))}
                   </div>
                 </div>

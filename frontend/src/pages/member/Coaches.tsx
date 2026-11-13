@@ -84,9 +84,9 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
     <div className={embedded ? undefined : 'page'}>
       {!embedded && (
         <PageHead
-          eyebrow="Dịch vụ"
-          title="Đội ngũ huấn luyện viên"
-          desc="Gặp gỡ và trao đổi trực tiếp với các huấn luyện viên chuyên nghiệp để chọn lộ trình phù hợp."
+          eyebrow={t('Dịch vụ')}
+          title={t('Đội ngũ huấn luyện viên')}
+          desc={t('Gặp gỡ và trao đổi trực tiếp với các huấn luyện viên chuyên nghiệp để chọn lộ trình phù hợp.')}
         />
       )}
 

@@ -3,10 +3,7 @@ package com.gymflow.service;
 import com.gymflow.common.ApiException;
 import com.gymflow.domain.*;
 import com.gymflow.dto.Dtos.*;
-import com.gymflow.repository.ConversationRepository;
-import com.gymflow.repository.MessageRepository;
-import com.gymflow.repository.TrainerRepository;
-import com.gymflow.repository.UserRepository;
+import com.gymflow.repository.*;
 import com.gymflow.security.AuthUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,6 +32,10 @@ class ConversationServiceTest {
     @Mock
     private TrainerRepository trainerRepository;
     @Mock
+    private MemberRepository memberRepository;
+    @Mock
+    private WorkoutPlanRepository workoutPlanRepository;
+    @Mock
     private UserRepository userRepository;
     @Mock
     private AccessService accessService;
@@ -46,12 +48,14 @@ class ConversationServiceTest {
     private AuthUser memberAuth;
     private AuthUser memberAuthB;
     private AuthUser trainerAuth;
+    private AuthUser adminAuth;
     private Member memberEntity;
     private Member memberEntityB;
     private Trainer trainerEntity;
     private User memberUser;
     private User memberUserB;
     private User trainerUser;
+    private User adminUser;
 
     @BeforeEach
     void setUp() {
@@ -60,6 +64,8 @@ class ConversationServiceTest {
                 conversationRepository,
                 messageRepository,
                 trainerRepository,
+                memberRepository,
+                workoutPlanRepository,
                 userRepository,
                 accessService,
                 auditService,
@@ -81,29 +87,52 @@ class ConversationServiceTest {
         trainerUser.setFullName("HLV Hùng");
         trainerUser.setRole(Role.TRAINER);
 
-        memberEntity = new Member();
-        memberEntity.setId(100L);
-        memberEntity.setUser(memberUser);
-        memberEntity.setTrainer(null); // Không có HLV, không có gói PT
-
-        memberEntityB = new Member();
-        memberEntityB.setId(101L);
-        memberEntityB.setUser(memberUserB);
-        memberEntityB.setTrainer(null);
+        adminUser = new User();
+        adminUser.setId(1L);
+        adminUser.setFullName("Admin Quản Trị");
+        adminUser.setRole(Role.ADMIN);
 
         trainerEntity = new Trainer();
         trainerEntity.setId(200L);
         trainerEntity.setUser(trainerUser);
         trainerEntity.setActive(true);
 
+        memberEntity = new Member();
+        memberEntity.setId(100L);
+        memberEntity.setUser(memberUser);
+        memberEntity.setTrainer(trainerEntity); // Gán cho HLV Hùng
+
+        memberEntityB = new Member();
+        memberEntityB.setId(101L);
+        memberEntityB.setUser(memberUserB);
+        memberEntityB.setTrainer(null); // Không có HLV
+
         memberAuth = new AuthUser(10L, "memberA@test.com", Role.MEMBER, "Nguyễn Văn A");
         memberAuthB = new AuthUser(11L, "memberB@test.com", Role.MEMBER, "Trần Văn B");
         trainerAuth = new AuthUser(20L, "trainer@test.com", Role.TRAINER, "HLV Hùng");
+        adminAuth = new AuthUser(1L, "admin@test.com", Role.ADMIN, "Admin Quản Trị");
     }
 
     @Test
-    @DisplayName("Hội viên không có gói nào vẫn tạo được hội thoại và gửi được tin, trainer_id vẫn NULL")
-    void memberWithoutPackageCanCreateConversationAndSendMessage() {
+    @DisplayName("Hội viên chỉ được nhắn tin với HLV đang phụ trách (403 nếu HLV không phụ trách)")
+    void memberCannotMessageUnassignedTrainer() {
+        when(accessService.requireMemberOf(memberAuthB)).thenReturn(memberEntityB);
+        when(trainerRepository.findById(200L)).thenReturn(Optional.of(trainerEntity));
+        when(workoutPlanRepository.existsByMemberIdAndTrainerIdAndStatus(101L, 200L, PlanStatus.ACTIVE))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> conversationService.getOrCreate(memberAuthB, 200L))
+                .isInstanceOf(ApiException.class)
+                .satisfies(e -> {
+                    ApiException apiEx = (ApiException) e;
+                    assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
+                    assertThat(apiEx.getMessage()).contains("chỉ có thể nhắn tin với Huấn luyện viên đang phụ trách");
+                });
+    }
+
+    @Test
+    @DisplayName("Hội viên có HLV phụ trách (gán trực tiếp) tạo hội thoại và gửi tin thành công")
+    void memberWithAssignedTrainerCanCreateConversationAndSendMessage() {
         when(accessService.requireMemberOf(memberAuth)).thenReturn(memberEntity);
         when(trainerRepository.findById(200L)).thenReturn(Optional.of(trainerEntity));
         when(conversationRepository.findByMemberIdAndTrainerId(100L, 200L)).thenReturn(Optional.empty());
@@ -116,34 +145,112 @@ class ConversationServiceTest {
 
         assertThat(res).isNotNull();
         assertThat(res.id()).isEqualTo(1L);
-        assertThat(res.relation()).isEqualTo("CONSULTING");
-        assertThat(memberEntity.getTrainer()).isNull(); // trainer_id TUYỆT ĐỐI không thay đổi
+        assertThat(res.relation()).isEqualTo("ASSIGNED");
 
         // Gửi tin nhắn
         when(conversationRepository.findById(1L)).thenReturn(Optional.of(savedConv));
         when(userRepository.findById(memberAuth.id())).thenReturn(Optional.of(memberUser));
-        Message savedMsg = new Message(savedConv, memberUser, "Chào HLV, tôi muốn tư vấn");
+        Message savedMsg = new Message(savedConv, memberUser, Role.MEMBER, "Chào HLV, tôi muốn tư vấn bài tập", null);
         savedMsg.setId(10L);
         when(messageRepository.save(any(Message.class))).thenReturn(savedMsg);
 
-        MessageResponseDto msgRes = conversationService.sendMessage(memberAuth, 1L, "Chào HLV, tôi muốn tư vấn");
+        MessageResponseDto msgRes = conversationService.sendMessage(memberAuth, 1L, "Chào HLV, tôi muốn tư vấn bài tập");
         assertThat(msgRes).isNotNull();
-        assertThat(msgRes.body()).isEqualTo("Chào HLV, tôi muốn tư vấn");
-        assertThat(memberEntity.getTrainer()).isNull(); // Vẫn là NULL
+        assertThat(msgRes.body()).isEqualTo("Chào HLV, tôi muốn tư vấn bài tập");
     }
 
     @Test
-    @DisplayName("Sau khi chat, HLV gọi canView hoặc requireCoach tiến độ/chỉ số của hội viên đó -> 403, trainer_id vẫn NULL")
-    void afterChatTrainerCannotAccessMemberProgress() {
-        // Chat xong, memberEntity.getTrainer() vẫn là null
-        assertThat(memberEntity.getTrainer()).isNull();
+    @DisplayName("Hội viên có giáo án ACTIVE với HLV tạo hội thoại thành công")
+    void memberWithActiveWorkoutPlanCanCreateConversation() {
+        memberEntityB.setTrainer(null);
+        when(accessService.requireMemberOf(memberAuthB)).thenReturn(memberEntityB);
+        when(trainerRepository.findById(200L)).thenReturn(Optional.of(trainerEntity));
+        when(workoutPlanRepository.existsByMemberIdAndTrainerIdAndStatus(101L, 200L, PlanStatus.ACTIVE))
+                .thenReturn(true);
 
-        AccessService realAccess = new AccessService(mock(com.gymflow.repository.MemberRepository.class), trainerRepository);
-        boolean canView = realAccess.canView(trainerAuth, memberEntity);
-        assertThat(canView).isFalse();
+        Conversation savedConv = new Conversation(memberEntityB, trainerEntity);
+        savedConv.setId(2L);
+        when(conversationRepository.findByMemberIdAndTrainerId(101L, 200L)).thenReturn(Optional.empty());
+        when(conversationRepository.save(any(Conversation.class))).thenReturn(savedConv);
 
-        boolean canCoach = realAccess.canCoach(trainerAuth, memberEntity);
-        assertThat(canCoach).isFalse();
+        ConversationResponse res = conversationService.getOrCreate(memberAuthB, 200L);
+        assertThat(res).isNotNull();
+        assertThat(res.id()).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("HLV tạo cuộc hội thoại với hội viên mình phụ trách thành công")
+    void trainerCanCreateConversationWithAssignedMember() {
+        when(accessService.requireTrainerOf(trainerAuth)).thenReturn(trainerEntity);
+        when(memberRepository.findById(100L)).thenReturn(Optional.of(memberEntity));
+        when(conversationRepository.findByMemberIdAndTrainerId(100L, 200L)).thenReturn(Optional.empty());
+
+        Conversation savedConv = new Conversation(memberEntity, trainerEntity);
+        savedConv.setId(3L);
+        when(conversationRepository.save(any(Conversation.class))).thenReturn(savedConv);
+
+        CreateConversationRequest req = new CreateConversationRequest(null, 100L);
+        ConversationResponse res = conversationService.getOrCreate(trainerAuth, req);
+        assertThat(res).isNotNull();
+        assertThat(res.id()).isEqualTo(3L);
+    }
+
+    @Test
+    @DisplayName("HLV không phụ trách hội viên gọi tạo hội thoại -> 403")
+    void trainerCannotMessageUnassignedMember() {
+        when(accessService.requireTrainerOf(trainerAuth)).thenReturn(trainerEntity);
+        when(memberRepository.findById(101L)).thenReturn(Optional.of(memberEntityB));
+        when(workoutPlanRepository.existsByMemberIdAndTrainerIdAndStatus(101L, 200L, PlanStatus.ACTIVE))
+                .thenReturn(false);
+
+        CreateConversationRequest req = new CreateConversationRequest(null, 101L);
+        assertThatThrownBy(() -> conversationService.getOrCreate(trainerAuth, req))
+                .isInstanceOf(ApiException.class)
+                .satisfies(e -> assertThat(((ApiException) e).getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    @DisplayName("Admin xem tin nhắn hội thoại thành công và ghi nhận nhật ký hệ thống")
+    void adminCanViewMessagesAndCreatesAuditLog() {
+        Conversation conv = new Conversation(memberEntity, trainerEntity);
+        conv.setId(1L);
+        when(conversationRepository.findById(1L)).thenReturn(Optional.of(conv));
+
+        Message m1 = new Message(conv, memberUser, Role.MEMBER, "Tin nhắn từ member", null);
+        m1.setId(101L);
+        m1.setCreatedAt(LocalDateTime.now());
+        when(messageRepository.findMessagesBefore(eq(1L), any(), any())).thenReturn(List.of(m1));
+
+        List<MessageResponseDto> messages = conversationService.getMessages(adminAuth, 1L, null, 50);
+
+        assertThat(messages).hasSize(1);
+        assertThat(messages.get(0).body()).isEqualTo("Tin nhắn từ member");
+        verify(auditService, times(1)).log(eq("CONVERSATION_VIEW"), eq("CONVERSATION"), eq(1L), contains("Quản lý xem hội thoại"));
+    }
+
+    @Test
+    @DisplayName("Admin cố gắng gửi tin nhắn -> 403 Forbidden")
+    void adminCannotSendMessage() {
+        assertThatThrownBy(() -> conversationService.sendMessage(adminAuth, 1L, "Admin gửi tin"))
+                .isInstanceOf(ApiException.class)
+                .satisfies(e -> {
+                    ApiException apiEx = (ApiException) e;
+                    assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
+                    assertThat(apiEx.getMessage()).contains("chỉ có quyền xem");
+                });
+    }
+
+    @Test
+    @DisplayName("Admin cố gắng tạo cuộc hội thoại -> 403 Forbidden")
+    void adminCannotCreateConversation() {
+        CreateConversationRequest req = new CreateConversationRequest(200L, 100L);
+        assertThatThrownBy(() -> conversationService.getOrCreate(adminAuth, req))
+                .isInstanceOf(ApiException.class)
+                .satisfies(e -> {
+                    ApiException apiEx = (ApiException) e;
+                    assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
+                    assertThat(apiEx.getMessage()).contains("chỉ có quyền xem");
+                });
     }
 
     @Test

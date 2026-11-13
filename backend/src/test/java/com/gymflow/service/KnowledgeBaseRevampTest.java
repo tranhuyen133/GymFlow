@@ -130,8 +130,8 @@ class KnowledgeBaseRevampTest {
         @Test
         @DisplayName("Lọc theo danh mục con (subCategory) không phân biệt dấu và hoa thường")
         void testFilterBySubCategory() {
-            Exercise ex1 = makeExercise(1L, "Xoay khớp vai", ExerciseType.WARMUP, "Khởi động vai", "front-deltoids", null, null, false);
-            Exercise ex2 = makeExercise(2L, "Xoay hông", ExerciseType.WARMUP, "Khởi động hông", "gluteal", null, null, false);
+            Exercise ex1 = makeExercise(1L, "Xoay khớp vai", ExerciseType.WARMUP, "SHOULDER_WARMUP", "front-deltoids", null, null, false);
+            Exercise ex2 = makeExercise(2L, "Xoay hông", ExerciseType.WARMUP, "HIP_WARMUP", "gluteal", null, null, false);
 
             when(exerciseRepository.findAllByOrderByNameAsc()).thenReturn(List.of(ex1, ex2));
 
@@ -142,6 +142,51 @@ class KnowledgeBaseRevampTest {
             List<ExerciseResponse> results = exerciseService.list(MEMBER, filter);
             assertThat(results).hasSize(1);
             assertThat(results.get(0).name()).isEqualTo("Xoay khớp vai");
+        }
+
+        @Test
+        @DisplayName("Lọc subCategory=SHOULDERS trả về bài vai, và nhãn 'vai' fallback đúng mã SHOULDERS")
+        void testFilterSubCategoryShouldersAndFallback() {
+            Exercise arnoldPress = makeExercise(10L, "Arnold Press", ExerciseType.STRENGTH, "SHOULDERS", "front-deltoids", null, null, false);
+            Exercise benchPress = makeExercise(11L, "Bench Press", ExerciseType.STRENGTH, "CHEST", "chest", null, null, false);
+
+            when(exerciseRepository.findAllByOrderByNameAsc()).thenReturn(List.of(arnoldPress, benchPress));
+
+            // Lọc trực tiếp bằng mã SHOULDERS
+            ExerciseService.Filter filterCode = new ExerciseService.Filter(
+                    null, null, null, null, null, null, null, null,
+                    ExerciseType.STRENGTH, "SHOULDERS", null, null, false
+            );
+            List<ExerciseResponse> byCode = exerciseService.list(MEMBER, filterCode);
+            assertThat(byCode).hasSize(1);
+            assertThat(byCode.get(0).name()).isEqualTo("Arnold Press");
+
+            // Lọc bằng nhãn tiếng Việt 'vai' (link cũ/fallback)
+            ExerciseService.Filter filterVi = new ExerciseService.Filter(
+                    null, null, null, null, null, null, null, null,
+                    ExerciseType.STRENGTH, "vai", null, null, false
+            );
+            List<ExerciseResponse> byVi = exerciseService.list(MEMBER, filterVi);
+            assertThat(byVi).hasSize(1);
+            assertThat(byVi.get(0).name()).isEqualTo("Arnold Press");
+        }
+
+        @Test
+        @DisplayName("Back Squat và Bulgarian Split Squat thuộc nhóm LEGS")
+        void testBackSquatAndSplitSquatBelongToLegs() {
+            Exercise backSquat = makeExercise(9L, "Back Squat", ExerciseType.STRENGTH, "LEGS", "quadriceps,gluteal", null, "barbell", false);
+            Exercise splitSquat = makeExercise(59L, "Bulgarian Split Squat", ExerciseType.STRENGTH, "LEGS", "quadriceps,gluteal", null, "dumbbell", false);
+            Exercise hipThrust = makeExercise(62L, "Hip Thrust", ExerciseType.STRENGTH, "GLUTES", "gluteal", null, "barbell", false);
+
+            when(exerciseRepository.findAllByOrderByNameAsc()).thenReturn(List.of(backSquat, splitSquat, hipThrust));
+
+            ExerciseService.Filter filterLegs = new ExerciseService.Filter(
+                    null, null, null, null, null, null, null, null,
+                    ExerciseType.STRENGTH, "LEGS", null, null, false
+            );
+            List<ExerciseResponse> legs = exerciseService.list(MEMBER, filterLegs);
+            assertThat(legs).extracting(ExerciseResponse::name).containsExactly("Back Squat", "Bulgarian Split Squat");
+            assertThat(legs).extracting(ExerciseResponse::subCategory).containsOnly("LEGS");
         }
     }
 
