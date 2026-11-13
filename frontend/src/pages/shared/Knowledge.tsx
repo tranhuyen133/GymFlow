@@ -1031,17 +1031,17 @@ export default function Knowledge() {
               {muscleDetailLoading || !muscleDetail ? (
                 <LoadingBlock rows={6} />
               ) : (
-                <div className="flow" style={{ gap: 16 }}>
+                <div className="stack muscle-detail" style={{ gap: 16 }}>
                   <div>
-                    <h4 className="tiny faint uppercase font-bold mb-6">{t('Vị trí & Chức năng giải phẫu')}</h4>
+                    <h4 className="tiny faint muscle-detail-label">{t('Vị trí & Chức năng giải phẫu')}</h4>
                     <p style={{ lineHeight: 1.6, margin: 0 }}>{muscleDetail.description}</p>
                   </div>
 
                   <div>
-                    <h4 className="tiny faint uppercase font-bold mb-8">
+                    <h4 className="tiny faint muscle-detail-label">
                       {t('Bài tập tác động chính ({n})', { n: muscleDetail.primaryExercises.length })}
                     </h4>
-                    <div className="row wrap" style={{ gap: 8 }}>
+                    <div className="muscle-detail-chips">
                       {muscleDetail.primaryExercises.slice(0, 6).map((pe) => (
                         <Link
                           key={pe.id}
@@ -1049,7 +1049,7 @@ export default function Knowledge() {
                           className="chip chip-primary"
                           style={{ textDecoration: 'none' }}
                         >
-                          <Icon name="dumbbell" size={13} className="mr-4" />
+                          <Icon name="dumbbell" size={13} />
                           <span>{exTitle(pe)}</span>
                         </Link>
                       ))}
@@ -1058,10 +1058,10 @@ export default function Knowledge() {
 
                   {muscleDetail.secondaryExercises.length > 0 && (
                     <div>
-                      <h4 className="tiny faint uppercase font-bold mb-8">
+                      <h4 className="tiny faint muscle-detail-label">
                         {t('Bài tập tác động bổ trợ ({n})', { n: muscleDetail.secondaryExercises.length })}
                       </h4>
-                      <div className="row wrap" style={{ gap: 8 }}>
+                      <div className="muscle-detail-chips">
                         {muscleDetail.secondaryExercises.slice(0, 6).map((se) => (
                           <Link
                             key={se.id}
@@ -1078,8 +1078,8 @@ export default function Knowledge() {
 
                   {muscleDetail.commonEquipment.length > 0 && (
                     <div>
-                      <h4 className="tiny faint uppercase font-bold mb-8">{t('Dụng cụ thường dùng')}</h4>
-                      <div className="row wrap" style={{ gap: 8 }}>
+                      <h4 className="tiny faint muscle-detail-label">{t('Dụng cụ thường dùng')}</h4>
+                      <div className="muscle-detail-chips">
                         {muscleDetail.commonEquipment.map((eq) => {
                           const eqInfo = EQUIPMENT_BY_KEY.get(eq.key as EquipmentKey);
                           const label = getLang() === 'en' ? (eqInfo?.labelEn ?? t(eq.name)) : (eqInfo?.label ?? t(eq.name));
@@ -1090,7 +1090,7 @@ export default function Knowledge() {
                               className="chip"
                               style={{ textDecoration: 'none' }}
                             >
-                              <Icon name="zap" size={13} className="mr-4" />
+                              <Icon name="zap" size={13} />
                               <span>{label}</span>
                             </Link>
                           );

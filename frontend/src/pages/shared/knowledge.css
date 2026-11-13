@@ -134,3 +134,29 @@
   transform: translateY(-2px);
   border-color: var(--primary);
 }
+
+/* Modal chi tiết nhóm cơ */
+.muscle-detail-label {
+  display: block;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.muscle-detail-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.muscle-detail .chip {
+  height: auto;
+  min-height: 26px;
+  white-space: nowrap;
+}
+
+.muscle-detail .chip-primary {
+  background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+  color: var(--primary-bright);
+}
