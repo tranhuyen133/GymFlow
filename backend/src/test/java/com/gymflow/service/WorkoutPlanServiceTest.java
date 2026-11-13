@@ -98,7 +98,7 @@ class WorkoutPlanServiceTest {
             WorkoutPlan wp = inv.getArgument(0);
             List<PlanItemResponse> items = wp.getItems().stream().map(i ->
                     new PlanItemResponse(i.getId(), i.getExercise().getId(), i.getExercise().getName(),
-                            i.getExercise().getMuscleGroup(), i.getExercise().getEquipment(),
+                            i.getExercise().getNameEn(), i.getExercise().getMuscleGroup(), i.getExercise().getEquipment(),
                             i.getDayOfWeek(), i.getSortOrder(), i.getSets(), i.getReps(),
                             i.getWeightKg(), i.getRestSeconds(), i.getDurationMinutes(), i.getNote())
             ).toList();

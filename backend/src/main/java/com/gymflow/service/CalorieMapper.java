@@ -17,7 +17,7 @@ public final class CalorieMapper {
     public static CalorieExerciseResponse exercise(CalorieEstimate.ExerciseEstimate e) {
         return new CalorieExerciseResponse(
                 e.exercise() == null ? null : e.exercise().getId(),
-                e.exerciseName(), e.activityCategory(), e.intensity(), e.metValue(),
+                e.exerciseName(), e.exercise() == null ? null : e.exercise().getNameEn(), e.activityCategory(), e.intensity(), e.metValue(),
                 e.metSourceCode(), e.metSourceVersion(), e.sets(), e.reps(),
                 e.workSecondsPerSet(), e.restSeconds(), e.activeMinutes(), e.calories(), e.dataSource());
     }
@@ -58,7 +58,7 @@ public final class CalorieMapper {
     private static CalorieExerciseResponse exercise(WorkoutLogExercise e) {
         return new CalorieExerciseResponse(
                 e.getExercise() == null ? null : e.getExercise().getId(),
-                e.getExerciseName(), e.getActivityCategory(), e.getIntensity(), e.getMetValue(),
+                e.getExerciseName(), e.getExercise() == null ? null : e.getExercise().getNameEn(), e.getActivityCategory(), e.getIntensity(), e.getMetValue(),
                 e.getMetSourceCode(), e.getMetSourceVersion(), e.getSets(), e.getReps(),
                 e.getWorkSecondsPerSet(), e.getRestSeconds(), e.getActiveMinutes(), e.getCalories(), e.getDataSource());
     }

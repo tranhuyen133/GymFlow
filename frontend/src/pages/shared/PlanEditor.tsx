@@ -9,7 +9,8 @@ import { MuscleMap } from '../../components/MuscleMap';
 import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, SearchInput, Select, StatusBadge, Textarea } from '../../components/ui';
-import { t, tn } from '../../i18n';
+import { getLang, t, tn } from '../../i18n';
+import { localizeExercise } from '../../lib/exercise';
 import { addDays, DAYS, DAY_NAMES, formatEquipment, levelLabel, muscleColor, muscleLabel, planStatus, toIsoDate } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { checkPlanName, itemProblems, type ItemField } from '../../lib/validation';
@@ -187,7 +188,7 @@ export default function PlanEditor() {
       const ex = resolveItem(it, approvedByName);
       if (!ex) { skipped.push(`${DAYS[d.dow - 1]} · ${it.ex[0]}`); return; }
       next.push({
-        key: keySeq++, exerciseId: ex.id, exerciseName: ex.name, muscleGroup: ex.muscleGroup, equipment: ex.equipment,
+        key: keySeq++, exerciseId: ex.id, exerciseName: ex.name, exerciseNameEn: ex.nameEn, muscleGroup: ex.muscleGroup, equipment: ex.equipment,
         dayOfWeek: d.dow, sortOrder: next.filter((x) => x.dayOfWeek === d.dow).length, sets: it.sets,
         reps: it.minutes ? '1' : it.reps ?? '10', weightKg: null, restSeconds: it.minutes ? null : it.rest ?? 60,
         durationMinutes: it.minutes ?? null, note: it.note ? t(it.note) : null,
@@ -219,10 +220,10 @@ export default function PlanEditor() {
   const add = (exId: number) => {
     const ex = library.data?.find((e) => e.id === exId);
     if (!ex) return;
-    if (dayItems.some((x) => x.exerciseId === ex.id)) toast.info(t('"{name}" đã có trong {day}, vẫn thêm một lần nữa', { name: ex.name, day: DAYS[day - 1] }));
+    if (dayItems.some((x) => x.exerciseId === ex.id)) toast.info(t('"{name}" đã có trong {day}, vẫn thêm một lần nữa', { name: localizeExercise(ex, getLang()).title, day: DAYS[day - 1] }));
     const cardio = ex.muscleGroup === 'CARDIO';
     setItems((xs) => [...xs, {
-      key: keySeq++, exerciseId: ex.id, exerciseName: ex.name, muscleGroup: ex.muscleGroup, equipment: ex.equipment,
+      key: keySeq++, exerciseId: ex.id, exerciseName: ex.name, exerciseNameEn: ex.nameEn, muscleGroup: ex.muscleGroup, equipment: ex.equipment,
       dayOfWeek: day, sortOrder: xs.filter((x) => x.dayOfWeek === day).length, sets: cardio ? 1 : 3, reps: cardio ? '1' : '10-12',
       weightKg: null, restSeconds: cardio ? null : 60, durationMinutes: cardio ? 15 : null, note: null,
     }]);
@@ -267,7 +268,7 @@ export default function PlanEditor() {
       setShowItemErrors(true);
       const first = badItems[0];
       setDay(first.dayOfWeek);
-      setError(t('Bài "{name}" ({day}): {msg}', { name: first.exerciseName, day: DAY_NAMES[first.dayOfWeek - 1], msg: t(Object.values(problems.get(first.key) ?? {})[0] ?? '') }));
+      setError(t('Bài "{name}" ({day}): {msg}', { name: getLang() === 'en' && first.exerciseNameEn ? first.exerciseNameEn : first.exerciseName, day: DAY_NAMES[first.dayOfWeek - 1], msg: t(Object.values(problems.get(first.key) ?? {})[0] ?? '') }));
       return false;
     }
     setBusy(true);
@@ -421,7 +422,7 @@ export default function PlanEditor() {
                   <div style={{ minWidth: 0 }}>
                     <div className="row" style={{ gap: 6 }}>
                       <i style={{ width: 8, height: 8, borderRadius: 2, background: it.muscleGroup ? muscleColor[it.muscleGroup] : 'var(--faint)', flex: 'none' }} />
-                      <b className="ellipsis small">{t(it.exerciseName ?? '')}</b>
+                      <b className="ellipsis small">{ex ? localizeExercise(ex, getLang()).title : (getLang() === 'en' && it.exerciseNameEn ? it.exerciseNameEn : t(it.exerciseName ?? ''))}</b>
                       {notApproved && <span title={t('Bài này không còn ở trạng thái đã duyệt. Vẫn giữ được trong giáo án, nhưng không thêm mới được.')}><Badge tone="amber">{ex?.hidden ? t('Đã ẩn') : t('Chờ duyệt lại')}</Badge></span>}
                     </div>
                     <input className="input" style={{ height: 28, marginTop: 4, fontSize: 12 }} maxLength={255} placeholder={t('Ghi chú…')} value={it.note ?? ''} onChange={(e) => update(it.key, { note: e.target.value })} />

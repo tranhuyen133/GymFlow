@@ -375,7 +375,7 @@ export interface Article {
   reviewedAt: string | null; publishedAt: string | null; createdAt: string | null; updatedAt: string | null; sources: Source[];
 }
 export interface PlanItem {
-  id?: number; exerciseId: number; exerciseName?: string; muscleGroup?: MuscleGroup; equipment?: string | null;
+  id?: number; exerciseId: number; exerciseName?: string; exerciseNameEn?: string | null; muscleGroup?: MuscleGroup; equipment?: string | null;
   dayOfWeek: number; sortOrder: number; sets: number; reps: string; weightKg: number | null;
   restSeconds: number | null; durationMinutes: number | null; note: string | null;
 }
@@ -418,7 +418,7 @@ export interface ScheduleCreated { created: Schedule[]; skipped: string[] }
 
 // ---------- Calorie (MET) ----------
 export interface CalorieExercise {
-  exerciseId: number | null; exerciseName: string; activityCategory: ActivityCategory;
+  exerciseId: number | null; exerciseName: string; exerciseNameEn?: string | null; activityCategory: ActivityCategory;
   intensity: ExerciseIntensity; metValue: number; metSourceCode: string | null; metSourceVersion: string | null;
   sets: number | null; reps: string | null; workSecondsPerSet: number | null; restSeconds: number | null;
   activeMinutes: number; calories: number | null; dataSource: 'PLAN' | 'FALLBACK';

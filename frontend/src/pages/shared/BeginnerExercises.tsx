@@ -7,7 +7,7 @@ import { Icon } from '../../components/Icon';
 import { Badge, Empty, ErrorState, LoadingBlock, Modal, PageHead } from '../../components/ui';
 import { getLang, t } from '../../i18n';
 import { MUSCLE_BY_KEY, type MuscleKey } from '../../lib/anatomy';
-import { localizeExercise } from '../../lib/exercise';
+import { localizeExercise, localizeExerciseContent } from '../../lib/exercise';
 import { exTitle, exSub } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 import './kb.css';
@@ -217,9 +217,9 @@ export default function BeginnerExercises() {
                     </p>
                   )}
 
-                  {e.setsRepsHint && (
+                  {localizeExerciseContent(e, getLang()).setsRepsHint && (
                     <div className="tiny faint">
-                      <b>{t('Gợi ý:')}</b> {e.setsRepsHint}
+                      <b>{t('Gợi ý:')}</b> {localizeExerciseContent(e, getLang()).setsRepsHint}
                     </div>
                   )}
 

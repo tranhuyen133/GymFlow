@@ -13,7 +13,7 @@ import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
 import { WeekCalendar } from '../../components/WeekCalendar';
 import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
-import { t, tn } from '../../i18n';
+import { getLang, t, tn } from '../../i18n';
 import { addDays, DAY_NAMES, fmtDate, fmtDateTime, fmtTime, fmtWeekday, formatEquipment, exTitle, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
 import { covered, fromMin, GYM_CLOSE, GYM_OPEN, hm, timeOptions, toMin, type WeekSlot } from '../../lib/hours';
 import '../../components/week-slots.css';
@@ -292,7 +292,7 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
               <ul className="small muted" style={{ margin: '8px 0 0', paddingLeft: 18 }}>
                 {preview.data.exercises.map((e, i) => (
                   <li key={`${e.exerciseName}-${i}`}>
-                    {e.exerciseName}
+                    {getLang() === 'en' && e.exerciseNameEn ? e.exerciseNameEn : e.exerciseName}
                     {e.sets != null && ` · ${e.sets} hiệp`}
                     {e.reps && ` × ${e.reps}`}
                     {` · ${e.activeMinutes} phút vận động`}

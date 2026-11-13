@@ -10,7 +10,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, SearchInput, Segmented, Select, StatusBadge, Textarea } from '../../components/ui';
 import { exSub, exTitle, fmtDateTime, formatEquipment, goalLabel, levelLabel, locationLabel, muscleLabel, reviewLabel } from '../../lib/format';
-import { localizeExercise, localizeExerciseContent } from '../../lib/exercise';
+import { localizeExercise, localizeExerciseContent, hasMissingExerciseEnglish } from '../../lib/exercise';
 import { errMsg, fieldErrs, useAsync, useDebounced, usePaged } from '../../lib/hooks';
 import { getLang, t } from '../../i18n';
 import './exercises.css';
@@ -561,7 +561,7 @@ function ExerciseDetail({ exercise: e, canReview, queue, onClose, onEdit, onRevi
               : <p className="tiny faint" style={{ margin: 0 }}>{t('Bài chưa được gắn vùng cơ trên bản đồ.')}</p>}
           </div>
         </div>
-        <HealthDisclaimer pending={e.reviewStatus !== 'APPROVED'} />
+        <HealthDisclaimer pending={e.reviewStatus !== 'APPROVED'} showViOnly={hasMissingExerciseEnglish(e)} />
         {localizeExercise(e, getLang()).description ? <p className="muted">{localizeExercise(e, getLang()).description}</p> : <p className="small"><Missing /></p>}
 
         <div className="info-grid">

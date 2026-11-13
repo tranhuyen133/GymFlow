@@ -1,4 +1,4 @@
-import type { Lang } from '../i18n';
+import { tFor, type Lang } from '../i18n';
 
 export interface LocalizableExercise {
   name: string;
@@ -25,11 +25,7 @@ export interface LocalizedExerciseContent {
   variations: string | null;
 }
 
-/**
- * Nội dung chi tiết song ngữ. EN fallback về bản VI khi chưa có bản dịch,
- * để không bao giờ hiện section trống chỉ vì thiếu `_en`.
- */
-export function localizeExerciseContent(ex: LocalizableExercise & {
+export interface LocalizableExerciseContent extends LocalizableExercise {
   instructions?: string | null; instructionsEn?: string | null;
   steps?: string | null; stepsEn?: string | null;
   setupPosition?: string | null; setupPositionEn?: string | null;
@@ -39,9 +35,15 @@ export function localizeExerciseContent(ex: LocalizableExercise & {
   suggestedDose?: string | null; suggestedDoseEn?: string | null;
   setsRepsHint?: string | null; setsRepsHintEn?: string | null;
   variations?: string | null; variationsEn?: string | null;
-}, lang: Lang): LocalizedExerciseContent {
+}
+
+/**
+ * Nội dung chi tiết song ngữ. EN fallback về bản VI khi chưa có bản dịch,
+ * để không bao giờ hiện section trống chỉ vì thiếu `_en`.
+ */
+export function localizeExerciseContent(ex: LocalizableExerciseContent, lang: Lang): LocalizedExerciseContent {
   if (lang === 'en') {
-    const pick = (en: string | null | undefined, vi: string | null | undefined) => en?.trim() || vi || null;
+    const pick = (en: string | null | undefined, vi: string | null | undefined) => en?.trim() || (vi ? tFor(lang, vi) : null);
     return {
       instructions: pick(ex.instructionsEn, ex.instructions),
       steps: pick(ex.stepsEn, ex.steps),
@@ -65,6 +67,24 @@ export function localizeExerciseContent(ex: LocalizableExercise & {
     setsRepsHint: ex.setsRepsHint ?? null,
     variations: ex.variations ?? null,
   };
+}
+
+export function hasMissingExerciseEnglish(ex: LocalizableExerciseContent): boolean {
+  if (!ex.nameEn?.trim()) return true;
+
+  const vi = localizeExerciseContent(ex, 'vi');
+  const en = localizeExerciseContent(ex, 'en');
+  const fields: (keyof LocalizedExerciseContent)[] = [
+    'instructions', 'steps', 'setupPosition', 'breathing', 'commonMistakes',
+    'safetyNotes', 'suggestedDose', 'setsRepsHint', 'variations',
+  ];
+  if (fields.some((key) => vi[key] && (!en[key] || en[key] === vi[key]))) return true;
+
+  if (ex.description?.trim()) {
+    const enDescription = ex.descriptionEn?.trim() || tFor('en', ex.description);
+    if (enDescription === ex.description) return true;
+  }
+  return false;
 }
 
 /**

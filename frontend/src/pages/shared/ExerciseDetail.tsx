@@ -11,7 +11,7 @@ import { useToast } from '../../components/Toast';
 import { Badge, Button, ErrorState, LoadingBlock, Modal, Textarea } from '../../components/ui';
 import { getLang, t } from '../../i18n';
 import { EQUIPMENT_BY_KEY, exerciseImage, isGifKey, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey, type MuscleKey } from '../../lib/anatomy';
-import { localizeExercise, localizeExerciseContent } from '../../lib/exercise';
+import { localizeExercise, localizeExerciseContent, hasMissingExerciseEnglish } from '../../lib/exercise';
 import { exSub, exTitle, goalLabel, levelLabel, locationLabel } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 import './kb.css';
@@ -300,7 +300,7 @@ export default function ExerciseDetail() {
           <Section icon="scroll" title="Nguồn tham khảo & bản quyền">
             <SourceList sources={ex.sources} origin={ex.contentOrigin} />
             <div className="exd-gap" />
-            <HealthDisclaimer pending={ex.reviewStatus === 'PENDING'} />
+            <HealthDisclaimer pending={ex.reviewStatus === 'PENDING'} showViOnly={hasMissingExerciseEnglish(ex)} />
             <p className="tiny faint exd-media-credit">{mediaCredit()}</p>
           </Section>
         </div>

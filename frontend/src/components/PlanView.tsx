@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { t } from '../i18n';
+import { t, getLang } from '../i18n';
 import type { PlanItem } from '../api/types';
 import { DAYS, DAY_NAMES, formatEquipment, muscleColor, muscleLabel } from '../lib/format';
 import { Icon } from './Icon';
@@ -36,7 +36,7 @@ export function PlanView({ items }: { items: PlanItem[] }) {
               <div className="num faint" style={{ width: 22, textAlign: 'center' }}>{idx + 1}</div>
               <div className="muscle-ic" style={{ ['--c' as string]: it.muscleGroup ? muscleColor[it.muscleGroup] : '#00d95b' }}><Icon name="dumbbell" /></div>
               <div className="grow">
-                <b>{t(it.exerciseName ?? '')}</b>
+                <b>{getLang() === 'en' && it.exerciseNameEn ? it.exerciseNameEn : t(it.exerciseName ?? '')}</b>
                 <div className="tiny muted">{it.muscleGroup ? muscleLabel[it.muscleGroup] : ''}{it.equipment ? ` · ${formatEquipment(it.equipment)}` : ''}{it.note ? ` · ${t(it.note)}` : ''}</div>
               </div>
               <div className="row row-wrap" style={{ gap: 6, justifyContent: 'flex-end' }}>

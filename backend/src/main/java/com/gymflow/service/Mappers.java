@@ -310,7 +310,7 @@ public class Mappers {
 
     public WorkoutPlanResponse planDetail(WorkoutPlan p) {
         List<PlanItemResponse> items = p.getItems().stream().map(i -> new PlanItemResponse(i.getId(),
-                i.getExercise().getId(), i.getExercise().getName(), i.getExercise().getMuscleGroup(),
+                i.getExercise().getId(), i.getExercise().getName(), i.getExercise().getNameEn(), i.getExercise().getMuscleGroup(),
                 i.getExercise().getEquipment(), i.getDayOfWeek(), i.getSortOrder(), i.getSets(), i.getReps(),
                 i.getWeightKg(), i.getRestSeconds(), i.getDurationMinutes(), i.getNote())).toList();
         return new WorkoutPlanResponse(planSummary(p), p.getNote(), items);

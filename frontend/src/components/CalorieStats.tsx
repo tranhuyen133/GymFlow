@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api/client';
 import type { CalorieBackfillResult, CalorieSession, CalorieSummary } from '../api/types';
-import { t } from '../i18n';
+import { getLang, t } from '../i18n';
 import { addDays, fmtDate, fmtDateTime, fmtNum, parseDate, toIsoDate } from '../lib/format';
 import { useAsync } from '../lib/hooks';
 import { Icon } from './Icon';
@@ -129,7 +129,7 @@ export function CalorieStats({ memberId }: { memberId: number }) {
                 <tbody>
                   {detail.exercises.map((e, i) => (
                     <tr key={`${e.exerciseName}-${i}`}>
-                      <td>{e.exerciseName}</td>
+                      <td>{getLang() === 'en' && e.exerciseNameEn ? e.exerciseNameEn : e.exerciseName}</td>
                       <td className="num">{e.metValue}</td>
                       <td>{e.sets != null ? `${e.sets}${e.reps ? ` × ${e.reps}` : ''}` : '—'}</td>
                       <td className="num">{e.activeMinutes} {t('phút')}</td>

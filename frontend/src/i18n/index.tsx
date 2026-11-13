@@ -92,6 +92,10 @@ export function tx(node: ReactNode): ReactNode {
 }
 
 export const getLang = () => current;
+/** Dịch một khoá theo ngôn ngữ chỉ định (dùng cho helper nội dung, không phụ thuộc global). */
+export function tFor(lang: Lang, vi: string): string {
+  return lang === 'vi' ? vi : (DICT[vi] ?? vi);
+}
 /** Locale cho định dạng ngày/số. */
 export const locale = () => (current === 'en' ? 'en-GB' : 'vi-VN');
 

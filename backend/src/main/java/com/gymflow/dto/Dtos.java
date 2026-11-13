@@ -707,7 +707,7 @@ public final class Dtos {
     public record PlanStatusRequest(@NotNull PlanStatus status) {
     }
 
-    public record PlanItemResponse(Long id, Long exerciseId, String exerciseName, MuscleGroup muscleGroup,
+    public record PlanItemResponse(Long id, Long exerciseId, String exerciseName, String exerciseNameEn, MuscleGroup muscleGroup,
                                    String equipment, Integer dayOfWeek, Integer sortOrder, Integer sets, String reps,
                                    Double weightKg, Integer restSeconds, Integer durationMinutes, String note) {
     }
@@ -788,7 +788,7 @@ public final class Dtos {
     }
 
     // ===================== Calorie (MET) =====================
-    public record CalorieExerciseResponse(Long exerciseId, String exerciseName, ActivityCategory activityCategory,
+    public record CalorieExerciseResponse(Long exerciseId, String exerciseName, String exerciseNameEn, ActivityCategory activityCategory,
                                           ExerciseIntensity intensity, Double metValue, String metSourceCode,
                                           String metSourceVersion, Integer sets, String reps,
                                           Integer workSecondsPerSet, Integer restSeconds,

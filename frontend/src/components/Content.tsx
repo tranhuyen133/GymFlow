@@ -20,14 +20,14 @@ export function InfoRow({ label, value }: { label: string; value: ReactNode }) {
 }
 
 /** Cảnh báo chung cho mọi nội dung sức khoẻ. Không chẩn đoán, không thay thế chuyên gia. */
-export function HealthDisclaimer({ pending }: { pending?: boolean }) {
+export function HealthDisclaimer({ pending, showViOnly = false }: { pending?: boolean; showViOnly?: boolean }) {
   return (
     <div className="disclaimer small" role="note">
       <Icon name="shield" size={16} />
       <div>
         {pending && <p><b>{t('Nội dung đang chờ quản lý phòng tập duyệt.')}</b> {t('Hãy hỏi huấn luyện viên trước khi áp dụng.')}</p>}
         <p>{t('Thông tin chỉ mang tính tham khảo chung, chưa được chuyên gia y tế xác minh, không dùng để chẩn đoán hay điều trị. Dừng tập nếu thấy đau hoặc không khoẻ và hỏi ý kiến nhân viên y tế khi có bệnh lý.')}</p>
-        <ViOnlyNote />
+        {showViOnly && <ViOnlyNote />}
       </div>
     </div>
   );
