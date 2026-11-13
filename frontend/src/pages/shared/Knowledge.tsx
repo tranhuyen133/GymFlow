@@ -309,24 +309,24 @@ export default function Knowledge() {
     []
   );
 
-  // Sắp xếp bài tập theo tên đang hiển thị
+  // Sắp xếp theo tên gốc tiếng Việt để thứ tự ổn định khi đổi ngôn ngữ
   const sortedExercises = useMemo(() => {
     const list = [...(exercisesData ?? [])];
     if (sort === 'name') {
-      list.sort((a, b) => localizeExercise(a, lang).title.localeCompare(localizeExercise(b, lang).title, lang));
+      list.sort((a, b) => a.name.localeCompare(b.name, 'vi'));
     } else if (sort === 'updated') {
       list.sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
     } else if (sort === 'usage') {
       list.sort((a, b) => (b.usageCount ?? 0) - (a.usageCount ?? 0));
     }
     return list;
-  }, [exercisesData, sort, lang]);
+  }, [exercisesData, sort]);
 
   // Đổi bất kỳ bộ lọc nào hoặc đổi ngôn ngữ đều về trang 1
   const pagedExercises = usePaged(
     sortedExercises,
     'knowledge-exercises-page',
-    [currentTab, subCategory, dq, level, location, sort, muscle, equip, favoriteOnly, assignedOnly, showHidden, lang],
+    `${currentTab}|${subCategory}|${dq}|${level}|${location}|${sort}|${muscle ?? ''}|${equip}|${favoriteOnly}|${assignedOnly}|${showHidden}|${lang}`,
     12
   );
 

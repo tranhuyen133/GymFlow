@@ -45,7 +45,7 @@ export default function EquipmentDetail() {
     });
   }, [eq, selectedLevel, selectedMuscle]);
 
-  const paged = usePaged(filteredExercises, 'equipment-exercises-page', [key, selectedLevel, selectedMuscle], 12);
+  const paged = usePaged(filteredExercises, 'equipment-exercises-page', `${key}|${selectedLevel}|${selectedMuscle}`, 12);
 
   if (loading) return <div className="page"><LoadingBlock rows={8} /></div>;
   if (error || !eq) return <div className="page"><ErrorState message={error || 'Không tìm thấy dụng cụ'} onRetry={reload} /></div>;
