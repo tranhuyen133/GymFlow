@@ -2182,6 +2182,7 @@ export const EN_EXTRA: Record<string, string> = {
   // ---------- Gợi ý nhóm cơ và tên thiết bị ----------
   'Đẩy ngực, ép ngực, hít đất': 'Bench press, chest fly, push-ups',
   'Đẩy vai, nâng tạ trước mặt, dang tay': 'Overhead press, front raise, lateral raise',
+  'Dang vai ngang, kéo tạ lên ngực': 'Lateral raise, upright row',
   'Bay vai sau, face pull': 'Rear delt fly, face pull',
   'Cuốn tạ các kiểu': 'Bicep curls, hammer curls',
   'Ép cáp, duỗi tay qua đầu, chống xà': 'Cable pushdown, overhead extension, dips',

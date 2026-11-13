@@ -43,6 +43,10 @@ public class MuscleService {
                     "Đẩy vai, nâng tạ trước mặt, dang tay",
                     "Cơ vai trước (Anterior Deltoid) nằm ở mặt trước khớp vai, hỗ trợ gập và nâng cánh tay ra phía trước. Tham gia tích cực trong các chuyển động đẩy ngực và đẩy vai qua đầu (Overhead Press)."),
 
+            new MuscleMeta("side-deltoids", "Vai giữa", "Side delts", MuscleGroup.SHOULDERS, "front",
+                    "Dang vai ngang, kéo tạ lên ngực",
+                    "Cơ vai giữa (Lateral Deltoid) nằm ở mặt ngoài khớp vai, chịu trách nhiệm nâng cánh tay sang ngang (abduction). Là nhóm cơ chính trong các bài dang vai ngang (Lateral Raise) và kéo tạ lên ngực (Upright Row)."),
+
             new MuscleMeta("back-deltoids", "Vai sau", "Rear delts", MuscleGroup.SHOULDERS, "back",
                     "Bay vai sau, face pull",
                     "Cơ vai sau (Posterior Deltoid) nằm ở phía sau khớp vai, chịu trách nhiệm duỗi ngang cánh tay và xoay ngoài. Giúp cân bằng cấu trúc khớp vai, hạn chế cong gù lưng trên, phát triển qua Face Pull, Reverse Fly."),
