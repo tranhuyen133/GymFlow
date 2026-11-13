@@ -1,12 +1,12 @@
 /**
- * V13: nhóm cơ chi tiết (18 vùng trên bản đồ cơ thể) và danh mục dụng cụ.
+ * V13: nhóm cơ chi tiết (19 vùng trên bản đồ cơ thể) và danh mục dụng cụ.
  * Khoá dùng chung với cột exercises.target_muscles / equipment_keys (chuỗi cách nhau bởi dấu phẩy).
  * Mỗi vùng cơ thuộc một nhóm thô MuscleGroup để các bộ lọc cũ vẫn chạy.
  */
 import type { MuscleGroup } from '../api/types';
 
 export type MuscleKey =
-  | 'chest' | 'front-deltoids' | 'back-deltoids' | 'biceps' | 'triceps' | 'forearm'
+  | 'chest' | 'front-deltoids' | 'side-deltoids' | 'back-deltoids' | 'biceps' | 'triceps' | 'forearm'
   | 'abs' | 'obliques' | 'trapezius' | 'upper-back' | 'lower-back'
   | 'gluteal' | 'quadriceps' | 'hamstring' | 'adductor' | 'abductors' | 'calves' | 'neck';
 
@@ -20,6 +20,7 @@ export interface MuscleInfo {
 export const MUSCLES: MuscleInfo[] = [
   { key: 'chest', label: 'Ngực', labelEn: 'Chest', group: 'CHEST', view: 'front', hint: 'Đẩy ngực, ép ngực, hít đất' },
   { key: 'front-deltoids', label: 'Vai trước', labelEn: 'Front delts', group: 'SHOULDERS', view: 'front', hint: 'Đẩy vai, nâng tạ trước mặt, dang tay' },
+  { key: 'side-deltoids', label: 'Vai giữa', labelEn: 'Side delts', group: 'SHOULDERS', view: 'front', hint: 'Dang vai ngang, kéo tạ lên ngực' },
   { key: 'back-deltoids', label: 'Vai sau', labelEn: 'Rear delts', group: 'SHOULDERS', view: 'back', hint: 'Bay vai sau, face pull' },
   { key: 'biceps', label: 'Tay trước', labelEn: 'Biceps', group: 'ARMS', view: 'front', hint: 'Cuốn tạ các kiểu' },
   { key: 'triceps', label: 'Tay sau', labelEn: 'Triceps', group: 'ARMS', view: 'both', hint: 'Ép cáp, duỗi tay qua đầu, chống xà' },

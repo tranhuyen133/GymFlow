@@ -19,7 +19,7 @@ export const STRENGTH_SUBCATS: SubCategoryItem[] = [
   { key: '', label: 'Tất cả', muscles: [] },
   { key: 'CHEST', label: 'Ngực', muscles: ['chest'] },
   { key: 'BACK', label: 'Lưng', muscles: ['upper-back', 'lower-back', 'trapezius'] },
-  { key: 'SHOULDERS', label: 'Vai', muscles: ['front-deltoids', 'back-deltoids'] },
+  { key: 'SHOULDERS', label: 'Vai', muscles: ['front-deltoids', 'side-deltoids', 'back-deltoids'] },
   { key: 'BICEPS', label: 'Tay trước', muscles: ['biceps', 'forearm'] },
   { key: 'TRICEPS', label: 'Tay sau', muscles: ['triceps'] },
   { key: 'CORE', label: 'Bụng', muscles: ['abs', 'obliques'] },

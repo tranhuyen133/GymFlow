@@ -303,13 +303,13 @@ class KnowledgeBaseRevampTest {
     class MuscleServiceTests {
 
         @Test
-        @DisplayName("listMuscles trả về đầy đủ 18 vùng cơ với số lượng bài tập")
+        @DisplayName("listMuscles trả về đầy đủ 19 vùng cơ với số lượng bài tập")
         void testListMuscles() {
             Exercise e1 = makeExercise(1L, "Hít đất", ExerciseType.STRENGTH, "Ngực", "chest", "triceps", "bodyweight", false);
             when(exerciseRepository.findAllByOrderByNameAsc()).thenReturn(List.of(e1));
 
             List<MuscleSummaryResponse> muscles = muscleService.listMuscles(MEMBER);
-            assertThat(muscles).hasSize(18);
+            assertThat(muscles).hasSize(19);
 
             MuscleSummaryResponse chest = muscles.stream().filter(m -> m.key().equals("chest")).findFirst().orElseThrow();
             assertThat(chest.exerciseCount()).isEqualTo(1L);
