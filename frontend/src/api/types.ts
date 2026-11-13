@@ -320,9 +320,13 @@ export interface Equipment {
   category: EquipmentCategory;
   shortDesc?: string | null;
   usageGuide?: string | null;
+  usageGuideEn?: string | null;
   adjustGuide?: string | null;
+  adjustGuideEn?: string | null;
   commonMistakes?: string | null;
+  commonMistakesEn?: string | null;
   safetyNotes?: string | null;
+  safetyNotesEn?: string | null;
   targetMuscleKeys: string[];
   imageKey?: string | null;
   sortOrder: number;

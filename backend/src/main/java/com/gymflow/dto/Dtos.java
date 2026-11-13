@@ -607,7 +607,11 @@ public final class Dtos {
             ReviewStatus reviewStatus,
             boolean hidden,
             ContentOrigin origin,
-            List<ExerciseResponse> relatedExercises
+            List<ExerciseResponse> relatedExercises,
+            String usageGuideEn,
+            String adjustGuideEn,
+            String commonMistakesEn,
+            String safetyNotesEn
     ) {
         /** Giữ chữ ký V18 */
         public EquipmentDetailResponse(String key, String name, EquipmentCategory category, String shortDesc,
@@ -615,7 +619,7 @@ public final class Dtos {
                                        String imageKey, int sortOrder, long exerciseCount, ReviewStatus reviewStatus,
                                        boolean hidden, ContentOrigin origin, List<ExerciseResponse> relatedExercises) {
             this(key, name, category, shortDesc, usageGuide, null, null, safetyNotes, targetMuscleKeys, imageKey,
-                    sortOrder, exerciseCount, reviewStatus, hidden, origin, relatedExercises);
+                    sortOrder, exerciseCount, reviewStatus, hidden, origin, relatedExercises, null, null, null, null);
         }
     }
 
@@ -637,12 +641,17 @@ public final class Dtos {
             List<String> targetMuscleKeys,
             String imageKey,
             Integer sortOrder,
-            Boolean hidden
+            Boolean hidden,
+            String usageGuideEn,
+            String adjustGuideEn,
+            String commonMistakesEn,
+            String safetyNotesEn
     ) {
         public EquipmentRequest(String key, String name, EquipmentCategory category, String shortDesc,
                                 String usageGuide, String safetyNotes, List<String> targetMuscleKeys,
                                 String imageKey, Integer sortOrder, Boolean hidden) {
-            this(key, name, category, shortDesc, usageGuide, null, null, safetyNotes, targetMuscleKeys, imageKey, sortOrder, hidden);
+            this(key, name, category, shortDesc, usageGuide, null, null, safetyNotes, targetMuscleKeys, imageKey, sortOrder, hidden,
+                    null, null, null, null);
         }
     }
 

@@ -8,6 +8,7 @@ import { MuscleMap } from '../../components/MuscleMap';
 import { Badge, Empty, ErrorState, LoadingBlock, PageHead, Pager } from '../../components/ui';
 import { getLang, t } from '../../i18n';
 import { EQUIPMENT_BY_KEY, MUSCLE_BY_KEY, parseMuscles, type EquipmentKey, type MuscleKey } from '../../lib/anatomy';
+import { localizeText } from '../../lib/planText';
 import { localizeExercise } from '../../lib/exercise';
 import { exSub, exTitle, levelLabel } from '../../lib/format';
 import { useAsync, usePaged } from '../../lib/hooks';
@@ -80,50 +81,50 @@ export default function EquipmentDetail() {
 
       <div className="eq-detail-grid mt-16">
         <div className="eq-detail-main">
-          {eq.usageGuide && (
+          {localizeText(eq.usageGuideEn, eq.usageGuide) && (
             <section className="card p-20 mb-16">
               <h2 className="section-title mb-12">
                 <Icon name="info" size={18} className="primary" />
                 <span>{t('Cách sử dụng')}</span>
               </h2>
               <div className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
-                {eq.usageGuide}
+                {localizeText(eq.usageGuideEn, eq.usageGuide)}
               </div>
             </section>
           )}
 
-          {eq.adjustGuide && (
+          {localizeText(eq.adjustGuideEn, eq.adjustGuide) && (
             <section className="card p-20 mb-16">
               <h2 className="section-title mb-12">
                 <Icon name="target" size={18} className="primary" />
                 <span>{t('Cách điều chỉnh máy / thiết bị')}</span>
               </h2>
               <div className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
-                {eq.adjustGuide}
+                {localizeText(eq.adjustGuideEn, eq.adjustGuide)}
               </div>
             </section>
           )}
 
-          {eq.commonMistakes && (
+          {localizeText(eq.commonMistakesEn, eq.commonMistakes) && (
             <section className="card p-20 mb-16" style={{ borderColor: 'color-mix(in srgb, var(--warn) 30%, var(--hairline))' }}>
               <h2 className="section-title mb-12" style={{ color: 'var(--warn-bright)' }}>
                 <Icon name="alert" size={18} />
                 <span>{t('Lỗi thường gặp')}</span>
               </h2>
               <div className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}>
-                {eq.commonMistakes}
+                {localizeText(eq.commonMistakesEn, eq.commonMistakes)}
               </div>
             </section>
           )}
 
-          {eq.safetyNotes && (
+          {localizeText(eq.safetyNotesEn, eq.safetyNotes) && (
             <section className="card p-20 mb-16" style={{ borderColor: 'color-mix(in srgb, var(--warn) 30%, var(--hairline))' }}>
               <h2 className="section-title mb-12" style={{ color: 'var(--warn-bright)' }}>
                 <Icon name="alert" size={18} />
                 <span>{t('Lưu ý an toàn')}</span>
               </h2>
               <div className="text-content" style={{ whiteSpace: 'pre-line', lineHeight: 1.6, color: 'var(--muted)' }}>
-                {eq.safetyNotes}
+                {localizeText(eq.safetyNotesEn, eq.safetyNotes)}
               </div>
             </section>
           )}

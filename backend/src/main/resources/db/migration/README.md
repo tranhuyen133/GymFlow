@@ -25,6 +25,7 @@
 | `V37__exercise_en_batch6.sql` | Song ngữ nội dung chi tiết / SCRUM-229 | Bản dịch lỗi thường gặp cho bài tập id 243–268 |
 | `V38__exercise_en_batch7.sql` | Song ngữ nội dung chi tiết / SCRUM-229 | Bản dịch lỗi thường gặp cho bài tập id 269–291 |
 | `V39__training_section_en.sql` | Song ngữ khu vực Tập luyện / SCRUM-229 | Thêm cột tiếng Anh cho giáo án, bài trong giáo án, buổi tập và lịch sử; backfill nội dung mẫu |
+| `V40__equipment_content_en.sql` | Song ngữ dụng cụ / SCRUM-229 | Thêm cột tiếng Anh cho cách sử dụng, điều chỉnh, lỗi thường gặp, an toàn và nạp bản dịch 17 dụng cụ |
 
 Quy tắc:
 - Không sửa file đã merge. Tạo migration với số cao hơn migration mới nhất đã áp dụng; bỏ qua được V9–V12 trên một số CSDL demo cũ bằng cấu hình Flyway.

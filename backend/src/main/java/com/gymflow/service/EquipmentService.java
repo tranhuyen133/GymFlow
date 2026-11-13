@@ -157,9 +157,13 @@ public class EquipmentService {
         eq.setCategory(req.category());
         eq.setShortDesc(Mappers.blankToNull(req.shortDesc()));
         eq.setUsageGuide(Mappers.blankToNull(req.usageGuide()));
+        eq.setUsageGuideEn(Mappers.blankToNull(req.usageGuideEn()));
         eq.setAdjustGuide(Mappers.blankToNull(req.adjustGuide()));
+        eq.setAdjustGuideEn(Mappers.blankToNull(req.adjustGuideEn()));
         eq.setCommonMistakes(Mappers.blankToNull(req.commonMistakes()));
+        eq.setCommonMistakesEn(Mappers.blankToNull(req.commonMistakesEn()));
         eq.setSafetyNotes(Mappers.blankToNull(req.safetyNotes()));
+        eq.setSafetyNotesEn(Mappers.blankToNull(req.safetyNotesEn()));
         if (req.targetMuscleKeys() != null) {
             eq.setTargetMuscleKeys(ExerciseService.joinKeys(req.targetMuscleKeys(), ExerciseService.MUSCLE_KEYS, "vùng cơ"));
         }

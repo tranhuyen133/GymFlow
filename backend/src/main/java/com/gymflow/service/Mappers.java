@@ -245,7 +245,8 @@ public class Mappers {
         return new EquipmentDetailResponse(eq.getKey(), eq.getName(), eq.getCategory(), eq.getShortDesc(),
                 eq.getUsageGuide(), eq.getAdjustGuide(), eq.getCommonMistakes(), eq.getSafetyNotes(),
                 splitKeys(eq.getTargetMuscleKeys()), eq.getImageKey(),
-                eq.getSortOrder(), count, eq.getReviewStatus(), eq.isHidden(), eq.getOrigin(), related);
+                eq.getSortOrder(), count, eq.getReviewStatus(), eq.isHidden(), eq.getOrigin(), related,
+                eq.getUsageGuideEn(), eq.getAdjustGuideEn(), eq.getCommonMistakesEn(), eq.getSafetyNotesEn());
     }
 
     /** V13 · "chest,triceps" -> [chest, triceps]; null/rỗng -> []. */

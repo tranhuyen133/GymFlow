@@ -2266,6 +2266,8 @@ export const EN_EXTRA: Record<string, string> = {
   'Ghi chú EN…': 'English note…',
   'Tiêu đề (EN)': 'Title (EN)',
   'Ghi chú (EN)': 'Notes (EN)',
+  'Cách sử dụng (EN)': 'How to use (EN)',
+  'Cách điều chỉnh máy / thiết bị (EN)': 'Equipment adjustment guide (EN)',
   'Chưa có liều cá nhân hoá. Khuyến nghị chung cho người lớn 19–64 tuổi: tập tăng sức mạnh cho các nhóm cơ lớn ít nhất 2 ngày/tuần. Số hiệp, số lần, mức tạ do HLV quyết định.': 'No personalized dose has been set. General recommendation for adults aged 19–64: strength training for the major muscle groups at least 2 days per week. Sets, reps, and load are decided by the trainer.',
   'Làm 5–10 phút trước buổi tập chính hoặc sau buổi tập để thả lỏng.': 'Perform for 5–10 minutes before the main session or after training to cool down.',
   'Tính vào mục tiêu tuần của người lớn 19–64 tuổi: ít nhất 150 phút cường độ vừa hoặc 75 phút cường độ mạnh, chia đều trong tuần.': 'Counts toward the weekly target for adults aged 19–64: at least 150 minutes of moderate-intensity or 75 minutes of vigorous-intensity activity, spread evenly through the week.',

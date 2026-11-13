@@ -33,16 +33,28 @@ public class Equipment {
     @Column(name = "usage_guide", columnDefinition = "TEXT")
     private String usageGuide;
 
+    @Column(name = "usage_guide_en", columnDefinition = "TEXT")
+    private String usageGuideEn;
+
     /** TASK 01 / SCRUM-229: Hướng dẫn điều chỉnh ghế, chốt, ròng rọc. */
     @Column(name = "adjust_guide", columnDefinition = "TEXT")
     private String adjustGuide;
+
+    @Column(name = "adjust_guide_en", columnDefinition = "TEXT")
+    private String adjustGuideEn;
 
     /** TASK 01 / SCRUM-229: Lỗi thường gặp khi thao tác thiết bị. */
     @Column(name = "common_mistakes", columnDefinition = "TEXT")
     private String commonMistakes;
 
+    @Column(name = "common_mistakes_en", columnDefinition = "TEXT")
+    private String commonMistakesEn;
+
     @Column(name = "safety_notes", columnDefinition = "TEXT")
     private String safetyNotes;
+
+    @Column(name = "safety_notes_en", columnDefinition = "TEXT")
+    private String safetyNotesEn;
 
     @Column(name = "target_muscle_keys")
     private String targetMuscleKeys;

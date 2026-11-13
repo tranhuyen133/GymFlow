@@ -290,7 +290,13 @@ function EquipmentModal({
   const [category, setCategory] = useState<EquipmentCategory>(equipment?.category ?? 'FREE_WEIGHT');
   const [shortDesc, setShortDesc] = useState(equipment?.shortDesc ?? '');
   const [usageGuide, setUsageGuide] = useState(equipment?.usageGuide ?? '');
+  const [usageGuideEn, setUsageGuideEn] = useState(equipment?.usageGuideEn ?? '');
+  const [adjustGuide, setAdjustGuide] = useState(equipment?.adjustGuide ?? '');
+  const [adjustGuideEn, setAdjustGuideEn] = useState(equipment?.adjustGuideEn ?? '');
+  const [commonMistakes, setCommonMistakes] = useState(equipment?.commonMistakes ?? '');
+  const [commonMistakesEn, setCommonMistakesEn] = useState(equipment?.commonMistakesEn ?? '');
   const [safetyNotes, setSafetyNotes] = useState(equipment?.safetyNotes ?? '');
+  const [safetyNotesEn, setSafetyNotesEn] = useState(equipment?.safetyNotesEn ?? '');
   const [targetMuscles, setTargetMuscles] = useState(equipment?.targetMuscleKeys?.join(', ') ?? '');
   const [imageKey, setImageKey] = useState(equipment?.imageKey ?? '');
   const [sortOrder, setSortOrder] = useState(equipment?.sortOrder ?? 0);
@@ -309,7 +315,13 @@ function EquipmentModal({
         category,
         shortDesc: shortDesc.trim() || null,
         usageGuide: usageGuide.trim() || null,
+        usageGuideEn: usageGuideEn.trim() || null,
+        adjustGuide: adjustGuide.trim() || null,
+        adjustGuideEn: adjustGuideEn.trim() || null,
+        commonMistakes: commonMistakes.trim() || null,
+        commonMistakesEn: commonMistakesEn.trim() || null,
         safetyNotes: safetyNotes.trim() || null,
+        safetyNotesEn: safetyNotesEn.trim() || null,
         targetMuscleKeys: targetMuscles.split(',').map((s) => s.trim()).filter(Boolean),
         imageKey: imageKey.trim() || null,
         sortOrder: Number(sortOrder) || 0,
@@ -406,6 +418,56 @@ function EquipmentModal({
         </div>
 
         <div className="form-group">
+          <label className="label">{t('Cách sử dụng (EN)')}</label>
+          <textarea
+            className="input"
+            rows={4}
+            value={usageGuideEn}
+            onChange={(e) => setUsageGuideEn(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="label">{t('Cách điều chỉnh máy / thiết bị')}</label>
+          <textarea
+            className="input"
+            rows={4}
+            value={adjustGuide}
+            onChange={(e) => setAdjustGuide(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="label">{t('Cách điều chỉnh máy / thiết bị (EN)')}</label>
+          <textarea
+            className="input"
+            rows={4}
+            value={adjustGuideEn}
+            onChange={(e) => setAdjustGuideEn(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="label">{t('Lỗi thường gặp')}</label>
+          <textarea
+            className="input"
+            rows={3}
+            value={commonMistakes}
+            onChange={(e) => setCommonMistakes(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="label">{t('Lỗi thường gặp (EN)')}</label>
+          <textarea
+            className="input"
+            rows={3}
+            value={commonMistakesEn}
+            onChange={(e) => setCommonMistakesEn(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
           <label className="label">{t('Lưu ý an toàn')}</label>
           <textarea
             className="input"
@@ -413,6 +475,16 @@ function EquipmentModal({
             value={safetyNotes}
             onChange={(e) => setSafetyNotes(e.target.value)}
             placeholder="Khuyến cáo an toàn, cài chốt chặn, không thả tạ rơi tự do..."
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="label">{t('Lưu ý an toàn (EN)')}</label>
+          <textarea
+            className="input"
+            rows={3}
+            value={safetyNotesEn}
+            onChange={(e) => setSafetyNotesEn(e.target.value)}
           />
         </div>
 
