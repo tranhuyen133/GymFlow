@@ -27,10 +27,11 @@ public final class ForumDtos {
                                 LocalDateTime createdAt, LocalDateTime updatedAt, boolean mine) {
     }
 
+    /** viewerSignedIn: máy chủ nhận ra người xem đã đăng nhập. Giao diện còn tên người dùng mà false = phiên đã hết hạn. */
     public record TopicDetail(Long id, String title, ForumCategory category, String body, ForumAuthor author,
                               boolean pinned, boolean locked, boolean hidden, String hiddenReason, int replyCount,
                               LocalDateTime createdAt, LocalDateTime updatedAt, List<ReplyResponse> replies,
-                              boolean mine, boolean canModerate) {
+                              boolean mine, boolean canModerate, boolean viewerSignedIn) {
     }
 
     public record TopicRequest(

@@ -34,3 +34,13 @@
   .forum-post { padding: 18px; }
   .forum-title { font-size: 21px; }
 }
+
+/* Khung trả lời, thông báo chủ đề khoá / ẩn, bộ đếm ký tự */
+.forum-composer { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; }
+.forum-closed { display: flex; align-items: center; gap: 10px; padding: 14px 18px; color: var(--muted); }
+.forum-closed svg { flex: none; color: var(--faint); }
+.forum-note { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; }
+.forum-count { font-variant-numeric: tabular-nums; }
+.forum-count.is-near { color: var(--warning); }
+.forum-count.is-over { color: var(--bad); font-weight: 700; }
+.forum { padding-bottom: 96px; /* chừa chỗ nút Trợ lý nổi */ }

@@ -1,0 +1,134 @@
+/* Chi tiết bài tập. Chỉ dùng biến màu của styles.css nên tự đổi theo giao diện sáng / tối. */
+.exd { display: flex; flex-direction: column; gap: 18px; padding-bottom: 96px; /* chừa chỗ nút Trợ lý nổi */ }
+.exd-back { display: inline-flex; align-items: center; gap: 6px; width: fit-content; color: var(--muted); font-size: 13px; font-weight: 700; text-decoration: none; }
+.exd-back:hover { color: var(--primary-bright); }
+.exd-gap { height: 12px; }
+
+/* ---------- Khối đầu ---------- */
+.exd-hero {
+  position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(240px, 380px) minmax(0, 1fr);
+  gap: 28px; padding: 22px; align-items: center;
+}
+.exd-hero::before {
+  content: ''; position: absolute; inset: 0 0 auto auto; width: 55%; height: 100%; pointer-events: none;
+  background: radial-gradient(60% 80% at 100% 0%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 70%);
+}
+.exd-hero > * { position: relative; }
+
+.exd-stage {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  aspect-ratio: 4 / 3; padding: 14px; border-radius: var(--r-md);
+  background: var(--rail); border: 1px solid var(--hairline-soft);
+}
+.exd-stage.is-gif { background: #fff; border-color: transparent; }
+.exd-stage.is-gif img { width: 180px; height: 180px; image-rendering: auto; }
+.exd-credit { font-size: 11px; color: #6b7280; text-decoration: none; }
+.exd-credit:hover { text-decoration: underline; }
+.exd-pose { flex: 1; min-height: 0; width: 100%; padding: 0; border: 0; border-radius: var(--r-sm); background: #000; cursor: pointer; overflow: hidden; }
+.exd-pose img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.exd-pose-switch { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--hairline); }
+.exd-pose-switch button { height: 28px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.exd-pose-switch button.on { background: var(--primary); color: var(--on-primary); }
+.exd-stage-map { width: 100%; max-width: 300px; }
+
+.exd-info { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.exd-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.exd-title { margin: 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.2; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.exd-subtitle { margin-top: -6px; color: var(--muted); font-size: 14px; font-weight: 600; }
+.exd-desc { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 70ch; }
+.exd-label { display: block; color: var(--faint); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.exd-chip-block { display: flex; flex-direction: column; gap: 6px; }
+.exd-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.exd-chip {
+  display: inline-flex; align-items: center; min-height: 26px; padding: 3px 10px; border-radius: 999px;
+  background: var(--surface); color: var(--muted); font-size: 12px; font-weight: 700; line-height: 1.3;
+}
+.exd-chip.is-primary { background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary-bright); }
+.exd-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 14px; margin-top: 2px; border-top: 1px solid var(--hairline-soft); }
+.exd-actions .btn { white-space: nowrap; }
+
+/* ---------- Dải thông số ---------- */
+.exd-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.exd-fact { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px 16px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--hairline-soft); }
+.exd-fact-icon, .exd-section-icon {
+  display: inline-grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 10px;
+  background: color-mix(in srgb, var(--primary) 15%, transparent); color: var(--primary-bright);
+}
+.exd-fact-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.exd-fact-body b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Hai cột ---------- */
+.exd-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+.exd-main, .exd-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.exd-side { position: sticky; top: 84px; }
+
+.exd-section { display: flex; flex-direction: column; gap: 14px; padding: 20px; min-width: 0; }
+.exd-section-title { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 16px; letter-spacing: -0.01em; }
+.exd-section-icon { width: 30px; height: 30px; border-radius: 9px; }
+.exd-section.is-calm { background: color-mix(in srgb, var(--primary) 6%, var(--surface-2)); }
+.exd-section.is-warn { border-color: color-mix(in srgb, var(--warning) 35%, var(--hairline)); }
+.exd-section.is-warn .exd-section-icon { background: color-mix(in srgb, var(--warning) 16%, transparent); color: var(--warning); }
+.exd-section.is-danger { border-color: color-mix(in srgb, var(--bad) 35%, var(--hairline)); }
+.exd-section.is-danger .exd-section-icon { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
+.exd-text { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; }
+.exd-bullets { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.exd-bullets li::marker { color: var(--faint); }
+.exd-dose { font-size: 20px; font-weight: 800; color: var(--primary-bright); font-variant-numeric: tabular-nums; }
+.exd-duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+
+.exd-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; counter-reset: none; }
+.exd-steps li { display: flex; gap: 14px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-sm); background: var(--rail); border: 1px solid var(--hairline-soft); }
+.exd-step-num { display: inline-grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--grad-go); color: var(--on-primary); font-size: 13px; font-weight: 800; }
+.exd-step-text { padding-top: 3px; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+
+.exd-alts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 10px; }
+.exd-alt {
+  display: flex; align-items: center; gap: 12px; min-width: 0; padding: 8px 12px 8px 8px; border-radius: var(--r-sm);
+  background: var(--rail); border: 1px solid var(--hairline-soft); color: var(--ink); text-decoration: none;
+  transition: border-color 0.2s, transform 0.25s var(--ease-out);
+}
+.exd-alt:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--hairline)); transform: translateY(-1px); }
+.exd-alt > svg { flex: none; color: var(--faint); }
+.exd-alt-media { flex: none; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; }
+.exd-alt-media.ex-media, .exd-alt-media.ex-media-empty { aspect-ratio: 1; }
+.exd-alt-media img { width: 100%; height: 100%; object-fit: cover; }
+.exd-alt-media.ex-media-gv { background: #fff; }
+.exd-alt-media.ex-media-gv img { object-fit: contain; }
+.exd-alt-media .gv-credit, .exd-alt-media .ex-media-tag { display: none; }
+.exd-alt-empty { display: grid; place-items: center; background: var(--surface); color: var(--faint); }
+.exd-alt-body { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; flex: 1; }
+.exd-alt-body b { font-size: 14px; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.exd-media-credit { margin: 4px 0 0; }
+
+.exd-legend { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 12px; }
+.exd-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.exd-legend i { width: 10px; height: 10px; border-radius: 3px; background: color-mix(in srgb, var(--primary) 40%, var(--surface)); }
+.exd-legend i.is-primary { background: var(--primary-bright); }
+.exd-equip { display: flex; flex-direction: column; gap: 6px; }
+.exd-equip-item {
+  display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 12px; border-radius: var(--r-sm);
+  background: var(--rail); border: 1px solid var(--hairline-soft); color: var(--ink); font-size: 13px; font-weight: 700; text-decoration: none;
+}
+.exd-equip-item span { flex: 1; min-width: 0; }
+.exd-equip-item svg { flex: none; color: var(--primary-bright); }
+.exd-equip-item svg:last-child { color: var(--faint); }
+.exd-equip-item:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--hairline)); }
+
+@media (max-width: 1100px) {
+  .exd-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+}
+@media (max-width: 900px) {
+  .exd-hero { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 16px; }
+  .exd-stage { max-width: 460px; width: 100%; justify-self: center; }
+  .exd-grid { grid-template-columns: minmax(0, 1fr); }
+  .exd-side { position: static; order: -1; }
+}
+@media (max-width: 560px) {
+  .exd-actions .btn { flex: 1 1 auto; justify-content: center; }
+  .exd-section { padding: 16px; }
+  .exd-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .exd-alt { transition: none; }
+  .exd-alt:hover { transform: none; }
+}

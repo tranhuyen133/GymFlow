@@ -3,6 +3,7 @@ import { EN } from './en';
 import { EN_EXTRA } from './en-extra';
 import { EN_PT } from './en-pt';
 import { EN_KB } from './en-kb';
+import { EN_UX } from './en-ux';
 
 /**
  * Đa ngôn ngữ tối giản: chuỗi tiếng Việt chính là khoá, bản tiếng Anh nằm trong en.ts.
@@ -20,7 +21,7 @@ let current: Lang = readLang();
 const missing = new Set<string>();
 // EN_PT (V24) đặt trước để không ghi đè bản dịch đã có trong EN / EN_EXTRA.
 // EN_KB (V30 kho kiến thức) gộp sau cùng: chỉ chứa chuỗi mới của giao diện kho kiến thức.
-const DICT: Record<string, string> = { ...EN_PT, ...EN, ...EN_EXTRA, ...EN_KB };
+const DICT: Record<string, string> = { ...EN_PT, ...EN, ...EN_EXTRA, ...EN_KB, ...EN_UX };
 
 type Vars = Record<string, string | number | null | undefined>;
 

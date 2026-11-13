@@ -16,6 +16,7 @@ import { t } from '../i18n';
 import { fmtDateTime, relativeTime, roleLabel } from '../lib/format';
 import { errMsg, fieldErrs, useAsync, useDebounced } from '../lib/hooks';
 import { ThemeToggle } from '../theme/ThemeToggle';
+import { canEditReply, canModerateAuthor, charCount, cleanLine, cleanText, LIMITS, replyBlock, validateReason, validateReply, validateTopic } from './forumRules';
 import './forum.css';
 
 /**
@@ -26,29 +27,17 @@ import './forum.css';
 const basePath = (embedded?: boolean) => (embedded ? '/community' : '/forum');
 const PAGE_SIZE = 20;
 
-const TITLE_MIN = 5, TITLE_MAX = 200, BODY_MIN = 10, BODY_MAX = 10000, REPLY_MIN = 2, REPLY_MAX = 5000;
+const { TITLE_MAX, BODY_MAX, REPLY_MAX, REASON_MAX } = LIMITS;
 
 const MOD_DONE: Record<ModerationAction, string> = {
   HIDE: 'Đã ẩn bài viết', SHOW: 'Đã hiện lại bài viết', PIN: 'Đã ghim chủ đề', UNPIN: 'Đã bỏ ghim chủ đề',
   LOCK: 'Đã khoá chủ đề', UNLOCK: 'Đã mở khoá chủ đề',
 };
 
-function validateTopic(f: TopicForm) {
-  const v: Record<string, string> = {};
-  const title = f.title.trim();
-  const body = f.body.trim();
-  if (!title) v.title = 'Vui lòng nhập tiêu đề';
-  else if (title.length < TITLE_MIN || title.length > TITLE_MAX) v.title = 'Tiêu đề từ 5 đến 200 ký tự';
-  if (!body) v.body = 'Vui lòng nhập nội dung';
-  else if (body.length < BODY_MIN || body.length > BODY_MAX) v.body = 'Nội dung từ 10 đến 10.000 ký tự';
-  return v;
-}
-
-function validateReply(text: string) {
-  const s = text.trim();
-  if (!s) return 'Vui lòng nhập nội dung trả lời';
-  if (s.length < REPLY_MIN || s.length > REPLY_MAX) return 'Trả lời từ 2 đến 5.000 ký tự';
-  return null;
+/** Bộ đếm ký tự; chuyển màu cảnh báo khi gần chạm giới hạn. */
+function Counter({ value, max }: { value: string; max: number }) {
+  const n = charCount(cleanText(value));
+  return <span className={`tiny forum-count ${n > max ? 'is-over' : n > max * 0.9 ? 'is-near' : 'faint'}`}>{n.toLocaleString()}/{max.toLocaleString()}</span>;
 }
 
 // ---------- Khung trang ----------
@@ -138,7 +127,7 @@ function TopicEditor({ initial, onClose, onSaved }: { initial?: TopicDetail; onC
     if (Object.keys(v).length) return;
     setBusy(true);
     try {
-      const body = { title: f.title.trim(), category: f.category, body: f.body.trim() };
+      const body = { title: cleanLine(f.title), category: f.category, body: cleanText(f.body) };
       onSaved(initial
         ? await api.put<TopicDetail>(`/forum/topics/${initial.id}`, body)
         : await api.post<TopicDetail>('/forum/topics', body));
@@ -172,34 +161,38 @@ function TopicEditor({ initial, onClose, onSaved }: { initial?: TopicDetail; onC
             placeholder={t('Mô tả tình huống, mục tiêu và những gì bạn đã thử…')}
             onChange={(e) => set('body', e.target.value)} onBlur={() => blur('body')} />
         </Field>
-        <span className="tiny faint right">{f.body.trim().length.toLocaleString()}/{BODY_MAX.toLocaleString()}</span>
+        <span className="right"><Counter value={f.body} max={BODY_MAX} /></span>
       </div>
     </Modal>
   );
 }
 
 /** Hộp thoại nhập lý do – dùng cho Báo cáo vi phạm (mọi người) và Ẩn bài (nhân viên). */
-function ReasonDialog({ title, label, hint, confirmText, danger, min, onSubmit, onClose }: {
-  title: string; label: string; hint?: string; confirmText: string; danger?: boolean; min: number;
+function ReasonDialog({ title, label, hint, confirmText, danger, onSubmit, onClose }: {
+  title: string; label: string; hint?: string; confirmText: string; danger?: boolean;
   onSubmit: (reason: string) => Promise<void>; onClose: () => void;
 }) {
   const [reason, setReason] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const submit = async () => {
-    const r = reason.trim();
-    if (r.length < min) { setErr(t('Vui lòng ghi lý do (ít nhất {n} ký tự)', { n: min })); return; }
+    if (busy) return;
+    const v = validateReason(reason);
+    if (v) { setErr(t(v)); return; }
     setBusy(true);
-    try { await onSubmit(r); onClose(); } catch (e) { setErr(errMsg(e)); } finally { setBusy(false); }
+    try { await onSubmit(cleanLine(reason)); onClose(); } catch (e) { setErr(errMsg(e)); } finally { setBusy(false); }
   };
   return (
     <Modal title={t(title)} onClose={onClose} size="narrow" footer={<>
       <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
       <Button variant={danger ? 'danger' : 'primary'} loading={busy} onClick={() => void submit()}>{t(confirmText)}</Button>
     </>}>
-      <Field label={t(label)} required error={err ?? undefined} hint={hint ? t(hint) : undefined}>
-        <Textarea rows={3} maxLength={255} value={reason} invalid={!!err} onChange={(e) => { setReason(e.target.value); setErr(null); }} />
-      </Field>
+      <div className="stack-sm">
+        <Field label={t(label)} required error={err ?? undefined} hint={hint ? t(hint) : undefined}>
+          <Textarea rows={3} maxLength={REASON_MAX} value={reason} invalid={!!err} onChange={(e) => { setReason(e.target.value); setErr(null); }} />
+        </Field>
+        <span className="right"><Counter value={reason} max={REASON_MAX} /></span>
+      </div>
     </Modal>
   );
 }
@@ -340,12 +333,14 @@ type Target = { kind: 'topic' | 'reply'; id: number };
 
 export function ForumTopicPage({ embedded }: { embedded?: boolean }) {
   const { id = '' } = useParams();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { pathname } = useLocation();
   const toast = useToast();
   const navigate = useNavigate();
   const base = basePath(embedded);
   const { data, error, status, reload, setData } = useAsync(() => api.get<TopicDetail>(`/forum/topics/${encodeURIComponent(id)}`), [id]);
   const [editing, setEditing] = useState(false);
+  const [modBusy, setModBusy] = useState(false);
   const [askDelete, setAskDelete] = useState(false);
   const [hideTarget, setHideTarget] = useState<Target | null>(null);
   const [reportTarget, setReportTarget] = useState<Target | null>(null);
@@ -385,11 +380,27 @@ export function ForumTopicPage({ embedded }: { embedded?: boolean }) {
   }
   if (!data) return <Frame embedded={embedded}>{back}<div className="mt-24"><LoadingBlock rows={6} /></div></Frame>;
 
-  const canReply = !!user && !data.hidden && (!data.locked || data.canModerate);
+  const role = user?.role ?? null;
+  const block = replyBlock(role, data);
+  const modTopic = data.canModerate && canModerateAuthor(role, data.author.role);
+  const othersReplied = data.replies.some((r) => !r.mine);
+  const canDeleteTopic = role === 'ADMIN' || (data.mine && !othersReplied);
+  const runMod = (action: ModerationAction) => {
+    if (modBusy) return;
+    setModBusy(true);
+    void moderateTopic(action).catch(() => undefined).finally(() => setModBusy(false));
+  };
 
   return (
     <Frame embedded={embedded}>
       {back}
+      {block === 'expired' && (
+        <Alert kind="warning" action={
+          <Button size="sm" variant="primary" onClick={() => { logout(); navigate('/login', { state: { from: pathname } }); }}>{t('Đăng nhập lại')}</Button>
+        }>
+          {t('Phiên đăng nhập đã hết hạn nên bạn đang xem như khách. Đăng nhập lại để trả lời.')}
+        </Alert>
+      )}
       <article className="card forum-post mt-16">
         <div className="row row-wrap" style={{ gap: 6 }}>
           {data.pinned && <Badge tone="green">{t('Đã ghim')}</Badge>}
@@ -401,28 +412,31 @@ export function ForumTopicPage({ embedded }: { embedded?: boolean }) {
         <AuthorLine author={data.author} at={data.createdAt} edited={data.updatedAt} />
         {data.hidden && data.hiddenReason && <Alert kind="warning">{t('Chủ đề đang bị ẩn: {r}', { r: data.hiddenReason })}</Alert>}
         <Prose text={t(data.body)} />
-        <div className="row row-wrap forum-actions">
-          {data.mine && !data.hidden && <Button size="sm" variant="ghost" icon="edit" onClick={() => setEditing(true)}>{t('Sửa')}</Button>}
-          {(data.mine || user?.role === 'ADMIN') && <Button size="sm" variant="ghost" icon="trash" onClick={() => setAskDelete(true)}>{t('Xoá')}</Button>}
-          {user && !data.mine && <Button size="sm" variant="ghost" icon="alert" onClick={() => setReportTarget({ kind: 'topic', id: data.id })}>{t('Báo vi phạm')}</Button>}
-          {data.canModerate && <>
-            <span className="forum-sep" aria-hidden />
-            <Button size="sm" variant="ghost" icon="star" onClick={() => void moderateTopic(data.pinned ? 'UNPIN' : 'PIN').catch(() => undefined)}>{data.pinned ? t('Bỏ ghim') : t('Ghim')}</Button>
-            <Button size="sm" variant="ghost" icon={data.locked ? 'unlock' : 'lock'} onClick={() => void moderateTopic(data.locked ? 'UNLOCK' : 'LOCK').catch(() => undefined)}>{data.locked ? t('Mở khoá') : t('Khoá')}</Button>
-            {data.hidden
-              ? <Button size="sm" variant="ghost" icon="eye" onClick={() => void moderateTopic('SHOW').catch(() => undefined)}>{t('Hiện lại')}</Button>
-              : <Button size="sm" variant="ghost" icon="eyeOff" onClick={() => setHideTarget({ kind: 'topic', id: data.id })}>{t('Ẩn')}</Button>}
-          </>}
-        </div>
+        {user && block !== 'expired' && (
+          <div className="row row-wrap forum-actions">
+            {data.mine && !data.hidden && <Button size="sm" variant="ghost" icon="edit" onClick={() => setEditing(true)}>{t('Sửa')}</Button>}
+            {canDeleteTopic && <Button size="sm" variant="ghost" icon="trash" onClick={() => setAskDelete(true)}>{t('Xoá')}</Button>}
+            {!data.mine && <Button size="sm" variant="ghost" icon="alert" onClick={() => setReportTarget({ kind: 'topic', id: data.id })}>{t('Báo vi phạm')}</Button>}
+            {modTopic && <>
+              <span className="forum-sep" aria-hidden />
+              <Button size="sm" variant="ghost" icon="star" disabled={modBusy} onClick={() => runMod(data.pinned ? 'UNPIN' : 'PIN')}>{data.pinned ? t('Bỏ ghim') : t('Ghim')}</Button>
+              <Button size="sm" variant="ghost" icon={data.locked ? 'unlock' : 'lock'} disabled={modBusy} onClick={() => runMod(data.locked ? 'UNLOCK' : 'LOCK')}>{data.locked ? t('Mở khoá') : t('Khoá')}</Button>
+              {data.hidden
+                ? <Button size="sm" variant="ghost" icon="eye" disabled={modBusy} onClick={() => runMod('SHOW')}>{t('Hiện lại')}</Button>
+                : <Button size="sm" variant="ghost" icon="eyeOff" onClick={() => setHideTarget({ kind: 'topic', id: data.id })}>{t('Ẩn')}</Button>}
+            </>}
+          </div>
+        )}
       </article>
 
       <div className="mt-16"><MemberNote /></div>
 
       <section className="mt-24">
         <h2 className="forum-replies-title">{t('{n} trả lời', { n: data.replyCount })}</h2>
+        {data.replies.length === 0 && <p className="muted small mt-8">{t('Chưa có trả lời nào. Hãy là người đầu tiên chia sẻ.')}</p>}
         <div className="stack mt-16">
           {data.replies.map((r) => (
-            <ReplyItem key={r.id} r={r} canModerate={data.canModerate} isAdmin={user?.role === 'ADMIN'} loggedIn={!!user}
+            <ReplyItem key={r.id} r={r} topic={data} role={role} signedIn={!!user && block !== 'expired'}
               onUpdated={(nr) => setData((d) => d && { ...d, replies: d.replies.map((x) => (x.id === nr.id ? nr : x)) })}
               onDelete={() => setDeleteReply(r)}
               onReport={() => setReportTarget({ kind: 'reply', id: r.id })}
@@ -431,11 +445,21 @@ export function ForumTopicPage({ embedded }: { embedded?: boolean }) {
           ))}
         </div>
         <div className="mt-16">
-          {canReply
-            ? <ReplyComposer topicId={data.id} onPosted={() => void reload()} />
-            : !user
-              ? <JoinPrompt text={t('Đăng nhập để trả lời chủ đề này.')} />
-              : <p className="muted small">{t(data.hidden ? 'Chủ đề đang bị ẩn nên không nhận thêm trả lời.' : 'Chủ đề đã khoá, không nhận thêm trả lời.')}</p>}
+          {block === null ? (
+            <>
+              {data.locked && <p className="tiny warn forum-note"><Icon name="lock" size={13} />{t('Chủ đề đang khoá: bạn trả lời với quyền huấn luyện viên / quản lý.')}</p>}
+              <ReplyComposer topicId={data.id} onPosted={() => void reload()} />
+            </>
+          ) : block === 'guest' ? (
+            <JoinPrompt text={t('Đăng nhập để trả lời chủ đề này.')} />
+          ) : block === 'expired' ? null : (
+            <div className="card forum-closed">
+              <Icon name={block === 'hidden' ? 'eyeOff' : 'lock'} size={16} />
+              <span className="small muted">{t(block === 'hidden'
+                ? 'Chủ đề đang bị ẩn nên không nhận thêm trả lời.'
+                : 'Chủ đề đã khoá, chỉ huấn luyện viên hoặc quản lý trả lời được.')}</span>
+            </div>
+          )}
         </div>
       </section>
 
@@ -459,13 +483,13 @@ export function ForumTopicPage({ embedded }: { embedded?: boolean }) {
           }} />
       )}
       {hideTarget && (
-        <ReasonDialog title={hideTarget.kind === 'topic' ? t('Ẩn chủ đề') : t('Ẩn trả lời')} label={t('Lý do ẩn')} min={5} danger confirmText={t('Ẩn bài')}
+        <ReasonDialog title={hideTarget.kind === 'topic' ? t('Ẩn chủ đề') : t('Ẩn trả lời')} label={t('Lý do ẩn')} danger confirmText={t('Ẩn bài')}
           hint={t('Người viết sẽ thấy lý do này. Bài bị ẩn không hiện với người khác.')}
           onClose={() => setHideTarget(null)}
           onSubmit={(reason) => (hideTarget.kind === 'topic' ? moderateTopic('HIDE', reason) : moderateReply(hideTarget.id, 'HIDE', reason))} />
       )}
       {reportTarget && (
-        <ReasonDialog title={t('Báo cáo bài vi phạm')} label={t('Lý do báo cáo')} min={5} confirmText={t('Gửi báo cáo')}
+        <ReasonDialog title={t('Báo cáo bài vi phạm')} label={t('Lý do báo cáo')} confirmText={t('Gửi báo cáo')}
           hint={t('VD: quảng cáo, công kích cá nhân, thông tin sức khoẻ sai lệch nguy hiểm…')}
           onClose={() => setReportTarget(null)}
           onSubmit={async (reason) => {
@@ -477,8 +501,8 @@ export function ForumTopicPage({ embedded }: { embedded?: boolean }) {
   );
 }
 
-function ReplyItem({ r, canModerate, isAdmin, loggedIn, onUpdated, onDelete, onReport, onHide, onShow }: {
-  r: ForumReply; canModerate: boolean; isAdmin: boolean; loggedIn: boolean;
+function ReplyItem({ r, topic, role, signedIn, onUpdated, onDelete, onReport, onHide, onShow }: {
+  r: ForumReply; topic: TopicDetail; role: ForumAuthor['role'] | null; signedIn: boolean;
   onUpdated: (r: ForumReply) => void; onDelete: () => void; onReport: () => void; onHide: () => void; onShow: () => void;
 }) {
   const toast = useToast();
@@ -487,16 +511,23 @@ function ReplyItem({ r, canModerate, isAdmin, loggedIn, onUpdated, onDelete, onR
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const save = async () => {
+    if (busy) return;
     const v = validateReply(text);
-    if (v) { setErr(v); return; }
+    if (v) { setErr(t(v)); return; }
+    if (cleanText(text) === r.body) { setEditing(false); return; }
     setBusy(true);
     try {
-      onUpdated(await api.put<ForumReply>(`/forum/replies/${r.id}`, { body: text.trim() }));
+      onUpdated(await api.put<ForumReply>(`/forum/replies/${r.id}`, { body: cleanText(text) }));
       setEditing(false);
-      toast.success('Đã lưu thay đổi');
-    } catch (e) { setErr(errMsg(e)); } finally { setBusy(false); }
+      toast.success(t('Đã lưu thay đổi'));
+    } catch (e) { setErr(fieldErrs(e).body ?? errMsg(e)); } finally { setBusy(false); }
   };
+  const startEdit = () => { setText(r.body); setErr(null); setEditing(true); };
   const staffReply = r.author.role !== 'MEMBER';
+  const canEdit = signedIn && canEditReply(r, topic);
+  const canDelete = signedIn && (r.mine || role === 'ADMIN');
+  const canMod = signedIn && topic.canModerate && canModerateAuthor(role, r.author.role);
+  const hasActions = canEdit || canDelete || (signedIn && !r.mine) || canMod;
   return (
     <div id={`reply-${r.id}`} className={`card forum-reply ${staffReply ? 'is-staff' : ''} ${r.hidden ? 'is-hidden' : ''}`}>
       <div className="row between row-wrap" style={{ gap: 8 }}>
@@ -507,20 +538,24 @@ function ReplyItem({ r, canModerate, isAdmin, loggedIn, onUpdated, onDelete, onR
       {editing ? (
         <div className="stack-sm">
           <Field label={t('Sửa trả lời')} error={err ?? undefined}>
-            <Textarea rows={4} maxLength={REPLY_MAX} value={text} invalid={!!err} onChange={(e) => { setText(e.target.value); setErr(null); }} />
+            <Textarea rows={4} maxLength={REPLY_MAX} value={text} invalid={!!err} onChange={(e) => { setText(e.target.value); setErr(null); }}
+              onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') void save(); if (e.key === 'Escape') setEditing(false); }} />
           </Field>
-          <div className="row" style={{ gap: 8 }}>
-            <Button size="sm" variant="primary" loading={busy} onClick={() => void save()}>{t('Lưu')}</Button>
-            <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setText(r.body); setErr(null); }}>{t('Huỷ')}</Button>
+          <div className="row between row-wrap" style={{ gap: 8 }}>
+            <Counter value={text} max={REPLY_MAX} />
+            <div className="row" style={{ gap: 8 }}>
+              <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>{t('Huỷ')}</Button>
+              <Button size="sm" variant="primary" loading={busy} onClick={() => void save()}>{t('Lưu')}</Button>
+            </div>
           </div>
         </div>
       ) : <Prose text={r.body} />}
-      {!editing && (
+      {!editing && hasActions && (
         <div className="row row-wrap forum-actions">
-          {r.mine && !r.hidden && <Button size="sm" variant="ghost" icon="edit" onClick={() => setEditing(true)}>{t('Sửa')}</Button>}
-          {(r.mine || isAdmin) && <Button size="sm" variant="ghost" icon="trash" onClick={onDelete}>{t('Xoá')}</Button>}
-          {loggedIn && !r.mine && <Button size="sm" variant="ghost" icon="alert" onClick={onReport}>{t('Báo vi phạm')}</Button>}
-          {canModerate && (r.hidden
+          {canEdit && <Button size="sm" variant="ghost" icon="edit" onClick={startEdit}>{t('Sửa')}</Button>}
+          {canDelete && <Button size="sm" variant="ghost" icon="trash" onClick={onDelete}>{t('Xoá')}</Button>}
+          {signedIn && !r.mine && <Button size="sm" variant="ghost" icon="alert" onClick={onReport}>{t('Báo vi phạm')}</Button>}
+          {canMod && (r.hidden
             ? <Button size="sm" variant="ghost" icon="eye" onClick={onShow}>{t('Hiện lại')}</Button>
             : <Button size="sm" variant="ghost" icon="eyeOff" onClick={onHide}>{t('Ẩn')}</Button>)}
         </div>
@@ -537,28 +572,28 @@ function ReplyComposer({ topicId, onPosted }: { topicId: number; onPosted: () =>
   const submit = async () => {
     if (busy) return;
     const v = validateReply(text);
-    if (v) { setErr(v); return; }
+    if (v) { setErr(t(v)); return; }
     setBusy(true);
     try {
-      await api.post<ForumReply>(`/forum/topics/${topicId}/replies`, { body: text.trim() });
+      await api.post<ForumReply>(`/forum/topics/${topicId}/replies`, { body: cleanText(text) });
       setText('');
+      setErr(null);
       toast.success(t('Đã gửi trả lời'));
       onPosted();
     } catch (e) {
-      const f = fieldErrs(e);
-      setErr(f.body ?? errMsg(e));
+      setErr(fieldErrs(e).body ?? errMsg(e));
     } finally { setBusy(false); }
   };
   return (
-    <div className="card stack-sm">
+    <div className="card forum-composer">
       <Field label={t('Trả lời của bạn')} error={err ?? undefined}>
-        <Textarea rows={4} maxLength={REPLY_MAX} value={text} invalid={!!err} placeholder={t('Chia sẻ kinh nghiệm hoặc góp ý của bạn…')}
+        <Textarea rows={4} maxLength={REPLY_MAX} value={text} invalid={!!err} disabled={busy} placeholder={t('Chia sẻ kinh nghiệm hoặc góp ý của bạn…')}
           onChange={(e) => { setText(e.target.value); setErr(null); }}
-          onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') void submit(); }} />
+          onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); void submit(); } }} />
       </Field>
       <div className="row between row-wrap" style={{ gap: 8 }}>
-        <span className="tiny faint">{t('Ctrl/⌘ + Enter để gửi')}</span>
-        <Button variant="primary" icon="arrowRight" loading={busy} onClick={() => void submit()}>{t('Gửi trả lời')}</Button>
+        <span className="tiny faint">{t('Ctrl/⌘ + Enter để gửi')} · <Counter value={text} max={REPLY_MAX} /></span>
+        <Button variant="primary" icon="send" loading={busy} disabled={!cleanText(text)} onClick={() => void submit()}>{t('Gửi trả lời')}</Button>
       </div>
     </div>
   );
