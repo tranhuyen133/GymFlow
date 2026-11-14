@@ -130,7 +130,7 @@ export function CalorieStats({ memberId }: { memberId: number }) {
                 <tbody>
                   {detail.exercises.map((e, i) => (
                     <tr key={`${e.exerciseName}-${i}`}>
-                      <td>{getLang() === 'en' && e.exerciseNameEn ? e.exerciseNameEn : e.exerciseName}</td>
+                      <td>{getLang() === 'en' && e.exerciseNameEn ? e.exerciseNameEn : t(e.exerciseName)}</td>
                       <td className="num">{e.metValue}</td>
                       <td>{e.sets != null ? `${e.sets}${e.reps ? ` × ${e.reps}` : ''}` : '—'}</td>
                       <td className="num">{e.activeMinutes} {t('phút')}</td>

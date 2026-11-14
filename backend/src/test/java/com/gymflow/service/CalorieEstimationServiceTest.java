@@ -89,8 +89,8 @@ class CalorieEstimationServiceTest {
     }
 
     @Test
-    @DisplayName("Tập tạ: chỉ tính thời gian vận động, không cộng thời gian nghỉ")
-    void strengthExcludesRest() {
+    @DisplayName("Tập tạ: tính cả nghỉ giữa hiệp; phần còn lại của buổi tính là khởi động/giãn cơ mức nhẹ")
+    void strengthIncludesRestAndTransition() {
         weight(70.0, SESSION_START.toLocalDate().minusDays(1));
         addItem("Bench Press", MuscleGroup.CHEST, 3, "10", 60);
 
@@ -99,11 +99,20 @@ class CalorieEstimationServiceTest {
         assertThat(estimate.status()).isEqualTo(EstimateStatus.OK);
         assertThat(estimate.quality()).isEqualTo(EstimateQuality.DETAILED);
         assertThat(estimate.weightKg()).isEqualTo(70.0);
-        assertThat(estimate.activeMinutes()).isEqualTo(1.5);
-        assertThat(estimate.exercises()).hasSize(1);
-        assertThat(estimate.exercises().get(0).activeMinutes()).isEqualTo(1.5);
+        assertThat(estimate.activeMinutes()).isEqualTo(60.0);
+        assertThat(estimate.exercises()).hasSize(2);
+        assertThat(estimate.exercises().get(0).activeMinutes()).isEqualTo(3.5);
+        assertThat(estimate.exercises().get(0).calories()).isEqualTo(21);
+        assertThat(estimate.exercises().get(0).dataSource()).isEqualTo("PLAN");
         assertThat(estimate.exercises().get(0).restSeconds()).isEqualTo(60);
-        assertThat(estimate.totalCalories()).isEqualTo(9);
+        CalorieEstimate.ExerciseEstimate filler = estimate.exercises().get(1);
+        assertThat(filler.exerciseName()).isEqualTo(CalorieEstimationService.TRANSITION_NAME);
+        assertThat(filler.intensity()).isEqualTo(ExerciseIntensity.LIGHT);
+        assertThat(filler.metValue()).isEqualTo(3.5);
+        assertThat(filler.activeMinutes()).isEqualTo(56.5);
+        assertThat(filler.calories()).isEqualTo(242);
+        assertThat(filler.dataSource()).isEqualTo("FALLBACK");
+        assertThat(estimate.totalCalories()).isEqualTo(263);
     }
 
     @Test
@@ -117,8 +126,34 @@ class CalorieEstimationServiceTest {
 
         assertThat(estimate.status()).isEqualTo(EstimateStatus.MISSING_WEIGHT);
         assertThat(estimate.totalCalories()).isNull();
+        assertThat(estimate.exercises()).hasSize(2);
+        assertThat(estimate.exercises()).allSatisfy(e -> assertThat(e.calories()).isNull());
+    }
+
+    @Test
+    @DisplayName("Giáo án lấp kín buổi tập: không thêm dòng khởi động; 2 buổi thật ra vài trăm kcal")
+    void fullPlanAddsNoTransitionAndIsRealistic() {
+        weight(70.0, SESSION_START.toLocalDate());
+        for (int i = 0; i < 6; i++) addItem("Bài " + i, MuscleGroup.CHEST, 4, "10", 90);
+
+        CalorieEstimate estimate = service.estimate(schedule, 39, ExerciseIntensity.MODERATE);
+
+        assertThat(estimate.exercises()).hasSize(6);
+        assertThat(estimate.exercises()).allSatisfy(e -> assertThat(e.dataSource()).isEqualTo("PLAN"));
+        assertThat(estimate.activeMinutes()).isEqualTo(39.0);
+        assertThat(estimate.totalCalories()).isBetween(235, 245);
+    }
+
+    @Test
+    @DisplayName("Phần dư dưới 1 phút không tạo dòng khởi động")
+    void tinyRemainderIsIgnored() {
+        weight(70.0, SESSION_START.toLocalDate());
+        addItem("Bench Press", MuscleGroup.CHEST, 3, "10", 60);
+
+        CalorieEstimate estimate = service.estimate(schedule, 4, ExerciseIntensity.MODERATE);
+
         assertThat(estimate.exercises()).hasSize(1);
-        assertThat(estimate.exercises().get(0).calories()).isNull();
+        assertThat(estimate.activeMinutes()).isEqualTo(3.5);
     }
 
     @Test

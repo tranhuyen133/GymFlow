@@ -80,12 +80,12 @@ class CalorieBackfillIntegrationTest {
         assertThat(saved.getFormulaVersion()).isEqualTo(CalorieBackfillService.FORMULA_VERSION);
 
         List<WorkoutLogExercise> rows = logExerciseRepository.findByWorkoutLogIdOrderBySortOrderAsc(log.getId());
-        assertThat(rows).hasSize(1);
+        assertThat(rows).hasSize(2);
         assertThat(rows.get(0).getMetValue()).isEqualTo(5.0);
 
         CalorieBackfillResponse second = backfillService.backfillLegacy();
         assertThat(second.processed()).isZero();
-        assertThat(logExerciseRepository.findByWorkoutLogIdOrderBySortOrderAsc(log.getId())).hasSize(1);
+        assertThat(logExerciseRepository.findByWorkoutLogIdOrderBySortOrderAsc(log.getId())).hasSize(2);
 
         AuthUser user = auth(member);
         CalorieSummaryResponse summary = statsService.summary(user, member.getId(), "WEEK", LocalDate.now());
@@ -155,6 +155,38 @@ class CalorieBackfillIntegrationTest {
         assertThat(saved.getCalories()).isNotNull().isPositive();
         assertThat(saved.getEstimateStatus()).isEqualTo(EstimateStatus.OK);
         assertThat(saved.getWeightKgUsed()).isEqualTo(72.0);
+    }
+
+    @Test
+    @DisplayName("Log tính theo công thức v1 (quá thấp) được tính lại theo v2, giữ cường độ, chạy lại không đổi")
+    void outdatedFormulaLogsAreRecomputed() {
+        Member member = createMember("backfill.v1");
+        Exercise exercise = createExercise("Press V1");
+        WorkoutSchedule schedule = createSchedule(member, exercise, 70.0, ScheduleStatus.COMPLETED);
+        WorkoutLog log = createLegacyLog(member, schedule, 9);
+        log.setEstimateStatus(EstimateStatus.OK);
+        log.setEstimated(true);
+        log.setIntensity(ExerciseIntensity.MODERATE);
+        log.setFormulaVersion("MET-COMPENDIUM-2011-v1");
+        logRepository.saveAndFlush(log);
+
+        CalorieBackfillResponse result = backfillService.recomputeOutdated();
+
+        assertThat(result.processed()).isEqualTo(1);
+        WorkoutLog saved = logRepository.findById(log.getId()).orElseThrow();
+        assertThat(saved.getCalories()).isEqualTo(263);
+        assertThat(saved.getActiveMinutes()).isEqualTo(60.0);
+        assertThat(saved.getIntensity()).isEqualTo(ExerciseIntensity.MODERATE);
+        assertThat(saved.getEstimateQuality()).isEqualTo(EstimateQuality.DETAILED);
+        assertThat(saved.getFormulaVersion()).isEqualTo(CalorieEstimationService.FORMULA_VERSION);
+        List<WorkoutLogExercise> rows = logExerciseRepository.findByWorkoutLogIdOrderBySortOrderAsc(log.getId());
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).getActiveMinutes()).isEqualTo(3.5);
+        assertThat(rows.get(1).getExerciseName()).isEqualTo(CalorieEstimationService.TRANSITION_NAME);
+        assertThat(rows.get(1).getMetValue()).isEqualTo(3.5);
+
+        assertThat(backfillService.recomputeOutdated().processed()).isZero();
+        assertThat(logRepository.findById(log.getId()).orElseThrow().getCalories()).isEqualTo(263);
     }
 
     private AuthUser auth(Member member) {

@@ -510,6 +510,9 @@ export interface UserCreated { user: UserAccount; temporaryPassword: string | nu
 // ---------- Member - Trainer Conversations ----------
 export type ConversationRelation = 'ASSIGNED' | 'CONSULTING';
 
+export type MessageKind = 'TEXT' | 'IMAGE' | 'VIDEO' | 'FILE';
+export interface RecallSync { recalledIds: number[]; serverTime: string }
+
 export interface ChatMessageItem {
   id: number;
   conversationId: number;
@@ -520,6 +523,12 @@ export interface ChatMessageItem {
   body: string;
   createdAt: string;
   readAt: string | null;
+  /** V45: TEXT | IMAGE | VIDEO | FILE. Tin cũ có thể thiếu → coi như TEXT. */
+  kind?: MessageKind;
+  recalled?: boolean;
+  attachmentName?: string | null;
+  attachmentType?: string | null;
+  attachmentSize?: number | null;
 }
 
 export interface Conversation {

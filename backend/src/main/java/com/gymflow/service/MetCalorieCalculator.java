@@ -5,9 +5,9 @@ package com.gymflow.service;
  *
  * <p>Calories = MET × 3.5 × Weight(kg) / 200 × Duration(minutes)</p>
  *
- * <p>Với bài kháng lực, thời gian vận động được ước tính từ số hiệp × thời gian
- * mỗi hiệp; thời gian nghỉ không được cộng vào. Mỗi lần lặp ước tính 3 giây
- * (giả định tempo tập luyện thông thường, được ghi rõ trong tài liệu).</p>
+ * <p>Với bài kháng lực, thời lượng của cả cụm bài = số hiệp × thời gian mỗi hiệp
+ * + nghỉ giữa các hiệp (vì MET tập tạ của Compendium đo trên cả buổi, gồm nghỉ).
+ * Mỗi lần lặp ước tính 3 giây (tempo tập luyện thông thường).</p>
  */
 public final class MetCalorieCalculator {
 
@@ -69,6 +69,22 @@ public final class MetCalorieCalculator {
         Integer seconds = workSecondsPerSet(reps);
         if (seconds == null || seconds <= 0) return null;
         return sets * seconds / 60.0;
+    }
+
+    /** Nghỉ giữa hiệp khi giáo án chưa ghi (khuyến nghị phổ biến 60–120 giây cho tập tăng cơ). */
+    public static final int DEFAULT_REST_SECONDS = 90;
+
+    /**
+     * Thời lượng cả cụm bài kháng lực (phút) = thời gian các hiệp + thời gian nghỉ giữa các hiệp.
+     * MET tập tạ trong Compendium đo trên cả buổi tập (gồm nghỉ giữa hiệp), nên phải nhân với
+     * thời lượng này chứ không chỉ vài phút thật sự nâng tạ (bản v1 chỉ tính 3 giây/lần → ra quá thấp).
+     * restSeconds null → {@link #DEFAULT_REST_SECONDS}; âm hoặc quá 10 phút được chặn về 0..600.
+     */
+    public static Double strengthBlockMinutes(Integer sets, String reps, Integer restSeconds) {
+        Double work = strengthActiveMinutes(sets, reps);
+        if (work == null) return null;
+        int rest = restSeconds == null ? DEFAULT_REST_SECONDS : Math.max(0, Math.min(restSeconds, 600));
+        return work + (sets - 1) * rest / 60.0;
     }
 
     private static Double parseNumber(String raw) {

@@ -1,0 +1,143 @@
+/**
+ * Chuỗi tiếng Anh cho đợt V45–V46: thẻ calo Trang chủ, trang Huấn luyện viên, tin nhắn gửi tệp / thu hồi / xoá.
+ * Gồm cả thông báo lỗi từ máy chủ (AttachmentRules, MessageAttachmentService) vì errMsg() dịch message qua t().
+ */
+export const EN_V2: Record<string, string> = {
+  // Calo
+  'Calo đốt tuần này': 'Calories burned this week',
+  'Chưa tải được số liệu calo.': 'Could not load calorie data.',
+  '~{n} kcal/buổi': '~{n} kcal/session',
+  '{n}% so với tuần trước': '{n}% vs last week',
+  '{n} buổi chưa tính được calo – ghi cân nặng để tính': '{n} sessions not estimated yet – log your weight to calculate',
+  'Biểu đồ calo theo ngày': 'Daily calorie chart',
+  'Hoàn thành buổi tập để hệ thống ước tính calo theo MET.': 'Complete a workout and the system will estimate calories using MET.',
+  'Khởi động, chuyển bài & giãn cơ': 'Warm-up, transitions & stretching',
+  'buổi tập': 'sessions',
+  'phút vận động': 'active minutes',
+  'kcal / buổi': 'kcal / session',
+  'TB {n}': 'Avg {n}',
+  'buổi': 'sessions',
+  'Tuần đầu tiên có số liệu': 'First week with data',
+  'Ngày đốt nhiều nhất: {day} · {n} kcal': 'Best day: {day} · {n} kcal',
+  'Ước tính theo MET · cân nặng gần nhất': 'MET-based estimate · latest weight',
+
+  // Huấn luyện viên
+  'Tìm theo tên, chuyên môn, chứng chỉ…': 'Search by name, specialty, certificate…',
+  '{n} huấn luyện viên': '{n} trainers',
+  'Xem hồ sơ {name}': 'View {name}’s profile',
+  'Có ca hôm nay': 'On shift today',
+  'Hôm nay nghỉ': 'Off today',
+  'HLV của bạn': 'Your trainer',
+  'Có ca hôm nay {start}–{end}': 'On shift today {start}–{end}',
+  'Hôm nay nghỉ · {n} ca/tuần': 'Off today · {n} shifts/week',
+  'Chưa có ca cố định – nhắn để hẹn': 'No fixed shifts – message to book',
+  'năm KN': 'yrs exp.',
+  'ca/tuần': 'shifts/week',
+  'giờ/tuần': 'hrs/week',
+  'Ngày có ca trong tuần': 'Working days this week',
+  'Đăng ký gói có PT để được nhắn tin trực tiếp với HLV': 'Get a package with PT to message this trainer directly',
+  'Tập cùng HLV': 'Train with them',
+  'Bạn có thể nhắn tin trực tiếp với HLV đang phụ trách mình. Đăng ký gói có PT để được ghép HLV.':
+    'You can message the trainer assigned to you. Get a package with PT to be matched with a trainer.',
+  '{n} ca/tuần · {h} giờ': '{n} shifts/week · {h} hrs',
+  'Nhắn tin với HLV': 'Message trainer',
+  'Đăng ký gói có PT': 'Get a PT package',
+  'Huấn luyện viên chưa cập nhật phần giới thiệu.': 'This trainer has not added an introduction yet.',
+  'Lịch làm việc trong tuần': 'Weekly schedule',
+  'Tổng {h} giờ mỗi tuần. Khung giờ có thể thay đổi – nhắn HLV để xác nhận trước khi đến.':
+    '{h} hours per week in total. Hours may change – message the trainer to confirm before coming in.',
+  'Chưa cập nhật chứng chỉ.': 'No certificates added yet.',
+  'Ca hôm nay': 'Today’s shift',
+  '{start}–{end} ({h} giờ)': '{start}–{end} ({h} hrs)',
+  'Trao đổi với HLV': 'Talk to your trainer',
+  'Muốn tập cùng HLV này?': 'Want to train with this coach?',
+  'Nhắn tin để hỏi về giáo án, kỹ thuật hoặc đổi lịch tập. Bạn có thể gửi kèm ảnh, video hoặc tệp.':
+    'Message to ask about your plan, technique or rescheduling. You can attach photos, videos or files.',
+  'Nhắn tin ngay': 'Message now',
+  'Xem gói có PT': 'See PT packages',
+  'Nghỉ': 'Off',
+  'Pilates': 'Pilates',
+  'Yoga': 'Yoga',
+  'Powerlifting': 'Powerlifting',
+  'Phục hồi chức năng': 'Rehabilitation',
+  'Dinh dưỡng thể thao': 'Sports nutrition',
+  'Mobility': 'Mobility',
+
+  // Giới thiệu + chứng chỉ của HLV mẫu (DataSeeder + V46). HLV tự sửa giới thiệu thì hiển thị đúng nội dung đã nhập.
+  '6 năm huấn luyện, chuyên giáo án giảm mỡ cho người đi làm.': '6 years of coaching, specialising in fat-loss plans for working professionals.',
+  'Chuyên các bài mobility và phục hồi chấn thương nhẹ.': 'Specialises in mobility work and recovery from minor injuries.',
+  'Từng thi đấu powerlifting, tập trung kỹ thuật squat – deadlift.': 'Former competitive powerlifter, focused on squat and deadlift technique.',
+  'Chuyên giáo án tăng cơ cho người mới đến trung cấp: chia buổi theo nhóm cơ, tăng tạ có kế hoạch và theo dõi số đo mỗi tháng.':
+    'Builds muscle-gain plans for beginner to intermediate lifters: muscle-group splits, planned load progression and monthly body measurements.',
+  'Tập trung vào tư thế, cơ lõi và phục hồi sau chấn thương nhẹ vùng lưng – gối. Phù hợp dân văn phòng ngồi nhiều.':
+    'Focuses on posture, core strength and recovery from minor back and knee injuries. Ideal for people who sit at a desk all day.',
+  'Buổi tập ngắn 30–45 phút cường độ cao, kết hợp tạ và cardio để giảm mỡ nhưng vẫn giữ cơ. Luôn có bài thay thế cho người mới.':
+    'Short, high-intensity 30–45 minute sessions mixing weights and cardio to lose fat while keeping muscle. Beginner alternatives for every exercise.',
+  'Hơn 9 năm dạy yoga: cải thiện độ linh hoạt, hơi thở và giấc ngủ. Có lớp mobility bổ trợ cho người tập tạ.':
+    'Over 9 years teaching yoga: better flexibility, breathing and sleep. Also runs mobility sessions to support lifters.',
+  'Hướng dẫn kỹ thuật squat – bench – deadlift an toàn, lập chu kỳ tập theo phần trăm 1RM và chuẩn bị cho giải phong trào.':
+    'Coaches safe squat, bench and deadlift technique, programs training cycles by %1RM and prepares lifters for amateur meets.',
+  'Kết hợp tập luyện với thực đơn dễ làm theo khẩu phần Việt, theo dõi cân nặng hằng tuần và điều chỉnh calo hợp lý.':
+    'Pairs training with easy meal plans based on Vietnamese portions, tracks weight weekly and adjusts calories sensibly.',
+  'Sơ cứu cơ bản': 'Basic first aid',
+
+  // Tin nhắn
+  'Mỗi lần chỉ gửi được 1 tệp – đã chọn tệp đầu tiên': 'Only 1 file per message – the first file was selected',
+  'Tin nhắn tối đa 2000 ký tự': 'Messages can be up to 2000 characters',
+  'Đã thu hồi tin nhắn': 'Message recalled',
+  'Đã xoá tin nhắn ở phía bạn': 'Message deleted for you',
+  'Không sao chép được': 'Could not copy',
+  'Thả tệp vào đây để gửi': 'Drop a file here to send',
+  'Ảnh, video hoặc tệp tài liệu': 'Photo, video or document',
+  'Bạn đã thu hồi một tin nhắn': 'You recalled a message',
+  'Tin nhắn đã được thu hồi': 'This message was recalled',
+  'Tuỳ chọn tin nhắn': 'Message options',
+  'Thu hồi': 'Recall',
+  'Xoá phía tôi': 'Delete for me',
+  'Thu hồi tin nhắn?': 'Recall this message?',
+  'Xoá tin nhắn ở phía bạn?': 'Delete this message for you?',
+  'Ảnh': 'Photo',
+  'Video': 'Video',
+  'Tệp': 'File',
+  '[Ảnh]': '[Photo]',
+  '[Video]': '[Video]',
+  '[Tệp]': '[File]',
+  'Huỷ gửi': 'Cancel upload',
+  'Bỏ tệp': 'Remove file',
+  'Đính kèm ảnh, video hoặc tệp': 'Attach a photo, video or file',
+  'Thêm chú thích (không bắt buộc)…': 'Add a caption (optional)…',
+  'Tin nhắn và tệp đính kèm sẽ bị xoá với cả hai bên. Hai bên sẽ thấy dòng "Tin nhắn đã được thu hồi".':
+    'The message and its attachment will be removed for both of you. Both sides will see "This message was recalled".',
+  'Tin nhắn chỉ bị ẩn với bạn; người kia vẫn thấy. Thao tác này không hoàn tác được.':
+    'The message is hidden only for you; the other person still sees it. This cannot be undone.',
+  'Tệp đính kèm': 'Attachment',
+  'Không tải được tệp': 'Could not load file',
+  'Xem ảnh lớn': 'View full size',
+  'Tải xuống': 'Download',
+  'Đã đọc': 'Read',
+  'Đã huỷ gửi tệp': 'Upload cancelled',
+  'Vui lòng chọn tệp cần gửi': 'Please choose a file to send',
+  'Định dạng tệp không được hỗ trợ': 'This file type is not supported',
+  'Tệp rỗng, vui lòng chọn tệp khác': 'The file is empty, please choose another one',
+  'Ảnh tối đa {n} MB': 'Photos can be up to {n} MB',
+  'Video tối đa {n} MB': 'Videos can be up to {n} MB',
+  'Tệp tối đa {n} MB': 'Files can be up to {n} MB',
+
+  // Lỗi từ máy chủ
+  'Ảnh tối đa 10 MB': 'Photos can be up to 10 MB',
+  'Video tối đa 25 MB': 'Videos can be up to 25 MB',
+  'Tệp tối đa 10 MB': 'Files can be up to 10 MB',
+  'Tệp quá lớn: ảnh và tệp tối đa 10 MB, video tối đa 25 MB': 'File too large: photos and files up to 10 MB, videos up to 25 MB',
+  'Định dạng tệp không được hỗ trợ. Hỗ trợ: ảnh JPG/PNG/WebP/GIF, video MP4/MOV/WebM, tệp PDF, Word, Excel, PowerPoint, TXT, CSV, ZIP':
+    'File type not supported. Allowed: JPG/PNG/WebP/GIF photos, MP4/MOV/WebM videos, PDF, Word, Excel, PowerPoint, TXT, CSV, ZIP files',
+  'Nội dung tệp không khớp với đuôi tệp – tệp có thể bị hỏng hoặc bị đổi tên': 'The file content does not match its extension – it may be corrupted or renamed',
+  'Không đọc được tệp, vui lòng thử lại': 'Could not read the file, please try again',
+  'Bạn đã gửi quá 200 MB tệp trong 24 giờ qua. Vui lòng thử lại sau.': 'You have sent more than 200 MB of files in the last 24 hours. Please try again later.',
+  'Chỉ người gửi mới thu hồi được tin nhắn': 'Only the sender can recall a message',
+  'Chỉ thu hồi được tin nhắn trong vòng 15 phút sau khi gửi': 'Messages can only be recalled within 15 minutes of sending',
+  'Quản trị viên không thể thu hồi tin nhắn': 'Administrators cannot recall messages',
+  'Quản trị viên không thể xoá tin nhắn': 'Administrators cannot delete messages',
+  'Không tìm thấy tin nhắn': 'Message not found',
+  'Không tìm thấy tệp đính kèm': 'Attachment not found',
+  'Không tìm thấy tệp – tin nhắn đã được thu hồi': 'File not found – the message was recalled',
+};

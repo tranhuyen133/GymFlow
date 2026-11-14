@@ -71,7 +71,8 @@ class CalorieCompletionIntegrationTest {
         scheduleService.complete(user, schedule.getId(), new CompleteRequest(60, ExerciseIntensity.MODERATE, 5, "OK"));
 
         WorkoutLog log = logRepository.findByScheduleId(schedule.getId()).orElseThrow();
-        assertThat(log.getCalories()).isNotNull().isPositive();
+        assertThat(log.getCalories()).isEqualTo(263);
+        assertThat(log.getActiveMinutes()).isEqualTo(60.0);
         assertThat(log.getEstimateStatus()).isEqualTo(EstimateStatus.OK);
         assertThat(log.getEstimateQuality()).isEqualTo(EstimateQuality.DETAILED);
         assertThat(log.isEstimated()).isTrue();
@@ -79,11 +80,14 @@ class CalorieCompletionIntegrationTest {
         assertThat(log.getFormulaVersion()).isEqualTo(CalorieEstimationService.FORMULA_VERSION);
 
         List<WorkoutLogExercise> rows = logExerciseRepository.findByWorkoutLogIdOrderBySortOrderAsc(log.getId());
-        assertThat(rows).hasSize(1);
+        assertThat(rows).hasSize(2);
         assertThat(rows.get(0).getActivityCategory()).isEqualTo(ActivityCategory.RESISTANCE);
         assertThat(rows.get(0).getMetValue()).isEqualTo(5.0);
-        assertThat(rows.get(0).getActiveMinutes()).isEqualTo(1.5);
-        assertThat(rows.get(0).getCalories()).isNotNull();
+        assertThat(rows.get(0).getActiveMinutes()).isEqualTo(3.5);
+        assertThat(rows.get(0).getCalories()).isEqualTo(21);
+        assertThat(rows.get(1).getExercise()).isNull();
+        assertThat(rows.get(1).getDataSource()).isEqualTo("FALLBACK");
+        assertThat(rows.get(1).getActiveMinutes()).isEqualTo(56.5);
 
         assertThatThrownBy(() -> scheduleService.complete(user, schedule.getId(),
                 new CompleteRequest(60, ExerciseIntensity.MODERATE, 5, "Lặp")))

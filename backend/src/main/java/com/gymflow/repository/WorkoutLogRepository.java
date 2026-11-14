@@ -32,4 +32,7 @@ public interface WorkoutLogRepository extends JpaRepository<WorkoutLog, Long> {
     /** Buổi chưa ước tính của một hội viên (dùng khi tính lại sau khi nhập cân nặng). */
     List<WorkoutLog> findByMemberIdAndEstimatedFalseAndEstimateStatusInOrderByCompletedAtAsc(
             Long memberId, Collection<EstimateStatus> estimateStatuses);
+
+    /** Log được ước tính bằng phiên bản công thức cũ (dùng để tính lại khi đổi công thức). */
+    List<WorkoutLog> findByFormulaVersionInOrderByCompletedAtAsc(Collection<String> formulaVersions);
 }

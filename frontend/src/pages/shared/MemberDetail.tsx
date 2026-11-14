@@ -15,6 +15,7 @@ import { errMsg, useAsync } from '../../lib/hooks';
 import { ScheduleForm } from './Schedules';
 import { MemberFormModal } from './Members';
 import { t } from '../../i18n';
+import { previewOf } from './chatRules';
 
 type Tab = 'overview' | 'progress' | 'plans' | 'entitlements' | 'messages';
 
@@ -443,7 +444,7 @@ function AdminMemberMessagesTab({ memberId, memberName }: { memberId: number; me
                 </td>
                 <td>
                   <div className="ellipsis" style={{ maxWidth: 320 }}>
-                    {c.lastMessage?.body ?? <span className="tiny faint">{t('Chưa có tin nhắn')}</span>}
+                    {c.lastMessage ? (() => { const p = previewOf(c.lastMessage, -1); return <>{p.label && <b className="tiny muted">{t(p.label)} </b>}{p.text}</>; })() : <span className="tiny faint">{t('Chưa có tin nhắn')}</span>}
                   </div>
                 </td>
                 <td className="small nowrap muted">

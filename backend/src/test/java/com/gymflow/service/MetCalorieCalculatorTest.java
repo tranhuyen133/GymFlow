@@ -53,4 +53,25 @@ class MetCalorieCalculatorTest {
         assertThat(MetCalorieCalculator.strengthActiveMinutes(null, "10")).isNull();
         assertThat(MetCalorieCalculator.strengthActiveMinutes(3, "abc")).isNull();
     }
+
+    @Test
+    @DisplayName("Cụm bài kháng lực = các hiệp + nghỉ giữa hiệp; thiếu nghỉ → 90 giây; chặn giá trị bất thường")
+    void computesStrengthBlockMinutes() {
+        assertThat(MetCalorieCalculator.strengthBlockMinutes(3, "10", 60)).isEqualTo(3.5);
+        assertThat(MetCalorieCalculator.strengthBlockMinutes(4, "10", null)).isEqualTo(6.5);
+        assertThat(MetCalorieCalculator.strengthBlockMinutes(1, "10", 120)).isEqualTo(0.5);
+        assertThat(MetCalorieCalculator.strengthBlockMinutes(3, "10", -30)).isEqualTo(1.5);
+        assertThat(MetCalorieCalculator.strengthBlockMinutes(2, "10", 100000)).isEqualTo(11.0);
+        assertThat(MetCalorieCalculator.strengthBlockMinutes(0, "10", 60)).isNull();
+        assertThat(MetCalorieCalculator.strengthBlockMinutes(3, "", 60)).isNull();
+    }
+
+    @Test
+    @DisplayName("Buổi 60 phút, 5 bài 4×10 nghỉ 90s, 70 kg ra khoảng 300 kcal (không phải vài chục)")
+    void realisticSessionIsNotTiny() {
+        double block = MetCalorieCalculator.strengthBlockMinutes(4, "10", 90);
+        double lifting = MetCalorieCalculator.calories(5.0, 70.0, block * 5);
+        double rest = MetCalorieCalculator.calories(3.5, 70.0, 60 - block * 5);
+        assertThat(MetCalorieCalculator.roundKcal(lifting + rest)).isBetween(300, 340);
+    }
 }
