@@ -2,7 +2,7 @@
 CHỦ FILE: Linh (Hồ Khánh Linh)
 TASK: SCRUM-173 · HẠN: 05/11/2026
 TASK: SCRUM-221 · HẠN: 13/11/2026
-CẦN LÀM: SCRUM-173 · 05/11: exercises.json (10 bài, có cách thở, lỗi thường gặp, lưu ý an toàn, nguồn). SCRUM-221 · 13/11: articles.json (bài viết có nguồn, loại SELF_AUTHORED/ADAPTED). Kiên viết code đọc 2 file này.
+TRẠNG THÁI: SCRUM-173 và phần nội dung SCRUM-221 đã hoàn thành. Tích hợp nạp seed runtime thuộc phạm vi riêng.
 Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
 -->
 
