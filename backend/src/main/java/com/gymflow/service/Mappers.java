@@ -135,7 +135,8 @@ public class Mappers {
         return new PromotionResponse(p.getId(), p.getCode(), p.getName(), p.getDescription(),
                 p.getDiscountType(), p.getDiscountValue(), p.getStartsAt(), p.getEndsAt(),
                 p.getMaxUses(), p.getUsedCount(), p.isNewMembersOnly(), p.isRenewalOnly(),
-                p.isStackable(), p.isActive(), p.getCreatedAt(), planIds, grants);
+                p.isStackable(), p.isActive(), p.getCreatedAt(), planIds, grants,
+                p.getAudience() == null ? PromotionAudience.ALL : p.getAudience());
     }
 
     // ---------- Service Request ----------

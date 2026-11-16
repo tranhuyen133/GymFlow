@@ -47,6 +47,24 @@ public interface MemberSubscriptionRepository extends JpaRepository<MemberSubscr
     @Query("select max(s.endDate) from MemberSubscription s where s.member.id = :memberId and s.cancelled = false")
     LocalDate maxEndDate(@Param("memberId") Long memberId);
 
+    /** V49 · Như existsOverlap nhưng bỏ qua một số gói (gói đang sửa / gói được nâng cấp). */
+    @Query("""
+            select count(s) > 0 from MemberSubscription s
+            where s.member.id = :memberId and s.cancelled = false
+              and s.startDate <= :end and s.endDate >= :start
+              and s.id not in :excludeIds
+            """)
+    boolean existsOverlapExcluding(@Param("memberId") Long memberId, @Param("start") LocalDate start,
+                                   @Param("end") LocalDate end, @Param("excludeIds") java.util.Collection<Long> excludeIds);
+
+    /** V49 · Gói chưa huỷ bắt đầu sau một ngày (gói nối tiếp) – để dời theo khi bảo lưu. */
+    @Query("""
+            select s from MemberSubscription s
+            where s.member.id = :memberId and s.cancelled = false and s.startDate > :after
+            order by s.startDate asc
+            """)
+    List<MemberSubscription> findStartingAfter(@Param("memberId") Long memberId, @Param("after") LocalDate after);
+
     @Query("""
             select s from MemberSubscription s
             where s.member.id = :memberId and s.cancelled = false

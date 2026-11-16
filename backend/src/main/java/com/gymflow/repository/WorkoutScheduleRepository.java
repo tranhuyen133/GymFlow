@@ -104,4 +104,45 @@ public interface WorkoutScheduleRepository extends JpaRepository<WorkoutSchedule
     long countPtBooked(@Param("memberId") Long memberId, @Param("from") LocalDateTime from,
                        @Param("to") LocalDateTime to, @Param("status") ScheduleStatus status,
                        @Param("excludeId") Long excludeId);
+
+    /**
+     * V49 · Lịch của HLV: buổi HLV dạy + mọi buổi của hội viên HLV đang phụ trách (kể cả buổi hội viên tự tập),
+     * để vừa được giao hội viên là HLV thấy ngay lịch của người đó.
+     */
+    @Query("""
+            select s from WorkoutSchedule s left join s.trainer t join s.member m left join m.trainer mt
+            where s.startTime < :to and s.endTime > :from
+              and (t.id = :trainerId or mt.id = :trainerId)
+            order by s.startTime asc
+            """)
+    List<WorkoutSchedule> findInRangeForTrainer(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to,
+                                                @Param("trainerId") Long trainerId);
+
+    /** V49 · Buổi tự tập (chưa gắn HLV) sắp tới của hội viên trong khoảng – để chuyển sang HLV khi gói PT được duyệt. */
+    @Query("""
+            select s from WorkoutSchedule s
+            where s.member.id = :memberId and s.trainer is null and s.status = :status
+              and s.startTime >= :from and s.startTime < :to
+            order by s.startTime asc
+            """)
+    List<WorkoutSchedule> findUnassigned(@Param("memberId") Long memberId, @Param("from") LocalDateTime from,
+                                         @Param("to") LocalDateTime to, @Param("status") ScheduleStatus status);
+
+    /** V49 · Buổi sắp tới của hội viên với một HLV cụ thể – để chuyển sang HLV mới khi đổi HLV. */
+    @Query("""
+            select s from WorkoutSchedule s
+            where s.member.id = :memberId and s.trainer.id = :trainerId and s.status = :status and s.startTime >= :from
+            order by s.startTime asc
+            """)
+    List<WorkoutSchedule> findUpcomingWithTrainer(@Param("memberId") Long memberId, @Param("trainerId") Long trainerId,
+                                                  @Param("from") LocalDateTime from, @Param("status") ScheduleStatus status);
+
+    /** V49 · Mọi buổi đã lên lịch sắp tới của hội viên – kiểm tra còn gói hiệu lực sau khi đổi thời gian gói. */
+    @Query("""
+            select s from WorkoutSchedule s
+            where s.member.id = :memberId and s.status = :status and s.startTime >= :from
+            order by s.startTime asc
+            """)
+    List<WorkoutSchedule> findUpcoming(@Param("memberId") Long memberId, @Param("from") LocalDateTime from,
+                                       @Param("status") ScheduleStatus status);
 }

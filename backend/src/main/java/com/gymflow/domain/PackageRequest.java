@@ -27,6 +27,16 @@ public class PackageRequest {
     @JoinColumn(name = "plan_id", nullable = false)
     private MembershipPlan plan;
 
+    /** V49 · NEW = đăng ký / gia hạn; UPGRADE = nâng gói tự tập đang dùng lên gói có PT. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "request_type", nullable = false, length = 10)
+    private PackageRequestType requestType = PackageRequestType.NEW;
+
+    /** V49 · Gói tự tập được nâng cấp (bị cắt ngắn tới hôm trước ngày bắt đầu gói PT khi duyệt). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "upgrade_from_subscription_id")
+    private MemberSubscription upgradeFrom;
+
     /** HLV hội viên chọn cho gói có PT (V12); duyệt đơn thì HLV này được gán cho hội viên. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trainer_id")
@@ -47,6 +57,10 @@ public class PackageRequest {
 
     @Column(name = "discount_amount", nullable = false)
     private long discountAmount = 0L;
+
+    /** V49 · Giá trị còn lại của gói tự tập trừ vào giá gói PT, chốt lúc gửi đơn. */
+    @Column(name = "upgrade_credit", nullable = false)
+    private long upgradeCredit = 0L;
 
     @Column(name = "final_price", nullable = false)
     private long finalPrice = 0L;
@@ -109,6 +123,10 @@ public class PackageRequest {
     @PrePersist
     void onCreate() {
         createdAt = LocalDateTime.now();
+    }
+
+    public boolean isUpgrade() {
+        return requestType == PackageRequestType.UPGRADE;
     }
 
     public boolean isPending() {

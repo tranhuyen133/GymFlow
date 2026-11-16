@@ -5,13 +5,14 @@
  * Backend kiểm tra lại toàn bộ (đơn còn chờ, gói còn bán, chống trùng thời gian); đơn đã xử lý không duyệt lại được.
  */
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { PackageRequest, PackageRequestStatus, Trainer } from '../../api/types';
+import type { ChangeDecision, ChangeRequest, PackageRequest, PackageRequestStatus, Trainer } from '../../api/types';
+import { changeTypeLabel } from '../../components/SubscriptionChangeModal';
 import { initials, PickCard } from '../../components/PaymentQr';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, Person, SearchInput, Segmented, Stat, StatusBadge, Table, Textarea } from '../../components/ui';
-import { durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus } from '../../lib/format';
+import { addDays, durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus, parseDate, toIsoDate } from '../../lib/format';
 import { errMsg, useAsync, usePaged } from '../../lib/hooks';
 import { t, tn } from '../../i18n';
 
@@ -23,6 +24,11 @@ export default function PackageRequests() {
   const [approving, setApproving] = useState<PackageRequest | null>(null);
   const [rejecting, setRejecting] = useState<PackageRequest | null>(null);
   const { data, error, loading, reload } = useAsync(() => api.get<PackageRequest[]>('/package-requests'), []);
+  // V49 · tab thứ hai: yêu cầu điều chỉnh gói (dời ngày, bảo lưu, đổi HLV) của hội viên
+  const [params, setParams] = useSearchParams();
+  const tab = params.get('tab') === 'changes' ? 'changes' : 'orders';
+  const changes = useAsync(() => api.get<ChangeRequest[]>('/subscription-changes'), []);
+  const pendingChanges = (changes.data ?? []).filter((c) => c.status === 'PENDING').length;
 
   const count = (s: PackageRequestStatus) => (data ?? []).filter((r) => r.status === s).length;
   const list = useMemo(() => (data ?? [])
@@ -40,6 +46,16 @@ export default function PackageRequests() {
         desc="Hội viên tự chọn gói trong ứng dụng, trả tại quầy hoặc chuyển khoản theo mã QR. Thu tiền tại quầy hoặc đối chiếu sao kê theo mã đơn (GF…) rồi bấm Duyệt để kích hoạt gói. Gói có HLV kèm: duyệt là giao HLV cho hội viên."
         actions={<Link to="/payment-settings" className="btn btn-secondary"><span>{t('Cài đặt thanh toán')}</span></Link>} />
 
+      <div className="mb-20">
+        <Segmented value={tab} onChange={(v) => setParams(v === 'orders' ? {} : { tab: v })} options={[
+          { value: 'orders', label: t('Đơn đăng ký / nâng cấp {n}', { n: count('PENDING') }) },
+          { value: 'changes', label: t('Yêu cầu điều chỉnh {n}', { n: pendingChanges }) },
+        ]} />
+      </div>
+
+      {tab === 'changes' && <ChangeRequestsPanel data={changes.data} error={changes.error} loading={changes.loading} reload={changes.reload} />}
+
+      {tab === 'orders' && <>
       <div className="grid grid-4" style={{ marginBottom: 18 }}>
         <Stat icon="clock" label="Chờ xác nhận" value={count('PENDING')} accent="#ffb020" />
         <Stat icon="wallet" label="Cần thu (đơn chờ)" value={fmtMoney(pendingAmount)} accent="#8b7cff" />
@@ -72,7 +88,11 @@ export default function PackageRequests() {
                     <td><Link to={`/members/${r.memberId}`}><Person name={r.memberName} sub={[r.memberCode, r.memberPhone].filter(Boolean).join(' · ')} size="sm" /></Link></td>
                     <td>
                       <b>{t(r.planName)}</b>
+                      {r.requestType === 'UPGRADE' && <> <Badge tone="violet">{t('Nâng cấp PT')}</Badge></>}
                       <div className="tiny faint">{durationLabel(r.durationDays)}</div>
+                      {r.requestType === 'UPGRADE' && (
+                        <div className="tiny">{t('Từ {plan}', { plan: t(r.upgradeFromPlanName ?? '—') })}</div>
+                      )}
                       {r.status === 'PENDING' && !r.planStillOnSale && <Badge tone="red">{t('Gói đã ngừng bán')}</Badge>}
                       {r.trainerName ? <div className="tiny">{t('HLV {name}', { name: r.trainerName })}</div>
                         : r.includesTrainer && r.status === 'PENDING' && <Badge tone="amber">{t('Chưa chọn HLV')}</Badge>}
@@ -80,6 +100,8 @@ export default function PackageRequests() {
                     </td>
                     <td className="nowrap">
                       <div className="num">{fmtMoney(r.price)}</div>
+                      {(r.upgradeCredit ?? 0) > 0 && <div className="tiny faint">{t('đã trừ {m} gói cũ', { m: fmtMoney(r.upgradeCredit) })}</div>}
+                      {(r.discountAmount ?? 0) > 0 && <div className="tiny faint">{t('ưu đãi −{m}', { m: fmtMoney(r.discountAmount) })}{r.promotionCode ? ` · ${r.promotionCode}` : ''}</div>}
                       {r.paymentMethod === 'BANK_TRANSFER'
                         ? <Badge tone="blue">{t('Chuyển khoản')}</Badge>
                         : <Badge tone="muted">{t('Tại quầy')}</Badge>}
@@ -109,6 +131,8 @@ export default function PackageRequests() {
           )}
         {list.length > 0 && <Pager page={paged.page} totalPages={paged.totalPages} total={paged.total} onPage={paged.setPage} size={paged.size} sizes={[10, 20, 50, 100]} onSize={paged.setSize} />}
       </Card>
+
+      </>}
 
       {approving && <ApproveModal req={approving} onClose={() => setApproving(null)} onDone={done} />}
       {rejecting && <RejectModal req={rejecting} onClose={() => setRejecting(null)} onDone={done} />}
@@ -163,8 +187,19 @@ function ApproveModal({ req, onClose, onDone }: { req: PackageRequest; onClose: 
               : t('Hội viên chưa báo đã chuyển. Chỉ duyệt khi sao kê có khoản {price} với nội dung {code}.', { price: fmtMoney(req.price), code: req.paymentCode ?? '' })}
           </Alert>
         )}
+        {req.requestType === 'UPGRADE' && (
+          <div className="pay-rows">
+            <div className="pay-row"><span className="k">{t('Giá gói PT')}</span><span className="v"><b className="num">{fmtMoney(req.originalPrice ?? req.price)}</b></span></div>
+            <div className="pay-row"><span className="k">{t('Trừ phần chưa dùng của {plan}', { plan: t(req.upgradeFromPlanName ?? '') })}</span><span className="v"><b className="num ok">−{fmtMoney(req.upgradeCredit ?? 0)}</b></span></div>
+            {(req.discountAmount ?? 0) > 0 && <div className="pay-row"><span className="k">{t('Ưu đãi {code}', { code: req.promotionCode ?? req.promotionName ?? '' })}</span><span className="v"><b className="num ok">−{fmtMoney(req.discountAmount)}</b></span></div>}
+            <div className="pay-row hl"><span className="k">{t('Cần thu')}</span><span className="v"><b className="num">{fmtMoney(req.price)}</b></span></div>
+          </div>
+        )}
         <p className="small muted" style={{ margin: 0 }}>
-          {req.desiredStartDate
+          {req.requestType === 'UPGRADE'
+            ? t('Duyệt xong: gói tự tập kết thúc ngày {end}, gói PT chạy từ {d}; HLV nhận ngay hội viên, giáo án đang dùng và các buổi đã xếp còn trống lịch.', {
+              d: fmtDate(req.desiredStartDate), end: req.desiredStartDate ? fmtDate(dayBefore(req.desiredStartDate)) : '—' })
+            : req.desiredStartDate
             ? t('Bắt đầu {d} nếu ngày đó còn trống; nếu đã qua hoặc trùng gói khác, gói mới nối tiếp gói hiện tại.', { d: fmtDate(req.desiredStartDate) })
             : t('Gói bắt đầu hôm nay, hoặc nối tiếp ngay sau gói hiện tại của hội viên.')}
         </p>
@@ -231,5 +266,142 @@ function RejectModal({ req, onClose, onDone }: { req: PackageRequest; onClose: (
         {serverError && <Alert kind="error">{serverError}</Alert>}
       </div>
     </Modal>
+  );
+}
+
+const dayBefore = (d: string) => toIsoDate(addDays(parseDate(d), -1));
+
+type ChangeFilter = 'ALL' | PackageRequestStatus;
+
+/** V49 · Yêu cầu điều chỉnh gói của hội viên. Duyệt là áp ngay (backend kiểm tra lại trùng gói, buổi PT đã trừ, quota bảo lưu). */
+function ChangeRequestsPanel({ data, error, loading, reload }: { data: ChangeRequest[] | null | undefined; error: string | null | undefined; loading: boolean; reload: () => void }) {
+  const toast = useToast();
+  const [filter, setFilter] = useState<ChangeFilter>('PENDING');
+  const [approving, setApproving] = useState<ChangeRequest | null>(null);
+  const [rejecting, setRejecting] = useState<ChangeRequest | null>(null);
+  const [note, setNote] = useState('');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [serverError, setServerError] = useState('');
+  const [result, setResult] = useState<ChangeDecision | null>(null);
+  const list = (data ?? []).filter((c) => filter === 'ALL' || c.status === filter)
+    .sort((a, b) => (filter === 'PENDING' ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt)));
+  const count = (s: PackageRequestStatus) => (data ?? []).filter((c) => c.status === s).length;
+  const close = () => { setApproving(null); setRejecting(null); setNote(''); setReason(''); setServerError(''); };
+
+  const approve = async () => {
+    if (!approving) return;
+    setBusy(true); setServerError('');
+    try {
+      const res = await api.put<ChangeDecision>(`/subscription-changes/${approving.id}/approve`, { note: note.trim() || null });
+      toast.success(t('Đã duyệt yêu cầu của {name}', { name: approving.memberName }));
+      close(); reload();
+      if (res.cancelledSessions > 0 || res.notes.length > 0) setResult(res);
+    } catch (e) { setServerError(errMsg(e)); } finally { setBusy(false); }
+  };
+  const reasonLen = reason.trim().length;
+  const reasonError = reasonLen < 5 || reason.length > 255 ? t('Lý do từ 5 đến 255 ký tự') : undefined;
+  const reject = async () => {
+    if (!rejecting || reasonError) return;
+    setBusy(true); setServerError('');
+    try {
+      await api.put(`/subscription-changes/${rejecting.id}/reject`, { reason: reason.trim() });
+      toast.success(t('Đã từ chối yêu cầu của {name}', { name: rejecting.memberName }));
+      close(); reload();
+    } catch (e) { setServerError(errMsg(e)); } finally { setBusy(false); }
+  };
+
+  const change = (c: ChangeRequest) => c.type === 'CHANGE_TRAINER'
+    ? <>{c.currentTrainerName ?? t('Chưa có HLV')} → <b>{c.trainerName}</b></>
+    : <>{fmtDate(c.oldStartDate)} → {fmtDate(c.oldEndDate)}<br /><b>{fmtDate(c.newStartDate)} → {fmtDate(c.newEndDate)}</b>
+      {c.pauseDays ? <span className="tiny faint"> · +{c.pauseDays} {t('ngày')}</span> : null}</>;
+
+  return (
+    <>
+      <div className="toolbar">
+        <div className="spacer" />
+        <Segmented<ChangeFilter> value={filter} onChange={setFilter} options={[
+          { value: 'PENDING', label: t('Chờ duyệt {n}', { n: count('PENDING') }) },
+          { value: 'APPROVED', label: t('Đã duyệt') }, { value: 'REJECTED', label: t('Từ chối') },
+          { value: 'CANCELLED', label: t('Hội viên huỷ') }, { value: 'ALL', label: t('Tất cả') },
+        ]} />
+      </div>
+      <Card flush>
+        {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div>
+          : loading && !data ? <div style={{ padding: 20 }}><LoadingBlock /></div>
+          : list.length === 0 ? <Empty icon="edit" title={filter === 'PENDING' ? 'Không có yêu cầu nào chờ duyệt' : 'Không có yêu cầu phù hợp'} /> : (
+            <Table caption={t('Yêu cầu điều chỉnh gói')}>
+              <thead><tr><th>{t('Hội viên')}</th><th>{t('Yêu cầu')}</th><th>{t('Thay đổi')}</th><th>{t('Gửi lúc')}</th><th>{t('Trạng thái')}</th><th aria-label={t('Thao tác')} /></tr></thead>
+              <tbody>
+                {list.map((c) => (
+                  <tr key={c.id}>
+                    <td><Link to={`/members/${c.memberId}`}><Person name={c.memberName} sub={[c.memberCode, c.memberPhone].filter(Boolean).join(' · ')} size="sm" /></Link></td>
+                    <td><b>{t(changeTypeLabel[c.type])}</b><div className="tiny faint">{t(c.planName)}</div><div className="tiny muted">{t('Lý do: {r}', { r: c.reason })}</div></td>
+                    <td className="small">{change(c)}</td>
+                    <td className="tiny muted nowrap">{fmtDateTime(c.createdAt)}</td>
+                    <td>
+                      <StatusBadge map={packageRequestStatus} value={c.status} />
+                      {c.decidedAt && c.status !== 'CANCELLED' && <div className="tiny faint mt-4">{c.decidedByName ?? ''} · {fmtDateTime(c.decidedAt)}</div>}
+                      {c.decisionNote && <div className="tiny muted">{c.decisionNote}</div>}
+                    </td>
+                    <td className="actions nowrap">
+                      {c.status === 'PENDING' && <>
+                        <Button size="sm" variant="primary" icon="check" onClick={() => setApproving(c)}>{t('Duyệt')}</Button>
+                        <Button size="sm" variant="ghost" icon="x" onClick={() => setRejecting(c)}>{t('Từ chối')}</Button>
+                      </>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+      </Card>
+
+      {approving && (
+        <Modal title={t('Duyệt: {type}', { type: t(changeTypeLabel[approving.type]) })} size="narrow" onClose={close} footer={<>
+          <Button variant="ghost" onClick={close}>{t('Huỷ')}</Button>
+          <Button variant="primary" icon="check" loading={busy} onClick={() => void approve()}>{t('Duyệt và áp dụng')}</Button>
+        </>}>
+          <div className="stack">
+            <div className="plan-summary">
+              <div><span className="tiny muted">{t('Hội viên')}</span><b>{approving.memberName}</b><span className="tiny faint">{approving.memberCode}</span></div>
+              <div><span className="tiny muted">{t('Gói')}</span><b>{t(approving.planName)}</b></div>
+            </div>
+            <div className="small">{change(approving)}</div>
+            <div className="small muted">{t('Lý do: {r}', { r: approving.reason })}</div>
+            <Alert kind="info">{approving.type === 'CHANGE_TRAINER'
+              ? t('HLV mới nhận hội viên, giáo án đang dùng và các buổi PT sắp tới (nếu HLV mới trống lịch).')
+              : t('Buổi đã xếp nằm ngoài thời gian mới sẽ tự huỷ; gói nối tiếp phía sau tự lùi theo khi bảo lưu.')}</Alert>
+            <Field htmlFor="chg-note" label={t('Ghi chú cho hội viên')} hint={t('Không bắt buộc')}>
+              <Input id="chg-note" maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} />
+            </Field>
+            {serverError && <Alert kind="error">{serverError}</Alert>}
+          </div>
+        </Modal>
+      )}
+      {rejecting && (
+        <Modal title={t('Từ chối yêu cầu điều chỉnh')} size="narrow" onClose={close} footer={<>
+          <Button variant="ghost" onClick={close}>{t('Huỷ')}</Button>
+          <Button variant="danger" icon="x" loading={busy} disabled={!!reasonError} onClick={() => void reject()}>{t('Từ chối')}</Button>
+        </>}>
+          <div className="stack">
+            <p className="small" style={{ margin: 0 }}>{tn('{type} của {name}. Hội viên sẽ thấy lý do.', { type: <b>{t(changeTypeLabel[rejecting.type])}</b>, name: <b>{rejecting.memberName}</b> })}</p>
+            <Field htmlFor="chg-reject" label={t('Lý do')} required error={reason ? reasonError : undefined} hint={t('{n}/255', { n: reason.length })}>
+              <Textarea id="chg-reject" maxLength={255} value={reason} invalid={!!reason && !!reasonError} placeholder={t('VD: đã bảo lưu đủ 30 ngày trong gói này')}
+                onChange={(e) => setReason(e.target.value)} />
+            </Field>
+            {serverError && <Alert kind="error">{serverError}</Alert>}
+          </div>
+        </Modal>
+      )}
+      {result && (
+        <Modal title={t('Đã áp dụng điều chỉnh')} size="narrow" onClose={() => setResult(null)} footer={<Button variant="primary" onClick={() => setResult(null)}>{t('Đã hiểu')}</Button>}>
+          <div className="stack">
+            {result.cancelledSessions > 0 && <Alert kind="warning">{t('{n} buổi tập nằm ngoài thời gian mới đã được huỷ và báo cho hội viên.', { n: result.cancelledSessions })}</Alert>}
+            <ul className="small" style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>{result.notes.map((n, i) => <li key={i}>{n}</li>)}</ul>
+          </div>
+        </Modal>
+      )}
+    </>
   );
 }

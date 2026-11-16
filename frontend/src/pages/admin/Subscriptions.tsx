@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Subscription, SubscriptionState } from '../../api/types';
+import { AdjustDatesModal } from '../../components/AdjustDatesModal';
 import { CancelSubscriptionModal } from '../../components/CancelSubscriptionModal';
 import { SubscriptionForm } from '../../components/SubscriptionForm';
 import { Button, Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, Select, Stat, StatusBadge, Table } from '../../components/ui';
@@ -20,6 +21,7 @@ export default function Subscriptions() {
   const [planId, setPlanId] = useState('');
   const [creating, setCreating] = useState(false);
   const [cancelling, setCancelling] = useState<Subscription | null>(null);
+  const [adjusting, setAdjusting] = useState<Subscription | null>(null);
   const { data, error, loading, reload } = useAsync(() => api.get<Subscription[]>('/subscriptions'), []);
 
   const list = useMemo(() => (data ?? []).filter((s) => (filter === 'ALL' || s.state === filter)
@@ -83,7 +85,7 @@ export default function Subscriptions() {
                     <td className="num">{fmtMoney(s.pricePaid)}</td>
                     <td><StatusBadge map={subState} value={s.state} />{(s.state === 'ACTIVE' || s.state === 'EXPIRING') && <div className="tiny faint mt-4">{t('còn {n} ngày', { n: s.daysLeft })}</div>}</td>
                     <td className="tiny muted nowrap">{fmtDateTime(s.createdAt)}<div className="faint">{s.createdByName ?? ''}</div></td>
-                    <td className="actions">{!s.cancelled && s.state !== 'EXPIRED' && <Button size="sm" variant="ghost" icon="ban" aria-label="Huỷ" title="Huỷ gói" onClick={() => setCancelling(s)} />}</td>
+                    <td className="actions nowrap">{!s.cancelled && <Button size="sm" variant="ghost" icon="calendar" aria-label={t('Sửa thời gian')} title={t('Sửa thời gian gói')} onClick={() => setAdjusting(s)} />}{!s.cancelled && s.state !== 'EXPIRED' && <Button size="sm" variant="ghost" icon="ban" aria-label="Huỷ" title="Huỷ gói" onClick={() => setCancelling(s)} />}</td>
                   </tr>
                 ))}
               </tbody>
@@ -92,6 +94,7 @@ export default function Subscriptions() {
         {list.length > 0 && <Pager page={paged.page} totalPages={paged.totalPages} total={paged.total} onPage={paged.setPage} size={paged.size} sizes={[10, 20, 50, 100]} onSize={paged.setSize} />}
       </Card>
       {creating && <SubscriptionForm onClose={() => setCreating(false)} onSaved={() => { setCreating(false); void reload(); }} />}
+      {adjusting && <AdjustDatesModal sub={adjusting} onClose={() => setAdjusting(null)} onDone={() => { setAdjusting(null); void reload(); }} />}
       {cancelling && <CancelSubscriptionModal sub={cancelling} onClose={() => setCancelling(null)} onDone={() => { setCancelling(null); void reload(); }} />}
     </div>
   );

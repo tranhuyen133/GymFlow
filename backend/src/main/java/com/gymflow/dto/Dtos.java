@@ -1201,7 +1201,9 @@ public final class Dtos {
             boolean stackable,
             Boolean active,
             List<Long> planIds,
-            List<PromotionGrantDto> grants) {
+            List<PromotionGrantDto> grants,
+            /** V49 · null = ALL. */
+            PromotionAudience audience) {
     }
 
     public record PromotionResponse(
@@ -1210,7 +1212,8 @@ public final class Dtos {
             LocalDateTime startsAt, LocalDateTime endsAt,
             Integer maxUses, int usedCount,
             boolean newMembersOnly, boolean renewalOnly, boolean stackable, boolean active,
-            LocalDateTime createdAt, List<Long> planIds, List<PromotionGrantDto> grants) {
+            LocalDateTime createdAt, List<Long> planIds, List<PromotionGrantDto> grants,
+            PromotionAudience audience) {
     }
 
     public record PromotionValidateRequest(

@@ -114,3 +114,10 @@
   .kbg-mini { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .kbg-banner { animation: none; } }
+
+/* ---------- Lọc "Có video" + ô bài chưa có ảnh (không vẽ bản đồ cơ) ---------- */
+.kbg-tab-video svg { color: #ef4444; }
+.kbg-tab-video.active { color: #fff; border-color: #ef4444; background: color-mix(in srgb, #ef4444 22%, var(--surface-2)); box-shadow: 0 0 0 3px color-mix(in srgb, #ef4444 18%, transparent); }
+.kbg-tab-video.active svg { color: #fff; }
+.kbg-tab-video.active i { background: #ef4444; color: #fff; }
+.kbg-fallback { color: color-mix(in srgb, var(--primary-bright) 55%, var(--faint)); }

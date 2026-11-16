@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { api } from '../../api/client';
-import type { DiscountType, MembershipPlan, Promotion, PromotionGrant, ServiceItem } from '../../api/types';
+import type { DiscountType, MembershipPlan, Promotion, PromotionAudience, PromotionGrant, ServiceItem } from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Table, Textarea } from '../../components/ui';
+import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Segmented, Table, Textarea } from '../../components/ui';
 import { t } from '../../i18n';
 import { fmtDateTime, fmtMoney } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
@@ -130,6 +130,8 @@ export default function Promotions() {
                       <td className="small">
                         {p.newMembersOnly && <Badge tone="blue">{t('Hội viên mới')}</Badge>}
                         {p.renewalOnly && <Badge tone="amber">{t('Gia hạn')}</Badge>}
+                        {p.audience === 'BIRTHDAY' && <Badge tone="violet">{t('Sinh nhật')}</Badge>}
+                        {p.audience === 'UPGRADE' && <Badge tone="green">{t('Nâng cấp PT')}</Badge>}
                         {p.planIds && p.planIds.length > 0 ? (
                           <div className="tiny faint mt-4">
                             {p.planIds.map((id) => planNameMap.get(id) || `#${id}`).join(', ')}
@@ -245,6 +247,7 @@ function PromotionFormModal({
   const [newMembersOnly, setNewMembersOnly] = useState(promo?.newMembersOnly ?? false);
   const [renewalOnly, setRenewalOnly] = useState(promo?.renewalOnly ?? false);
   const [stackable, setStackable] = useState(promo?.stackable ?? false);
+  const [audience, setAudience] = useState<PromotionAudience>(promo?.audience ?? 'ALL');
   const [active, setActive] = useState(promo?.active ?? true);
 
   // Applicable plans (empty array = all plans)
@@ -302,6 +305,10 @@ function PromotionFormModal({
       setError(t('Số tiền giảm không được âm'));
       return;
     }
+    if (audience === 'UPGRADE' && newMembersOnly) {
+      setError(t('Ưu đãi nâng cấp dành cho hội viên đang có gói, không thể chỉ áp cho hội viên mới'));
+      return;
+    }
     if (!startsAt || !endsAt) {
       setError(t('Vui lòng chọn thời gian bắt đầu và kết thúc'));
       return;
@@ -331,6 +338,7 @@ function PromotionFormModal({
       maxUses: maxUsesNum,
       newMembersOnly,
       renewalOnly,
+      audience,
       stackable,
       active,
       planIds: selectedPlanIds.length > 0 ? selectedPlanIds : null,
@@ -473,6 +481,16 @@ function PromotionFormModal({
             </Field>
           </div>
         </div>
+
+        <Field label={t('Đối tượng áp dụng')} hint={audience === 'BIRTHDAY'
+          ? t('Chỉ hội viên có ngày sinh trong tháng hiện tại; để trống mã = tự áp khi đăng ký')
+          : audience === 'UPGRADE' ? t('Chỉ áp khi hội viên nâng gói tự tập lên gói có PT; tính trên số tiền sau khi trừ gói cũ') : undefined}>
+          <Segmented<PromotionAudience> value={audience} onChange={(v) => { setAudience(v); if (v === 'UPGRADE') setNewMembersOnly(false); }} options={[
+            { value: 'ALL', label: t('Mọi hội viên') },
+            { value: 'BIRTHDAY', label: t('Tháng sinh nhật') },
+            { value: 'UPGRADE', label: t('Khi nâng cấp lên PT') },
+          ]} />
+        </Field>
 
         <div className="stack" style={{ gap: 10 }}>
           <label className="check-row">

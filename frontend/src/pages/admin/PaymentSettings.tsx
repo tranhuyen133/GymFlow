@@ -17,6 +17,9 @@ import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 
 const ACCEPT = /^image\/(png|jpe?g|webp)$/;
 
+/** V49 · gợi ý tên ngân hàng phổ biến; quản lý vẫn gõ tự do được (VD thêm chi nhánh). */
+const BANKS = ['Vietcombank', 'VietinBank', 'BIDV', 'Agribank', 'Techcombank', 'MB Bank', 'ACB', 'VPBank', 'TPBank', 'Sacombank', 'HDBank', 'VIB', 'SHB', 'OCB', 'MSB', 'SeABank', 'Eximbank', 'Nam A Bank', 'Timo', 'Cake by VPBank'];
+
 export default function PaymentSettings() {
   const toast = useToast();
   const { data, error, loading, reload, setData } = useAsync(() => api.get<Settings>('/payment-settings'), []);
@@ -114,7 +117,8 @@ export default function PaymentSettings() {
               {serverError && <Alert kind="error">{serverError}</Alert>}
               <div className="form-grid">
                 <Field htmlFor="pay-bank" label={t('Ngân hàng')} error={err('bankName')} required={enabled} className="span-2">
-                  <Input id="pay-bank" maxLength={100} value={f.bankName} invalid={!!err('bankName')} placeholder={t('VD: Vietcombank – CN Hà Nội')} onChange={(e) => set('bankName', e.target.value)} />
+                  <Input id="pay-bank" list="pay-bank-list" autoComplete="off" maxLength={100} value={f.bankName} invalid={!!err('bankName')} placeholder={t('VD: Vietcombank – CN Hà Nội')} onChange={(e) => set('bankName', e.target.value)} />
+                  <datalist id="pay-bank-list">{BANKS.map((b) => <option key={b} value={b} />)}</datalist>
                 </Field>
                 <Field htmlFor="pay-acc" label={t('Số tài khoản')} error={err('accountNumber')} required={enabled}>
                   <Input id="pay-acc" inputMode="numeric" maxLength={34} value={f.accountNumber} invalid={!!err('accountNumber')} onChange={(e) => set('accountNumber', e.target.value)} />

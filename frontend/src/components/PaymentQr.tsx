@@ -49,49 +49,84 @@ export function PickCard({ on, onClick, icon, avatar, title, sub, disabled }: {
 
 export const initials = (name: string) => name.trim().split(/\s+/).slice(-2).map((w) => w[0]?.toUpperCase() ?? '').join('');
 
-function Row({ k, value, copy, mono, hl, sub }: { k: string; value: string; copy?: boolean; mono?: boolean; hl?: boolean; sub?: string }) {
+function useCopy() {
   const toast = useToast();
-  const doCopy = async () => {
-    try { await navigator.clipboard.writeText(value); toast.success(t('Đã chép {label}', { label: k.toLowerCase() })); }
+  return async (value: string, label: string) => {
+    try { await navigator.clipboard.writeText(value); toast.success(t('Đã chép {label}', { label: label.toLowerCase() })); }
     catch { toast.error(t('Không chép được, hãy gõ tay')); }
   };
+}
+
+function CopyBtn({ value, label, light }: { value: string; label: string; light?: boolean }) {
+  const copy = useCopy();
   return (
-    <div className={`pay-row ${hl ? 'hl' : ''}`}>
-      <span className="k">{k}</span>
-      <span className="v">
-        <span><b className={mono ? 'mono' : ''}>{value}</b>{sub && <span className="sub">{sub}</span>}</span>
-        {copy && <Button size="sm" variant="ghost" icon="copy" aria-label={t('Chép {label}', { label: k })} title={t('Chép')} onClick={() => void doCopy()} />}
-      </span>
-    </div>
+    <button type="button" className={`pay-copy${light ? ' light' : ''}`} aria-label={t('Chép {label}', { label })} title={t('Chép')} onClick={() => void copy(value, label)}>
+      <Icon name="copy" size={14} /><span>{t('Chép')}</span>
+    </button>
   );
 }
+
+/** Số tài khoản nhóm 4 số cho dễ đọc (chép vẫn lấy chuỗi gốc). */
+const groupDigits = (s: string) => s.replace(/\s+/g, '').replace(/(.{4})(?=.)/g, '$1 ');
 
 /** amount / code để trống khi quản lý xem trước (chưa có đơn cụ thể). */
 export function PaymentInfo({ settings, amount, code }: { settings: PaymentSettings; amount?: number; code?: string | null }) {
   const qr = useQrUrl(settings.hasQr ? settings.qrUpdatedAt : null);
   return (
-    <div className="pay-box">
-      <div>
-        <div className="qr-frame">
-          {qr ? <img src={qr} alt={t('Mã QR chuyển khoản {bank}', { bank: settings.bankName ?? '' })} />
-            : <span className="qr-empty">{settings.hasQr ? t('Đang tải mã QR…') : t('Chưa có mã QR')}</span>}
-        </div>
-        <div className="qr-cap">{t('Quét bằng app ngân hàng bất kỳ')}</div>
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div className="pay-rows">
-          {settings.bankName && <Row k={t('Ngân hàng')} value={settings.bankName} />}
-          {settings.accountNumber && <Row k={t('Số tài khoản')} value={settings.accountNumber} copy mono />}
-          {settings.accountName && <Row k={t('Chủ tài khoản')} value={settings.accountName} />}
-          {amount != null && <Row k={t('Số tiền')} value={String(amount)} sub={fmtMoney(amount)} copy mono />}
-          {code && <Row k={t('Nội dung chuyển khoản')} value={code} copy mono hl />}
-        </div>
-        {code && (
-          <div className="pay-tip"><Icon name="info" size={14} />
-            <span>{t('Ghi đúng nội dung {code} để quản lý đối chiếu nhanh. Gói được kích hoạt sau khi quản lý xác nhận đã nhận tiền.', { code })}</span>
+    <div className="pay-wrap">
+      <div className="pay-box">
+        <div className="pay-qr">
+          <div className="qr-frame">
+            {qr ? <img src={qr} alt={t('Mã QR chuyển khoản {bank}', { bank: settings.bankName ?? '' })} />
+              : <span className="qr-empty">{settings.hasQr ? t('Đang tải mã QR…') : t('Chưa có mã QR')}</span>}
           </div>
-        )}
+          <div className="qr-cap"><Icon name="camera" size={13} /> {t('Quét bằng app ngân hàng bất kỳ')}</div>
+        </div>
+
+        <div className="pay-side">
+          <div className="bank-card">
+            <div className="bank-card-top">
+              <span className="bank-chip" aria-hidden />
+              <span className="bank-name">{settings.bankName ?? t('Ngân hàng')}</span>
+            </div>
+            {settings.accountNumber && (
+              <div className="bank-number">
+                <span className="mono">{groupDigits(settings.accountNumber)}</span>
+                <CopyBtn value={settings.accountNumber} label={t('Số tài khoản')} light />
+              </div>
+            )}
+            <div className="bank-holder">
+              <span className="tiny">{t('Chủ tài khoản')}</span>
+              <b>{settings.accountName ?? '—'}</b>
+            </div>
+          </div>
+
+          {(amount != null || code) && (
+            <div className="pay-rows">
+              {amount != null && (
+                <div className="pay-row">
+                  <span className="k">{t('Số tiền')}</span>
+                  <span className="v"><b className="mono pay-amount">{fmtMoney(amount)}</b><CopyBtn value={String(amount)} label={t('Số tiền')} /></span>
+                </div>
+              )}
+              {code && (
+                <div className="pay-row hl">
+                  <span className="k">{t('Nội dung chuyển khoản')}</span>
+                  <span className="v"><b className="mono">{code}</b><CopyBtn value={code} label={t('Nội dung chuyển khoản')} /></span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {code && (
+        <ol className="pay-steps">
+          <li><span>1</span>{t('Mở app ngân hàng, quét mã QR hoặc nhập số tài khoản')}</li>
+          <li><span>2</span>{t('Nhập đúng số tiền và nội dung {code}', { code })}</li>
+          <li><span>3</span>{t('Bấm "Tôi đã chuyển khoản", quản lý đối chiếu rồi kích hoạt gói')}</li>
+        </ol>
+      )}
     </div>
   );
 }
