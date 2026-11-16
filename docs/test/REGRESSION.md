@@ -156,4 +156,66 @@ Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
 ---
 
 ## 3. SCRUM-223: Kiểm Thử Hồi Quy Toàn Hệ Thống Trước Demo (Hạn: 13/11/2026)
-<!-- TODO(Linh): Chạy lại toàn bộ test case toàn hệ thống trước khi nghiệm thu -->
+
+### 3.1 Mục tiêu
+- Chạy lại toàn bộ chuỗi test case hệ thống theo `docs/test/TEST_PLAN.md` và các file `UC-*.md` trước khi nghiệm thu demo 13/11/2026.
+- Xác nhận hệ thống vẫn hoạt động đúng trên các luồng chính: xác thực, phân quyền, hội viên, HLV, gói tập, lịch tập, tiến độ, báo cáo và màn dùng chung.
+- Đảm bảo không còn bug mức **Nghiêm trọng/Cao** trước khi triển khai hoặc demo chính thức.
+- Ghi lại bằng chứng rõ ràng theo từng test case và cập nhật `docs/test/BUGS.md` nếu phát hiện lệch so với kỳ vọng.
+
+### 3.2 Môi trường kiểm thử và điều kiện chạy
+- Môi trường ưu tiên: Docker Local (`http://localhost:8081`, API `http://localhost:8080`, Swagger `http://localhost:8080/swagger-ui/index.html`).
+- Dữ liệu chuẩn bị: `SEED_DEMO_DATA=true`; dùng tài khoản demo theo kênh bảo mật, không ghi mật khẩu vào repository.
+- Trước khi chạy: xác nhận code đã merge vào `develop`, API ổn định, thời gian theo `Asia/Ho_Chi_Minh`.
+- Kết quả thực tế đã chứng minh môi trường hiện tại đang hoạt động: `docker compose ps` hiển thị 3 container chính đang chạy (`gymflow-backend`, `gymflow-frontend`, `gymflow-mysql`), backend phản hồi `UP` và frontend phản hồi HTTP 200 trên `http://localhost:8081`.
+- Bên cạnh đó, các API đăng nhập, phân quyền, tạo hội viên, xem danh sách, tạo gói, preview và đăng ký gói đã được gọi trực tiếp và trả về trạng thái thực tế từ backend. Do đó các kết quả dưới đây là kết quả đã được xác nhận bằng chạy môi trường thật, không còn là checklist lập sẵn.
+
+### 3.3 Tổng hợp kết quả thực thi
+| Nhóm kiểm thử | Tổng | Đạt | Không đạt | Chặn | Chưa chạy | Ghi chú |
+| --- | :---: | :---: | :---: | :---: | :---: | --- |
+| **Sprint 1 (đã xác nhận trong mục 1)** | **30** | **30** | **0** | **0** | **0** | Đã ghi trong phần 1 của báo cáo hồi quy S1. |
+| **UC-04, UC-05 – thực thi API thực tế** | 24 | **11** | **0** | **0** | **13** | Các kiểm tra chính về login, phân quyền, tạo hội viên, trùng email, input sai, xem danh sách, tạo gói, preview/subscription và kiểm tra vai trò đã chạy thành công trên môi trường hiện tại. Các trường hợp nâng cao về giáo án/lịch tập và các màn hình UI không được đánh dấu PASS cho tới khi chạy đầy đủ. |
+| **UC-06, UC-07** | 17 | 0 | 0 | 0 | 17 | Chưa chạy đầy đủ trên UI/API; hiện tại còn trong trạng thái chưa được xác nhận thực tế tại môi trường demo. |
+| **UC-09, UC-10** | 13 | 0 | 0 | 0 | 13 | Chưa chạy đầy đủ trên UI/API; cần dữ liệu lịch tập/tiến độ cụ thể và kiểm tra đối chiếu cho từng vai trò. |
+| **Tổng hệ thống cần xác nhận trước demo** | **84** | **41** | **0** | **0** | **43** | Đã có bằng chứng thực tế cho nhóm AUTH/Member/Plan; hệ thống chưa đủ điều kiện khẳng định “đạt toàn bộ hồi quy trước demo” vì vẫn còn nhiều testcase UC-06 đến UC-10 chưa chạy trực tiếp. |
+
+> **Kết luận thực tế tại thời điểm hiện tại:**
+> - Các test case thuộc **Sprint 1** vẫn là **30/30 PASS** và không bị thay đổi.
+> - Môi trường Docker hiện đang chạy ổn định, và đã có bằng chứng thực tế cho các luồng kiểm tra cơ bản của UC-04 và UC-05: xác thực, phân quyền, tạo hội viên, từ chối trùng email, validation dữ liệu, tạo gói, preview và đăng ký gói.
+> - Tuy nhiên, các testcase còn lại từ **UC-06 đến UC-10** vẫn cần thực thi trực tiếp trên UI/API để được đánh dấu `Đạt`. Hiện tại không thể khai báo “đạt toàn hệ thống” vì phần lớn các ca kiểm thử này còn ở trạng thái **Chưa chạy**.
+
+### 3.4 Kiểm tra thực tế đã xác nhận (runtime evidence)
+- [x] `docker info` thành công và Docker đang hoạt động.
+- [x] `docker compose ps` hiển thị `gymflow-backend`, `gymflow-frontend`, `gymflow-mysql` trong trạng thái `Up`.
+- [x] Backend login thành công với các tài khoản demo `admin@gymflow.vn`, `trainer@gymflow.vn`, `member@gymflow.vn`.
+- [x] Admin có thể gọi danh sách hội viên và nhận `200 OK`.
+- [x] Tạo hội viên hợp lệ bằng API trả `201 Created` với `member.id` được sinh và thông tin lưu chính xác.
+- [x] Tạo hội viên trùng email trả `409 Conflict` với thông báo `Email đã được sử dụng`.
+- [x] Tạo hội viên sai validation (họ tên không hợp lệ) trả `400 Bad Request` và không lưu dữ liệu.
+- [x] Login sai mật khẩu trả `401` với message `Email hoặc mật khẩu không đúng`.
+- [x] Token của MEMBER bị chặn khi gọi API quản trị, trả `403 Forbidden`.
+- [x] API `GET /api/plans` và API tạo gói trả `200/201`, xác nhận gói được tạo thành công.
+- [x] API `GET /api/subscriptions/preview` và `POST /api/subscriptions` thành công với dữ liệu hợp lệ.
+- [x] Gói chưa có hiệu lực hoặc không hợp lệ sẽ chặn thao tác `create schedule` theo logic nghiệp vụ với `409 Conflict`.
+- [x] `POST /api/members/{id}/weights` với `recordedDate` trong tương lai / cân nặng ngoài giới hạn trả `400` và không lưu dữ liệu.
+
+> Các bằng chứng trên được lấy từ response thực tế của hệ thống đang chạy local; không có dữ liệu được suy đoán hoặc tự tạo.
+
+### 3.5 Checklist chốt trước khi nghiệm thu
+- [x] Xác định phạm vi kiểm thử toàn hệ thống theo `docs/test/TEST_PLAN.md`.
+- [x] Đối chiếu các file test case `UC-01-03.md`, `UC-04-05.md`, `UC-06-07.md`, `UC-09-10.md` và `UC-14.md`.
+- [x] Chạy và xác nhận Docker + stack local hoạt động.
+- [x] Thực hiện kiểm thử thực tế ở mức smoke cho AUTH, MEMBER, PLAN và dữ liệu không hợp lệ.
+- [x] Ghi rõ trạng thái `PASS / NOT TESTED` theo bằng chứng thực tế và không suy đoán bug khi chưa có dữ liệu.
+- [ ] Hoàn tất toàn bộ testcase từ `UC-06` đến `UC-10` trên UI/API để đạt trạng thái “đạt nghiệm thu toàn hệ thống”.
+- [ ] Cập nhật `docs/test/BUGS.md` nếu phát hiện lệch sau khi chạy tiếp các testcase chưa xác nhận.
+- [ ] Hoàn tất đánh giá cuối cùng trước demo theo tiêu chí mức độ bug và tỷ lệ đạt trong `docs/test/TEST_PLAN.md`.
+
+### 3.6 Bằng chứng cần lưu trước khi đóng task
+- Screenshot hoặc video từng luồng chính theo 3 vai trò.
+- Log API/response 200, 400, 403, 409 tương ứng với test case quan trọng.
+- Bản ghi số liệu dashboard và dữ liệu DB đối chiếu giữa các vai trò.
+- File `docs/test/BUGS.md` cập nhật nếu xuất hiện bug mới.
+- Chứng nhận cuối cùng: 100% test case mức Cao đạt và ≥90% tổng số test case đạt trước khi nghiệm thu.
+
+> Mục tiêu của SCRUM-223 là hoàn thành kiểm thử hồi quy toàn hệ thống trước demo; tại thời điểm hiện tại, phần AUTH / MEMBER / PLAN đã có bằng chứng thực thi rõ ràng, nhưng phần UC-06 đến UC-10 vẫn cần chạy tiếp và thêm bằng chứng để đánh dấu PASS cuối cùng.
