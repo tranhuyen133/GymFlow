@@ -8,6 +8,7 @@
 #   1. Thêm TUNNEL_TOKEN=... vào .env (lấy ở Cloudflare Zero Trust → Networks → Tunnels)
 #   2. Trong tunnel, Public Hostname trỏ tới http://frontend:80
 #   3. docker compose -f compose.yaml -f compose.prod.yaml --profile tunnel up -d
+# NOTE #1: SCRUM-201 - compose.prod + Cloudflare Tunnel + HTTPS, không mở cổng MySQL/backend ra ngoài.
 services:
   mysql:
     ports: !reset []
