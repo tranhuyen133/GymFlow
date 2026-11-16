@@ -140,4 +140,10 @@ export const EN_V2: Record<string, string> = {
   'Không tìm thấy tin nhắn': 'Message not found',
   'Không tìm thấy tệp đính kèm': 'Attachment not found',
   'Không tìm thấy tệp – tin nhắn đã được thu hồi': 'File not found – the message was recalled',
+
+  // SCRUM-207 · CSV báo cáo
+  'Tổng doanh thu (VND)': 'Total revenue (VND)',
+  'Số đăng ký gói': 'Package subscriptions',
+  'Buổi đã xếp (trừ huỷ)': 'Scheduled sessions (excl. cancelled)',
+  'Tỉ lệ chuyên cần (%)': 'Attendance rate (%)',
 };
