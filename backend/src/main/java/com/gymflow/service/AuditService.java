@@ -22,6 +22,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @RequiredArgsConstructor
 public class AuditService {
 
+    // NOTE #1: SCRUM-200 - nhật ký ghi trong giao dịch riêng (REQUIRES_NEW), lọc qua GET /api/audit-logs.
     private final AuditLogRepository repository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
