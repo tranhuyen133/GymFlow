@@ -3,7 +3,7 @@ import { api } from '../../api/client';
 import type { Report } from '../../api/types';
 import { BarChart, Donut, LineChart } from '../../components/charts';
 import { Button, Card, ErrorState, Field, Input, LoadingBlock, Meter, PageHead, Segmented, Stat } from '../../components/ui';
-import { downloadCsv } from '../../lib/csv';
+import { csvText, downloadCsv } from '../../lib/csv';
 import { addDays, fmtMoney, fmtMoneyShort, genderLabel, memberStatus, toIsoDate } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 import { t } from '../../i18n';
@@ -18,13 +18,27 @@ export default function Reports() {
   const pick = (r: Range) => { setRange(r); if (r !== 'custom') { setFrom(toIsoDate(addDays(new Date(), -Number(r) + 1))); setTo(toIsoDate(new Date())); } };
   const { data, error, loading, reload } = useAsync(() => api.get<Report>('/reports/summary', { from, to }), [from, to]);
 
+  // RPT-04 · CSV gồm đủ số liệu của màn báo cáo (RPT-01–03); nhãn tháng giữ nguyên chữ để Excel không đổi thành ngày.
   const exportCsv = () => {
     if (!data) return;
-    const rows = [
-      ...data.revenueByMonth.map((r) => ({ group: t('Doanh thu theo tháng'), label: r.label, value: r.value })),
+    const sum = t('Tổng quan');
+    const rows: { group: string; label: string; value: string | number }[] = [
+      { group: sum, label: t('Từ ngày'), value: csvText(data.from) },
+      { group: sum, label: t('Đến ngày'), value: csvText(data.to) },
+      { group: sum, label: t('Tổng doanh thu (VND)'), value: data.revenueTotal },
+      { group: sum, label: t('Số đăng ký gói'), value: data.subscriptionCount },
+      { group: sum, label: t('Hội viên mới'), value: data.newMembersByMonth.reduce((n, r) => n + r.value, 0) },
+      { group: sum, label: t('Buổi đã xếp (trừ huỷ)'), value: data.scheduled },
+      { group: sum, label: t('Hoàn thành'), value: data.completed },
+      { group: sum, label: t('Vắng'), value: data.missed },
+      { group: sum, label: t('Đã huỷ'), value: data.cancelled },
+      { group: sum, label: t('Tỉ lệ chuyên cần (%)'), value: data.attendanceRate ?? '' },
+      ...data.revenueByMonth.map((r) => ({ group: t('Doanh thu theo tháng'), label: csvText(r.label), value: r.value })),
       ...data.revenueByPlan.map((r) => ({ group: t('Doanh thu theo gói'), label: r.label, value: r.value })),
-      ...data.byTrainer.map((tr) => ({ group: t('Buổi tập theo HLV'), label: tr.trainerName, value: t('{c}/{n} (vắng {m})', { c: tr.completed, n: tr.total, m: tr.missed }) })),
-      ...data.newMembersByMonth.map((r) => ({ group: t('Hội viên mới'), label: r.label, value: r.value })),
+      ...data.byTrainer.map((tr) => ({ group: t('Buổi tập theo HLV'), label: tr.trainerName, value: csvText(t('{c}/{n} (vắng {m})', { c: tr.completed, n: tr.total, m: tr.missed })) })),
+      ...data.newMembersByMonth.map((r) => ({ group: t('Hội viên mới'), label: csvText(r.label), value: r.value })),
+      ...data.membersByStatus.map((r) => ({ group: t('Trạng thái hội viên'), label: memberStatus[r.label as keyof typeof memberStatus]?.[0] ?? r.label, value: r.value })),
+      ...data.membersByGender.map((r) => ({ group: t('Giới tính'), label: genderLabel[r.label as keyof typeof genderLabel] ?? t('Chưa rõ'), value: r.value })),
     ];
     downloadCsv(`bao-cao-${data.from}-${data.to}`, rows, [{ header: t('Nhóm'), value: (r) => r.group }, { header: t('Mục'), value: (r) => r.label }, { header: t('Giá trị'), value: (r) => r.value }]);
   };
