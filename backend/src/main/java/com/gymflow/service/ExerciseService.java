@@ -395,6 +395,12 @@ public class ExerciseService {
         }
         Exercise e = load(id);
         if (exerciseRepository.existsByNameIgnoreCaseAndIdNot(req.name().trim(), id)) throw ApiException.conflict("Tên bài tập đã tồn tại");
+        // EX-04: quản lý sửa giữ nguyên APPROVED, nên không được bỏ hết nguồn đang gắn của bài đã duyệt
+        // (bài cũ vốn chưa có nguồn vẫn sửa được như trước)
+        if (user.isAdmin() && e.getReviewStatus() == ReviewStatus.APPROVED && !e.getSources().isEmpty()
+                && req.sourceIds() != null && req.sourceIds().isEmpty()) {
+            throw ApiException.badRequest("Bài tập đã duyệt phải giữ ít nhất một nguồn tham khảo");
+        }
         apply(e, req);
         if (!user.isAdmin() && e.getReviewStatus() != ReviewStatus.PENDING) {
             e.setReviewStatus(ReviewStatus.PENDING);
