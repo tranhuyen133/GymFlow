@@ -24,7 +24,7 @@ import { localizeText } from '../../lib/planText';
 import { t, useLang } from '../../i18n';
 import { EQUIPMENT, EQUIPMENT_BY_KEY, isGifKey, isMuscleKey, type EquipmentKey, type MuscleKey } from '../../lib/anatomy';
 import {
-  BeginnerStrip, CARDIO_SUBCATS, CategoryTile, EquipTabs, ExerciseCard, GroupBanner, GroupNav, inEquipGroup, MuscleAtlas, SectionHead,
+  BeginnerStrip, CARDIO_SUBCATS, CategoryTile, EquipTabs, ExerciseCard, GroupNav, inEquipGroup, MuscleAtlas, SectionHead,
   STRENGTH_SUBCATS, WARMUP_SUBCATS, type SubCategoryItem,
 } from './KnowledgeParts';
 import './exercises.css';
@@ -425,7 +425,6 @@ export default function Knowledge() {
 
           {activeSubCat && groupItems.length > 0 && (
             <>
-              <GroupBanner item={activeSubCat} items={groupItems} />
               {!dq && !level && !favoriteOnly && !assignedOnly && (
                 <BeginnerStrip items={groupItems} isMember={isMember} onFavorite={toggleFavorite} />
               )}
@@ -457,7 +456,7 @@ export default function Knowledge() {
               <div className="kb-sections">
                 {sections.map(({ item: sc, items }) => (
                   <section key={sc.key} id={`kb-sec-${sc.key}`} className="kbg-section">
-                    <SectionHead item={sc} count={items.length} items={items} onMore={() => { setSubCategory(sc.key); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
+                    <SectionHead item={sc} count={items.length} onMore={() => { setSubCategory(sc.key); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
                     <div className="kb-ex-grid">{items.slice(0, 4).map(card)}</div>
                   </section>
                 ))}

@@ -24,89 +24,107 @@
 .ch-eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); }
 .ch-range { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
 
+/* ---------- Tóm tắt tuần đang xem ---------- */
+.ch-hero {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 16px 18px; margin-bottom: 14px; border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--surface) 82%, transparent); border: 1px solid var(--hairline-soft);
+}
+.ch-hero-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ch-hero-label { font-size: 12.5px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ch-hero-num {
+  display: flex; align-items: baseline; gap: 8px; font-size: 40px; line-height: 1.05; letter-spacing: -0.035em; font-variant-numeric: tabular-nums;
+  background: var(--grad-go); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.ch-hero-num small { font-size: 15px; font-weight: 700; letter-spacing: 0; -webkit-text-fill-color: var(--muted); }
+.ch-hero-sub { font-size: 13px; color: var(--ink); opacity: 0.85; font-variant-numeric: tabular-nums; }
+.ch-compare {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 3px; max-width: 260px; text-align: right;
+  font-size: 12.5px; color: var(--faint);
+}
+.ch-compare b { display: inline-flex; align-items: center; gap: 5px; font-size: 20px; font-variant-numeric: tabular-nums; }
+.ch-compare.up b { color: var(--primary-bright); }
+.ch-compare.down b { color: #ff8a3d; }
+
 /* ---------- 3 chỉ số ---------- */
 .ch-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
 .ch-kpi {
-  display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--surface) 80%, transparent); border: 1px solid var(--hairline-soft);
+  display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--surface) 70%, transparent); border: 1px solid var(--hairline-soft);
 }
 .ch-kpi > span { font-size: 12px; font-weight: 700; color: var(--muted); }
-.ch-kpi b { display: flex; align-items: baseline; gap: 6px; font-size: 28px; line-height: 1.1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-.ch-kpi b small { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 0; }
+.ch-kpi b { display: flex; align-items: baseline; gap: 6px; font-size: 24px; line-height: 1.1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.ch-kpi b small { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0; }
 .ch-kpi em { font-style: normal; font-size: 12px; color: var(--faint); }
-.ch-kpi.is-main b { background: var(--grad-go); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.ch-kpi.is-main b small { -webkit-text-fill-color: var(--muted); }
 .ch-kpi.is-fat { border-color: color-mix(in srgb, #ffb020 35%, var(--hairline-soft)); background: color-mix(in srgb, #ffb020 7%, var(--surface)); }
 .ch-kpi.is-fat b { color: #ffb020; }
 .ch-kpi.is-fat em { color: color-mix(in srgb, #ffb020 75%, var(--muted)); }
 
-/* ---------- Cột theo tuần ---------- */
-.ch-weeks { display: flex; align-items: stretch; gap: 6px; height: 170px; padding: 0 2px 2px; overflow-x: auto; scrollbar-width: thin; }
-.ch-week {
-  flex: 1 0 34px; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 34px; padding: 6px 2px 4px;
-  border: 1px solid transparent; border-radius: 12px; background: transparent; color: var(--muted); cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, transform 0.25s var(--ease-spring);
+/* ---------- Biểu đồ theo tuần ---------- */
+.ch-chart-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.ch-chart-head b { font-size: 14px; }
+.ch-chart-head span { font-size: 12px; color: var(--faint); }
+.ch-chart { position: relative; }
+/* Đường trung bình: cột cao 120px, đáy cột cách đáy khung 27px (khớp công thức trong CalorieHistory.tsx) */
+.ch-avg { position: absolute; left: 0; right: 0; z-index: 2; border-top: 1px dashed color-mix(in srgb, #ffb020 70%, transparent); pointer-events: none; }
+.ch-avg span {
+  position: absolute; right: 0; top: -9px; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 750;
+  color: #1a1206; background: #ffb020; font-variant-numeric: tabular-nums;
 }
-.ch-week:hover { background: color-mix(in srgb, var(--surface) 70%, transparent); transform: translateY(-2px); }
-.ch-week-n { min-height: 14px; font-size: 10.5px; font-weight: 700; color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.ch-week-bar { position: relative; flex: 1; width: 100%; max-width: 26px; display: flex; align-items: flex-end; }
+.ch-weeks { display: flex; align-items: stretch; gap: 6px; padding: 0 2px; overflow-x: auto; scrollbar-width: thin; }
+.ch-week {
+  flex: 1 0 40px; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 40px; padding: 6px 2px 4px;
+  border: 1px solid transparent; border-radius: 12px; background: transparent; color: var(--muted); cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.ch-week:hover { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.ch-week-n { height: 16px; font-size: 11px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ch-week.zero .ch-week-n { color: var(--faint); opacity: 0.6; }
+.ch-week-bar { position: relative; height: 120px; width: 100%; max-width: 28px; display: flex; align-items: flex-end; }
 .ch-week-bar i {
-  display: block; width: 100%; border-radius: 8px 8px 4px 4px;
+  display: block; width: 100%; border-radius: 7px 7px 3px 3px;
   background: linear-gradient(180deg, color-mix(in srgb, var(--primary-bright) 70%, transparent), color-mix(in srgb, var(--primary) 35%, transparent));
   transition: height 0.8s var(--ease-out), background 0.2s;
 }
 .ch-week.zero .ch-week-bar i { background: var(--hairline); }
-.ch-week-l { font-size: 10.5px; font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ch-week-l { height: 16px; font-size: 11px; font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ch-week.sel { border-color: color-mix(in srgb, var(--primary) 50%, transparent); background: color-mix(in srgb, var(--primary) 10%, transparent); }
 .ch-week.sel .ch-week-bar i { background: var(--grad-go); box-shadow: 0 0 18px -4px color-mix(in srgb, var(--primary-bright) 70%, transparent); }
 .ch-week.sel .ch-week-n, .ch-week.sel .ch-week-l { color: var(--primary-bright); }
 
-/* ---------- Chi tiết tuần: 7 ngày ---------- */
-.ch-detail { margin-top: 16px; padding: 16px; border-radius: var(--r-md); background: color-mix(in srgb, var(--surface) 75%, transparent); border: 1px solid var(--hairline-soft); }
-.ch-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
-.ch-detail-head > div:first-child { display: flex; flex-direction: column; gap: 2px; }
-.ch-detail-head b { font-size: 15px; }
-.ch-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.ch-chips span {
-  display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 650;
-  color: var(--muted); background: var(--surface-2); border: 1px solid var(--hairline-soft); font-variant-numeric: tabular-nums;
-}
-.ch-chips span svg { color: var(--primary-bright); }
-.ch-chips span.is-fat { color: #ffb020; border-color: color-mix(in srgb, #ffb020 35%, transparent); }
-.ch-chips span.is-fat svg { color: #ffb020; }
-
-.ch-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+/* ---------- Từng ngày: danh sách thanh ngang ---------- */
+.ch-detail { margin-top: 16px; padding: 14px 16px 8px; border-radius: var(--r-md); background: color-mix(in srgb, var(--surface) 75%, transparent); border: 1px solid var(--hairline-soft); }
+.ch-detail-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.ch-detail-head b { font-size: 14px; }
+.ch-detail-head span { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ch-days { list-style: none; margin: 0; padding: 0; }
 .ch-day {
-  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px 12px;
-  border-radius: 14px; background: var(--surface-2); border: 1px solid var(--hairline-soft); opacity: 0.6;
+  display: grid; grid-template-columns: 112px minmax(0, 1fr) 150px; align-items: center; gap: 14px;
+  padding: 8px 6px; border-top: 1px solid var(--hairline-soft);
 }
-.ch-day.on { opacity: 1; }
-.ch-day.today { border-color: color-mix(in srgb, var(--primary) 55%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent); }
-.ch-day-w { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; color: var(--muted); }
-.ch-day.today .ch-day-w { color: var(--primary-bright); }
-.ch-day-ring {
-  --p: 0; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%;
-  background: conic-gradient(var(--primary-bright) calc(var(--p) * 1%), var(--hairline) 0);
-  position: relative;
-}
-.ch-day-ring::before { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--surface-2); }
-.ch-day-ring b { position: relative; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.ch-day:not(.on) .ch-day-ring b { color: var(--faint); font-weight: 600; }
-.ch-day-d { font-size: 10.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
-.ch-day-s { position: absolute; top: 8px; right: 8px; display: flex; gap: 2px; }
-.ch-day-s i { width: 5px; height: 5px; border-radius: 50%; background: var(--primary-bright); }
+.ch-day:first-child { border-top: 0; }
+.ch-day-name { display: flex; flex-direction: column; line-height: 1.25; }
+.ch-day-name b { font-size: 13px; font-weight: 700; }
+.ch-day-name small { font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.ch-day-bar { height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--hairline) 70%, transparent); overflow: hidden; }
+.ch-day-bar i { display: block; height: 100%; border-radius: inherit; background: var(--grad-go); transition: width 0.6s var(--ease-out); }
+.ch-day-val { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25; text-align: right; }
+.ch-day-val b { font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.ch-day-val small { font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.ch-day:not(.on) .ch-day-name b { color: var(--muted); font-weight: 600; }
+.ch-day.future { opacity: 0.5; }
+.ch-day.today { border-radius: 10px; background: color-mix(in srgb, var(--primary) 9%, transparent); }
+.ch-day.today .ch-day-name b, .ch-day.today .ch-day-name small { color: var(--primary-bright); }
 
 .ch-note { display: flex; align-items: flex-start; gap: 6px; margin: 14px 0 0; font-size: 12px; color: var(--faint); }
 .ch-note svg { flex: none; margin-top: 2px; }
 
 @media (max-width: 760px) {
   .ch { padding: 16px 14px 14px; }
+  .ch-hero { align-items: flex-start; }
+  .ch-hero-num { font-size: 32px; }
+  .ch-compare { align-items: flex-start; text-align: left; }
   .ch-kpis { grid-template-columns: 1fr; }
-  .ch-kpi b { font-size: 24px; }
-  .ch-days { gap: 4px; }
-  .ch-day { padding: 8px 2px 10px; }
-  .ch-day-ring { width: 40px; height: 40px; }
-  .ch-day-ring b { font-size: 10px; }
-  .ch-day-d { display: none; }
+  .ch-day { grid-template-columns: 84px minmax(0, 1fr) 104px; gap: 10px; }
 }
-@media (prefers-reduced-motion: reduce) { .ch { animation: none; } .ch-week-bar i { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .ch { animation: none; } .ch-week-bar i, .ch-day-bar i { transition: none; } }
