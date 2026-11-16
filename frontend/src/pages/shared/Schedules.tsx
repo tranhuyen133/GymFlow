@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { CaloriePreview, Exercise, ExerciseIntensity, Member, Schedule, ScheduleCreated, ScheduleStatus, Subscription, TimeSlot, Trainer, WorkoutPlanSummary } from '../../api/types';
+import type { CaloriePreview, Exercise, ExerciseIntensity, Member, Schedule, ScheduleCreated, ScheduleStatus, Subscription, TimeSlot, Trainer, Weight, WorkoutPlanSummary } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { Icon } from '../../components/Icon';
 import { MemberSelect } from '../../components/MemberSelect';
@@ -15,7 +15,8 @@ import { WeekCalendar } from '../../components/WeekCalendar';
 import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
 import { getLang, t, tn } from '../../i18n';
 import { localizeScheduleNote, localizeScheduleTitle, localizeText } from '../../lib/planText';
-import { addDays, DAY_NAMES, fmtDate, fmtDateTime, fmtTime, fmtWeekday, formatEquipment, exTitle, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
+import { addDays, DAY_NAMES, fmtDate, fmtDateTime, fmtTime, fmtWeekday, formatEquipment, exTitle, parseDateTime, scheduleStatus, startOfWeek, todayIso, toIsoDate, toIsoDateTime } from '../../lib/format';
+import { checkWeight, toNumber } from '../../lib/validation';
 import { covered, fromMin, GYM_CLOSE, GYM_OPEN, hm, timeOptions, toMin, type WeekSlot } from '../../lib/hours';
 import '../../components/week-slots.css';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
@@ -203,6 +204,10 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
   const [intensity, setIntensity] = useState<ExerciseIntensity>('MODERATE');
   const [rating, setRating] = useState(4);
   const [note, setNote] = useState('');
+  // Cân nặng sau buổi (không bắt buộc): lưu vào nhật ký cân nặng của ngày tập, gợi ý sẵn số gần nhất
+  const [weight, setWeight] = useState('');
+  const lastWeights = useAsync(() => api.get<Weight[]>(`/members/${session.memberId}/weights`), [session.memberId]);
+  const lastWeight = lastWeights.data?.length ? lastWeights.data[lastWeights.data.length - 1] : null;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -227,12 +232,21 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
     const v: Record<string, string> = {};
     const d = Number(duration);
     if (!Number.isInteger(d) || d < 1 || d > 600) v.durationMinutes = t('Từ 1 đến 600 phút');
+    const wErr = weight.trim() ? checkWeight(weight) : undefined;
+    if (wErr) v.weightKg = t(wErr);
     setErrors(v); setServerError('');
     if (Object.keys(v).length) return;
     setBusy(true);
     try {
+      // Ghi cân trước để calo của buổi này dùng đúng cân nặng mới nhất
+      const sessionDay = session.startTime.slice(0, 10);
+      if (weight.trim()) {
+        await api.post(`/members/${session.memberId}/weights`, {
+          recordedDate: sessionDay > todayIso() ? todayIso() : sessionDay, weightKg: toNumber(weight), note: t('Ghi sau buổi tập'),
+        });
+      }
       await api.post(`/schedules/${session.id}/complete`, { durationMinutes: d, intensity, rating, note: note || null });
-      toast.success(t('Tuyệt vời! Đã ghi nhận buổi tập 💪'));
+      toast.success(weight.trim() ? t('Tuyệt vời! Đã ghi nhận buổi tập và cân nặng 💪') : t('Tuyệt vời! Đã ghi nhận buổi tập 💪'));
       onDone();
     } catch (e) {
       const err = errMsg(e);
@@ -313,6 +327,14 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
               </button>
             ))}
             <span className="small muted">{ratingLabels[rating]}</span>
+          </div>
+        </Field>
+        <Field label={t('Cân nặng sau buổi (kg)')} error={errors.weightKg}
+          hint={lastWeight ? t('Lần gần nhất: {w} kg ({d}) · để trống nếu không cân', { w: lastWeight.weightKg, d: fmtDate(lastWeight.recordedDate) }) : t('Không bắt buộc – dùng để vẽ biểu đồ cân nặng và ước tính % mỡ')}>
+          <div className="input-suffix">
+            <Input inputMode="decimal" autoComplete="off" value={weight} invalid={!!errors.weightKg}
+              placeholder={lastWeight ? String(lastWeight.weightKg) : 'VD: 65.5'} onChange={(e) => setWeight(e.target.value)} />
+            <span className="unit">kg</span>
           </div>
         </Field>
         <Field label={t('Ghi chú')} error={errors.note}><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: tăng 2.5kg bench press" /></Field>

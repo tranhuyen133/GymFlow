@@ -2,6 +2,7 @@ package com.gymflow.web;
 
 import com.gymflow.domain.ExerciseIntensity;
 import com.gymflow.dto.Dtos.CalorieBackfillResponse;
+import com.gymflow.dto.Dtos.CalorieHistoryResponse;
 import com.gymflow.dto.Dtos.CaloriePreviewResponse;
 import com.gymflow.dto.Dtos.CalorieSessionResponse;
 import com.gymflow.dto.Dtos.CalorieSummaryResponse;
@@ -45,6 +46,13 @@ public class CalorieController {
                                                  @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                                  @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return statsService.sessions(CurrentUser.get(), id, from, to);
+    }
+
+    /** Lịch sử calo theo tuần (kèm từng ngày) và số kg mỡ tương đương, tuần hiện tại ở cuối. */
+    @GetMapping("/api/members/{id}/calories/history")
+    public CalorieHistoryResponse history(@PathVariable Long id,
+                                          @RequestParam(defaultValue = "12") int weeks) {
+        return statsService.history(CurrentUser.get(), id, weeks);
     }
 
     /** Tính lại calo MET cho các buổi đang thiếu dữ liệu (sau khi hội viên nhập cân nặng). */

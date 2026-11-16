@@ -373,8 +373,13 @@ public class Mappers {
 
     // ---------- Others ----------
     public WeightResponse weight(WeightRecord w) {
-        return w == null ? null : new WeightResponse(w.getId(), w.getRecordedDate(), w.getWeightKg(), w.getBodyFat(),
-                w.getWaistCm(), w.getChestCm(), w.getArmCm(), w.getThighCm(), w.getNote());
+        if (w == null) return null;
+        Member m = w.getMember();
+        Double estimate = m == null ? null : ProgressService.deurenbergBodyFat(
+                ProgressService.bmi(w.getWeightKg(), m.getHeightCm()),
+                ProgressService.ageAt(m.getDateOfBirth(), w.getRecordedDate()), m.getGender());
+        return new WeightResponse(w.getId(), w.getRecordedDate(), w.getWeightKg(), w.getBodyFat(),
+                w.getWaistCm(), w.getChestCm(), w.getArmCm(), w.getThighCm(), w.getNote(), estimate);
     }
 
     public UserResponse user(User u) {

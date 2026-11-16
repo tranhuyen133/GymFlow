@@ -438,6 +438,11 @@ export interface CaloriePreview {
 export interface CalorieBucket { key: string; label: string; from: string; to: string; calories: number; sessions: number; activeMinutes: number }
 export interface CaloriePeriodSummary { from: string; to: string; calories: number; sessions: number; activeMinutes: number; avgCaloriesPerSession: number | null; changePercent: number | null }
 export interface CalorieTopDay { date: string; calories: number; sessions: number }
+export interface CalorieWeek { weekStart: string; weekEnd: string; calories: number; sessions: number; activeMinutes: number; fatKg: number; days: CalorieBucket[] }
+export interface CalorieHistory {
+  weeks: CalorieWeek[]; totalCalories: number; totalSessions: number; avgWeeklyCalories: number;
+  totalFatKg: number; kcalPerKg: number; timezone: string; disclaimer: string;
+}
 export interface CalorieSummary {
   period: 'DAY' | 'WEEK' | 'MONTH'; from: string; to: string; timezone: string; totalCalories: number;
   totalSessions: number; estimatedSessions: number; unestimatedSessions: number;
@@ -459,6 +464,8 @@ export interface CalorieBackfillResult {
 export interface Weight {
   id: number; recordedDate: string; weightKg: number; bodyFat: number | null;
   waistCm: number | null; chestCm: number | null; armCm: number | null; thighCm: number | null; note: string | null;
+  /** % mỡ ước tính theo Deurenberg (BMI, tuổi, giới tính) */
+  bodyFatEstimate?: number | null;
 }
 export interface WeekAttendance { weekStart: string; scheduled: number; completed: number; missed: number }
 export interface Progress {
@@ -466,6 +473,7 @@ export interface Progress {
   weightChange: number | null; bodyFat: number | null; bmi: number | null; bmiCategory: string | null;
   weights: Weight[]; attendance: WeekAttendance[]; attendanceRate: number | null; streakWeeks: number;
   totalSessions: number; totalMinutes: number; totalCalories: number; avgRating: number | null;
+  bodyFatEstimate?: number | null; bodyFatHint?: string | null;
 }
 
 // ---------- Dashboards ----------

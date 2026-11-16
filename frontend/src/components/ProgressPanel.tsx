@@ -49,6 +49,13 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
   const hasCm = data.weights.some((w) => w.waistCm != null || w.chestCm != null || w.armCm != null || w.thighCm != null);
   const waist = data.weights.filter((w) => w.waistCm != null);
   const weeks = data.attendance.map((w) => ({ label: fmtDateShort(w.weekStart), values: [w.completed, w.missed, Math.max(0, w.scheduled - w.completed - w.missed)] }));
+  // % mỡ: số tự đo nếu có, không thì ước tính Deurenberg từ BMI + tuổi + giới tính
+  const fatOf = (w: Weight) => w.bodyFat ?? w.bodyFatEstimate ?? null;
+  const fatPoints = data.weights.filter((w) => fatOf(w) != null);
+  const fatMeasured = data.weights.some((w) => w.bodyFat != null);
+  const lastWeight = data.weights[data.weights.length - 1];
+  const fatNow = lastWeight?.bodyFat ?? data.bodyFatEstimate ?? null;
+  const fatIsEstimate = lastWeight?.bodyFat == null && data.bodyFatEstimate != null;
 
   return (
     <div className="stack" style={{ gap: 18 }}>
@@ -66,13 +73,15 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
 
       <div className="grid grid-main">
         <Card title={t('Cân nặng theo thời gian')} icon="trendDown" actions={canEdit && <Button size="sm" variant="primary" icon="plus" onClick={() => setAdding(true)}>{t('Ghi cân nặng')}</Button>}>
-          {data.weights.length === 0 ? <Empty icon="scale" title={t('Chưa có số liệu cân nặng')} desc={t('Ghi lại mỗi tuần để thấy tiến độ.')} /> : (
+          {data.weights.length === 0 ? <Empty icon="scale" title={t('Chưa có số liệu cân nặng')} desc={t('Ghi cân nặng sau mỗi buổi tập (ô "Cân nặng sau buổi" khi bấm Hoàn thành) để thấy xu hướng.')} /> : (
             <LineChart points={data.weights.map((w) => ({ label: fmtDateShort(w.recordedDate), value: w.weightKg }))} format={(n) => `${n}`} />
           )}
-          {data.weights.some((w) => w.bodyFat != null) && (
+          {fatPoints.length > 0 && (
             <div className="mt-16">
-              <div className="tiny faint" style={{ marginBottom: 6 }}>{t('Tỉ lệ mỡ (%)')}</div>
-              <LineChart height={140} color="#ffb020" points={data.weights.filter((w) => w.bodyFat != null).map((w) => ({ label: fmtDateShort(w.recordedDate), value: w.bodyFat as number }))} />
+              <div className="tiny faint" style={{ marginBottom: 6 }}>
+                {fatMeasured ? t('Tỉ lệ mỡ (%)') : t('Tỉ lệ mỡ ước tính (%) · công thức Deurenberg')}
+              </div>
+              <LineChart height={140} color="#ffb020" points={fatPoints.map((w) => ({ label: fmtDateShort(w.recordedDate), value: fatOf(w) as number }))} />
             </div>
           )}
           {waist.length > 1 && (
@@ -93,8 +102,10 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
           <dl className="kv mt-16 small">
             <dt>{t('Chiều cao')}</dt><dd>{data.heightCm ? `${data.heightCm} cm` : '—'}</dd>
             <dt>{t('Cân lần đầu')}</dt><dd>{data.startWeight ? `${data.startWeight} kg` : '—'}</dd>
-            <dt>{t('% mỡ gần nhất')}</dt><dd>{data.bodyFat != null ? `${data.bodyFat}%` : '—'}</dd>
+            <dt>{t('% mỡ gần nhất')}</dt><dd>{fatNow != null ? `${fatNow}%${fatIsEstimate ? ` (${t('ước tính')})` : ''}` : '—'}</dd>
           </dl>
+          {fatIsEstimate && <p className="tiny faint mt-8">{t('% mỡ ước tính theo Deurenberg: 1,2 × BMI + 0,23 × tuổi − 10,8 × (nam = 1, nữ = 0) − 5,4. Chỉ mang tính tham khảo.')}</p>}
+          {fatNow == null && data.bodyFatHint && <p className="tiny faint mt-8">{t(data.bodyFatHint)}</p>}
         </Card>
       </div>
 
@@ -113,7 +124,7 @@ export function ProgressPanel({ memberId, canEdit = true }: { memberId: number; 
                 <tr key={w.id}>
                   <td>{fmtDate(w.recordedDate)}</td>
                   <td className="num">{w.weightKg} kg</td>
-                  <td>{w.bodyFat != null ? `${w.bodyFat}%` : '—'}</td>
+                  <td>{w.bodyFat != null ? `${w.bodyFat}%` : w.bodyFatEstimate != null ? <span className="muted" title={t('Ước tính theo Deurenberg')}>≈ {w.bodyFatEstimate}%</span> : '—'}</td>
                   {hasCm && <td className="num">{[w.waistCm, w.chestCm, w.armCm, w.thighCm].map((v) => v ?? '–').join(' / ')}</td>}
                   <td className="muted">{w.note ?? ''}</td>
                   {canEdit && <td className="actions"><Button size="sm" variant="ghost" icon="trash" aria-label={t('Xoá')} onClick={() => setRemoving(w)} /></td>}
@@ -192,7 +203,7 @@ function WeightForm({ memberId, last, onClose, onSaved }: { memberId: number; la
               <span className="unit">kg</span>
             </div>
           </Field>
-          <Field htmlFor="weight-fat" label={t('% mỡ cơ thể')} error={errors.bodyFat} hint={t('Không bắt buộc')}>
+          <Field htmlFor="weight-fat" label={t('% mỡ cơ thể')} error={errors.bodyFat} hint={t('Để trống: hệ thống tự ước tính')}>
             <div className="input-suffix" id="weight-fat-wrap">
               <Input id="weight-fat" inputMode="decimal" autoComplete="off" value={fat} invalid={!!errors.bodyFat} placeholder="VD: 22"
                 onChange={(e) => { setFat(e.target.value); live.change('bodyFat', e.target.value); }} onBlur={(e) => live.blur('bodyFat', e.target.value)} />
