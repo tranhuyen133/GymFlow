@@ -59,7 +59,7 @@ class MessageAttachmentServiceTest {
         Clock clock = Clock.fixed(NOW.atZone(ZONE).toInstant(), ZONE);
         ConversationService conversationService = new ConversationService(conversationRepository, messageRepository,
                 trainerRepository, memberRepository, workoutPlanRepository, userRepository, accessService, auditService,
-                new MessageRateLimiter());
+                new MessageRateLimiter(), clock);
         service = new MessageAttachmentService(messageRepository, attachmentRepository, hiddenRepository,
                 conversationRepository, userRepository, conversationService, new MessageRateLimiter(), auditService, clock);
 

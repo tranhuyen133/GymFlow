@@ -10,8 +10,12 @@ import { fmtTime, relativeTime } from '../../lib/format';
 import { errMsg } from '../../lib/hooks';
 import { t } from '../../i18n';
 import { ChatAttachment } from './ChatAttachment';
+import { ConversationMedia } from './ConversationMedia';
 import { forgetAttachment, uploadAttachment } from './chatApi';
-import { ACCEPT, applyRecalled, canRecall, checkFile, formatBytes, kindOf, MAX_CAPTION, mergeMessages, previewOf } from './chatRules';
+import {
+  ACCEPT, applyRecalled, canRecall, checkFile, formatBytes, highlightParts, isRecalled, kindOf, lastSeenLabel,
+  MAX_CAPTION, mergeMessages, onlineNow, previewOf,
+} from './chatRules';
 import './messages.css';
 
 const SUGGESTIONS = [
@@ -63,9 +67,19 @@ export default function Messages() {
   const [now, setNow] = useState(() => Date.now());
   const recallSince = useRef<string | null>(null);
 
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<ChatMessageItem[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchNonce, setSearchNonce] = useState(0);
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const [flashId, setFlashId] = useState<number | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const skipAutoScroll = useRef(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -118,6 +132,38 @@ export default function Messages() {
     void loadConversations();
   }, [loadConversations, isAdmin]);
 
+  // Làm mới danh sách để cập nhật trạng thái online (V47)
+  useEffect(() => {
+    const timer = setInterval(() => { if (!document.hidden) void loadConversations(); }, 30_000);
+    const onVisibility = () => { if (!document.hidden) void loadConversations(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [loadConversations]);
+
+  // Tìm tin nhắn trong hội thoại (debounce 300ms)
+  useEffect(() => {
+    if (!activeId || !showSearch) return;
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchResults([]);
+      setSearchError(null);
+      setSearching(false);
+      return;
+    }
+    let alive = true;
+    setSearching(true);
+    const timer = setTimeout(() => {
+      api.get<ChatMessageItem[]>(`/conversations/${activeId}/messages/search`, { q, size: 30 })
+        .then((data) => { if (alive) { setSearchResults(data); setSearchError(null); } })
+        .catch((e) => { if (alive) setSearchError(errMsg(e)); })
+        .finally(() => { if (alive) setSearching(false); });
+    }, 300);
+    return () => { alive = false; clearTimeout(timer); };
+  }, [activeId, showSearch, searchQuery, searchNonce]);
+
   const activeConv = useMemo(() => conversations.find((c) => c.id === activeId) ?? null, [conversations, activeId]);
 
   const loadMessages = useCallback(async (id: number) => {
@@ -126,7 +172,8 @@ export default function Messages() {
     setMsgError(null);
     api.post(`/conversations/${id}/read`).catch(() => {});
     setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)));
-    // Lấy giờ máy chủ làm mốc theo dõi thu hồi
+    // Mốc dự phòng: tin mới nhất đã tải (nếu gọi máy chủ lỗi vẫn theo dõi được thu hồi)
+    recallSince.current = data.length ? data[data.length - 1].createdAt : null;
     api.get<RecallSync>(`/conversations/${id}/recalled`).then((r) => { recallSince.current = r.serverTime; }).catch(() => {});
   }, []);
 
@@ -134,6 +181,11 @@ export default function Messages() {
     setFailedMessage(null);
     setMenuFor(null);
     setPending(null);
+    setShowSearch(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    setSearchError(null);
+    setMediaOpen(false);
     recallSince.current = null;
     if (!activeId) { setMessages([]); return; }
     let alive = true;
@@ -150,13 +202,17 @@ export default function Messages() {
   };
   useEffect(() => { scrollToBottom(false); }, [loadingMsgs, activeId]);
   const lastId = messages.length ? messages[messages.length - 1].id : 0;
-  useEffect(() => { if (lastId) scrollToBottom(true); }, [lastId]);
+  useEffect(() => {
+    if (skipAutoScroll.current) { skipAutoScroll.current = false; return; }
+    if (lastId) scrollToBottom(true);
+  }, [lastId]);
 
   // Thăm dò 5 giây/lần: tin mới + tin vừa bị thu hồi
   useEffect(() => {
     if (!activeId) return;
     const poll = async () => {
       if (document.hidden || !navigator.onLine) return;
+      // Tin mới – lỗi mạng ở bước này không được chặn bước kiểm tra thu hồi bên dưới.
       try {
         const newMsgs = await api.get<ChatMessageItem[]>(`/conversations/${activeId}/messages/new`, { after: lastId });
         if (newMsgs.length > 0) {
@@ -164,17 +220,21 @@ export default function Messages() {
           if (newMsgs.some((m) => m.senderUserId !== user.id) && !isAdmin) api.post(`/conversations/${activeId}/read`).catch(() => {});
           if (!isAdmin) void loadConversations();
         }
-        if (recallSince.current) {
-          const r = await api.get<RecallSync>(`/conversations/${activeId}/recalled`, { since: recallSince.current });
-          recallSince.current = r.serverTime;
-          if (r.recalledIds.length) {
-            r.recalledIds.forEach(forgetAttachment);
-            setMessages((prev) => applyRecalled(prev, r.recalledIds));
-            if (!isAdmin) void loadConversations();
-          }
+      } catch {
+        // lỗi mạng khi thăm dò tin mới: bỏ qua, lần sau thử lại
+      }
+      // Tin vừa bị thu hồi
+      if (!recallSince.current) return;
+      try {
+        const r = await api.get<RecallSync>(`/conversations/${activeId}/recalled`, { since: recallSince.current });
+        recallSince.current = r.serverTime;
+        if (r.recalledIds.length) {
+          r.recalledIds.forEach(forgetAttachment);
+          setMessages((prev) => applyRecalled(prev, r.recalledIds));
+          if (!isAdmin) void loadConversations();
         }
       } catch {
-        // lỗi mạng khi thăm dò: bỏ qua, lần sau thử lại
+        // lỗi mạng khi thăm dò thu hồi: giữ mốc cũ, lần sau thử lại
       }
     };
     const interval = setInterval(poll, 5000);
@@ -285,9 +345,15 @@ export default function Messages() {
   // ---------- Thu hồi / xoá phía tôi ----------
   const doRecall = async (m: ChatMessageItem) => {
     try {
-      const updated = await api.post<ChatMessageItem>(`/messages/${m.id}/recall`);
+      const updated = await api.post<ChatMessageItem | null>(`/messages/${m.id}/recall`);
       forgetAttachment(m.id);
-      setMessages((prev) => prev.map((x) => (x.id === m.id ? updated : x)));
+      // Luôn hiển thị dòng "đã thu hồi" kể cả khi máy chủ trả response rỗng / thiếu cờ.
+      setMessages((prev) => prev.map((x) => (x.id === m.id
+        ? (updated && updated.id ? updated : {
+          ...x, recalled: true, recalledAt: new Date().toISOString(), body: '',
+          attachmentName: null, attachmentType: null, attachmentUrl: null,
+        })
+        : x)));
       void loadConversations();
       toast.success(t('Đã thu hồi tin nhắn'));
     } catch (e) {
@@ -321,6 +387,40 @@ export default function Messages() {
 
   const otherName = activeConv ? (user.role === 'MEMBER' ? activeConv.trainerName : activeConv.memberName) : '';
   const canSend = !!activeConv && !sending && (!!pending || !!inputText.trim());
+
+  const otherOnline = activeConv ? (user.role === 'MEMBER' ? activeConv.trainerOnline : activeConv.memberOnline) : false;
+  const otherLastSeen = activeConv ? (user.role === 'MEMBER' ? activeConv.trainerLastSeenAt : activeConv.memberLastSeenAt) : null;
+  const showOnline = otherOnline || onlineNow(otherLastSeen, now);
+  const presence = lastSeenLabel(otherLastSeen, now);
+  const convOnline = (c: Conversation) => (user.role === 'MEMBER'
+    ? c.trainerOnline || onlineNow(c.trainerLastSeenAt, now)
+    : c.memberOnline || onlineNow(c.memberLastSeenAt, now));
+
+  const scrollToMessage = (id: number) => {
+    const el = document.getElementById(`chat-msg-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setFlashId(id);
+    window.setTimeout(() => setFlashId(null), 2000);
+  };
+
+  const jumpToMessage = async (id: number) => {
+    if (messages.some((m) => m.id === id)) {
+      setShowSearch(false);
+      window.setTimeout(() => scrollToMessage(id), 30);
+      return;
+    }
+    if (!activeId) return;
+    try {
+      const ctx = await api.get<ChatMessageItem[]>(`/conversations/${activeId}/messages/context`, { messageId: id, size: 41 });
+      skipAutoScroll.current = true;
+      setMessages(ctx.filter((m) => !!m && !!m.id));
+      setShowSearch(false);
+      window.setTimeout(() => scrollToMessage(id), 80);
+    } catch (e) {
+      toast.error(errMsg(e));
+    }
+  };
 
   return (
     <div className="page" style={{ paddingBottom: 0 }}>
@@ -374,7 +474,10 @@ export default function Messages() {
                 const timeStr = c.lastMessageAt ? relativeTime(c.lastMessageAt) : '';
                 return (
                   <button key={c.id} type="button" className={`conversation-item ${c.id === activeId ? 'active' : ''}`} onClick={() => navigate(`/messages/${c.id}`)}>
-                    <Avatar name={name} src={avatar} />
+                    <span className="avatar-presence">
+                      <Avatar name={name} src={avatar} />
+                      {convOnline(c) && <span className="presence-dot" aria-label={t('Đang online')} title={t('Đang online')} />}
+                    </span>
                     <div className="conversation-meta">
                       <div className="conversation-top">
                         <span className="conversation-name ellipsis">{name}</span>
@@ -420,21 +523,78 @@ export default function Messages() {
           ) : (
             <>
               <div className="messages-head">
-                <div className="row" style={{ gap: 12, alignItems: 'center' }}>
+                <div className="row" style={{ gap: 12, alignItems: 'center', minWidth: 0 }}>
                   <Button variant="ghost" size="sm" icon="chevronLeft" className="mobile-only" onClick={() => navigate('/messages')} aria-label={t('Quay lại danh sách')} />
-                  <Avatar name={otherName} src={user.role === 'MEMBER' ? activeConv.trainerAvatar : activeConv.memberAvatar} size="sm" />
-                  <div>
+                  <span className="avatar-presence">
+                    <Avatar name={otherName} src={user.role === 'MEMBER' ? activeConv.trainerAvatar : activeConv.memberAvatar} size="sm" />
+                    {showOnline && <span className="presence-dot" aria-label={t('Đang online')} />}
+                  </span>
+                  <div style={{ minWidth: 0 }}>
                     <b style={{ fontSize: 15 }}>{otherName}</b>
                     <div className="row" style={{ gap: 6, alignItems: 'center' }}>
                       <span className="tiny faint">{activeConv.relation === 'ASSIGNED' ? t('HLV phụ trách') : t('Đang tư vấn')}</span>
+                      <span className="tiny faint">·</span>
+                      <span className={`tiny presence-label ${showOnline ? 'online' : ''}`}>
+                        {showOnline ? t('Đang online') : t(presence.key, presence.vars)}
+                      </span>
                     </div>
                   </div>
                 </div>
-                {user.role === 'MEMBER' && (
-                  <Button variant="ghost" size="sm" onClick={() => navigate(`/coaches/${activeConv.trainerId}`)}>{t('Xem hồ sơ HLV')}</Button>
-                )}
+                <div className="row" style={{ gap: 4, alignItems: 'center' }}>
+                  <Button variant={showSearch ? 'primary' : 'ghost'} size="sm" icon="search"
+                    onClick={() => { setShowSearch((v) => !v); setSearchQuery(''); setSearchResults([]); setSearchError(null); }}
+                    aria-label={t('Tìm kiếm tin nhắn')} title={t('Tìm kiếm tin nhắn')} />
+                  <Button variant="ghost" size="sm" icon="image" onClick={() => setMediaOpen(true)}
+                    aria-label={t('Ảnh, video và tệp đã gửi')} title={t('Ảnh, video và tệp đã gửi')} />
+                  {user.role === 'MEMBER' && (
+                    <Button variant="ghost" size="sm" onClick={() => navigate(`/coaches/${activeConv.trainerId}`)}>{t('Xem hồ sơ HLV')}</Button>
+                  )}
+                </div>
               </div>
 
+              {showSearch && (
+                <div className="messages-searchbar">
+                  <SearchInput placeholder={t('Tìm trong cuộc trò chuyện…')} value={searchQuery} onChange={setSearchQuery} />
+                  <Button variant="ghost" size="sm" icon="x"
+                    onClick={() => { setShowSearch(false); setSearchQuery(''); setSearchResults([]); setSearchError(null); }}
+                    aria-label={t('Đóng tìm kiếm')} title={t('Đóng tìm kiếm')} />
+                </div>
+              )}
+
+              {showSearch ? (
+                <div className="messages-body messages-search-results">
+                  {!searchQuery.trim() ? (
+                    <div className="search-hint"><Icon name="search" size={28} className="faint" /><p className="small muted">{t('Nhập từ khoá để tìm trong cuộc trò chuyện này.')}</p></div>
+                  ) : searching ? (
+                    <LoadingBlock rows={4} />
+                  ) : searchError ? (
+                    <ErrorState message={searchError} onRetry={() => setSearchNonce((n) => n + 1)} />
+                  ) : searchResults.length === 0 ? (
+                    <Empty icon="search" title={t('Không tìm thấy tin nhắn')} desc={t('Thử từ khoá khác hoặc ngắn hơn.')} />
+                  ) : (
+                    <>
+                      <div className="tiny faint search-summary">{t('{n} kết quả', { n: searchResults.length })}</div>
+                      {searchResults.map((m) => {
+                        const kind = kindOf(m);
+                        const label = kind === 'IMAGE' ? '[Ảnh]' : kind === 'VIDEO' ? '[Video]' : kind === 'FILE' ? '[Tệp]' : null;
+                        return (
+                          <button key={m.id} type="button" className="search-result" onClick={() => void jumpToMessage(m.id)}>
+                            <span className="search-result-top">
+                              <b>{m.senderUserId === user.id ? t('Bạn') : m.senderName}</b>
+                              <span className="tiny faint">{fmtTime(m.createdAt)}</span>
+                            </span>
+                            <span className="search-result-snippet">
+                              {label && <i className="conversation-tag">{t(label)} </i>}
+                              {highlightParts(m.body || m.attachmentName || '', searchQuery).map((p, i) =>
+                                p.hit ? <mark key={i}>{p.text}</mark> : <span key={i}>{p.text}</span>)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </>
+                  )}
+                </div>
+              ) : (
               <div className="messages-body">
                 {loadingMsgs ? (
                   <LoadingBlock rows={4} />
@@ -460,23 +620,25 @@ export default function Messages() {
                     </div>
                   </div>
                 ) : (
-                  messages.map((m) => {
+                  messages.filter((m) => !!m && !!m.id).map((m) => {
                     const isMine = m.senderUserId === user.id;
                     const kind = kindOf(m);
+                    const recalled = isRecalled(m);
                     const recallable = !isAdmin && canRecall(m, user.id, now);
-                    const hasText = !m.recalled && !!m.body;
+                    const hasText = !recalled && !!m.body;
                     return (
-                      <div key={m.id} className={`chat-bubble-row ${isMine ? 'mine' : 'theirs'}`}>
+                      <div key={m.id} id={`chat-msg-${m.id}`} className={`chat-bubble-row ${isMine ? 'mine' : 'theirs'} ${flashId === m.id ? 'is-flash' : ''}`}>
                         <div className="chat-bubble-line">
-                          {m.recalled ? (
-                            <div className="chat-bubble is-recalled"><Icon name="undo" size={13} />{isMine ? t('Bạn đã thu hồi một tin nhắn') : t('Tin nhắn đã được thu hồi')}</div>
+                          {recalled ? (
+                            <div className="chat-recall-notice"><Icon name="undo" size={13} /><span>{isMine ? t('Bạn đã thu hồi một tin nhắn') : t('Tin nhắn đã được thu hồi')}</span></div>
                           ) : (
                             <div className={`chat-bubble ${kind !== 'TEXT' ? `has-att is-${kind.toLowerCase()}` : ''}`}>
                               {kind !== 'TEXT' && <ChatAttachment m={m} />}
                               {hasText && <div className="chat-text">{m.body}</div>}
+                              {kind === 'TEXT' && !hasText && <div className="chat-text faint">{t('Tin nhắn trống')}</div>}
                             </div>
                           )}
-                          {!isAdmin && !m.recalled && (
+                          {!isAdmin && !recalled && (
                             <div className="chat-actions">
                               <button type="button" className={`chat-more ${menuFor === m.id ? 'on' : ''}`} aria-label={t('Tuỳ chọn tin nhắn')} aria-haspopup="menu"
                                 aria-expanded={menuFor === m.id} onClick={() => setMenuFor(menuFor === m.id ? null : m.id)}>
@@ -495,7 +657,7 @@ export default function Messages() {
                         <div className="chat-bubble-meta">
                           <span>{fmtTime(m.createdAt)}</span>
                           {isAdmin && <span>· {m.senderName}</span>}
-                          {isMine && m.readAt && !m.recalled && <span className="chat-read-tick">{t('Đã xem')}</span>}
+                          {isMine && m.readAt && !recalled && <span className="chat-read-tick">{t('Đã xem')}</span>}
                         </div>
                       </div>
                     );
@@ -503,8 +665,9 @@ export default function Messages() {
                 )}
                 <div ref={messagesEndRef} />
               </div>
+              )}
 
-              {isAdmin ? (
+              {!showSearch && (isAdmin ? (
                 <div className="messages-readonly">
                   <Icon name="lock" size={14} />
                   <span>{t('Chế độ chỉ đọc dành cho Quản trị viên · Không thể gửi tin nhắn')}</span>
@@ -556,7 +719,7 @@ export default function Messages() {
                   </form>
                   {inputText.length > MAX_CAPTION - 200 && <span className="tiny faint right">{inputText.length}/{MAX_CAPTION}</span>}
                 </div>
-              )}
+              ))}
             </>
           )}
         </section>
@@ -573,6 +736,10 @@ export default function Messages() {
           onConfirm={() => (confirm.type === 'recall' ? doRecall(confirm.m) : doHide(confirm.m))}
           onClose={() => setConfirm(null)}
         />
+      )}
+
+      {mediaOpen && activeConv && (
+        <ConversationMedia conversationId={activeConv.id} onClose={() => setMediaOpen(false)} />
       )}
     </div>
   );

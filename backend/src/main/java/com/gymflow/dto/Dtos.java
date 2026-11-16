@@ -1090,13 +1090,13 @@ public final class Dtos {
     public record MessageResponseDto(Long id, Long conversationId, Long senderUserId, String senderName,
                                      String senderRole, String attachmentUrl,
                                      String body, LocalDateTime createdAt, LocalDateTime readAt,
-                                     String kind, boolean recalled, String attachmentName,
+                                     String kind, boolean recalled, LocalDateTime recalledAt, String attachmentName,
                                      String attachmentType, Long attachmentSize) {
         public MessageResponseDto(Long id, Long conversationId, Long senderUserId, String senderName,
                                   String senderRole, String attachmentUrl,
                                   String body, LocalDateTime createdAt, LocalDateTime readAt) {
             this(id, conversationId, senderUserId, senderName, senderRole, attachmentUrl, body, createdAt, readAt,
-                    "TEXT", false, null, null, null);
+                    "TEXT", false, null, null, null, null);
         }
 
         public MessageResponseDto(Long id, Long conversationId, Long senderUserId, String senderName,
@@ -1109,10 +1109,16 @@ public final class Dtos {
     public record RecallSyncResponse(List<Long> recalledIds, LocalDateTime serverTime) {
     }
 
+    /** Phản hồi heartbeat: giờ máy chủ để client biết đã ghi nhận hoạt động. */
+    public record PresenceResponse(LocalDateTime serverTime) {
+    }
+
     public record ConversationResponse(Long id, Long memberId, String memberName, String memberAvatar,
                                        Long trainerId, String trainerName, String trainerAvatar,
                                        LocalDateTime createdAt, LocalDateTime lastMessageAt,
-                                       MessageResponseDto lastMessage, long unreadCount, String relation) {
+                                       MessageResponseDto lastMessage, long unreadCount, String relation,
+                                       boolean memberOnline, boolean trainerOnline,
+                                       LocalDateTime memberLastSeenAt, LocalDateTime trainerLastSeenAt) {
     }
 
     public record AdminConversationSummary(Long id, Long memberId, String memberName, String memberAvatar,

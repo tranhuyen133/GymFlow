@@ -121,7 +121,9 @@ public class AuthService {
         if (user.getEmailVerifiedAt() == null) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Email chưa được xác thực. Vui lòng nhập mã OTP đã gửi đến email.");
         }
-        user.setLastLoginAt(LocalDateTime.now(clock));
+        LocalDateTime now = LocalDateTime.now(clock);
+        user.setLastLoginAt(now);
+        user.setLastSeenAt(now);
         auditService.logAs(user.getId(), user.getEmail(), "LOGIN", "USER", user.getId(), null, true);
         return new LoginResponse(jwtService.generate(user), jwtService.getExpirationMinutes(), me(user));
     }

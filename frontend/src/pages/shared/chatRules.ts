@@ -9,6 +9,7 @@ export interface MsgLike {
   createdAt: string;
   kind?: Kind;
   recalled?: boolean;
+  recalledAt?: string | null;
   attachmentName?: string | null;
   attachmentType?: string | null;
   attachmentSize?: number | null;
@@ -87,10 +88,18 @@ export function kindOf(msg: MsgLike): Kind {
   return msg.kind ?? 'TEXT';
 }
 
+/**
+ * Tin đã thu hồi: ưu tiên cờ `recalled`, nhưng vẫn nhận ra qua `recalledAt` để không hiển thị bong bóng rỗng
+ * khi máy chủ / bản cache cũ chỉ trả mốc thời gian thu hồi.
+ */
+export function isRecalled(msg: MsgLike | null | undefined): boolean {
+  return !!msg && (msg.recalled === true || !!msg.recalledAt);
+}
+
 /** Dòng xem trước trong danh sách hội thoại: nhãn (khoá dịch) + nội dung. */
 export function previewOf(msg: MsgLike | null | undefined, meId: number): { label: string | null; text: string } {
   if (!msg) return { label: 'Chưa có tin nhắn', text: '' };
-  if (msg.recalled) return { label: msg.senderUserId === meId ? 'Bạn đã thu hồi một tin nhắn' : 'Tin nhắn đã được thu hồi', text: '' };
+  if (isRecalled(msg)) return { label: msg.senderUserId === meId ? 'Bạn đã thu hồi một tin nhắn' : 'Tin nhắn đã được thu hồi', text: '' };
   const body = (msg.body ?? '').trim();
   const kind = kindOf(msg);
   const label = kind === 'IMAGE' ? '[Ảnh]' : kind === 'VIDEO' ? '[Video]' : kind === 'FILE' ? '[Tệp]' : null;
@@ -115,11 +124,55 @@ export function applyRecalled<T extends MsgLike>(list: T[], ids: number[]): T[] 
   const set = new Set(ids);
   let changed = false;
   const out = list.map((m) => {
-    if (!set.has(m.id) || m.recalled) return m;
+    if (!set.has(m.id) || isRecalled(m)) return m;
     changed = true;
     return { ...m, recalled: true, body: '', attachmentName: null, attachmentType: null, attachmentUrl: null };
   });
   return changed ? out : list;
+}
+
+// ---------- V47: trạng thái online + tìm kiếm ----------
+
+export const ONLINE_MS = 60_000;
+
+/** Còn online nếu hoạt động trong 60 giây gần nhất (khớp ngưỡng máy chủ). */
+export function onlineNow(lastSeenAt: string | null | undefined, nowMs: number): boolean {
+  if (!lastSeenAt) return false;
+  const at = parseLocal(lastSeenAt);
+  return !Number.isNaN(at) && nowMs - at <= ONLINE_MS;
+}
+
+/** Nhãn "hoạt động lần cuối" – trả khoá tiếng Việt + biến để nơi gọi dịch bằng t(). */
+export function lastSeenLabel(lastSeenAt: string | null | undefined, nowMs: number): { key: string; vars?: { n: number } } {
+  if (!lastSeenAt) return { key: 'Chưa hoạt động' };
+  const at = parseLocal(lastSeenAt);
+  if (Number.isNaN(at)) return { key: 'Chưa hoạt động' };
+  const diff = Math.max(0, nowMs - at);
+  if (diff < 60_000) return { key: 'Vừa hoạt động' };
+  if (diff < 3_600_000) return { key: '{n} phút trước', vars: { n: Math.max(1, Math.floor(diff / 60_000)) } };
+  if (diff < 86_400_000) return { key: '{n} giờ trước', vars: { n: Math.floor(diff / 3_600_000) } };
+  return { key: '{n} ngày trước', vars: { n: Math.floor(diff / 86_400_000) } };
+}
+
+/** Tách văn bản theo từ khoá để tô đậm phần khớp (không dùng HTML). */
+export function highlightParts(text: string, query: string): { text: string; hit: boolean }[] {
+  const q = (query ?? '').trim();
+  if (!q) return [{ text, hit: false }];
+  const lower = text.toLowerCase();
+  const needle = q.toLowerCase();
+  const parts: { text: string; hit: boolean }[] = [];
+  let from = 0;
+  for (;;) {
+    const at = lower.indexOf(needle, from);
+    if (at < 0) {
+      if (from < text.length) parts.push({ text: text.slice(from), hit: false });
+      break;
+    }
+    if (at > from) parts.push({ text: text.slice(from, at), hit: false });
+    parts.push({ text: text.slice(at, at + q.length), hit: true });
+    from = at + q.length;
+  }
+  return parts.length ? parts : [{ text, hit: false }];
 }
 
 /** Tách tin theo ngày để hiển thị vạch ngăn "Hôm nay / Hôm qua / dd/MM". */

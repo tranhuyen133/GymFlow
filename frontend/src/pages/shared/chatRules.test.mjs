@@ -78,3 +78,36 @@ test('áp dụng thu hồi: xoá nội dung + tệp, giữ nguyên tin khác, kh
   assert.equal(R.applyRecalled(list, []), list);
   assert.equal(R.applyRecalled(out, [1]), out);
 });
+
+test('nhận diện tin thu hồi: cờ recalled hoặc recalledAt; xem trước danh sách hội thoại', () => {
+  assert.equal(R.isRecalled(msg()), false);
+  assert.equal(R.isRecalled(msg({ recalled: true })), true);
+  assert.equal(R.isRecalled(msg({ recalledAt: '2026-11-14T10:01:00' })), true);
+  assert.equal(R.isRecalled(null), false);
+  assert.equal(R.previewOf(msg({ recalledAt: '2026-11-14T10:01:00' }), 10).label, 'Bạn đã thu hồi một tin nhắn');
+});
+
+test('trạng thái online: ngưỡng 60 giây + nhãn hoạt động gần nhất', () => {
+  const now = at('2026-11-14T10:00:00');
+  assert.equal(R.onlineNow('2026-11-14T10:00:30', now), true);
+  assert.equal(R.onlineNow('2026-11-14T09:58:59', now), false);
+  assert.equal(R.onlineNow(null, now), false);
+  assert.equal(R.onlineNow('', now), false);
+  assert.deepEqual(R.lastSeenLabel('2026-11-14T09:59:30', now), { key: 'Vừa hoạt động' });
+  assert.deepEqual(R.lastSeenLabel('2026-11-14T09:55:00', now), { key: '{n} phút trước', vars: { n: 5 } });
+  assert.deepEqual(R.lastSeenLabel('2026-11-14T08:00:00', now), { key: '{n} giờ trước', vars: { n: 2 } });
+  assert.deepEqual(R.lastSeenLabel('2026-11-12T10:00:00', now), { key: '{n} ngày trước', vars: { n: 2 } });
+  assert.deepEqual(R.lastSeenLabel(null, now), { key: 'Chưa hoạt động' });
+});
+
+test('tô đậm từ khoá tìm kiếm: không phân biệt hoa thường, nhiều lần khớp, chuỗi rỗng', () => {
+  assert.deepEqual(R.highlightParts('Deadlift nặng deadlift nhẹ', 'deadlift'), [
+    { text: 'Deadlift', hit: true },
+    { text: ' nặng ', hit: false },
+    { text: 'deadlift', hit: true },
+    { text: ' nhẹ', hit: false },
+  ]);
+  assert.deepEqual(R.highlightParts('abc', ''), [{ text: 'abc', hit: false }]);
+  assert.deepEqual(R.highlightParts('abc', 'zzz'), [{ text: 'abc', hit: false }]);
+  assert.deepEqual(R.highlightParts('abc', 'abc'), [{ text: 'abc', hit: true }]);
+});

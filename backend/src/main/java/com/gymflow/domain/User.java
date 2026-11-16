@@ -43,6 +43,10 @@ public class User {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    /** Lần cuối tài khoản còn hoạt động (V47) – dùng để tính trạng thái online khi nhắn tin. */
+    @Column(name = "last_seen_at")
+    private LocalDateTime lastSeenAt;
+
     @Column(name = "email_verified_at")
     private LocalDateTime emailVerifiedAt;
 

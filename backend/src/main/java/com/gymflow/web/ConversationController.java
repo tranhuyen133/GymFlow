@@ -61,6 +61,32 @@ public class ConversationController {
         return conversationService.getNewMessages(CurrentUser.get(), id, after);
     }
 
+    @GetMapping("/{id}/messages/search")
+    @PreAuthorize("hasAnyRole('MEMBER', 'TRAINER', 'ADMIN')")
+    public List<MessageResponseDto> searchMessages(@PathVariable Long id,
+                                                   @RequestParam String q,
+                                                   @RequestParam(required = false) Long before,
+                                                   @RequestParam(defaultValue = "30") int size) {
+        return conversationService.searchMessages(CurrentUser.get(), id, q, before, size);
+    }
+
+    @GetMapping("/{id}/messages/context")
+    @PreAuthorize("hasAnyRole('MEMBER', 'TRAINER', 'ADMIN')")
+    public List<MessageResponseDto> messageContext(@PathVariable Long id,
+                                                   @RequestParam Long messageId,
+                                                   @RequestParam(defaultValue = "41") int size) {
+        return conversationService.getMessageContext(CurrentUser.get(), id, messageId, size);
+    }
+
+    @GetMapping("/{id}/media")
+    @PreAuthorize("hasAnyRole('MEMBER', 'TRAINER', 'ADMIN')")
+    public List<MessageResponseDto> media(@PathVariable Long id,
+                                          @RequestParam(required = false) String kind,
+                                          @RequestParam(required = false) Long before,
+                                          @RequestParam(defaultValue = "30") int size) {
+        return conversationService.getMediaMessages(CurrentUser.get(), id, kind, before, size);
+    }
+
     @PostMapping("/{id}/messages")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('MEMBER', 'TRAINER')")
