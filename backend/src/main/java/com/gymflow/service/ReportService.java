@@ -44,7 +44,7 @@ public class ReportService {
         Map<String, Long> byPlan = new TreeMap<>();
         for (MemberSubscription s : subs) {
             byMonth.merge(YearMonth.from(s.getCreatedAt()), s.getPricePaid(), Long::sum);
-            byPlan.merge(s.getPlan().getName(), s.getPricePaid(), Long::sum);
+            byPlan.merge(planName(s), s.getPricePaid(), Long::sum);
         }
 
         List<WorkoutSchedule> sessions = scheduleRepository.findByStartTimeBetweenOrderByStartTimeAsc(
@@ -114,6 +114,11 @@ public class ReportService {
 
     private static long count(List<WorkoutSchedule> list, ScheduleStatus st) {
         return list.stream().filter(s -> s.getStatus() == st).count();
+    }
+
+    /** RPT-02 · doanh thu theo gói ghi theo tên gói lúc bán (planNameSnapshot), để đổi tên gói sau này không làm lệch báo cáo cũ. */
+    private static String planName(MemberSubscription s) {
+        return s.getPlanNameSnapshot() != null && !s.getPlanNameSnapshot().isBlank() ? s.getPlanNameSnapshot() : s.getPlan().getName();
     }
 
     private static List<LabelValue> list(Map<String, Long> map) {
