@@ -37,6 +37,8 @@ public class NotificationService {
     private final AuditLogRepository auditRepository;
     private final MemberServiceEntitlementRepository entitlementRepository;
     private final PromotionRepository promotionRepository;
+    private final SubscriptionChangeRequestRepository changeRequestRepository;
+    private final SubscriptionAdjustmentRepository adjustmentRepository;
     private final AccessService access;
     private final Mappers mappers;
     private final Clock clock;
@@ -91,6 +93,23 @@ public class NotificationService {
                             r.getDecisionNote() == null ? "Xem chi tiết trong mục Gói tập." : "Lý do: " + r.getDecisionNote(), "/getting-started", r.getDecidedAt()));
                 }
             }
+            // V49 · Kết quả yêu cầu điều chỉnh gói và các lần quản lý đổi thời gian gói trong 3 ngày qua
+            for (SubscriptionChangeRequest c : changeRequestRepository.findByMemberIdOrderByCreatedAtDesc(m.getId())) {
+                if (c.getDecidedAt() == null || c.getDecidedAt().isBefore(now.minusDays(3))) continue;
+                if (c.getStatus() == PackageRequestStatus.APPROVED) {
+                    out.add(n("scr-ok-" + c.getId(), "info", "Yêu cầu điều chỉnh gói đã được duyệt",
+                            changeLabel(c) + " đã có hiệu lực.", "/me/packages", c.getDecidedAt()));
+                } else if (c.getStatus() == PackageRequestStatus.REJECTED) {
+                    out.add(n("scr-no-" + c.getId(), "warning", "Yêu cầu điều chỉnh gói bị từ chối",
+                            changeLabel(c) + (c.getDecisionNote() == null ? "" : " · Lý do: " + c.getDecisionNote()), "/me/packages", c.getDecidedAt()));
+                }
+            }
+            for (SubscriptionAdjustment a : adjustmentRepository.findRecentForMember(m.getId(), now.minusDays(3))) {
+                if (a.getSource() != AdjustmentSource.ADMIN) continue;
+                out.add(n("sadj-" + a.getId(), "info", "Thời gian gói đã được điều chỉnh",
+                        "Gói hiện tính từ " + a.getNewStartDate().format(DMY) + " đến " + a.getNewEndDate().format(DMY) + ". Lý do: " + a.getReason(),
+                        "/me/packages", a.getCreatedAt()));
+            }
             // Buổi bị đánh dấu vắng trong 7 ngày qua (gồm cả buổi hệ thống tự chuyển sang MISSED khi quá hạn)
             List<WorkoutSchedule> missed = scheduleRepository.findByMemberIdAndStartTimeBetweenOrderByStartTimeAsc(
                     m.getId(), today.minusDays(7).atStartOfDay(), today.atStartOfDay()).stream()
@@ -136,10 +155,28 @@ public class NotificationService {
                     .filter(s -> mine.contains(s.getMember().getId()))
                     .forEach(s -> out.add(n("sub-" + s.getId(), "warning", s.getMember().getUser().getFullName() + " sắp hết gói",
                             "Hết hạn " + s.getEndDate() + ", nhắc hội viên gia hạn.", "/members/" + s.getMember().getId(), now)));
+            // V49 · Hội viên được giao nhưng chưa dạy được: chỉ có gói tự tập, hoặc có gói PT mà chưa xếp buổi PT nào
+            for (Member mm : memberRepository.findByTrainerId(t.getId())) {
+                if (mm.getStatus() != MemberStatus.ACTIVE) continue;
+                List<MemberSubscription> eff = subscriptionRepository.findEffective(mm.getId(), today);
+                if (eff.isEmpty()) continue;
+                MemberSubscription pt = eff.stream().filter(s -> SubscriptionUpgradeService.isPtSub(s)).findFirst().orElse(null);
+                if (pt == null) {
+                    out.add(n("tr-gym-" + mm.getId(), "warning", mm.getUser().getFullName() + " đang dùng gói tự tập",
+                            "Chưa xếp được buổi có HLV. Hội viên cần nâng cấp lên gói có PT trong mục Gói tập.", "/members/" + mm.getId(), now));
+                } else if (scheduleRepository.countPtBooked(mm.getId(), now, pt.getEndDate().plusDays(1).atStartOfDay(), ScheduleStatus.SCHEDULED, null) == 0) {
+                    out.add(n("tr-nobook-" + mm.getId() + "-" + pt.getId(), "info", "Chưa xếp buổi PT cho " + mm.getUser().getFullName(),
+                            "Gói " + pt.getPlan().getName() + " đến " + pt.getEndDate().format(DMY) + ". Mở lịch tập để xếp buổi hoặc sinh lịch từ giáo án.",
+                            "/schedules", pt.getCreatedAt()));
+                }
+            }
         } else {
             long waitingRequests = packageRequestRepository.countByStatus(PackageRequestStatus.PENDING);
             if (waitingRequests > 0) out.add(n("preq-pending", "warning", waitingRequests + " đơn đăng ký gói chờ xác nhận",
                     "Thu tiền tại quầy rồi duyệt để kích hoạt gói cho hội viên.", "/package-requests", now));
+            long waitingChanges = changeRequestRepository.countByStatus(PackageRequestStatus.PENDING);
+            if (waitingChanges > 0) out.add(n("scr-pending", "warning", waitingChanges + " yêu cầu điều chỉnh gói chờ duyệt",
+                    "Hội viên xin dời ngày bắt đầu, bảo lưu hoặc đổi HLV.", "/package-requests?tab=changes", now));
             long expiring = subscriptionRepository.findEndingBetween(today, today.plusDays(MemberSubscription.EXPIRING_DAYS)).size();
             if (expiring > 0) out.add(n("expiring", "warning", expiring + " gói sắp hết hạn trong 7 ngày", "Liên hệ hội viên để gia hạn.", "/subscriptions?state=EXPIRING", now));
             long failed = auditRepository.search("", "LOGIN_FAILED", now.minusDays(1), now.plusMinutes(1), PageRequest.of(0, 1)).getTotalElements();
@@ -165,6 +202,16 @@ public class NotificationService {
         }
 
         return out;
+    }
+
+    private static final DateTimeFormatter DMY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private static String changeLabel(SubscriptionChangeRequest c) {
+        return switch (c.getChangeType()) {
+            case CHANGE_START -> "Dời ngày bắt đầu sang " + c.getNewStartDate().format(DMY);
+            case PAUSE -> "Bảo lưu " + c.getPauseDays() + " ngày";
+            case CHANGE_TRAINER -> "Đổi HLV" + (c.getTrainer() == null ? "" : " sang " + c.getTrainer().getUser().getFullName());
+        };
     }
 
     public PageResponse<AuditResponse> audit(String q, String action, LocalDate from, LocalDate to, int page, int size) {

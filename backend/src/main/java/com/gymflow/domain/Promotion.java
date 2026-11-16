@@ -59,6 +59,11 @@ public class Promotion {
     @Column(name = "stackable", nullable = false)
     private boolean stackable = false;
 
+    /** V49 · ALL / BIRTHDAY (trong tháng sinh nhật) / UPGRADE (chỉ khi nâng cấp lên gói có PT). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "audience", nullable = false, length = 20)
+    private PromotionAudience audience = PromotionAudience.ALL;
+
     @Column(name = "active", nullable = false)
     private boolean active = true;
 

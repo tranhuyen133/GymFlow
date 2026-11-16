@@ -34,6 +34,8 @@ export default function Schedules() {
   const [filter, setFilter] = useState<Filter>('ALL');
   const [trainerId, setTrainerId] = useState<string>('');
   const [open, setOpen] = useState<Schedule | null>(null);
+  // V49 · HLV thấy cả buổi tự tập của hội viên mình phụ trách; lọc nhanh buổi PT / buổi tự tập
+  const [kind, setKind] = useState<'ALL' | 'PT' | 'SELF'>('ALL');
   const exIdParam = params.get('exerciseId');
   const [creating, setCreating] = useState(params.get('new') === '1' || !!exIdParam);
 
@@ -42,7 +44,9 @@ export default function Schedules() {
     () => api.get<Schedule[]>('/schedules', { from: toIsoDateTime(week), to: toIsoDateTime(addDays(week, 7)), trainerId: trainerId || undefined }),
     [week.getTime(), trainerId],
   );
-  const events = useMemo(() => (data ?? []).filter((e) => filter === 'ALL' || e.status === filter), [data, filter]);
+  const events = useMemo(() => (data ?? []).filter((e) => (filter === 'ALL' || e.status === filter)
+    && (kind === 'ALL' || (kind === 'PT' ? e.trainerId != null : e.trainerId == null))), [data, filter, kind]);
+  const selfCount = useMemo(() => (data ?? []).filter((e) => e.trainerId == null).length, [data]);
   const counts = useMemo(() => {
     const c: Record<string, number> = { SCHEDULED: 0, COMPLETED: 0, MISSED: 0, CANCELLED: 0 };
     (data ?? []).forEach((e) => { c[e.status]++; });
@@ -81,6 +85,13 @@ export default function Schedules() {
             <option value="">{t('Tất cả HLV')}</option>
             {trainers.data?.map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}</option>)}
           </Select>
+        )}
+        {me.role === 'TRAINER' && (data?.length ?? 0) > 0 && (selfCount > 0 || kind !== 'ALL') && (
+          <Segmented value={kind} onChange={setKind} options={[
+            { value: 'ALL', label: t('Mọi buổi') },
+            { value: 'PT', label: t('Buổi PT {n}', { n: (data?.length ?? 0) - selfCount }) },
+            { value: 'SELF', label: t('Hội viên tự tập {n}', { n: selfCount }) },
+          ]} />
         )}
         <Segmented<Filter> value={filter} onChange={setFilter} options={[
           { value: 'ALL', label: t('Tất cả {n}', { n: data?.length ?? '' }) },

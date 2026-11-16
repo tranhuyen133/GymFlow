@@ -42,33 +42,46 @@ public class PromotionService {
     public PromotionValidationResponse validate(AuthUser user, PromotionValidateRequest req) {
         MembershipPlan plan = planRepository.findById(req.planId())
                 .orElseThrow(() -> ApiException.notFound("gói tập"));
+        return validateFor(user, req.code(), plan, plan.getPrice(), false);
+    }
+
+    /**
+     * V49 · Kiểm tra ưu đãi trên một số tiền gốc bất kỳ: đăng ký thường thì là giá gói, nâng cấp thì là giá gói PT
+     * đã trừ giá trị còn lại của gói cũ. upgrade = true mới dùng được ưu đãi dành cho nâng cấp.
+     * Không nhập mã: chọn ưu đãi tự áp dụng giảm nhiều nhất mà hội viên đủ điều kiện.
+     */
+    @Transactional(readOnly = true)
+    public PromotionValidationResponse validateFor(AuthUser user, String rawCode, MembershipPlan plan, long basePrice, boolean upgrade) {
         LocalDateTime now = LocalDateTime.now(clock);
-
-        String code = req.code() == null ? null : req.code().trim();
-        Promotion promo = null;
+        String code = rawCode == null ? null : rawCode.trim();
         if (code != null && !code.isEmpty()) {
-            promo = promotionRepository.findByCodeIgnoreCase(code).orElse(null);
+            Promotion promo = promotionRepository.findByCodeIgnoreCase(code).orElse(null);
             if (promo == null) {
-                return invalidResult(plan.getPrice(), "Mã ưu đãi không tồn tại");
+                return invalidResult(basePrice, "Mã ưu đãi không tồn tại");
             }
-        } else {
-            // Kiểm tra các ưu đãi tự động áp dụng (code IS NULL)
-            List<Promotion> autoList = promotionRepository.findByCodeIsNullAndActiveTrue();
-            for (Promotion p : autoList) {
-                PromotionValidationResponse res = checkEligibility(user, p, plan, now);
-                if (res.valid()) {
-                    return res;
-                }
-            }
-            return new PromotionValidationResponse(true, null, null, null, null, null,
-                    DiscountType.NONE, 0L, plan.getPrice(), 0L, plan.getPrice(), List.of());
+            return checkEligibility(user, promo, plan, now, basePrice, upgrade);
         }
-
-        return checkEligibility(user, promo, plan, now);
+        PromotionValidationResponse best = null;
+        for (Promotion p : promotionRepository.findByCodeIsNullAndActiveTrue()) {
+            PromotionValidationResponse res = checkEligibility(user, p, plan, now, basePrice, upgrade);
+            if (res.valid() && (best == null || res.discountAmount() > best.discountAmount())) {
+                best = res;
+            }
+        }
+        return best != null ? best : new PromotionValidationResponse(true, null, null, null, null, null,
+                DiscountType.NONE, 0L, basePrice, 0L, basePrice, List.of());
     }
 
     public PromotionValidationResponse checkEligibility(AuthUser user, Promotion promo, MembershipPlan plan, LocalDateTime now) {
-        long originalPrice = plan.getPrice();
+        return checkEligibility(user, promo, plan, now, plan.getPrice(), false);
+    }
+
+    public PromotionValidationResponse checkEligibility(AuthUser user, Promotion promo, MembershipPlan plan, LocalDateTime now,
+                                                        long originalPrice, boolean upgrade) {
+        PromotionAudience audience = promo.getAudience() == null ? PromotionAudience.ALL : promo.getAudience();
+        if (audience == PromotionAudience.UPGRADE && !upgrade) {
+            return invalidResult(promo, originalPrice, "Ưu đãi này chỉ áp dụng khi nâng cấp từ gói tự tập lên gói có HLV");
+        }
 
         if (!promo.isActive()) {
             return invalidResult(promo, originalPrice, "Chương trình ưu đãi hiện đã tạm ngưng");
@@ -95,6 +108,12 @@ public class PromotionService {
             if (promo.isRenewalOnly() && priorSubs == 0) {
                 return invalidResult(promo, originalPrice, "Mã ưu đãi chỉ áp dụng cho hội viên gia hạn gói");
             }
+            if (audience == PromotionAudience.BIRTHDAY) {
+                String problem = birthdayProblem(member.getDateOfBirth(), now.toLocalDate());
+                if (problem != null) return invalidResult(promo, originalPrice, problem);
+            }
+        } else if (audience == PromotionAudience.BIRTHDAY) {
+            return invalidResult(promo, originalPrice, "Ưu đãi sinh nhật chỉ dành cho hội viên tự đăng ký");
         }
 
         long discountAmount = 0L;
@@ -114,6 +133,15 @@ public class PromotionService {
                 promo.getDiscountType(), promo.getDiscountValue(),
                 originalPrice, discountAmount, finalPrice, gifts
         );
+    }
+
+    /** V49 · null nếu hôm nay thuộc tháng sinh nhật; ngược lại là lý do không áp dụng. */
+    static String birthdayProblem(java.time.LocalDate dateOfBirth, java.time.LocalDate today) {
+        if (dateOfBirth == null) return "Cập nhật ngày sinh trong hồ sơ để nhận ưu đãi sinh nhật";
+        if (dateOfBirth.getMonthValue() != today.getMonthValue()) {
+            return "Ưu đãi sinh nhật chỉ dùng trong tháng " + dateOfBirth.getMonthValue() + " (tháng sinh nhật của bạn)";
+        }
+        return null;
     }
 
     private PromotionValidationResponse invalidResult(long originalPrice, String reason) {
@@ -154,6 +182,9 @@ public class PromotionService {
     }
 
     private void validateRequest(PromotionRequest req, Long existingId) {
+        if (req.audience() == PromotionAudience.UPGRADE && req.newMembersOnly()) {
+            throw ApiException.badRequest("Ưu đãi nâng cấp dành cho hội viên đang có gói, không thể chỉ áp dụng cho hội viên mới");
+        }
         String code = Mappers.blankToNull(req.code());
         if (code != null) {
             Optional<Promotion> existing = promotionRepository.findByCodeIgnoreCase(code);
@@ -183,6 +214,7 @@ public class PromotionService {
         p.setNewMembersOnly(req.newMembersOnly());
         p.setRenewalOnly(req.renewalOnly());
         p.setStackable(req.stackable());
+        p.setAudience(req.audience() == null ? PromotionAudience.ALL : req.audience());
         if (req.active() != null) {
             p.setActive(req.active());
         }

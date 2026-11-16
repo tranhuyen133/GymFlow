@@ -29,6 +29,11 @@ public class MemberSubscription {
     @JoinColumn(name = "plan_id", nullable = false)
     private MembershipPlan plan;
 
+    /** V49 · Gói PT sinh ra từ nâng cấp trỏ về gói tự tập cũ. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "upgraded_from_id")
+    private MemberSubscription upgradedFrom;
+
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 

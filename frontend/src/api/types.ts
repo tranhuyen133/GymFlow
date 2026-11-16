@@ -135,6 +135,7 @@ export interface PtSessionUsage {
 export interface SubscriptionPreview { startDate: string; endDate: string; price: number; chained: boolean }
 export type PackageRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 export type PaymentMethod = 'COUNTER' | 'BANK_TRANSFER';
+export type PackageRequestType = 'NEW' | 'UPGRADE';
 export interface PackageRequest {
   id: number; memberId: number; memberName: string; memberCode: string; memberPhone: string | null;
   planId: number; planName: string; price: number; durationDays: number; planStillOnSale: boolean;
@@ -149,6 +150,11 @@ export interface PackageRequest {
   originalPrice?: number;
   discountAmount?: number;
   finalPrice?: number;
+  /** V49 · đơn nâng cấp tự tập → PT: tiền còn lại của gói cũ được trừ vào giá gói mới */
+  requestType?: PackageRequestType;
+  upgradeFromSubscriptionId?: number | null;
+  upgradeFromPlanName?: string | null;
+  upgradeCredit?: number;
 }
 /** Thông tin nhận chuyển khoản; ảnh QR tải riêng bằng api.blob('/payment-settings/qr'). */
 export interface PaymentSettings {
@@ -156,11 +162,42 @@ export interface PaymentSettings {
   hasQr: boolean; qrUpdatedAt: string | null; updatedAt: string;
 }
 
+// ---------- V49 · Nâng cấp tự tập → PT, yêu cầu điều chỉnh, quản lý sửa thời gian ----------
+export interface UpgradeQuote {
+  eligible: boolean; reason: string | null;
+  fromSubscriptionId: number | null; fromPlanName: string | null; fromStartDate: string | null; fromEndDate: string | null;
+  fromPricePaid: number; totalDays: number; remainingDays: number; credit: number;
+  planId: number | null; planName: string | null; planPrice: number; amountAfterCredit: number;
+  promotionId: number | null; promotionCode: string | null; promotionName: string | null; promotionReason: string | null;
+  discountAmount: number; finalPrice: number; gifts: PromotionGrant[] | null;
+  startDate: string | null; endDate: string | null; ptSessions: number | null; ptValidUntil: string | null;
+  minStart: string | null; maxStart: string | null; currentTrainerId: number | null; currentTrainerName: string | null;
+}
+export type ChangeRequestType = 'CHANGE_START' | 'PAUSE' | 'CHANGE_TRAINER';
+export interface ChangeRequest {
+  id: number; memberId: number; memberName: string; memberCode: string; memberPhone: string | null;
+  subscriptionId: number; planName: string; type: ChangeRequestType;
+  oldStartDate: string; oldEndDate: string; newStartDate: string | null; newEndDate: string | null; pauseDays: number | null;
+  trainerId: number | null; trainerName: string | null; currentTrainerName: string | null;
+  reason: string; status: PackageRequestStatus; decisionNote: string | null;
+  decidedByName: string | null; decidedAt: string | null; createdAt: string;
+}
+export type AdjustmentSource = 'ADMIN' | 'MEMBER_REQUEST' | 'UPGRADE';
+export interface SubscriptionAdjustment {
+  id: number; subscriptionId: number; source: AdjustmentSource;
+  oldStartDate: string; oldEndDate: string; newStartDate: string; newEndDate: string;
+  oldPtValidUntil: string | null; newPtValidUntil: string | null; reason: string;
+  createdByName: string | null; createdAt: string;
+}
+export interface AdjustResult { subscription: Subscription; cancelledSessions: number; notes: string[] }
+export interface ChangeDecision { request: ChangeRequest; cancelledSessions: number; notes: string[] }
+
 // ---------- Services, Entitlements, Promotions ----------
 export type ServiceCategory = 'RELAX' | 'RECOVERY' | 'AMENITY' | 'NUTRITION' | 'OTHER';
 export type EntitlementSource = 'PLAN' | 'PURCHASE' | 'PROMOTION';
 export type EntitlementStatus = 'ACTIVE' | 'CANCELLED';
 export type DiscountType = 'PERCENT' | 'AMOUNT' | 'NONE';
+export type PromotionAudience = 'ALL' | 'BIRTHDAY' | 'UPGRADE';
 
 export interface ServiceItem {
   id: number;
@@ -227,6 +264,8 @@ export interface Promotion {
   usedCount: number;
   newMembersOnly: boolean;
   renewalOnly: boolean;
+  /** V49 · ALL = mọi người, BIRTHDAY = tháng sinh nhật, UPGRADE = chỉ khi nâng cấp gói */
+  audience?: PromotionAudience;
   stackable: boolean;
   active: boolean;
   createdAt: string;

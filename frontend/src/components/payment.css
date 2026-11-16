@@ -35,8 +35,12 @@
 .pick-note { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-md); background: var(--surface); color: var(--muted); font-size: 13px; line-height: 1.5; }
 .pick-note .pick-ico { width: 30px; height: 30px; border-radius: 10px; }
 
-/* ---------- Khối chuyển khoản ---------- */
-.pay-box { display: grid; grid-template-columns: 216px minmax(0, 1fr); gap: 20px; align-items: start; }
+/* ---------- Khối chuyển khoản (V49: thẻ ngân hàng + QR + các bước) ---------- */
+.pay-wrap { display: flex; flex-direction: column; gap: 14px; }
+.pay-box { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
+.pay-qr { display: flex; flex-direction: column; align-items: center; }
+.pay-qr .qr-frame { width: 100%; }
+.pay-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .qr-frame {
   position: relative; aspect-ratio: 1 / 1; padding: 12px; border-radius: 18px; background: #fff;
   display: grid; place-items: center; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
@@ -48,17 +52,63 @@
 }
 .qr-frame::before { top: -6px; left: -6px; border-right: 0; border-bottom: 0; border-radius: 12px 0 0 0; }
 .qr-frame::after { bottom: -6px; right: -6px; border-left: 0; border-top: 0; border-radius: 0 0 12px 0; }
-.qr-cap { margin-top: 10px; text-align: center; font-size: 12px; color: var(--faint); }
-.pay-rows { display: flex; flex-direction: column; border-radius: var(--r-md); background: var(--surface); overflow: hidden; }
-.pay-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 6px 8px 6px 14px; }
-.pay-row + .pay-row { border-top: 1px solid var(--hairline-soft); }
+.qr-cap { display: flex; align-items: center; gap: 6px; justify-content: center; margin-top: 12px; text-align: center; font-size: 12px; color: var(--faint); }
+
+/* Thẻ ngân hàng: nền tối gradient, chip vàng, số tài khoản to dạng nhóm 4 */
+.bank-card {
+  position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 14px; padding: 18px 18px 16px;
+  border-radius: 18px; color: #fff; min-height: 150px;
+  background: radial-gradient(120% 140% at 100% 0%, rgba(0, 214, 100, 0.55) 0%, transparent 55%),
+              linear-gradient(135deg, #0f2a1d 0%, #0b1712 60%, #050a07 100%);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.bank-card::after {
+  content: ''; position: absolute; right: -40px; bottom: -60px; width: 180px; height: 180px; border-radius: 50%;
+  border: 26px solid rgba(255, 255, 255, 0.04); pointer-events: none;
+}
+.bank-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bank-chip {
+  width: 38px; height: 28px; border-radius: 6px;
+  background: linear-gradient(135deg, #f7d774, #c89b2c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+.bank-name { font-weight: 800; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.92; text-align: right; overflow-wrap: anywhere; }
+.bank-number { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bank-number .mono { font-size: clamp(18px, 2.4vw, 22px); font-weight: 800; letter-spacing: 0.08em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.bank-holder { display: flex; flex-direction: column; gap: 2px; }
+.bank-holder .tiny { opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; }
+.bank-holder b { font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+.pay-copy {
+  flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--hairline); background: var(--surface); color: var(--muted); font: inherit; font-size: 12px; font-weight: 700;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.pay-copy:hover { color: var(--ink); border-color: var(--line-strong); }
+.pay-copy:focus-visible { outline: 2px solid var(--primary-bright); outline-offset: 2px; }
+.pay-copy.light { border-color: rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.1); color: #fff; }
+.pay-copy.light:hover { background: rgba(255, 255, 255, 0.2); }
+
+.pay-rows { display: flex; flex-direction: column; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--hairline); overflow: hidden; }
+.pay-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; padding: 8px 10px 8px 14px; }
+.pay-row + .pay-row { border-top: 1px dashed var(--hairline); }
 .pay-row .k { font-size: 12px; color: var(--muted); flex: none; }
-.pay-row .v { display: flex; align-items: center; gap: 4px; min-width: 0; text-align: right; }
+.pay-row .v { display: flex; align-items: center; gap: 8px; min-width: 0; text-align: right; }
 .pay-row .v b { overflow-wrap: anywhere; }
 .pay-row .v b.mono { font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+.pay-row .pay-amount { font-size: 17px; }
 .pay-row.hl { background: rgba(0, 178, 75, 0.08); }
-.pay-row.hl .v b { color: var(--primary-bright); font-size: 15px; }
+.pay-row.hl .v b { color: var(--primary-bright); font-size: 16px; }
 .pay-row .sub { display: block; font-size: 11px; color: var(--faint); font-weight: 500; }
+
+.pay-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.pay-steps li {
+  display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--r-md);
+  background: var(--surface); border: 1px solid var(--hairline); font-size: 12px; color: var(--muted); line-height: 1.45;
+}
+.pay-steps li span {
+  flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--primary); color: var(--on-primary); font-weight: 800; font-size: 12px;
+}
 .pay-tip { display: flex; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted); line-height: 1.5; }
 .pay-tip svg { flex: none; margin-top: 2px; color: var(--info); }
 .pay-status { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--r-md); background: rgba(0, 178, 75, 0.1); color: var(--primary-bright); font-size: 13px; font-weight: 700; }
@@ -93,7 +143,7 @@
 
 @media (max-width: 640px) {
   .pick-grid, .pick-grid.cols-3 { grid-template-columns: 1fr; }
-  .pay-box { grid-template-columns: 1fr; }
+  .pay-box, .pay-steps { grid-template-columns: 1fr; }
   .pay-box .qr-frame { max-width: 240px; margin: 0 auto; }
   .qr-current { grid-template-columns: 96px minmax(0, 1fr); }
 }

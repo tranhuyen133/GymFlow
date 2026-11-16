@@ -205,15 +205,15 @@ public class PackageRequestService {
     public PackageRequestResponse approve(AuthUser admin, Long id, ApprovePackageRequest req) {
         PackageRequest r = requestRepository.lockById(id).orElseThrow(() -> ApiException.notFound("đơn đăng ký gói"));
         if (!r.isPending()) throw ApiException.conflict("Đơn này đã được xử lý trước đó");
+        // V49 · đơn nâng cấp phải cắt gói cũ trước khi tạo gói PT → đi qua SubscriptionUpgradeService (PackageApprovalService chọn luồng).
+        if (r.isUpgrade()) throw ApiException.conflict("Đơn nâng cấp lên PT cần duyệt qua luồng nâng cấp");
         if (!r.getPlan().isActive()) {
             throw ApiException.badRequest("Gói đã ngừng kinh doanh. Hãy từ chối đơn và hướng dẫn hội viên chọn gói khác.");
         }
         // Gói có HLV kèm: kiểm tra HLV trước khi tạo gói, để lỗi HLV không để lại gói đã tạo.
         Trainer assign = null;
         if (r.getTrainer() != null || r.getPlan().isIncludesTrainer() || r.getPlan().getPlanType() == PlanType.GYM_PT) {
-            assign = req != null && req.trainerId() != null ? activeTrainer(req.trainerId()) : r.getTrainer();
-            if (assign == null) throw ApiException.badRequest("Gói có HLV kèm: chọn huấn luyện viên cho hội viên trước khi duyệt");
-            if (!assign.isActive()) throw ApiException.badRequest("Huấn luyện viên " + assign.getUser().getFullName() + " đang ngừng nhận hội viên, hãy chọn HLV khác");
+            assign = resolveTrainerForApproval(r, req);
         }
         Long memberId = r.getMember().getId();
         LocalDate today = mappers.today();
@@ -236,64 +236,9 @@ public class PackageRequestService {
 
         MemberSubscription subEntity = subscriptionRepository.getReferenceById(created.id());
 
-        // 1. Tăng số lượt dùng của ưu đãi (nếu có)
-        if (r.getPromotion() != null) {
-            promotionRepository.findByIdForUpdate(r.getPromotion().getId()).ifPresent(p -> {
-                p.setUsedCount(p.getUsedCount() + 1);
-            });
-        }
-
-        // 2. Tạo quyền lợi dịch vụ tặng kèm theo gói (source = PLAN)
-        if (r.getPlan().getServiceGrants() != null) {
-            for (PlanServiceGrant grant : r.getPlan().getServiceGrants()) {
-                MemberServiceEntitlement e = new MemberServiceEntitlement();
-                e.setMember(r.getMember());
-                e.setService(grant.getService());
-                e.setSource(EntitlementSource.PLAN);
-                e.setSubscription(subEntity);
-                e.setPackageRequest(r);
-                e.setServiceNameSnapshot(grant.getService().getName());
-                e.setGrantedQty(grant.getQuantity());
-                e.setUsedQty(0);
-                e.setValidFrom(created.startDate());
-                LocalDate grantUntil = created.startDate().plusDays(grant.getValidDays());
-                LocalDate validUntilDate = grantUntil.isAfter(created.endDate()) ? created.endDate() : grantUntil;
-                e.setValidUntil(validUntilDate);
-                e.setConditionsSnapshot(grant.getConditions());
-                e.setStatus(EntitlementStatus.ACTIVE);
-                entitlementRepository.save(e);
-            }
-        }
-
-        // 3. Tạo quyền lợi dịch vụ tặng từ chương trình ưu đãi (source = PROMOTION)
-        if (r.getPromotion() != null && r.getPromotion().getGrants() != null) {
-            for (PromotionGrant pg : r.getPromotion().getGrants()) {
-                MemberServiceEntitlement e = new MemberServiceEntitlement();
-                e.setMember(r.getMember());
-                e.setService(pg.getService());
-                e.setSource(EntitlementSource.PROMOTION);
-                e.setSubscription(subEntity);
-                e.setPackageRequest(r);
-                e.setServiceNameSnapshot(pg.getService().getName());
-                e.setGrantedQty(pg.getQuantity());
-                e.setUsedQty(0);
-                e.setValidFrom(created.startDate());
-                e.setValidUntil(created.startDate().plusDays(pg.getValidDays()));
-                e.setConditionsSnapshot(pg.getConditions());
-                e.setStatus(EntitlementStatus.ACTIVE);
-                entitlementRepository.save(e);
-            }
-        }
-
-        if (assign != null) {
-            Member m = r.getMember();
-            if (m.getTrainer() == null || !Objects.equals(m.getTrainer().getId(), assign.getId())) {
-                m.setTrainer(assign);
-                auditService.log("MEMBER_ASSIGN_TRAINER", "MEMBER", m.getId(),
-                        m.getCode() + " → " + assign.getUser().getFullName() + " (đơn #" + r.getId() + ")");
-            }
-            r.setTrainer(assign);
-        }
+        bumpPromotion(r);
+        grantEntitlements(r, subEntity, created.startDate(), created.endDate());
+        if (assign != null) assignTrainer(r, assign);
         r.setStatus(PackageRequestStatus.APPROVED);
         r.setDecisionNote(decision);
         r.setDecidedBy(userRepository.getReferenceById(admin.id()));
@@ -318,6 +263,72 @@ public class PackageRequestService {
         return toResponse(r);
     }
 
+    // ---------------- Dùng chung khi duyệt đơn (đăng ký thường và nâng cấp V49) ----------------
+
+    /** Tăng số lượt đã dùng của ưu đãi trong đơn (khoá dòng ưu đãi để không vượt max_uses khi duyệt đồng thời). */
+    void bumpPromotion(PackageRequest r) {
+        if (r.getPromotion() == null) return;
+        promotionRepository.findByIdForUpdate(r.getPromotion().getId()).ifPresent(p -> {
+            if (p.getMaxUses() != null && p.getUsedCount() >= p.getMaxUses()) {
+                throw ApiException.conflict("Ưu đãi " + p.getName() + " vừa hết lượt. Từ chối đơn để hội viên gửi lại với giá mới.");
+            }
+            p.setUsedCount(p.getUsedCount() + 1);
+        });
+    }
+
+    /** Quyền lợi dịch vụ tặng kèm gói (PLAN, không quá ngày hết gói) và tặng kèm ưu đãi (PROMOTION). */
+    void grantEntitlements(PackageRequest r, MemberSubscription subEntity, LocalDate start, LocalDate end) {
+        if (r.getPlan().getServiceGrants() != null) {
+            for (PlanServiceGrant grant : r.getPlan().getServiceGrants()) {
+                LocalDate grantUntil = start.plusDays(grant.getValidDays());
+                saveEntitlement(r, subEntity, grant.getService(), EntitlementSource.PLAN, grant.getQuantity(), start,
+                        grantUntil.isAfter(end) ? end : grantUntil, grant.getConditions());
+            }
+        }
+        if (r.getPromotion() != null && r.getPromotion().getGrants() != null) {
+            for (PromotionGrant pg : r.getPromotion().getGrants()) {
+                saveEntitlement(r, subEntity, pg.getService(), EntitlementSource.PROMOTION, pg.getQuantity(), start,
+                        start.plusDays(pg.getValidDays()), pg.getConditions());
+            }
+        }
+    }
+
+    private void saveEntitlement(PackageRequest r, MemberSubscription sub, ServiceItem service, EntitlementSource source,
+                                 int qty, LocalDate from, LocalDate until, String conditions) {
+        MemberServiceEntitlement e = new MemberServiceEntitlement();
+        e.setMember(r.getMember());
+        e.setService(service);
+        e.setSource(source);
+        e.setSubscription(sub);
+        e.setPackageRequest(r);
+        e.setServiceNameSnapshot(service.getName());
+        e.setGrantedQty(qty);
+        e.setUsedQty(0);
+        e.setValidFrom(from);
+        e.setValidUntil(until);
+        e.setConditionsSnapshot(conditions);
+        e.setStatus(EntitlementStatus.ACTIVE);
+        entitlementRepository.save(e);
+    }
+
+    /** Gán HLV của đơn cho hội viên (ghi nhật ký nếu đổi HLV). */
+    void assignTrainer(PackageRequest r, Trainer assign) {
+        Member m = r.getMember();
+        if (m.getTrainer() == null || !Objects.equals(m.getTrainer().getId(), assign.getId())) {
+            m.setTrainer(assign);
+            auditService.log("MEMBER_ASSIGN_TRAINER", "MEMBER", m.getId(),
+                    m.getCode() + " → " + assign.getUser().getFullName() + " (đơn #" + r.getId() + ")");
+        }
+        r.setTrainer(assign);
+    }
+
+    Trainer resolveTrainerForApproval(PackageRequest r, ApprovePackageRequest req) {
+        Trainer assign = req != null && req.trainerId() != null ? activeTrainer(req.trainerId()) : r.getTrainer();
+        if (assign == null) throw ApiException.badRequest("Gói có HLV kèm: chọn huấn luyện viên cho hội viên trước khi duyệt");
+        if (!assign.isActive()) throw ApiException.badRequest("Huấn luyện viên " + assign.getUser().getFullName() + " đang ngừng nhận hội viên, hãy chọn HLV khác");
+        return assign;
+    }
+
     private Trainer activeTrainer(Long trainerId) {
         Trainer t = trainerRepository.findById(trainerId).orElseThrow(() -> ApiException.notFound("huấn luyện viên"));
         if (!t.isActive()) throw ApiException.badRequest("Huấn luyện viên này đang ngừng nhận hội viên, vui lòng chọn HLV khác");
@@ -337,6 +348,11 @@ public class PackageRequestService {
                 r.getPromotion() == null ? null : r.getPromotion().getId(),
                 r.getPromotion() == null ? null : r.getPromotion().getCode(),
                 r.getPromotion() == null ? null : r.getPromotion().getName(),
-                r.getOriginalPrice(), r.getDiscountAmount(), r.getFinalPrice());
+                r.getOriginalPrice(), r.getDiscountAmount(), r.getFinalPrice(),
+                r.getRequestType() == null ? PackageRequestType.NEW : r.getRequestType(),
+                r.getUpgradeFrom() == null ? null : r.getUpgradeFrom().getId(),
+                r.getUpgradeFrom() == null ? null
+                        : r.getUpgradeFrom().getPlanNameSnapshot() != null ? r.getUpgradeFrom().getPlanNameSnapshot() : r.getUpgradeFrom().getPlan().getName(),
+                r.getUpgradeCredit());
     }
 }

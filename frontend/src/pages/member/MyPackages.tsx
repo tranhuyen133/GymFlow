@@ -11,7 +11,10 @@ import { api } from '../../api/client';
 import PackagesCatalog from './PackagesCatalog';
 import MyEntitlements from './MyEntitlements';
 import Coaches from './Coaches';
+import UpgradePtModal, { isPtPlan } from '../../components/UpgradePtModal';
+import SubscriptionChangeModal, { changeTypeLabel } from '../../components/SubscriptionChangeModal';
 import type {
+  ChangeRequest,
   Member,
   MembershipPlan,
   PackageRequest,
@@ -57,10 +60,15 @@ export default function MyPackages() {
   const reqs = useAsync(() => api.get<PackageRequest[]>('/package-requests/me'), []);
   const pay = useAsync(() => api.get<PaymentSettings>('/payment-settings'), []);
   const me = useAsync(() => api.get<Member>('/members/me'), []);
+  const changes = useAsync(() => api.get<ChangeRequest[]>('/subscription-changes/me'), []);
   const [picked, setPicked] = useState<MembershipPlan | null>(null);
   const [cancelling, setCancelling] = useState<PackageRequest | null>(null);
   const [paying, setPaying] = useState<PackageRequest | null>(null);
   const [viewUsagesSubId, setViewUsagesSubId] = useState<number | null>(null);
+  // V49 · undefined = đóng; null = mở và tự chọn gói PT đầu tiên
+  const [upgradePlanId, setUpgradePlanId] = useState<number | null | undefined>(undefined);
+  const [changing, setChanging] = useState<Subscription | null>(null);
+  const [cancellingChange, setCancellingChange] = useState<ChangeRequest | null>(null);
 
   if (subs.error) return <ErrorState message={subs.error} onRetry={subs.reload} />;
   if (subs.loading || !subs.data) return (
@@ -79,7 +87,19 @@ export default function MyPackages() {
   const total = current
     ? (parseDate(current.endDate).getTime() - parseDate(current.startDate).getTime()) / 86400000 + 1
     : 1;
-  const reloadAll = () => { void subs.reload(); void reqs.reload(); void plans.reload(); };
+  const reloadAll = () => { void subs.reload(); void reqs.reload(); void plans.reload(); void changes.reload(); };
+  const pendingChange = (s: Subscription) => changes.data?.some((c) => c.subscriptionId === s.id && c.status === 'PENDING') ?? false;
+  /** Gói tự tập đang chạy → nâng lên PT được (backend kiểm tra lại toàn bộ điều kiện). */
+  const canUpgrade = !!current && current.planType !== 'GYM_PT' && current.ptSessionsTotal == null && current.daysLeft > 0;
+  const cancelChange = async () => {
+    if (!cancellingChange) return;
+    try {
+      await api.put(`/subscription-changes/${cancellingChange.id}/cancel`);
+      toast.success(t('Đã huỷ yêu cầu điều chỉnh'));
+      void changes.reload();
+    } catch (e) { toast.error(errMsg(e)); }
+    setCancellingChange(null);
+  };
 
   const cancelRequest = async () => {
     if (!cancelling) return;
@@ -207,18 +227,32 @@ export default function MyPackages() {
                     </div>
                   </div>
                 )}
-                {current.ptSessionsTotal == null && (
-                  <div className="row between row-wrap mt-16" style={{ gap: 8, padding: '12px 14px', borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--hairline)' }}>
-                    <span className="small muted">
-                      {current.planType === 'GYM_PT'
-                        ? t('Gói có PT nhưng chưa khai báo số buổi. Vui lòng liên hệ quầy lễ tân.')
-                        : t('Gói hiện tại không kèm buổi tập với huấn luyện viên (PT).')}
-                    </span>
-                    {current.planType !== 'GYM_PT' && (
-                      <Button size="sm" variant="ghost" icon="badge" onClick={() => setTab('catalog')}>{t('Xem các gói có PT')}</Button>
-                    )}
+                {current.ptSessionsTotal == null && current.planType === 'GYM_PT' && (
+                  <div className="mt-16 small muted" style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--hairline)' }}>
+                    {t('Gói có PT nhưng chưa khai báo số buổi. Vui lòng liên hệ quầy lễ tân.')}
                   </div>
                 )}
+                {canUpgrade && (
+                  <div className="upg-cta mt-16">
+                    <span className="upg-cta-text">
+                      <span className="pick-ico"><Icon name="zap" size={16} /></span>
+                      <span>
+                        <b>{t('Muốn có HLV kèm? Nâng lên gói PT ngay từ ngày mai')}</b>
+                        <span className="muted" style={{ display: 'block' }}>{t('{n} ngày chưa dùng của gói này được trừ thẳng vào giá gói PT.', { n: current.daysLeft })}</span>
+                      </span>
+                    </span>
+                    <Button size="sm" variant="primary" icon="zap" disabled={!!pending}
+                      title={pending ? t('Bạn đang có một đơn chờ xác nhận') : undefined} onClick={() => setUpgradePlanId(null)}>
+                      {t('Nâng cấp lên PT')}
+                    </Button>
+                  </div>
+                )}
+                <div className="row mt-16" style={{ gap: 8, justifyContent: 'flex-end' }}>
+                  <Button size="sm" variant="ghost" icon="edit" disabled={pendingChange(current)}
+                    title={pendingChange(current) ? t('Gói này đang có yêu cầu chờ duyệt') : undefined} onClick={() => setChanging(current)}>
+                    {pendingChange(current) ? t('Đang chờ duyệt điều chỉnh') : t('Bảo lưu / đổi HLV')}
+                  </Button>
+                </div>
                 {(current.benefits || current.usageTerms) && (
                   <div className="small mt-16 stack-sm" style={{ gap: 4 }}>
                     {current.benefits && <div><b>{t('Quyền lợi đã mua')}:</b> <span className="muted">{current.benefits}</span></div>}
@@ -241,10 +275,44 @@ export default function MyPackages() {
                     <div className="row" style={{ gap: 8, alignItems: 'center' }}>
                       <span className="num small">{fmtMoney(s.pricePaid)}</span>
                       <StatusBadge map={subState} value={s.state} />
+                      <Button size="sm" variant="ghost" icon="edit" disabled={pendingChange(s)} onClick={() => setChanging(s)}>
+                        {pendingChange(s) ? t('Chờ duyệt') : t('Điều chỉnh')}
+                      </Button>
                     </div>
                   </div>
                 ))}
               </div>
+            </Card>
+          )}
+
+          {(changes.data?.length ?? 0) > 0 && (
+            <Card title={t('Yêu cầu điều chỉnh của tôi')} icon="edit" flush>
+              <Table caption={t('Yêu cầu điều chỉnh của tôi')}>
+                <thead><tr><th>{t('Yêu cầu')}</th><th>{t('Thay đổi')}</th><th>{t('Trạng thái')}</th><th aria-label={t('Thao tác')} /></tr></thead>
+                <tbody>
+                  {changes.data!.slice(0, 8).map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        <b>{t(changeTypeLabel[c.type])}</b>
+                        <div className="tiny faint">{t(c.planName)} · {fmtDateTime(c.createdAt)}</div>
+                        <div className="tiny faint">{t('Lý do: {r}', { r: c.reason })}</div>
+                      </td>
+                      <td className="small">
+                        {c.type === 'CHANGE_TRAINER'
+                          ? <>{c.currentTrainerName ?? '—'} → <b>{c.trainerName}</b></>
+                          : <>{fmtDate(c.oldStartDate)} → {fmtDate(c.oldEndDate)}<br /><b>{fmtDate(c.newStartDate)} → {fmtDate(c.newEndDate)}</b></>}
+                      </td>
+                      <td>
+                        <StatusBadge map={packageRequestStatus} value={c.status} />
+                        {c.decisionNote && <div className="tiny faint mt-4">{c.decisionNote}</div>}
+                      </td>
+                      <td className="nowrap">
+                        {c.status === 'PENDING' && <Button size="sm" variant="ghost" icon="x" onClick={() => setCancellingChange(c)}>{t('Huỷ')}</Button>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
             </Card>
           )}
 
@@ -262,6 +330,10 @@ export default function MyPackages() {
                       <tr key={r.id}>
                         <td>
                           <b>{t(r.planName)}</b>
+                          {r.requestType === 'UPGRADE' && <> <Badge tone="violet">{t('Nâng cấp PT')}</Badge></>}
+                          {r.requestType === 'UPGRADE' && (r.upgradeCredit ?? 0) > 0 && (
+                            <div className="tiny ok">{t('Từ {plan} · đã trừ {m} phần chưa dùng', { plan: t(r.upgradeFromPlanName ?? ''), m: fmtMoney(r.upgradeCredit) })}</div>
+                          )}
                           <div className="tiny faint">
                             {durationLabel(r.durationDays)} · {r.desiredStartDate ? t('Bắt đầu mong muốn {d}', { d: fmtDate(r.desiredStartDate) }) : t('Bắt đầu sớm nhất')}
                           </div>
@@ -363,8 +435,9 @@ export default function MyPackages() {
                       </Button>
                     ) : (
                       <Button size="sm" variant={p.id === best ? 'primary' : 'secondary'} block icon={mine ? 'repeat' : 'plus'} disabled={!!pending}
-                        title={pending ? t('Bạn đang có một đơn chờ xác nhận') : undefined} onClick={() => setPicked(p)}>
-                        {mine ? t('Gia hạn gói này') : (current ? t('Nâng cấp gói này') : t('Đăng ký gói này'))}
+                        title={pending ? t('Bạn đang có một đơn chờ xác nhận') : undefined}
+                        onClick={() => (canUpgrade && isPtPlan(p) ? setUpgradePlanId(p.id) : setPicked(p))}>
+                        {mine ? t('Gia hạn gói này') : canUpgrade && isPtPlan(p) ? t('Nâng lên PT · trừ tiền gói cũ') : (current ? t('Đăng ký nối tiếp') : t('Đăng ký gói này'))}
                       </Button>
                     )
                   } />
@@ -385,6 +458,17 @@ export default function MyPackages() {
         onClose={() => setPicked(null)}
         onDone={(created) => { setPicked(null); reloadAll(); if (created.paymentMethod === 'BANK_TRANSFER') setPaying(created); }} />}
       {paying && pay.data && <PayModal req={paying} settings={pay.data} onClose={() => setPaying(null)} onPaid={() => { setPaying(null); reloadAll(); }} />}
+      {upgradePlanId !== undefined && (
+        <UpgradePtModal initialPlanId={upgradePlanId} payment={pay.data} onClose={() => setUpgradePlanId(undefined)}
+          onDone={(created) => { setUpgradePlanId(undefined); reloadAll(); if (created.paymentMethod === 'BANK_TRANSFER') setPaying(created); }} />
+      )}
+      {changing && <SubscriptionChangeModal sub={changing} onClose={() => setChanging(null)}
+        onDone={() => { setChanging(null); void changes.reload(); }} />}
+      {cancellingChange && (
+        <Confirm title={t('Huỷ yêu cầu điều chỉnh?')} danger confirmText={t('Huỷ yêu cầu')}
+          message={t('Yêu cầu {type} sẽ bị huỷ, gói giữ nguyên thời gian hiện tại.', { type: t(changeTypeLabel[cancellingChange.type]).toLowerCase() })}
+          onConfirm={cancelChange} onClose={() => setCancellingChange(null)} />
+      )}
       {viewUsagesSubId && <PtUsagesModal subscriptionId={viewUsagesSubId} onClose={() => setViewUsagesSubId(null)} />}
       {cancelling && (
         <Confirm title={t('Huỷ đơn đăng ký?')} danger confirmText={t('Huỷ đơn')}
@@ -726,10 +810,11 @@ export function PayModal({ req, settings, onClose, onPaid }: { req: PackageReque
       <div className="stack">
         <div className="plan-summary">
           <div><span className="tiny muted">{t('Gói')}</span><b>{t(req.planName)}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
-          {req.discountAmount && req.discountAmount > 0 ? (
+          {(req.discountAmount ?? 0) > 0 || (req.upgradeCredit ?? 0) > 0 ? (
             <>
               <div><span className="tiny muted">{t('Giá gốc')}</span><b className="num" style={{ textDecoration: 'line-through' }}>{fmtMoney(req.originalPrice ?? req.price)}</b></div>
-              <div><span className="tiny muted">{t('Ưu đãi')}</span><b className="num ok">-{fmtMoney(req.discountAmount)}</b></div>
+              {(req.upgradeCredit ?? 0) > 0 && <div><span className="tiny muted">{t('Trừ gói cũ')}</span><b className="num ok">-{fmtMoney(req.upgradeCredit)}</b></div>}
+              {(req.discountAmount ?? 0) > 0 && <div><span className="tiny muted">{t('Ưu đãi')}</span><b className="num ok">-{fmtMoney(req.discountAmount)}</b></div>}
               <div><span className="tiny muted">{t('Thanh toán')}</span><b className="num" style={{ color: 'var(--primary)', fontSize: 16 }}>{fmtMoney(payAmount)}</b></div>
             </>
           ) : (

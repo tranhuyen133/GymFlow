@@ -1,0 +1,83 @@
+/* V49 · Nâng cấp lên PT, yêu cầu điều chỉnh gói, quản lý sửa thời gian. Dùng biến màu chung của styles.css. */
+
+/* ---------- Bố cục modal nâng cấp: form trái, hoá đơn phải ---------- */
+.upg { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+.upg-main { min-width: 0; }
+
+.upg-path { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: stretch; }
+.upg-node {
+  display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; min-width: 0;
+  border-radius: var(--r-md); border: 1px solid var(--hairline); background: var(--surface);
+}
+.upg-node b { font-size: 14px; overflow-wrap: anywhere; }
+.upg-node.on { border-color: var(--primary-bright); background: rgba(0, 178, 75, 0.08); }
+.upg-arrow { display: grid; place-items: center; width: 34px; border-radius: 50%; align-self: center; height: 34px; background: var(--primary); color: var(--on-primary); }
+
+.upg-plans { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.upg-plan {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; text-align: left; font: inherit; color: var(--ink); cursor: pointer;
+  border-radius: var(--r-md); border: 1px solid var(--hairline); background: var(--surface);
+  transition: border-color 0.2s, background 0.2s, transform 0.2s var(--ease-out);
+}
+.upg-plan:hover { border-color: var(--line-strong); background: var(--hover-tint); }
+.upg-plan:active { transform: scale(0.99); }
+.upg-plan:focus-visible { outline: 2px solid var(--primary-bright); outline-offset: 2px; }
+.upg-plan.on { border-color: var(--primary-bright); background: rgba(0, 178, 75, 0.08); box-shadow: inset 0 0 0 1px var(--primary-bright); }
+.upg-plan-price { margin-top: 4px; font-weight: 800; }
+
+/* Hoá đơn: răng cưa ở đáy, số canh phải, dòng tổng đậm */
+.upg-receipt {
+  position: sticky; top: 0; display: flex; flex-direction: column; gap: 10px; padding: 16px 16px 22px;
+  border-radius: var(--r-md) var(--r-md) 0 0; background: var(--surface); border: 1px solid var(--hairline); border-bottom: 0;
+  -webkit-mask: radial-gradient(circle 6px at 8px 100%, transparent 98%, #000) 0 0 / 16px 100% repeat-x;
+          mask: radial-gradient(circle 6px at 8px 100%, transparent 98%, #000) 0 0 / 16px 100% repeat-x;
+}
+.upg-receipt-head { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; border-bottom: 1px dashed var(--hairline); }
+.upg-spin { margin-left: auto; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--hairline); border-top-color: var(--primary-bright); animation: upg-spin 0.8s linear infinite; }
+@keyframes upg-spin { to { transform: rotate(360deg); } }
+.upg-line { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; font-size: 13px; }
+.upg-line > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.upg-line small { font-size: 11px; color: var(--faint); font-weight: 500; }
+.upg-line code { font-size: 11px; padding: 1px 6px; border-radius: 6px; background: var(--rail); font-weight: 700; }
+.upg-line.ok b { color: var(--primary-bright); }
+.upg-total {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  margin-top: 4px; padding-top: 12px; border-top: 1px dashed var(--hairline);
+}
+.upg-total span { font-weight: 700; }
+.upg-total b { font-size: 22px; letter-spacing: -0.01em; color: var(--ink); }
+.upg-save { align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: rgba(0, 178, 75, 0.12); color: var(--primary-bright); font-size: 12px; font-weight: 700; }
+.upg-facts { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); }
+.upg-facts li { display: flex; gap: 6px; align-items: flex-start; line-height: 1.45; }
+.upg-facts svg { flex: none; margin-top: 2px; color: var(--primary-bright); }
+
+/* ---------- Khối CTA nâng cấp trong thẻ gói hiện tại ---------- */
+.upg-cta {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(0, 178, 75, 0.35);
+  background: linear-gradient(120deg, rgba(0, 178, 75, 0.12), rgba(0, 178, 75, 0.02));
+}
+.upg-cta-text { display: flex; gap: 10px; align-items: flex-start; min-width: 0; font-size: 13px; line-height: 1.45; }
+.upg-cta-text .pick-ico { width: 32px; height: 32px; border-radius: 10px; background: var(--primary); color: var(--on-primary); }
+
+/* ---------- Trước / sau khi điều chỉnh ---------- */
+.adj-compare { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; }
+.adj-box { padding: 10px 12px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--hairline); min-width: 0; }
+.adj-box.after { border-color: var(--primary-bright); background: rgba(0, 178, 75, 0.06); }
+.adj-box .tiny { display: block; margin-bottom: 2px; }
+.adj-box b { font-variant-numeric: tabular-nums; }
+.adj-diff { font-size: 12px; font-weight: 700; color: var(--primary-bright); }
+.adj-diff.neg { color: var(--warning); }
+
+.adj-history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.adj-history li { position: relative; padding: 0 0 14px 20px; font-size: 13px; }
+.adj-history li::before { content: ''; position: absolute; left: 5px; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--primary-bright); }
+.adj-history li::after { content: ''; position: absolute; left: 8px; top: 16px; bottom: 0; width: 2px; background: var(--hairline); }
+.adj-history li:last-child::after { display: none; }
+
+@media (max-width: 760px) {
+  .upg { grid-template-columns: 1fr; }
+  .upg-receipt { position: static; }
+  .upg-path, .adj-compare { grid-template-columns: 1fr; }
+  .upg-arrow { transform: rotate(90deg); justify-self: center; }
+}

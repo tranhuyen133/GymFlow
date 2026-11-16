@@ -70,7 +70,8 @@ public class ScheduleService {
             if (memberId != null) {
                 access.requireView(user, memberId);
             } else {
-                scopeTrainer = myId;
+                // V49 · HLV thấy cả buổi tự tập của hội viên mình phụ trách (vừa được giao là có lịch ngay).
+                return mappers.schedules(scheduleRepository.findInRangeForTrainer(from, to, myId));
             }
         }
         return mappers.schedules(scheduleRepository.findInRange(from, to, scopeMember, scopeTrainer));
@@ -289,7 +290,8 @@ public class ScheduleService {
             return "hội viên không có gói tập hiệu lực vào ngày " + start.toLocalDate();
         }
         if (trainer != null && !subscriptionRepository.hasEffectivePtSubscription(member.getId(), start.toLocalDate())) {
-            return "hội viên chỉ có gói tự tập, không thể xếp lịch có huấn luyện viên (PT)";
+            return "hội viên chỉ có gói tự tập vào ngày " + start.toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                    + ", chưa xếp được buổi có HLV – hội viên cần nâng cấp lên gói có PT (Gói tập › Nâng cấp lên PT)";
         }
         if (trainer != null) {
             String quota = ptQuotaProblem(member, start.toLocalDate(), excludeId);
