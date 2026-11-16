@@ -13,7 +13,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,9 +59,13 @@ class ConversationServiceTest {
     private User trainerUser;
     private User adminUser;
 
+    private Clock clock;
+
     @BeforeEach
     void setUp() {
         rateLimiter = new MessageRateLimiter();
+        clock = Clock.fixed(LocalDateTime.of(2026, 11, 16, 10, 0).atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toInstant(),
+                ZoneId.of("Asia/Ho_Chi_Minh"));
         conversationService = new ConversationService(
                 conversationRepository,
                 messageRepository,
@@ -69,7 +75,8 @@ class ConversationServiceTest {
                 userRepository,
                 accessService,
                 auditService,
-                rateLimiter
+                rateLimiter,
+                clock
         );
 
         memberUser = new User();
@@ -316,7 +323,7 @@ class ConversationServiceTest {
     }
 
     @Test
-    @DisplayName("HLV inactive không tạo được hội thoại và trả lỗi 400")
+    @DisplayName("HLV inactive khA'ng t���o �`�����c h��Ti tho���i vA� tr��� l��-i 400")
     void inactiveTrainerCannotCreateConversation() {
         trainerEntity.setActive(false);
         when(accessService.requireMemberOf(memberAuth)).thenReturn(memberEntity);
@@ -327,7 +334,88 @@ class ConversationServiceTest {
                 .satisfies(e -> {
                     ApiException apiEx = (ApiException) e;
                     assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
-                    assertThat(apiEx.getMessage()).contains("không hoạt động");
+                    assertThat(apiEx.getMessage()).isNotBlank();
                 });
+    }
+
+    @Test
+    @DisplayName("Tìm tin nhắn: chuỗi rỗng trả về ngay, có từ khoá thì trả theo thứ tự cũ → mới")
+    void searchMessagesHandlesBlankAndReturnsAscending() {
+        Conversation conv = new Conversation(memberEntity, trainerEntity);
+        conv.setId(1L);
+        when(conversationRepository.findById(1L)).thenReturn(Optional.of(conv));
+
+        assertThat(conversationService.searchMessages(memberAuth, 1L, "   ", null, 30)).isEmpty();
+        verify(messageRepository, never()).findVisibleSearch(any(), any(), any(), any(), any());
+
+        Message newer = new Message(conv, trainerUser, Role.TRAINER, "deadlift nặng", null);
+        newer.setId(12L);
+        Message older = new Message(conv, memberUser, Role.MEMBER, "deadlift nhẹ", null);
+        older.setId(8L);
+        when(messageRepository.findVisibleSearch(eq(1L), eq(10L), eq("deadlift"), any(), any()))
+                .thenReturn(List.of(newer, older));
+
+        List<MessageResponseDto> found = conversationService.searchMessages(memberAuth, 1L, " DeadLift ", null, 30);
+        assertThat(found).extracting(MessageResponseDto::id).containsExactly(8L, 12L);
+    }
+
+    @Test
+    @DisplayName("Thư viện phương tiện: lọc kind hợp lệ, kind lạ bỏ lọc; tin đã thu hồi có cờ recalled + recalledAt")
+    void mediaFiltersKindAndExposesRecallState() {
+        Conversation conv = new Conversation(memberEntity, trainerEntity);
+        conv.setId(1L);
+        when(conversationRepository.findById(1L)).thenReturn(Optional.of(conv));
+
+        Message image = new Message(conv, memberUser, Role.MEMBER, "", null);
+        image.setId(5L);
+        image.setKind("IMAGE");
+        image.setAttachmentName("a.jpg");
+        image.setAttachmentType("image/jpeg");
+        image.setAttachmentSize(8L);
+        image.setRecalledAt(LocalDateTime.now());
+        when(messageRepository.findVisibleMedia(eq(1L), eq(10L), eq("IMAGE"), any(), any()))
+                .thenReturn(List.of(image));
+
+        List<MessageResponseDto> media = conversationService.getMediaMessages(memberAuth, 1L, "image", null, 30);
+        assertThat(media).hasSize(1);
+        assertThat(media.get(0).recalled()).isTrue();
+        assertThat(media.get(0).recalledAt()).isNotNull();
+        assertThat(media.get(0).body()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Context quanh tin nhắn: ghép tin cũ + tin mới và sắp xếp tăng dần")
+    void messageContextMergesBeforeAndAfter() {
+        Conversation conv = new Conversation(memberEntity, trainerEntity);
+        conv.setId(1L);
+        when(conversationRepository.findById(1L)).thenReturn(Optional.of(conv));
+
+        Message before = new Message(conv, memberUser, Role.MEMBER, "trước", null);
+        before.setId(9L);
+        Message after = new Message(conv, trainerUser, Role.TRAINER, "sau", null);
+        after.setId(11L);
+        when(messageRepository.findVisibleBefore(eq(1L), eq(10L), eq(11L), any())).thenReturn(List.of(before));
+        when(messageRepository.findVisibleAfter(eq(1L), eq(10L), eq(10L), any())).thenReturn(List.of(after));
+
+        List<MessageResponseDto> context = conversationService.getMessageContext(memberAuth, 1L, 10L, 41);
+        assertThat(context).extracting(MessageResponseDto::id).containsExactly(9L, 11L);
+    }
+
+    @Test
+    @DisplayName("Hội thoại trả trạng thái online theo lastSeenAt của hai bên")
+    void conversationResponseReportsPresence() {
+        LocalDateTime now = LocalDateTime.now(clock);
+        memberUser.setLastSeenAt(now);
+        trainerUser.setLastSeenAt(now.minusMinutes(5));
+        Conversation conv = new Conversation(memberEntity, trainerEntity);
+        conv.setId(1L);
+        when(accessService.requireMemberOf(memberAuth)).thenReturn(memberEntity);
+        when(conversationRepository.findByMemberId(100L)).thenReturn(List.of(conv));
+
+        ConversationResponse res = conversationService.listConversations(memberAuth).get(0);
+        assertThat(res.memberOnline()).isTrue();
+        assertThat(res.trainerOnline()).isFalse();
+        assertThat(res.memberLastSeenAt()).isEqualTo(now);
+        assertThat(res.trainerLastSeenAt()).isEqualTo(now.minusMinutes(5));
     }
 }

@@ -526,6 +526,7 @@ export interface ChatMessageItem {
   /** V45: TEXT | IMAGE | VIDEO | FILE. Tin cũ có thể thiếu → coi như TEXT. */
   kind?: MessageKind;
   recalled?: boolean;
+  recalledAt?: string | null;
   attachmentName?: string | null;
   attachmentType?: string | null;
   attachmentSize?: number | null;
@@ -544,6 +545,11 @@ export interface Conversation {
   lastMessage: ChatMessageItem | null;
   unreadCount: number;
   relation: ConversationRelation;
+  /** V47: trạng thái online khi nhắn tin. */
+  memberOnline: boolean;
+  trainerOnline: boolean;
+  memberLastSeenAt: string | null;
+  trainerLastSeenAt: string | null;
 }
 
 export interface AdminConversationSummary {

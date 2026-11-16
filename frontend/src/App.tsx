@@ -5,6 +5,7 @@ import { useAuth } from './auth/AuthContext';
 import { BrandMark } from './components/Brand';
 import { Layout } from './components/Layout';
 import { t } from './i18n';
+import { usePresenceHeartbeat } from './lib/presence';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminConversations from './pages/admin/AdminConversations';
 import AuditLog from './pages/admin/AuditLog';
@@ -114,6 +115,7 @@ const CHAT_ROLES: Role[] = ['MEMBER', 'TRAINER', 'ADMIN'];
 
 export default function App() {
   const { user, loading } = useAuth();
+  usePresenceHeartbeat(user?.role);
   return (
     <Routes>
       <Route path="/" element={<Landing />} />

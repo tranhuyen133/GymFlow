@@ -50,6 +50,26 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findVisibleNew(@Param("conversationId") Long conversationId, @Param("userId") Long userId,
                                  @Param("after") Long after);
 
+    @Query("select m from Message m where m.conversation.id = :conversationId" + VISIBLE + " and m.id > :after order by m.id asc")
+    List<Message> findVisibleAfter(@Param("conversationId") Long conversationId, @Param("userId") Long userId,
+                                   @Param("after") Long after, Pageable pageable);
+
+    /** Tìm trong nội dung tin / tên tệp (không dấu phân biệt hoa thường), bỏ tin đã thu hồi / đã xoá phía tôi. */
+    @Query("select m from Message m where m.conversation.id = :conversationId" + VISIBLE +
+            " and m.recalledAt is null" +
+            " and (:q = '' or locate(:q, lower(m.body)) > 0 or locate(:q, lower(coalesce(m.attachmentName, ''))) > 0)" +
+            " and (:before is null or m.id < :before) order by m.id desc")
+    List<Message> findVisibleSearch(@Param("conversationId") Long conversationId, @Param("userId") Long userId,
+                                    @Param("q") String q, @Param("before") Long before, Pageable pageable);
+
+    /** Ảnh / video / tệp đã gửi còn hiển thị (dùng cho mục thư viện phương tiện). */
+    @Query("select m from Message m where m.conversation.id = :conversationId" + VISIBLE +
+            " and m.recalledAt is null and m.attachmentType is not null" +
+            " and (:kind is null or m.kind = :kind)" +
+            " and (:before is null or m.id < :before) order by m.id desc")
+    List<Message> findVisibleMedia(@Param("conversationId") Long conversationId, @Param("userId") Long userId,
+                                   @Param("kind") String kind, @Param("before") Long before, Pageable pageable);
+
     /** Id các tin bị thu hồi sau mốc `since` – để màn hình đang mở cập nhật "đã thu hồi" khi thăm dò định kỳ. */
     @Query("select m.id from Message m where m.conversation.id = :conversationId and m.recalledAt is not null and m.recalledAt > :since")
     List<Long> findRecalledSince(@Param("conversationId") Long conversationId, @Param("since") LocalDateTime since);

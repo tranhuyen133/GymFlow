@@ -12,7 +12,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
@@ -28,6 +30,7 @@ public class ConversationService {
     private final AccessService access;
     private final AuditService auditService;
     private final MessageRateLimiter messageRateLimiter;
+    private final Clock clock;
 
     public boolean isTrainerAssignedToMember(Member member, Trainer trainer) {
         if (member == null || trainer == null) {
@@ -145,6 +148,63 @@ public class ConversationService {
         return messageRepository.findVisibleNew(conversationId, user.id(), minId).stream()
                 .map(this::toMessageDto)
                 .toList();
+    }
+
+    /** Tìm tin nhắn trong hội thoại theo nội dung / tên tệp; trả về theo thứ tự cũ → mới. */
+    @Transactional(readOnly = true)
+    public List<MessageResponseDto> searchMessages(AuthUser user, Long conversationId, String rawQuery, Long before, int size) {
+        Conversation c = loadConversation(conversationId);
+        checkParticipant(user, c);
+        String q = rawQuery == null ? "" : rawQuery.trim().toLowerCase();
+        if (q.isEmpty()) {
+            return List.of();
+        }
+        if (q.length() > 100) {
+            q = q.substring(0, 100);
+        }
+        int limit = Math.min(Math.max(size, 1), 50);
+        List<Message> desc = messageRepository.findVisibleSearch(conversationId, user.id(), q, before, PageRequest.of(0, limit));
+        List<Message> asc = new ArrayList<>(desc);
+        Collections.reverse(asc);
+        return asc.stream().map(this::toMessageDto).toList();
+    }
+
+    /** Ảnh / video / tệp đã gửi còn hiển thị; trả về mới nhất trước để hiển thị thư viện. */
+    @Transactional(readOnly = true)
+    public List<MessageResponseDto> getMediaMessages(AuthUser user, Long conversationId, String rawKind, Long before, int size) {
+        Conversation c = loadConversation(conversationId);
+        checkParticipant(user, c);
+        String kind = normalizeMediaKind(rawKind);
+        int limit = Math.min(Math.max(size, 1), 60);
+        return messageRepository.findVisibleMedia(conversationId, user.id(), kind, before, PageRequest.of(0, limit))
+                .stream()
+                .map(this::toMessageDto)
+                .toList();
+    }
+
+    /** Cửa sổ tin quanh một tin để nhảy tới kết quả tìm kiếm ở xa. */
+    @Transactional(readOnly = true)
+    public List<MessageResponseDto> getMessageContext(AuthUser user, Long conversationId, Long messageId, int size) {
+        Conversation c = loadConversation(conversationId);
+        checkParticipant(user, c);
+        int limit = Math.min(Math.max(size, 10), 80);
+        int older = limit / 2;
+        int newer = limit - older - 1;
+        List<Message> all = new ArrayList<>(
+                messageRepository.findVisibleBefore(conversationId, user.id(), messageId + 1, PageRequest.of(0, older + 1)));
+        all.addAll(messageRepository.findVisibleAfter(conversationId, user.id(), messageId, PageRequest.of(0, newer)));
+        all.sort(Comparator.comparing(Message::getId));
+        return all.stream().map(this::toMessageDto).toList();
+    }
+
+    private static String normalizeMediaKind(String rawKind) {
+        if (rawKind == null) {
+            return null;
+        }
+        return switch (rawKind.trim().toUpperCase(Locale.ROOT)) {
+            case "IMAGE", "VIDEO", "FILE" -> rawKind.trim().toUpperCase(Locale.ROOT);
+            default -> null;
+        };
     }
 
     @Transactional
@@ -293,6 +353,10 @@ public class ConversationService {
                 Objects.equals(c.getMember().getTrainer().getId(), c.getTrainer().getId()))
                 ? "ASSIGNED" : "CONSULTING";
 
+        LocalDateTime now = LocalDateTime.now(clock).truncatedTo(ChronoUnit.MICROS);
+        LocalDateTime memberSeen = mu.getLastSeenAt();
+        LocalDateTime trainerSeen = tu.getLastSeenAt();
+
         return new ConversationResponse(
                 c.getId(),
                 c.getMember().getId(),
@@ -305,7 +369,11 @@ public class ConversationService {
                 c.getLastMessageAt(),
                 lastMsg,
                 unread,
-                relation
+                relation,
+                PresenceService.isOnline(memberSeen, now),
+                PresenceService.isOnline(trainerSeen, now),
+                memberSeen,
+                trainerSeen
         );
     }
 
@@ -325,6 +393,7 @@ public class ConversationService {
                 m.getReadAt(),
                 kind,
                 recalled,
+                m.getRecalledAt(),
                 recalled ? null : m.getAttachmentName(),
                 recalled ? null : m.getAttachmentType(),
                 recalled ? null : m.getAttachmentSize()
