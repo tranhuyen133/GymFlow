@@ -29,4 +29,12 @@ public interface AssistantProvider {
      * Trả lời câu hỏi tự do bằng văn bản (text query), có ngữ cảnh hội thoại.
      */
     String answerText(AuthUser user, String text, ChatConversation conversation);
+
+    /**
+     * Provider thực tế đã tạo ra câu trả lời gần nhất trên thread hiện tại.
+     * GeminiProvider ghi đè để phản ánh đúng "rule" khi phải fallback.
+     */
+    default String lastAnswerProvider() {
+        return getProviderName();
+    }
 }

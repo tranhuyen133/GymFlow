@@ -20,11 +20,22 @@ class AssistantProviderServiceTest {
     void selectsGeminiProviderWhenGeminiIsEnabled() {
         when(aiConfig.isGeminiEnabled()).thenReturn(true);
         when(aiConfig.isFreeTextEnabled()).thenReturn(true);
+        when(geminiProvider.isAvailable()).thenReturn(true);
 
         AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, geminiProvider);
 
         assertThat(service.getActiveProvider()).isSameAs(geminiProvider);
         assertThat(service.isFreeTextEnabled()).isTrue();
+    }
+
+    @Test
+    void fallsBackToRuleWhenGeminiHasNoApiKey() {
+        when(aiConfig.isGeminiEnabled()).thenReturn(true);
+        when(geminiProvider.isAvailable()).thenReturn(false);
+
+        AssistantProviderService service = new AssistantProviderService(aiConfig, ruleBasedProvider, geminiProvider);
+
+        assertThat(service.getActiveProvider()).isSameAs(ruleBasedProvider);
     }
 
     @Test
