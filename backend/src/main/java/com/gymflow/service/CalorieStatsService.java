@@ -4,6 +4,8 @@ import com.gymflow.common.ApiException;
 import com.gymflow.domain.EstimateStatus;
 import com.gymflow.domain.WorkoutLog;
 import com.gymflow.dto.Dtos.CalorieBucket;
+import com.gymflow.dto.Dtos.CalorieHistoryResponse;
+import com.gymflow.dto.Dtos.CalorieWeek;
 import com.gymflow.dto.Dtos.CaloriePeriodSummary;
 import com.gymflow.dto.Dtos.CalorieSessionResponse;
 import com.gymflow.dto.Dtos.CalorieSummaryResponse;
@@ -33,6 +35,8 @@ public class CalorieStatsService {
 
     private static final DateTimeFormatter DAY_LABEL = DateTimeFormatter.ofPattern("dd/MM");
     private static final int MAX_RANGE_DAYS = 366;
+    static final int MAX_HISTORY_WEEKS = 52;
+    static final int KCAL_PER_KG_FAT = 7700;
 
     private final WorkoutLogRepository logRepository;
     private final WorkoutLogExerciseRepository logExerciseRepository;
@@ -124,13 +128,51 @@ public class CalorieStatsService {
                 memberId, from.atStartOfDay(), to.atStartOfDay());
     }
 
+    /**
+     * Lịch sử calo theo tuần (Thứ 2 → Chủ nhật), tuần hiện tại ở cuối, mỗi tuần kèm 7 ngày.
+     * Số kg mỡ tương đương = calo / 7.700 – quy ước thô, chỉ để hình dung, không phải dự báo giảm cân.
+     */
+    @Transactional(readOnly = true)
+    public CalorieHistoryResponse history(AuthUser user, Long memberId, int weeksRaw) {
+        access.requireView(user, memberId);
+        int weeks = Math.max(1, Math.min(MAX_HISTORY_WEEKS, weeksRaw));
+        LocalDate thisWeek = LocalDate.now(clock).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate from = thisWeek.minusWeeks(weeks - 1L);
+        return buildHistory(logs(memberId, from, thisWeek.plusWeeks(1)), from, weeks);
+    }
+
+    static CalorieHistoryResponse buildHistory(List<WorkoutLog> logs, LocalDate firstMonday, int weeks) {
+        List<CalorieWeek> result = new ArrayList<>();
+        long total = 0;
+        long sessions = 0;
+        for (int i = 0; i < weeks; i++) {
+            LocalDate ws = firstMonday.plusWeeks(i);
+            LocalDate we = ws.plusDays(7);
+            List<WorkoutLog> weekLogs = logs.stream()
+                    .filter(l -> !l.getCompletedAt().toLocalDate().isBefore(ws) && l.getCompletedAt().toLocalDate().isBefore(we))
+                    .toList();
+            long cal = sumCalories(estimated(weekLogs));
+            total += cal;
+            sessions += weekLogs.size();
+            result.add(new CalorieWeek(ws, we.minusDays(1), cal, weekLogs.size(), round1(sumActiveMinutes(weekLogs)),
+                    fatKg(cal), buckets(weekLogs, ws, we)));
+        }
+        return new CalorieHistoryResponse(result, total, sessions, round1(total / (double) weeks), fatKg(total),
+                KCAL_PER_KG_FAT, "Asia/Ho_Chi_Minh",
+                "Ước tính thô: khoảng 7.700 kcal tương đương 1 kg mỡ. Cân nặng thực tế còn phụ thuộc ăn uống, nước và cơ.");
+    }
+
+    static double fatKg(long calories) {
+        return Math.round(calories * 100.0 / KCAL_PER_KG_FAT) / 100.0;
+    }
+
     private static List<WorkoutLog> estimated(List<WorkoutLog> logs) {
         return logs.stream()
                 .filter(l -> l.isEstimated() && l.getEstimateStatus() == EstimateStatus.OK)
                 .toList();
     }
 
-    private List<CalorieBucket> buckets(List<WorkoutLog> logs, LocalDate from, LocalDate to) {
+    private static List<CalorieBucket> buckets(List<WorkoutLog> logs, LocalDate from, LocalDate to) {
         Map<LocalDate, List<WorkoutLog>> byDay = logs.stream()
                 .collect(Collectors.groupingBy(l -> l.getCompletedAt().toLocalDate()));
         List<CalorieBucket> buckets = new ArrayList<>();

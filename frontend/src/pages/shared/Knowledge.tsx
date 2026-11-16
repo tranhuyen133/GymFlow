@@ -24,11 +24,13 @@ import { localizeText } from '../../lib/planText';
 import { t, useLang } from '../../i18n';
 import { EQUIPMENT, EQUIPMENT_BY_KEY, isGifKey, isMuscleKey, type EquipmentKey, type MuscleKey } from '../../lib/anatomy';
 import {
-  CARDIO_SUBCATS, CategoryTile, ExerciseCard, MuscleAtlas, SectionHead, STRENGTH_SUBCATS, WARMUP_SUBCATS, type SubCategoryItem,
+  BeginnerStrip, CARDIO_SUBCATS, CategoryTile, EquipTabs, ExerciseCard, GroupBanner, GroupNav, inEquipGroup, MuscleAtlas, SectionHead,
+  STRENGTH_SUBCATS, WARMUP_SUBCATS, type SubCategoryItem,
 } from './KnowledgeParts';
 import './exercises.css';
 import './kb.css';
 import './knowledge.css';
+import './kb-groups.css';
 
 export type KnowledgeTab = 'exercises' | 'warmup' | 'cardio' | 'equipment' | 'muscles' | 'guides';
 
@@ -87,6 +89,9 @@ export default function Knowledge() {
     return m && isMuscleKey(m) ? m : null;
   });
   const [equip, setEquip] = useState<string>(() => params.get('equipment') ?? '');
+  // Lọc nhanh theo nhóm dụng cụ trong nhóm cơ đang xem (chỉ lọc ở giao diện)
+  const [equipGroup, setEquipGroup] = useState('');
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [mapOpen, setMapOpen] = useState(() => !!params.get('muscle'));
   const [filterModalOpen, setFilterModalOpen] = useState(false);
 
@@ -208,10 +213,25 @@ export default function Knowledge() {
     return list;
   }, [exercisesData, sort]);
 
+  // Đổi nhóm cơ / tab thì bỏ lọc dụng cụ nhanh
+  useEffect(() => { setEquipGroup(''); }, [currentTab, subCategory]);
+
+  const visibleExercises = useMemo(
+    () => (equipGroup ? sortedExercises.filter((e) => inEquipGroup(e, equipGroup)) : sortedExercises),
+    [sortedExercises, equipGroup]
+  );
+
+  // Toàn bộ bài của nhóm đang chọn (không phụ thuộc bộ lọc khác) cho banner và dải "Bắt đầu từ đây"
+  const groupItems = useMemo(
+    () => (subCategory ? (allTabExercises ?? []).filter((e) => e.subCategory === subCategory) : []),
+    [allTabExercises, subCategory]
+  );
+  const activeSubCat = subCategory ? activeSubCats.find((sc) => sc.key === subCategory) : undefined;
+
   const pagedExercises = usePaged(
-    sortedExercises,
+    visibleExercises,
     'knowledge-exercises-page',
-    `${currentTab}|${subCategory}|${dq}|${level}|${location}|${sort}|${muscle ?? ""}|${equip}|${favoriteOnly}|${assignedOnly}|${showHidden}|${lang}`,
+    `${currentTab}|${subCategory}|${dq}|${level}|${location}|${sort}|${muscle ?? ""}|${equip}|${favoriteOnly}|${assignedOnly}|${showHidden}|${lang}|${equipGroup}`,
     12
   );
 
@@ -269,6 +289,36 @@ export default function Knowledge() {
   };
 
   const isBrowsingAll = !subCategory && !dq && !muscle && !equip && !level && !location && !favoriteOnly && !assignedOnly;
+  // Về chế độ xem "Tất cả" (không có thanh lọc dụng cụ) thì bỏ lọc dụng cụ nhanh
+  useEffect(() => { if (isBrowsingAll) setEquipGroup(''); }, [isBrowsingAll]);
+
+  // Các nhóm khi xem "Tất cả" (cho thanh nhóm cơ dính trên đầu)
+  const sections = useMemo(
+    () => activeSubCats.filter((sc) => sc.key !== '')
+      .map((sc) => ({ item: sc, items: sortedExercises.filter((e) => e.subCategory === sc.key) }))
+      .filter((s) => s.items.length > 0),
+    [activeSubCats, sortedExercises]
+  );
+
+  // Tô sáng nhóm đang nằm trên màn hình
+  useEffect(() => {
+    if (!isBrowsingAll || typeof IntersectionObserver === 'undefined') return;
+    const els = sections.map((s) => document.getElementById(`kb-sec-${s.item.key}`)).filter((el): el is HTMLElement => !!el);
+    if (!els.length) return;
+    const io = new IntersectionObserver((entries) => {
+      const top = entries.filter((en) => en.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (top) setActiveSection(top.target.id.replace('kb-sec-', ''));
+    }, { rootMargin: '-120px 0px -55% 0px' });
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [isBrowsingAll, sections]);
+
+  const jumpTo = (key: string) => {
+    const el = document.getElementById(`kb-sec-${key}`);
+    if (!el) return;
+    setActiveSection(key);
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 128, behavior: 'smooth' });
+  };
 
   const card = (ex: Exercise) => (
     <ExerciseCard key={ex.id} ex={ex} isMember={isMember} onFavorite={toggleFavorite} />
@@ -373,40 +423,52 @@ export default function Knowledge() {
             </div>
           )}
 
+          {activeSubCat && groupItems.length > 0 && (
+            <>
+              <GroupBanner item={activeSubCat} items={groupItems} />
+              {!dq && !level && !favoriteOnly && !assignedOnly && (
+                <BeginnerStrip items={groupItems} isMember={isMember} onFavorite={toggleFavorite} />
+              )}
+            </>
+          )}
+
+          {!isBrowsingAll && sortedExercises.length > 0 && (
+            <EquipTabs items={sortedExercises} value={equipGroup} onChange={setEquipGroup} />
+          )}
+
           <div className="kb-count">
-            <b>{sortedExercises.length}</b> {t('bài tập')}
+            <b>{visibleExercises.length}</b> {t('bài tập')}
           </div>
 
           {exercisesLoading ? (
             <LoadingBlock rows={6} />
           ) : exercisesError ? (
             <ErrorState message={exercisesError} onRetry={reloadExercises} />
-          ) : sortedExercises.length === 0 ? (
+          ) : visibleExercises.length === 0 ? (
             <Empty
               icon="dumbbell"
               title={t('Không tìm thấy bài tập nào')}
               desc={t('Thử thay đổi từ khoá tìm kiếm hoặc bỏ bớt các tiêu chí lọc bên trên.')}
-              action={<Button variant="secondary" size="sm" onClick={handleClearAllFilters}>{t('Xoá tất cả bộ lọc')}</Button>}
+              action={<Button variant="secondary" size="sm" onClick={() => { setEquipGroup(''); handleClearAllFilters(); }}>{t('Xoá tất cả bộ lọc')}</Button>}
             />
           ) : isBrowsingAll ? (
-            <div className="kb-sections">
-              {activeSubCats.filter((sc) => sc.key !== '').map((sc) => {
-                const items = sortedExercises.filter((e) => e.subCategory === sc.key);
-                if (items.length === 0) return null;
-                return (
-                  <section key={sc.key}>
-                    <SectionHead item={sc} count={items.length} onMore={() => { setSubCategory(sc.key); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
+            <>
+              <GroupNav groups={sections.map((s) => ({ item: s.item, count: s.items.length }))} active={activeSection} onJump={jumpTo} />
+              <div className="kb-sections">
+                {sections.map(({ item: sc, items }) => (
+                  <section key={sc.key} id={`kb-sec-${sc.key}`} className="kbg-section">
+                    <SectionHead item={sc} count={items.length} items={items} onMore={() => { setSubCategory(sc.key); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
                     <div className="kb-ex-grid">{items.slice(0, 4).map(card)}</div>
                   </section>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            </>
           ) : (
             <>
               <div className="kb-ex-grid">{pagedExercises.items.map(card)}</div>
               {pagedExercises.totalPages > 1 && (
                 <div className="mt-20">
-                  <Pager page={pagedExercises.page} totalPages={pagedExercises.totalPages} total={sortedExercises.length} onPage={pagedExercises.setPage} />
+                  <Pager page={pagedExercises.page} totalPages={pagedExercises.totalPages} total={visibleExercises.length} onPage={pagedExercises.setPage} />
                 </div>
               )}
             </>

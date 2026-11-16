@@ -86,6 +86,8 @@ public class ProgressService {
         Double bodyFat = null;
         for (int i = weights.size() - 1; i >= 0 && bodyFat == null; i--) bodyFat = weights.get(i).getBodyFat();
         Double bmi = bmi(current, m.getHeightCm());
+        Double fatEstimate = deurenbergBodyFat(bmi, ageAt(m.getDateOfBirth(), today), m.getGender());
+        String fatHint = fatEstimate != null || current == null ? null : bodyFatHint(m);
 
         List<WorkoutSchedule> sessions = scheduleRepository.findByMemberIdOrderByStartTimeAsc(m.getId());
         List<WeekAttendance> attendance = attendance(sessions, today);
@@ -101,10 +103,37 @@ public class ProgressService {
 
         return new ProgressResponse(m.getId(), m.getHeightCm(), current, start, change, bodyFat, bmi, bmiCategory(bmi),
                 weights.stream().map(mappers::weight).toList(), attendance, rate, streakWeeks(sessions, today),
-                logs.size(), minutes, calories, avgRating);
+                logs.size(), minutes, calories, avgRating, fatEstimate, fatHint);
     }
 
     // ---------- Các phép tính thuần (có unit test) ----------
+
+    /**
+     * % mỡ ước tính theo Deurenberg (1991): 1,20 × BMI + 0,23 × tuổi − 10,8 × giới tính − 5,4 (nam = 1, nữ = 0).
+     * Chỉ là ước tính từ BMI cho người trưởng thành; thiếu dữ liệu hoặc giới tính "Khác" thì trả null.
+     */
+    public static Double deurenbergBodyFat(Double bmi, Integer age, Gender gender) {
+        if (bmi == null || age == null || age < 18 || gender == null || gender == Gender.OTHER) return null;
+        int sex = gender == Gender.MALE ? 1 : 0;
+        double v = 1.20 * bmi + 0.23 * age - 10.8 * sex - 5.4;
+        return round1(Math.max(2, Math.min(70, v)));
+    }
+
+    public static Integer ageAt(LocalDate dateOfBirth, LocalDate on) {
+        if (dateOfBirth == null || on == null || dateOfBirth.isAfter(on)) return null;
+        return java.time.Period.between(dateOfBirth, on).getYears();
+    }
+
+    /** Lý do chưa ước tính được % mỡ, để giao diện nhắc hội viên bổ sung hồ sơ. */
+    static String bodyFatHint(Member m) {
+        List<String> missing = new ArrayList<>();
+        if (m.getHeightCm() == null) missing.add("chiều cao");
+        if (m.getDateOfBirth() == null) missing.add("ngày sinh");
+        if (m.getGender() == null) missing.add("giới tính");
+        if (!missing.isEmpty()) return "Cập nhật " + String.join(", ", missing) + " trong Hồ sơ để ước tính % mỡ";
+        if (m.getGender() == Gender.OTHER) return "Công thức Deurenberg chỉ áp dụng cho giới tính Nam hoặc Nữ";
+        return "Công thức Deurenberg áp dụng cho người từ 18 tuổi";
+    }
 
     public static Double bmi(Double weightKg, Double heightCm) {
         if (weightKg == null || heightCm == null || heightCm <= 0) return null;

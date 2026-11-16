@@ -61,6 +61,127 @@ export const MUSCLE_SECTIONS: { label: string; keys: MuscleKey[] }[] = [
 ];
 
 const LEVEL_TONE: Record<string, string> = { BEGINNER: 'lv-b', INTERMEDIATE: 'lv-i', ADVANCED: 'lv-a' };
+const LEVEL_DOTS: Record<string, number> = { BEGINNER: 1, INTERMEDIATE: 2, ADVANCED: 3 };
+
+/** Mô tả ngắn cho đầu mục mỗi nhóm bài (banner nhóm cơ). */
+export const SUBCAT_DESC: Record<string, string> = {
+  CHEST: 'Ngực trên · giữa · dưới – các bài đẩy, ép và dang tay.',
+  BACK: 'Xô, lưng giữa, lưng dưới và cơ thang – các bài kéo, chèo và gập hông.',
+  SHOULDERS: 'Vai trước · vai giữa · vai sau – đẩy qua đầu, dang tay và kéo mặt.',
+  BICEPS: 'Cơ tay trước và cẳng tay – các biến thể cuốn tạ.',
+  TRICEPS: 'Cơ tay sau – duỗi tay, chống đẩy hẹp và nhún xà kép.',
+  CORE: 'Bụng thẳng và cơ liên sườn – gập, xoay, giữ thăng bằng thân.',
+  LEGS: 'Đùi trước, đùi sau, đùi trong và bắp chân – squat, lunge, đẩy chân.',
+  GLUTES: 'Cơ mông lớn và mông nhỡ – đẩy hông, cầu mông, dạng chân.',
+  FULL_BODY: 'Bài đa khớp dùng nhiều nhóm cơ cùng lúc, đốt nhiều calo.',
+};
+
+/** Nhóm dụng cụ cho bộ lọc nhanh trong một nhóm cơ (khớp khoá EQUIPMENT trong lib/anatomy). */
+export const EQUIP_GROUPS: { key: string; label: string; icon: 'dumbbell' | 'layers' | 'user' | 'zap'; keys: string[] }[] = [
+  { key: 'barbell', label: 'Tạ đòn', icon: 'zap', keys: ['barbell', 'ez-bar'] },
+  { key: 'dumbbell', label: 'Tạ đơn & tạ ấm', icon: 'dumbbell', keys: ['dumbbell', 'kettlebell', 'plate'] },
+  { key: 'machine', label: 'Máy & cáp', icon: 'layers', keys: ['machine', 'smith-machine', 'cable'] },
+  { key: 'bodyweight', label: 'Không dụng cụ', icon: 'user', keys: ['bodyweight', 'pullup-bar', 'dip-bars', 'band'] },
+];
+
+/** Bài thuộc nhóm dụng cụ nào; bài không ghi dụng cụ tính là "Không dụng cụ". */
+export function inEquipGroup(ex: Exercise, group: string): boolean {
+  const g = EQUIP_GROUPS.find((x) => x.key === group);
+  if (!g) return true;
+  const keys = ex.equipmentKeys ?? [];
+  if (keys.length === 0) return group === 'bodyweight' && !ex.equipment;
+  return keys.some((k) => g.keys.includes(k));
+}
+
+export function groupStats(items: Exercise[]) {
+  return {
+    total: items.length,
+    home: items.filter((e) => e.location === 'HOME' || e.location === 'ANY').length,
+    machine: items.filter((e) => inEquipGroup(e, 'machine')).length,
+    beginner: items.filter((e) => e.level === 'BEGINNER').length,
+  };
+}
+
+/** Banner đầu nhóm cơ: bản đồ cơ mặt trước + sau, mô tả, các chỉ số nhanh. */
+export function GroupBanner({ item, items }: { item: SubCategoryItem; items: Exercise[] }) {
+  const s = groupStats(items);
+  const desc = SUBCAT_DESC[item.key];
+  return (
+    <section className="kbg-banner" aria-label={t(item.label)}>
+      <div className="kbg-banner-map" aria-hidden>
+        <MuscleMap size="sm" primary={item.muscles} hideTip />
+      </div>
+      <div className="kbg-banner-text">
+        <span className="kb-eyebrow">{t('Nhóm cơ')}</span>
+        <h2>{t(item.label)}</h2>
+        {desc && <p>{t(desc)}</p>}
+        <div className="kbg-stats">
+          <span><b>{s.total}</b>{t('bài tập')}</span>
+          <span><Icon name="home" size={13} /><b>{s.home}</b>{t('tập tại nhà')}</span>
+          <span><Icon name="layers" size={13} /><b>{s.machine}</b>{t('dùng máy')}</span>
+          <span><Icon name="star" size={13} /><b>{s.beginner}</b>{t('cho người mới')}</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Bộ lọc nhanh theo dụng cụ trong nhóm đang xem (có đếm). */
+export function EquipTabs({ items, value, onChange }: { items: Exercise[]; value: string; onChange: (v: string) => void }) {
+  const groups = EQUIP_GROUPS.map((g) => ({ ...g, n: items.filter((e) => inEquipGroup(e, g.key)).length })).filter((g) => g.n > 0);
+  if (groups.length < 2) return null;
+  return (
+    <div className="kbg-equip" role="group" aria-label={t('Lọc theo dụng cụ')}>
+      <button type="button" className={`kbg-tab ${value === '' ? 'active' : ''}`} aria-pressed={value === ''} onClick={() => onChange('')}>
+        {t('Mọi dụng cụ')}<i>{items.length}</i>
+      </button>
+      {groups.map((g) => (
+        <button key={g.key} type="button" className={`kbg-tab ${value === g.key ? 'active' : ''}`} aria-pressed={value === g.key}
+          onClick={() => onChange(value === g.key ? '' : g.key)}>
+          <Icon name={g.icon} size={14} />{t(g.label)}<i>{g.n}</i>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Dải kéo ngang "Bắt đầu từ đây": bài cấp độ cơ bản của nhóm. */
+export function BeginnerStrip({ items, isMember, onFavorite }: {
+  items: Exercise[]; isMember: boolean; onFavorite: (ex: Exercise, e: React.MouseEvent) => void;
+}) {
+  const list = items.filter((e) => e.level === 'BEGINNER').slice(0, 8);
+  if (list.length < 2) return null;
+  return (
+    <section className="kbg-start">
+      <div className="kbg-start-head">
+        <span className="kbg-start-icon"><Icon name="sparkle" size={16} /></span>
+        <div>
+          <h3>{t('Bắt đầu từ đây')}</h3>
+          <p>{t('Bài cơ bản, dễ học kỹ thuật – hợp với người mới.')}</p>
+        </div>
+      </div>
+      <div className="kbg-start-row">
+        {list.map((ex) => <ExerciseCard key={ex.id} ex={ex} isMember={isMember} onFavorite={onFavorite} compact />)}
+      </div>
+    </section>
+  );
+}
+
+/** Thanh nhóm cơ dính trên đầu khi xem "Tất cả": nhảy nhanh tới từng nhóm. */
+export function GroupNav({ groups, active, onJump }: {
+  groups: { item: SubCategoryItem; count: number }[]; active: string | null; onJump: (key: string) => void;
+}) {
+  if (groups.length < 2) return null;
+  return (
+    <nav className="kbg-nav" aria-label={t('Nhảy tới nhóm cơ')}>
+      {groups.map(({ item, count }) => (
+        <button key={item.key} type="button" className={`kbg-nav-item ${active === item.key ? 'active' : ''}`} onClick={() => onJump(item.key)}>
+          {t(item.label)}<i>{count}</i>
+        </button>
+      ))}
+    </nav>
+  );
+}
 
 /** Ô danh mục: bản đồ cơ thu nhỏ tô vùng cơ của nhóm + tên + số bài. */
 export function CategoryTile({ item, count, active, onClick }: { item: SubCategoryItem; count: number; active: boolean; onClick: () => void }) {
@@ -78,21 +199,23 @@ export function CategoryTile({ item, count, active, onClick }: { item: SubCatego
   );
 }
 
-/** Thẻ bài tập: ảnh động (rê chuột để chạy), cấp độ, vùng cơ chính, dụng cụ, liều gợi ý. */
-export function ExerciseCard({ ex, isMember, onFavorite }: {
-  ex: Exercise; isMember: boolean; onFavorite: (ex: Exercise, e: React.MouseEvent) => void;
+/** Thẻ bài tập: ảnh động (rê chuột để chạy), cấp độ dạng chấm, bản đồ cơ thu nhỏ, dụng cụ, liều gợi ý. */
+export function ExerciseCard({ ex, isMember, onFavorite, compact }: {
+  ex: Exercise; isMember: boolean; onFavorite: (ex: Exercise, e: React.MouseEvent) => void; compact?: boolean;
 }) {
   const lang = getLang();
   const muscles = parseMuscles((ex.targetMuscles ?? []).join(','));
+  const secondary = parseMuscles((ex.secondaryMuscleKeys ?? []).join(',')).filter((m) => !muscles.includes(m));
   const sub = ex.subCategory ? SUBCAT_BY_KEY.get(ex.subCategory) : undefined;
   const { title, subtitle } = localizeExercise(ex, lang);
+  const dots = LEVEL_DOTS[ex.level] ?? 0;
   const eqLabel = (ex.equipmentKeys ?? [])
     .map((k) => EQUIPMENT_BY_KEY.get(k as EquipmentKey))
     .filter(Boolean)
     .map((e) => (lang === 'en' ? e!.labelEn : e!.label))
     .join(' · ') || (ex.equipment ? formatEquipment(ex.equipment) : '');
   return (
-    <Link to={`/exercises/${ex.id}`} className="kb-ex-card" aria-label={title}>
+    <Link to={`/exercises/${ex.id}`} className={`kb-ex-card ${compact ? 'is-compact' : ''}`} aria-label={title}>
       <div className="kb-ex-media">
         <ExerciseMedia imageKey={ex.imageKey} alt={title} playOnHover
           fallback={
@@ -100,7 +223,11 @@ export function ExerciseCard({ ex, isMember, onFavorite }: {
               <MuscleMap size="sm" primary={muscles.length ? muscles : sub?.muscles ?? []} />
             </div>
           } />
-        <span className={`kb-level ${LEVEL_TONE[ex.level] ?? ''}`}>{levelLabel[ex.level] ? levelLabel[ex.level][0] : ex.level}</span>
+        <span className={`kb-level ${LEVEL_TONE[ex.level] ?? ''}`} title={levelLabel[ex.level] ? levelLabel[ex.level][0] : ex.level}>
+          <span className="kbg-dots" aria-hidden>{[1, 2, 3].map((i) => <i key={i} className={i <= dots ? 'on' : ''} />)}</span>
+          {levelLabel[ex.level] ? levelLabel[ex.level][0] : ex.level}
+        </span>
+        {ex.videoUrl && <span className="kbg-video" title={t('Có video hướng dẫn')}><Icon name="play" size={11} />{t('Video')}</span>}
         {isMember && (
           <button type="button" className={`kb-fav ${ex.isFavorite ? 'is-fav' : ''}`} onClick={(e) => onFavorite(ex, e)}
             title={t(ex.isFavorite ? 'Bỏ lưu yêu thích' : 'Lưu vào bài tập yêu thích')}
@@ -110,28 +237,47 @@ export function ExerciseCard({ ex, isMember, onFavorite }: {
         )}
       </div>
       <div className="kb-ex-body">
-        <h3 className="kb-ex-title line-clamp-2">{title}</h3>
-        {subtitle && <div className="kb-ex-sub line-clamp-1">{subtitle}</div>}
-        {muscles.length > 0 && (
+        <div className="kbg-title-row">
+          <div className="kbg-title-col">
+            <h3 className="kb-ex-title line-clamp-2">{title}</h3>
+            {subtitle && !compact && <div className="kb-ex-sub line-clamp-1">{subtitle}</div>}
+          </div>
+          {muscles.length > 0 && !compact && (
+            <span className="kbg-mini" aria-hidden><MuscleMap size="xs" views="front" primary={muscles} secondary={secondary} /></span>
+          )}
+        </div>
+        {muscles.length > 0 && !compact && (
           <div className="kb-ex-muscles">
             {muscles.slice(0, 3).map((m) => <span key={m} className="kb-mchip">{muscleName(m, lang)}</span>)}
+            {secondary.slice(0, 2).map((m) => <span key={m} className="kb-mchip kbg-soft">{muscleName(m, lang)}</span>)}
           </div>
         )}
         <div className="kb-ex-foot">
           <span className="kb-ex-eq line-clamp-1"><Icon name="dumbbell" size={13} />{eqLabel || t('Không dụng cụ')}</span>
-          {ex.setsRepsHint && <span className="kb-ex-dose">{ex.setsRepsHint}</span>}
+          {ex.setsRepsHint && !compact && <span className="kb-ex-dose">{ex.setsRepsHint}</span>}
         </div>
       </div>
     </Link>
   );
 }
 
-/** Tiêu đề một nhóm bài khi xem "Tất cả". */
-export function SectionHead({ item, count, onMore }: { item: SubCategoryItem; count: number; onMore: () => void }) {
+/** Tiêu đề một nhóm bài khi xem "Tất cả": bản đồ cơ, tên, số bài, mô tả ngắn và chỉ số nhanh. */
+export function SectionHead({ item, count, items, onMore }: { item: SubCategoryItem; count: number; items?: Exercise[]; onMore: () => void }) {
+  const s = items ? groupStats(items) : null;
+  const desc = SUBCAT_DESC[item.key];
   return (
-    <div className="kb-sec-head">
-      <span className="kb-sec-map" aria-hidden><MuscleMap size="xs" views="front" primary={item.muscles} /></span>
-      <h3>{t(item.label)} <span>{count}</span></h3>
+    <div className="kb-sec-head kbg-sec-head">
+      <span className="kb-sec-map kbg-sec-map" aria-hidden><MuscleMap size="xs" views="front" primary={item.muscles} /></span>
+      <div className="kbg-sec-text">
+        <h3>{t(item.label)} <span>{count}</span></h3>
+        {(desc || s) && (
+          <div className="kbg-sec-sub">
+            {desc && <span className="kbg-sec-desc">{t(desc)}</span>}
+            {s && s.home > 0 && <span className="kbg-sec-chip"><Icon name="home" size={12} />{t('{n} tại nhà', { n: s.home })}</span>}
+            {s && s.beginner > 0 && <span className="kbg-sec-chip"><Icon name="star" size={12} />{t('{n} cho người mới', { n: s.beginner })}</span>}
+          </div>
+        )}
+      </div>
       <button type="button" className="kb-more" onClick={onMore}>{t('Xem tất cả')}<Icon name="arrowRight" size={14} /></button>
     </div>
   );

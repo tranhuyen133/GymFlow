@@ -953,6 +953,16 @@ public final class Dtos {
                                           int skipped, int failed, String formulaVersion) {
     }
 
+    /** Một tuần trong lịch sử calo: 7 ngày Thứ 2 → Chủ nhật, fatKg = calo / 7.700 (ước tính thô). */
+    public record CalorieWeek(LocalDate weekStart, LocalDate weekEnd, long calories, long sessions,
+                              double activeMinutes, double fatKg, List<CalorieBucket> days) {
+    }
+
+    public record CalorieHistoryResponse(List<CalorieWeek> weeks, long totalCalories, long totalSessions,
+                                         double avgWeeklyCalories, double totalFatKg, int kcalPerKg,
+                                         String timezone, String disclaimer) {
+    }
+
     public record ScheduleResponse(Long id, Long memberId, String memberName, Long trainerId, String trainerName,
                                    Long planId, String planName, String title, LocalDateTime startTime,
                                    LocalDateTime endTime, ScheduleStatus status, String note, WorkoutLogResponse log,
@@ -980,8 +990,10 @@ public final class Dtos {
             @Size(max = 255) String note) {
     }
 
+    /** bodyFatEstimate: % mỡ ước tính theo Deurenberg (BMI, tuổi, giới tính) khi đủ dữ liệu hồ sơ. */
     public record WeightResponse(Long id, LocalDate recordedDate, Double weightKg, Double bodyFat,
-                                 Double waistCm, Double chestCm, Double armCm, Double thighCm, String note) {
+                                 Double waistCm, Double chestCm, Double armCm, Double thighCm, String note,
+                                 Double bodyFatEstimate) {
     }
 
     public record WeekAttendance(LocalDate weekStart, long scheduled, long completed, long missed) {
@@ -991,7 +1003,8 @@ public final class Dtos {
                                    Double weightChange, Double bodyFat, Double bmi, String bmiCategory,
                                    List<WeightResponse> weights, List<WeekAttendance> attendance,
                                    Double attendanceRate, int streakWeeks, long totalSessions,
-                                   long totalMinutes, long totalCalories, Double avgRating) {
+                                   long totalMinutes, long totalCalories, Double avgRating,
+                                   Double bodyFatEstimate, String bodyFatHint) {
     }
 
     // ===================== Dashboards =====================
