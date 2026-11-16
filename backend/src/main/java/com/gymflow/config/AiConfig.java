@@ -31,6 +31,11 @@ public class AiConfig {
     }
 
     public boolean isGeminiEnabled() {
-        return "gemini".equalsIgnoreCase(provider) || (geminiApiKey != null && !geminiApiKey.isBlank() && !"rule".equalsIgnoreCase(provider));
+        return "gemini".equalsIgnoreCase(provider) || (hasGeminiApiKey() && !"rule".equalsIgnoreCase(provider));
+    }
+
+    /** Có key Gemini hợp lệ (không rỗng) hay chưa. */
+    public boolean hasGeminiApiKey() {
+        return geminiApiKey != null && !geminiApiKey.isBlank();
     }
 }

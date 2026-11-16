@@ -104,11 +104,11 @@ public class ChatService {
             }
             userContent = topic.label();
             answer = provider.answerTopic(principal, topic);
-            usedProviderName = "RULE";
+            usedProviderName = providerLabel(provider, "RULE");
         } else {
             userContent = request.text().trim();
             answer = provider.answerText(principal, userContent, conversation);
-            usedProviderName = provider.getProviderName().toUpperCase(Locale.ROOT);
+            usedProviderName = providerLabel(provider, "GEMINI");
         }
 
         if (messageRepository.findTop1ByConversation_IdOrderByCreatedAtDesc(conversation.getId()).isEmpty()) {
@@ -130,8 +130,9 @@ public class ChatService {
     @Transactional(readOnly = true)
     public AiHealthResponse aiHealth() {
         AssistantProvider active = assistantProviderService.getActiveProvider();
+        boolean aiEnabled = aiConfig.isGeminiEnabled() && aiConfig.hasGeminiApiKey();
         return new AiHealthResponse(
-                aiConfig.isGeminiEnabled(),
+                aiEnabled,
                 active.isAvailable(),
                 aiConfig.getProvider(),
                 aiConfig.getGeminiModel(),
@@ -152,6 +153,13 @@ public class ChatService {
         message.setProvider(provider != null ? provider : "RULE");
         message.setCreatedAt(LocalDateTime.now(clock));
         return message;
+    }
+
+    private static String providerLabel(AssistantProvider provider, String fallback) {
+        String name = provider.lastAnswerProvider();
+        if (name == null || name.isBlank()) name = provider.getProviderName();
+        if (name == null || name.isBlank()) name = fallback;
+        return name.toUpperCase(Locale.ROOT);
     }
 
     private static ChatMessageResponse toResponse(ChatMessage message) {
