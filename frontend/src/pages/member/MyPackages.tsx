@@ -71,10 +71,13 @@ export default function MyPackages() {
   const [changing, setChanging] = useState<Subscription | null>(null);
   const [cancellingChange, setCancellingChange] = useState<ChangeRequest | null>(null);
 
+  // Tiêu đề luôn rõ bản EN khi giao diện đang ở tiếng Anh.
+  const pageTitle = getLang() === 'en' ? 'Packages & Services' : 'Gói tập & Dịch vụ';
+
   if (subs.error) return <ErrorState message={subs.error} onRetry={subs.reload} />;
   if (subs.loading || !subs.data) return (
     <div className="page">
-      <PageHead eyebrow={t('Thành viên')} title={t('Gói tập & Dịch vụ')} />
+      <PageHead eyebrow={t('Thành viên')} title={pageTitle} />
       <LoadingBlock rows={6} />
     </div>
   );
@@ -116,7 +119,7 @@ export default function MyPackages() {
     <div className="page">
       <PageHead
         eyebrow={t('Thành viên')}
-        title={t('Gói tập & Dịch vụ')}
+        title={pageTitle}
         desc={t('Quản lý gói tập hiện tại, đăng ký gói mới, kiểm tra lượt quà tặng và kết nối với huấn luyện viên.')}
       />
 
