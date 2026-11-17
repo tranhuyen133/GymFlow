@@ -2,6 +2,7 @@ package com.gymflow.service;
 
 import com.gymflow.ai.AssistantProvider;
 import com.gymflow.ai.AssistantProviderService;
+import com.gymflow.ai.RuleBasedProvider;
 import com.gymflow.common.ApiException;
 import com.gymflow.config.AiConfig;
 import com.gymflow.domain.ChatConversation;
@@ -39,6 +40,7 @@ public class ChatService {
     private final UserRepository userRepository;
     private final ChatAssistantService assistant;
     private final AssistantProviderService assistantProviderService;
+    private final RuleBasedProvider ruleBasedProvider;
     private final AiConfig aiConfig;
     private final Clock clock;
 
@@ -90,7 +92,7 @@ public class ChatService {
         }
 
         ChatConversation conversation = ownedConversation(principal, request.conversationId());
-        AssistantProvider provider = assistantProviderService.getActiveProvider();
+        AssistantProvider provider = providerFor(principal);
 
         String userContent;
         String answer;
@@ -138,6 +140,18 @@ public class ChatService {
                 aiConfig.getGeminiModel(),
                 active.getProviderName()
         );
+    }
+
+    /**
+     * AI Gemini (kèm grounding dữ liệu cá nhân) chỉ dành cho hội viên.
+     * ADMIN/TRAINER vẫn dùng được nút trợ lý như trước, nhưng trả lời bằng
+     * RuleBasedProvider từ dữ liệu nội bộ, không gọi API ngoài.
+     */
+    private AssistantProvider providerFor(AuthUser principal) {
+        if (principal != null && principal.isMember()) {
+            return assistantProviderService.getActiveProvider();
+        }
+        return ruleBasedProvider;
     }
 
     private ChatConversation ownedConversation(AuthUser principal, Long id) {

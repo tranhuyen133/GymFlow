@@ -25,6 +25,13 @@ public interface MemberSubscriptionRepository extends JpaRepository<MemberSubscr
 
     List<MemberSubscription> findByMemberIdOrderByStartDateDesc(Long memberId);
 
+    /**
+     * Gói đang hiệu lực của hội viên vào một ngày (nếu có nhiều gói trùng ngày, lấy gói hết hạn muộn nhất).
+     * Dùng cho ngữ cảnh trợ lý AI.
+     */
+    Optional<MemberSubscription> findFirstByMemberIdAndCancelledFalseAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByEndDateDesc(
+            Long memberId, LocalDate dayStart, LocalDate dayEnd);
+
     long countByMemberId(Long memberId);
 
     List<MemberSubscription> findAllByOrderByCreatedAtDesc();

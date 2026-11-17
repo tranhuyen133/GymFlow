@@ -37,22 +37,19 @@ class AiDataGroundingServiceTest {
 
         String context = groundingService.buildGroundingContext(member, query);
 
-        assertThat(context).contains("CẢNH BÁO BẢO MẬT");
-        assertThat(context).contains("KHÔNG CÓ QUYỀN xem lịch tập hoặc thông tin của bất kỳ hội viên nào khác");
+        assertThat(context).contains("[QUY TẮC BẢO MẬT]");
+        assertThat(context).contains("Không được tiết lộ lịch tập, gói tập");
         verify(chatAssistantService, never()).answer(member, ChatTopic.WHO_TODAY);
     }
 
     @Test
-    void trainerCanAccessWhoTodaySchedule() {
-        when(chatAssistantService.answer(trainer, ChatTopic.WHO_TODAY))
-                .thenReturn("Hôm nay có 2 hội viên có lịch tập: Nam, Hoa.");
+    void trainerAndAdminOnlyReceiveMemberScopeNotice() {
+        String context = groundingService.buildGroundingContext(trainer, "Hôm nay ai tập?");
+        String adminContext = groundingService.buildGroundingContext(admin, "Hôm nay ai tập?");
 
-        String query = "Hôm nay ai tập?";
-        String context = groundingService.buildGroundingContext(trainer, query);
-
-        assertThat(context).contains("[Lịch hội viên hôm nay]");
-        assertThat(context).contains("Nam, Hoa");
-        verify(chatAssistantService).answer(trainer, ChatTopic.WHO_TODAY);
+        assertThat(context).contains("[PHẠM VI PHỤC VỤ]").contains("chỉ phục vụ tài khoản hội viên");
+        assertThat(adminContext).contains("[PHẠM VI PHỤC VỤ]");
+        verifyNoInteractions(chatAssistantService);
     }
 
     @Test

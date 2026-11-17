@@ -18,8 +18,8 @@ public class AiConfig {
     public AiConfig(
             @Value("${app.ai.provider:gemini}") String provider,
             @Value("${app.ai.free-text-enabled:true}") boolean freeTextEnabled,
-            @Value("${app.ai.gemini-api-key:${GEMINI_API_KEY:}}") String geminiApiKey,
-            @Value("${app.ai.gemini-model:${GEMINI_MODEL:gemini-3.5-flash-lite}}") String geminiModel,
+            @Value("${gemini.api-key:${app.ai.gemini-api-key:${GEMINI_API_KEY:}}}") String geminiApiKey,
+            @Value("${gemini.model:${app.ai.gemini-model:${GEMINI_MODEL:gemini-4-hydrogen}}}") String geminiModel,
             @Value("${app.ai.timeout-seconds:15}") int timeoutSeconds,
             @Value("${app.ai.max-input-chars:500}") int maxInputChars) {
         this.provider = (provider == null || provider.isBlank()) ? "gemini" : provider.trim().toLowerCase();
