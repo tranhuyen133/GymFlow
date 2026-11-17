@@ -87,34 +87,44 @@ export function PaymentInfo({ settings, amount, code }: { settings: PaymentSetti
           <div className="bank-card">
             <div className="bank-card-top">
               <span className="bank-chip" aria-hidden />
-              <span className="bank-name">{settings.bankName ?? t('Ngân hàng')}</span>
+              <span className="bank-name">{settings.bankName || t('Ngân hàng')}</span>
             </div>
-            {settings.accountNumber && (
+            {settings.accountNumber ? (
               <div className="bank-number">
                 <span className="mono">{groupDigits(settings.accountNumber)}</span>
                 <CopyBtn value={settings.accountNumber} label={t('Số tài khoản')} light />
               </div>
+            ) : (
+              <div className="bank-number empty">{t('Chưa nhập số tài khoản')}</div>
             )}
             <div className="bank-holder">
               <span className="tiny">{t('Chủ tài khoản')}</span>
-              <b>{settings.accountName ?? '—'}</b>
+              <b>{settings.accountName || '—'}</b>
             </div>
           </div>
 
-          {(amount != null || code) && (
+          {amount != null && (
             <div className="pay-rows">
-              {amount != null && (
-                <div className="pay-row">
-                  <span className="k">{t('Số tiền')}</span>
-                  <span className="v"><b className="mono pay-amount">{fmtMoney(amount)}</b><CopyBtn value={String(amount)} label={t('Số tiền')} /></span>
-                </div>
-              )}
-              {code && (
-                <div className="pay-row hl">
-                  <span className="k">{t('Nội dung chuyển khoản')}</span>
-                  <span className="v"><b className="mono">{code}</b><CopyBtn value={code} label={t('Nội dung chuyển khoản')} /></span>
-                </div>
-              )}
+              <div className="pay-row">
+                <span className="k">{t('Số tiền')}</span>
+                <span className="v"><b className="mono pay-amount">{fmtMoney(amount)}</b><CopyBtn value={String(amount)} label={t('Số tiền')} /></span>
+              </div>
+            </div>
+          )}
+          {code && (
+            <div className="pay-memo">
+              <div className="pay-memo-head">
+                <span>{t('Nội dung chuyển khoản')}</span>
+                <span className="pay-memo-tag">{t('Bắt buộc')}</span>
+              </div>
+              <div className="pay-memo-body">
+                <b className="pay-memo-code">{code}</b>
+                <CopyBtn value={code} label={t('Nội dung chuyển khoản')} />
+              </div>
+              <p className="pay-memo-note">
+                <Icon name="alert" size={13} />
+                <span>{t('Ghi đúng mã này, không thêm chữ hay dấu cách – quản lý dựa vào mã để nhận ra đơn của bạn.')}</span>
+              </p>
             </div>
           )}
         </div>
