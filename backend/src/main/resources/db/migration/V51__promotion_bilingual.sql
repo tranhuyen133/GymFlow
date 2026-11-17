@@ -1,16 +1,37 @@
 -- =====================================================================
--- GymFlow · V50 · Song ngữ Chương trình ưu đãi & Mã giảm giá
+-- GymFlow · V51 · Song ngữ Chương trình ưu đãi & Mã giảm giá
 --  * Thêm tên/mô tả tiếng Anh cho promotions và điều kiện tiếng Anh cho quà tặng.
+--  * Idempotent: bỏ qua ADD COLUMN nếu cột đã tồn tại (DB từng chạy bản V50 cũ).
 --  * Điền bản tiếng Anh cho 12 chương trình mẫu đã tạo ở V49; chương trình tạo sau
 --    do quản lý nhập trực tiếp trên form (Tên EN / Mô tả EN).
 -- =====================================================================
 
-ALTER TABLE promotions
-    ADD COLUMN name_en VARCHAR(100) NULL AFTER name,
-    ADD COLUMN description_en VARCHAR(1000) NULL AFTER description;
+SET @has_name_en := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotions' AND COLUMN_NAME = 'name_en'
+);
+SET @sql := IF(@has_name_en = 0,
+    'ALTER TABLE promotions ADD COLUMN name_en VARCHAR(100) NULL AFTER name',
+    'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-ALTER TABLE promotion_grants
-    ADD COLUMN conditions_en VARCHAR(255) NULL AFTER conditions;
+SET @has_description_en := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotions' AND COLUMN_NAME = 'description_en'
+);
+SET @sql := IF(@has_description_en = 0,
+    'ALTER TABLE promotions ADD COLUMN description_en VARCHAR(1000) NULL AFTER description',
+    'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_conditions_en := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotion_grants' AND COLUMN_NAME = 'conditions_en'
+);
+SET @sql := IF(@has_conditions_en = 0,
+    'ALTER TABLE promotion_grants ADD COLUMN conditions_en VARCHAR(255) NULL AFTER conditions',
+    'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- 1. Mừng sinh nhật
 UPDATE promotions
