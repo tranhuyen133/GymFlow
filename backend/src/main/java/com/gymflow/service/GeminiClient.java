@@ -1,6 +1,7 @@
 package com.gymflow.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gymflow.common.ApiException;
 import com.gymflow.config.AiConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -9,8 +10,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientResponseException;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
@@ -42,10 +44,12 @@ public class GeminiClient {
     private static final String BUSY_AFTER_RETRY_MESSAGE = "Trợ lý đang bận, vui lòng thử lại sau ít phút";
 
     private final AiConfig aiConfig;
+    private final ObjectMapper objectMapper;
     private final RestClient restClient;
 
-    public GeminiClient(AiConfig aiConfig) {
+    public GeminiClient(AiConfig aiConfig, ObjectMapper objectMapper) {
         this.aiConfig = aiConfig;
+        this.objectMapper = objectMapper;
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(TIMEOUT);
         requestFactory.setReadTimeout(TIMEOUT);
@@ -86,8 +90,20 @@ public class GeminiClient {
             }
             long startedAt = System.currentTimeMillis();
             try {
-                JsonNode response = request(apiKey, body);
+                HttpResult http = request(apiKey, body);
 
+                if (isRetryableStatus(http.status()) || isServiceUnavailable(http.body())) {
+                    log.warn("Gemini trả HTTP {} với model [{}], lần {}/{}",
+                            http.status(), model, attempt + 1, MAX_RETRIES + 1);
+                    continue;
+                }
+                if (http.status() >= 400) {
+                    log.warn("Gọi Gemini thất bại sau {}ms (HTTP {}): {}",
+                            System.currentTimeMillis() - startedAt, http.status(), shortBody(http.body()));
+                    throw busy();
+                }
+
+                JsonNode response = parse(http.body());
                 if (isServiceUnavailable(response)) {
                     log.warn("Gemini báo quá tải (service_unavailable) với model [{}], lần {}/{}",
                             model, attempt + 1, MAX_RETRIES + 1);
@@ -105,16 +121,6 @@ public class GeminiClient {
                 return text;
             } catch (ApiException ex) {
                 throw ex;
-            } catch (RestClientResponseException ex) {
-                if (isRetryableStatus(ex.getStatusCode().value())
-                        || isServiceUnavailable(ex.getResponseBodyAsString())) {
-                    log.warn("Gemini trả HTTP {} với model [{}], lần {}/{}",
-                            ex.getStatusCode().value(), model, attempt + 1, MAX_RETRIES + 1);
-                    continue;
-                }
-                log.warn("Gọi Gemini thất bại sau {}ms (HTTP {}): {}",
-                        System.currentTimeMillis() - startedAt, ex.getStatusCode().value(), ex.getMessage());
-                throw busy();
             } catch (Exception ex) {
                 log.warn("Gọi Gemini thất bại sau {}ms: {}",
                         System.currentTimeMillis() - startedAt, ex.getMessage());
@@ -126,15 +132,33 @@ public class GeminiClient {
         throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, BUSY_AFTER_RETRY_MESSAGE);
     }
 
-    private JsonNode request(String apiKey, Map<String, String> body) {
+    /**
+     * Đọc nguyên status + body thay vì để RestClient tự ném lỗi khi body lỗi
+     * có content-type lạ (VD 503 trả application/octet-stream), nhờ đó vẫn retry được 503/429.
+     */
+    private HttpResult request(String apiKey, Map<String, String> body) throws IOException {
         return restClient.post()
                 .uri(INTERACTIONS_PATH)
                 .header("x-goog-api-key", apiKey)
                 .header("Api-Revision", API_REVISION)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
-                .retrieve()
-                .body(JsonNode.class);
+                .exchange((request, response) -> new HttpResult(
+                        response.getStatusCode().value(),
+                        new String(response.getBody().readAllBytes(), StandardCharsets.UTF_8)));
+    }
+
+    private JsonNode parse(String body) {
+        if (body == null || body.isBlank()) return null;
+        try {
+            return objectMapper.readTree(body);
+        } catch (Exception ex) {
+            log.warn("Không đọc được JSON từ Gemini: {}", ex.getMessage());
+            return null;
+        }
+    }
+
+    private record HttpResult(int status, String body) {
     }
 
     /** HTTP 503 (quá tải) hoặc 429 (vượt hạn ngạch) thì đáng thử lại. */
@@ -187,6 +211,7 @@ public class GeminiClient {
         String code = node.path("code").asText("");
         return "service_unavailable".equalsIgnoreCase(status)
                 || "service_unavailable".equalsIgnoreCase(type)
+                || "service_unavailable".equalsIgnoreCase(code)
                 || "unavailable".equalsIgnoreCase(status)
                 || "unavailable".equalsIgnoreCase(type)
                 || "503".equals(code);
@@ -210,6 +235,12 @@ public class GeminiClient {
             Thread.currentThread().interrupt();
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, BUSY_AFTER_RETRY_MESSAGE);
         }
+    }
+
+    private static String shortBody(String body) {
+        if (body == null) return "";
+        String oneLine = body.replaceAll("\\s+", " ").trim();
+        return oneLine.length() > 300 ? oneLine.substring(0, 300) + "…" : oneLine;
     }
 
     private static ApiException busy() {
