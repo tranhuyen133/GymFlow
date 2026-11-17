@@ -2303,4 +2303,9 @@ export const EN_EXTRA: Record<string, string> = {
   'Điều kiện (EN)': 'Conditions (EN)',
   'Không có yêu cầu nào chờ duyệt': 'No requests pending approval',
   'Không có yêu cầu phù hợp': 'No matching requests',
+  'Tên dịch vụ (EN)': 'Service name (EN)',
+  'VD: Herbal sauna, VIP locker, Nutrition consultation': 'e.g. Herbal sauna, VIP locker, Nutrition consultation',
+  'Mô tả dịch vụ (EN)': 'Service description (EN)',
+  'Lưu ý khung giờ (EN)': 'Opening-hours note (EN)',
+  'VD: Daily 09:00–21:00, book 2 hours in advance': 'e.g. Daily 09:00–21:00, book 2 hours in advance',
 };

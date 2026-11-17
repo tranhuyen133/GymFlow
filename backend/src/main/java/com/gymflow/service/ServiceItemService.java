@@ -46,11 +46,14 @@ public class ServiceItemService {
         }
         ServiceItem s = new ServiceItem();
         s.setName(name);
+        s.setNameEn(Mappers.blankToNull(req.nameEn()));
         s.setCategory(req.category());
         s.setDescription(Mappers.blankToNull(req.description()));
+        s.setDescriptionEn(Mappers.blankToNull(req.descriptionEn()));
         s.setUnitPrice(req.unitPrice());
         s.setRequiresBooking(req.requiresBooking());
         s.setOpeningNote(Mappers.blankToNull(req.openingNote()));
+        s.setOpeningNoteEn(Mappers.blankToNull(req.openingNoteEn()));
         s.setActive(req.active() == null || req.active());
         s.setCreatedAt(LocalDateTime.now());
         serviceItemRepository.save(s);
@@ -66,11 +69,14 @@ public class ServiceItemService {
             throw ApiException.conflict("Tên dịch vụ đã tồn tại trong hệ thống");
         }
         s.setName(name);
+        s.setNameEn(Mappers.blankToNull(req.nameEn()));
         s.setCategory(req.category());
         s.setDescription(Mappers.blankToNull(req.description()));
+        s.setDescriptionEn(Mappers.blankToNull(req.descriptionEn()));
         s.setUnitPrice(req.unitPrice());
         s.setRequiresBooking(req.requiresBooking());
         s.setOpeningNote(Mappers.blankToNull(req.openingNote()));
+        s.setOpeningNoteEn(Mappers.blankToNull(req.openingNoteEn()));
         if (req.active() != null) {
             s.setActive(req.active());
         }

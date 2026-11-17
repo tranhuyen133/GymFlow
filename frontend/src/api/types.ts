@@ -203,11 +203,14 @@ export type PromotionAudience = 'ALL' | 'BIRTHDAY' | 'UPGRADE';
 export interface ServiceItem {
   id: number;
   name: string;
+  nameEn?: string | null;
   category: ServiceCategory;
   description: string | null;
+  descriptionEn?: string | null;
   unitPrice: number | null;
   requiresBooking: boolean;
   openingNote: string | null;
+  openingNoteEn?: string | null;
   active: boolean;
   createdAt: string;
 }

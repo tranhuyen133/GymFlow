@@ -99,8 +99,10 @@ public class Mappers {
 
     // ---------- Services & Entitlements ----------
     public ServiceItemResponse serviceItem(ServiceItem s) {
-        return new ServiceItemResponse(s.getId(), s.getName(), s.getCategory(), s.getDescription(),
-                s.getUnitPrice(), s.isRequiresBooking(), s.getOpeningNote(), s.isActive(), s.getCreatedAt());
+        return new ServiceItemResponse(s.getId(), s.getName(), s.getNameEn(), s.getCategory(),
+                s.getDescription(), s.getDescriptionEn(),
+                s.getUnitPrice(), s.isRequiresBooking(),
+                s.getOpeningNote(), s.getOpeningNoteEn(), s.isActive(), s.getCreatedAt());
     }
 
     public ServiceUsageResponse serviceUsage(ServiceUsage u) {

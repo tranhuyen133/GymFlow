@@ -6,6 +6,7 @@ import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlo
 import { t } from '../../i18n';
 import { fmtMoney } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
+import { localizeText } from '../../lib/planText';
 
 export const CATEGORY_LABELS: Record<ServiceCategory, string> = {
   RELAX: 'Thư giãn',
@@ -79,11 +80,11 @@ export default function Services() {
                 {data.map((s) => (
                   <tr key={s.id}>
                     <td>
-                      <b>{s.name}</b>
-                      {s.description && <div className="tiny faint ellipsis" style={{ maxWidth: 280 }}>{s.description}</div>}
+                      <b>{localizeText(s.nameEn, s.name)}</b>
+                      {s.description && <div className="tiny faint ellipsis" style={{ maxWidth: 280 }}>{localizeText(s.descriptionEn, s.description)}</div>}
                     </td>
                     <td>
-                      <span className="chip">{CATEGORY_LABELS[s.category] ?? s.category}</span>
+                      <span className="chip">{t(CATEGORY_LABELS[s.category] ?? s.category)}</span>
                     </td>
                     <td className="num">
                       {s.unitPrice != null ? fmtMoney(s.unitPrice) : <span className="muted">{t('Chỉ tặng kèm')}</span>}
@@ -95,7 +96,7 @@ export default function Services() {
                         <span className="muted small">{t('Không cần')}</span>
                       )}
                     </td>
-                    <td className="small">{s.openingNote || '—'}</td>
+                    <td className="small">{localizeText(s.openingNoteEn, s.openingNote) || '—'}</td>
                     <td>
                       {s.active ? (
                         <Badge tone="green">{t('Đang hoạt động')}</Badge>
@@ -154,11 +155,14 @@ function ServiceFormModal({
 }) {
   const toast = useToast();
   const [name, setName] = useState(service?.name ?? '');
+  const [nameEn, setNameEn] = useState(service?.nameEn ?? '');
   const [category, setCategory] = useState<ServiceCategory>(service?.category ?? 'RELAX');
   const [description, setDescription] = useState(service?.description ?? '');
+  const [descriptionEn, setDescriptionEn] = useState(service?.descriptionEn ?? '');
   const [unitPrice, setUnitPrice] = useState(service?.unitPrice != null ? String(service.unitPrice) : '');
   const [requiresBooking, setRequiresBooking] = useState(service?.requiresBooking ?? false);
   const [openingNote, setOpeningNote] = useState(service?.openingNote ?? '');
+  const [openingNoteEn, setOpeningNoteEn] = useState(service?.openingNoteEn ?? '');
   const [active, setActive] = useState(service?.active ?? true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -179,11 +183,14 @@ function ServiceFormModal({
     setError(null);
     const body = {
       name: trimmedName,
+      nameEn: nameEn.trim() || null,
       category,
       description: description.trim() || null,
+      descriptionEn: descriptionEn.trim() || null,
       unitPrice: priceNum,
       requiresBooking,
       openingNote: openingNote.trim() || null,
+      openingNoteEn: openingNoteEn.trim() || null,
       active,
     };
 
@@ -230,6 +237,15 @@ function ServiceFormModal({
           />
         </Field>
 
+        <Field label={t('Tên dịch vụ (EN)')} hint={t('Dùng khi giao diện chuyển sang tiếng Anh')}>
+          <Input
+            maxLength={100}
+            value={nameEn}
+            onChange={(e) => setNameEn(e.target.value)}
+            placeholder={t('VD: Herbal sauna, VIP locker, Nutrition consultation')}
+          />
+        </Field>
+
         <div className="row row-wrap" style={{ gap: 12 }}>
           <div style={{ flex: 1, minWidth: 200 }}>
             <Field label={t('Danh mục')} required>
@@ -240,7 +256,7 @@ function ServiceFormModal({
               >
                 {Object.entries(CATEGORY_LABELS).map(([k, label]) => (
                   <option key={k} value={k}>
-                    {label}
+                    {t(label)}
                   </option>
                 ))}
               </select>
@@ -273,12 +289,31 @@ function ServiceFormModal({
           />
         </Field>
 
+        <Field label={t('Mô tả dịch vụ (EN)')} hint={t('{n}/1000', { n: descriptionEn.length })}>
+          <Textarea
+            maxLength={1000}
+            rows={3}
+            value={descriptionEn}
+            onChange={(e) => setDescriptionEn(e.target.value)}
+            placeholder={t('Mô tả chi tiết quyền lợi dịch vụ mang lại cho hội viên')}
+          />
+        </Field>
+
         <Field label={t('Lưu ý khung giờ phục vụ')} hint={t('{n}/255', { n: openingNote.length })}>
           <Input
             maxLength={255}
             value={openingNote}
             onChange={(e) => setOpeningNote(e.target.value)}
             placeholder={t('VD: Phục vụ 09:00 - 21:00 hàng ngày, đặt trước 2 tiếng')}
+          />
+        </Field>
+
+        <Field label={t('Lưu ý khung giờ (EN)')} hint={t('{n}/255', { n: openingNoteEn.length })}>
+          <Input
+            maxLength={255}
+            value={openingNoteEn}
+            onChange={(e) => setOpeningNoteEn(e.target.value)}
+            placeholder={t('VD: Daily 09:00–21:00, book 2 hours in advance')}
           />
         </Field>
 

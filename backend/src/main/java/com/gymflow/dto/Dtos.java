@@ -1146,17 +1146,22 @@ public final class Dtos {
     // ===================== Services & Entitlements =====================
     public record ServiceItemRequest(
             @NotBlank(message = "Vui lòng nhập tên dịch vụ") @Size(max = 100) String name,
+            @Size(max = 100, message = "Tên tiếng Anh tối đa 100 ký tự") String nameEn,
             @NotNull(message = "Vui lòng chọn danh mục") ServiceCategory category,
             @Size(max = 1000) String description,
+            @Size(max = 1000, message = "Mô tả tiếng Anh tối đa 1000 ký tự") String descriptionEn,
             @Min(value = 0, message = "Giá không âm") Long unitPrice,
             boolean requiresBooking,
             @Size(max = 255) String openingNote,
+            @Size(max = 255, message = "Lưu ý tiếng Anh tối đa 255 ký tự") String openingNoteEn,
             Boolean active) {
     }
 
     public record ServiceItemResponse(
-            Long id, String name, ServiceCategory category, String description,
-            Long unitPrice, boolean requiresBooking, String openingNote, boolean active,
+            Long id, String name, String nameEn, ServiceCategory category,
+            String description, String descriptionEn,
+            Long unitPrice, boolean requiresBooking,
+            String openingNote, String openingNoteEn, boolean active,
             LocalDateTime createdAt) {
     }
 

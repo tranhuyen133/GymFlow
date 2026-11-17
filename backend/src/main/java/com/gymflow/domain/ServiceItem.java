@@ -21,12 +21,18 @@ public class ServiceItem {
     @Column(name = "name", nullable = false, unique = true, length = 100)
     private String name;
 
+    @Column(name = "name_en", length = 100)
+    private String nameEn;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false, length = 30)
     private ServiceCategory category;
 
     @Column(name = "description", length = 1000)
     private String description;
+
+    @Column(name = "description_en", length = 1000)
+    private String descriptionEn;
 
     @Column(name = "unit_price")
     private Long unitPrice;
@@ -36,6 +42,9 @@ public class ServiceItem {
 
     @Column(name = "opening_note", length = 255)
     private String openingNote;
+
+    @Column(name = "opening_note_en", length = 255)
+    private String openingNoteEn;
 
     @Column(name = "active", nullable = false)
     private boolean active = true;
