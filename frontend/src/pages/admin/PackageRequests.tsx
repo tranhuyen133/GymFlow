@@ -44,8 +44,8 @@ export default function PackageRequests() {
 
   return (
     <div className="page">
-      <PageHead eyebrow="Kinh doanh" title="Duyệt đăng ký gói"
-        desc="Hội viên tự chọn gói trong ứng dụng, trả tại quầy hoặc chuyển khoản theo mã QR. Thu tiền tại quầy hoặc đối chiếu sao kê theo mã đơn (GF…) rồi bấm Duyệt để kích hoạt gói. Gói có HLV kèm: duyệt là giao HLV cho hội viên."
+      <PageHead eyebrow={t('Kinh doanh')} title={t('Duyệt đăng ký gói')}
+        desc={t('Hội viên tự chọn gói trong ứng dụng, trả tại quầy hoặc chuyển khoản theo mã QR. Thu tiền tại quầy hoặc đối chiếu sao kê theo mã đơn (GF…) rồi bấm Duyệt để kích hoạt gói. Gói có HLV kèm: duyệt là giao HLV cho hội viên.')}
         actions={<Link to="/payment-settings" className="btn btn-secondary"><span>{t('Cài đặt thanh toán')}</span></Link>} />
 
       <div className="mb-20">
@@ -59,26 +59,26 @@ export default function PackageRequests() {
 
       {tab === 'orders' && <>
       <div className="grid grid-4" style={{ marginBottom: 18 }}>
-        <Stat icon="clock" label="Chờ xác nhận" value={count('PENDING')} accent="#ffb020" />
-        <Stat icon="wallet" label="Cần thu (đơn chờ)" value={fmtMoney(pendingAmount)} accent="#8b7cff" />
-        <Stat icon="checkCircle" label="Đã duyệt" value={count('APPROVED')} />
-        <Stat icon="ban" label="Từ chối / huỷ" value={count('REJECTED') + count('CANCELLED')} accent="#ff6b61" />
+        <Stat icon="clock" label={t('Chờ xác nhận')} value={count('PENDING')} accent="#ffb020" />
+        <Stat icon="wallet" label={t('Cần thu (đơn chờ)')} value={fmtMoney(pendingAmount)} accent="#8b7cff" />
+        <Stat icon="checkCircle" label={t('Đã duyệt')} value={count('APPROVED')} />
+        <Stat icon="ban" label={t('Từ chối / huỷ')} value={count('REJECTED') + count('CANCELLED')} accent="#ff6b61" />
       </div>
 
       <div className="toolbar">
-        <SearchInput value={q} onChange={setQ} placeholder="Tìm hội viên, SĐT, gói, mã đơn GF…" />
+        <SearchInput value={q} onChange={setQ} placeholder={t('Tìm hội viên, SĐT, gói, mã đơn GF…')} />
         <div className="spacer" />
         <Segmented<Filter> value={filter} onChange={setFilter} options={[
           { value: 'PENDING', label: t('Chờ xác nhận {n}', { n: count('PENDING') }) },
-          { value: 'APPROVED', label: 'Đã duyệt' }, { value: 'REJECTED', label: 'Từ chối' },
-          { value: 'CANCELLED', label: 'Hội viên huỷ' }, { value: 'ALL', label: 'Tất cả' },
+          { value: 'APPROVED', label: t('Đã duyệt') }, { value: 'REJECTED', label: t('Từ chối') },
+          { value: 'CANCELLED', label: t('Hội viên huỷ') }, { value: 'ALL', label: t('Tất cả') },
         ]} />
       </div>
 
       <Card flush>
         {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div>
           : loading && !data ? <div style={{ padding: 20 }}><LoadingBlock /></div>
-          : list.length === 0 ? <Empty icon="clipboard" title={filter === 'PENDING' ? 'Không có đơn nào chờ xác nhận' : 'Không có đơn phù hợp'} /> : (
+          : list.length === 0 ? <Empty icon="clipboard" title={filter === 'PENDING' ? t('Không có đơn nào chờ xác nhận') : t('Không có đơn phù hợp')} /> : (
             <Table caption={t('Đơn đăng ký gói')}>
               <thead><tr>
                 <th>{t('Hội viên')}</th><th>{t('Gói')}</th><th>{t('Số tiền')}</th><th>{t('Bắt đầu')}</th>
@@ -155,8 +155,8 @@ function ApproveModal({ req, onClose, onDone }: { req: PackageRequest; onClose: 
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState('');
-  const noteError = note.length > 255 ? 'Ghi chú tối đa 255 ký tự' : undefined;
-  const trainerError = tried && pt && !trainerId ? 'Chọn huấn luyện viên' : undefined;
+  const noteError = note.length > 255 ? t('Ghi chú tối đa 255 ký tự') : undefined;
+  const trainerError = tried && pt && !trainerId ? t('Chọn huấn luyện viên') : undefined;
   const chosenInactive = pt && trainers.data && trainerId && !activeTrainers.some((tr) => String(tr.id) === trainerId);
 
   const submit = async () => {
@@ -241,7 +241,7 @@ function RejectModal({ req, onClose, onDone }: { req: PackageRequest; onClose: (
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState('');
   const len = reason.trim().length;
-  const error = len === 0 ? 'Vui lòng nhập lý do từ chối' : len < 5 || reason.length > 255 ? 'Lý do từ 5 đến 255 ký tự' : undefined;
+  const error = len === 0 ? t('Vui lòng nhập lý do từ chối') : len < 5 || reason.length > 255 ? t('Lý do từ 5 đến 255 ký tự') : undefined;
 
   const submit = async () => {
     setTouched(true);
@@ -296,7 +296,7 @@ function ChangeRequestsPanel({ data, error, loading, reload }: { data: ChangeReq
     setBusy(true); setServerError('');
     try {
       const res = await api.put<ChangeDecision>(`/subscription-changes/${approving.id}/approve`, { note: note.trim() || null });
-      toast.success(t('Đã duyệt yêu cầu của {name}', { name: approving.memberName }));
+      toast.success(t('Đã duyệt yêu cầu của {name}', { name: displayPersonName(approving.memberName) }));
       close(); reload();
       if (res.cancelledSessions > 0 || res.notes.length > 0) setResult(res);
     } catch (e) { setServerError(errMsg(e)); } finally { setBusy(false); }
@@ -308,13 +308,13 @@ function ChangeRequestsPanel({ data, error, loading, reload }: { data: ChangeReq
     setBusy(true); setServerError('');
     try {
       await api.put(`/subscription-changes/${rejecting.id}/reject`, { reason: reason.trim() });
-      toast.success(t('Đã từ chối yêu cầu của {name}', { name: rejecting.memberName }));
+      toast.success(t('Đã từ chối yêu cầu của {name}', { name: displayPersonName(rejecting.memberName) }));
       close(); reload();
     } catch (e) { setServerError(errMsg(e)); } finally { setBusy(false); }
   };
 
   const change = (c: ChangeRequest) => c.type === 'CHANGE_TRAINER'
-    ? <>{c.currentTrainerName ?? t('Chưa có HLV')} → <b>{c.trainerName}</b></>
+    ? <>{c.currentTrainerName ? displayPersonName(c.currentTrainerName) : t('Chưa có HLV')} → <b>{displayPersonName(c.trainerName)}</b></>
     : <>{fmtDate(c.oldStartDate)} → {fmtDate(c.oldEndDate)}<br /><b>{fmtDate(c.newStartDate)} → {fmtDate(c.newEndDate)}</b>
       {c.pauseDays ? <span className="tiny faint"> · +{c.pauseDays} {t('ngày')}</span> : null}</>;
 
@@ -331,19 +331,19 @@ function ChangeRequestsPanel({ data, error, loading, reload }: { data: ChangeReq
       <Card flush>
         {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div>
           : loading && !data ? <div style={{ padding: 20 }}><LoadingBlock /></div>
-          : list.length === 0 ? <Empty icon="edit" title={filter === 'PENDING' ? 'Không có yêu cầu nào chờ duyệt' : 'Không có yêu cầu phù hợp'} /> : (
+          : list.length === 0 ? <Empty icon="edit" title={filter === 'PENDING' ? t('Không có yêu cầu nào chờ duyệt') : t('Không có yêu cầu phù hợp')} /> : (
             <Table caption={t('Yêu cầu điều chỉnh gói')}>
               <thead><tr><th>{t('Hội viên')}</th><th>{t('Yêu cầu')}</th><th>{t('Thay đổi')}</th><th>{t('Gửi lúc')}</th><th>{t('Trạng thái')}</th><th aria-label={t('Thao tác')} /></tr></thead>
               <tbody>
                 {list.map((c) => (
                   <tr key={c.id}>
                     <td><Link to={`/members/${c.memberId}`}><Person name={c.memberName} sub={[c.memberCode, c.memberPhone].filter(Boolean).join(' · ')} size="sm" /></Link></td>
-                    <td><b>{t(changeTypeLabel[c.type])}</b><div className="tiny faint">{t(c.planName)}</div><div className="tiny muted">{t('Lý do: {r}', { r: c.reason })}</div></td>
+                    <td><b>{t(changeTypeLabel[c.type])}</b><div className="tiny faint">{localizeText(c.planNameEn, c.planName)}</div><div className="tiny muted">{t('Lý do: {r}', { r: c.reason })}</div></td>
                     <td className="small">{change(c)}</td>
                     <td className="tiny muted nowrap">{fmtDateTime(c.createdAt)}</td>
                     <td>
                       <StatusBadge map={packageRequestStatus} value={c.status} />
-                      {c.decidedAt && c.status !== 'CANCELLED' && <div className="tiny faint mt-4">{c.decidedByName ?? ''} · {fmtDateTime(c.decidedAt)}</div>}
+                      {c.decidedAt && c.status !== 'CANCELLED' && <div className="tiny faint mt-4">{c.decidedByName ? displayPersonName(c.decidedByName) : ''} · {fmtDateTime(c.decidedAt)}</div>}
                       {c.decisionNote && <div className="tiny muted">{c.decisionNote}</div>}
                     </td>
                     <td className="actions nowrap">
@@ -366,8 +366,8 @@ function ChangeRequestsPanel({ data, error, loading, reload }: { data: ChangeReq
         </>}>
           <div className="stack">
             <div className="plan-summary">
-              <div><span className="tiny muted">{t('Hội viên')}</span><b>{approving.memberName}</b><span className="tiny faint">{approving.memberCode}</span></div>
-              <div><span className="tiny muted">{t('Gói')}</span><b>{t(approving.planName)}</b></div>
+              <div><span className="tiny muted">{t('Hội viên')}</span><b>{displayPersonName(approving.memberName)}</b><span className="tiny faint">{approving.memberCode}</span></div>
+              <div><span className="tiny muted">{t('Gói')}</span><b>{localizeText(approving.planNameEn, approving.planName)}</b></div>
             </div>
             <div className="small">{change(approving)}</div>
             <div className="small muted">{t('Lý do: {r}', { r: approving.reason })}</div>
@@ -387,7 +387,7 @@ function ChangeRequestsPanel({ data, error, loading, reload }: { data: ChangeReq
           <Button variant="danger" icon="x" loading={busy} disabled={!!reasonError} onClick={() => void reject()}>{t('Từ chối')}</Button>
         </>}>
           <div className="stack">
-            <p className="small" style={{ margin: 0 }}>{tn('{type} của {name}. Hội viên sẽ thấy lý do.', { type: <b>{t(changeTypeLabel[rejecting.type])}</b>, name: <b>{rejecting.memberName}</b> })}</p>
+            <p className="small" style={{ margin: 0 }}>{tn('{type} của {name}. Hội viên sẽ thấy lý do.', { type: <b>{t(changeTypeLabel[rejecting.type])}</b>, name: <b>{displayPersonName(rejecting.memberName)}</b> })}</p>
             <Field htmlFor="chg-reject" label={t('Lý do')} required error={reason ? reasonError : undefined} hint={t('{n}/255', { n: reason.length })}>
               <Textarea id="chg-reject" maxLength={255} value={reason} invalid={!!reason && !!reasonError} placeholder={t('VD: đã bảo lưu đủ 30 ngày trong gói này')}
                 onChange={(e) => setReason(e.target.value)} />

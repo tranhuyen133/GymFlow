@@ -177,7 +177,7 @@ export interface UpgradeQuote {
 export type ChangeRequestType = 'CHANGE_START' | 'PAUSE' | 'CHANGE_TRAINER';
 export interface ChangeRequest {
   id: number; memberId: number; memberName: string; memberCode: string; memberPhone: string | null;
-  subscriptionId: number; planName: string; type: ChangeRequestType;
+  subscriptionId: number; planName: string; planNameEn?: string | null; type: ChangeRequestType;
   oldStartDate: string; oldEndDate: string; newStartDate: string | null; newEndDate: string | null; pauseDays: number | null;
   trainerId: number | null; trainerName: string | null; currentTrainerName: string | null;
   reason: string; status: PackageRequestStatus; decisionNote: string | null;

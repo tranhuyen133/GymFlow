@@ -295,7 +295,7 @@ export default function MyPackages() {
                     <tr key={c.id}>
                       <td>
                         <b>{t(changeTypeLabel[c.type])}</b>
-                        <div className="tiny faint">{t(c.planName)} · {fmtDateTime(c.createdAt)}</div>
+                        <div className="tiny faint">{localizeText(c.planNameEn, c.planName)} · {fmtDateTime(c.createdAt)}</div>
                         <div className="tiny faint">{t('Lý do: {r}', { r: c.reason })}</div>
                       </td>
                       <td className="small">

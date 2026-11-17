@@ -123,7 +123,7 @@ public final class PackageRequestDtos {
 
     /** newStartDate / newEndDate = thời gian dự kiến sau khi duyệt, để hai bên cùng thấy trước / sau. */
     public record ChangeRequestResponse(Long id, Long memberId, String memberName, String memberCode, String memberPhone,
-                                        Long subscriptionId, String planName, ChangeRequestType type,
+                                        Long subscriptionId, String planName, String planNameEn, ChangeRequestType type,
                                         LocalDate oldStartDate, LocalDate oldEndDate,
                                         LocalDate newStartDate, LocalDate newEndDate, Integer pauseDays,
                                         Long trainerId, String trainerName, String currentTrainerName,

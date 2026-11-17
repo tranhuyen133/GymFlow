@@ -401,7 +401,8 @@ public class SubscriptionAdjustmentService {
         Trainer t = r.getTrainer();
         Trainer cur = m.getTrainer();
         return new ChangeRequestResponse(r.getId(), m.getId(), m.getUser().getFullName(), m.getCode(), m.getUser().getPhone(),
-                r.getSubscription().getId(), planName(r.getSubscription()), r.getChangeType(),
+                r.getSubscription().getId(), planName(r.getSubscription()),
+                r.getSubscription().getPlan().getNameEn(), r.getChangeType(),
                 r.getOldStartDate(), r.getOldEndDate(), ns, ne, r.getPauseDays(),
                 t == null ? null : t.getId(), t == null ? null : t.getUser().getFullName(),
                 cur == null ? null : cur.getUser().getFullName(),

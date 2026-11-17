@@ -2301,4 +2301,6 @@ export const EN_EXTRA: Record<string, string> = {
   'Dùng khi giao diện chuyển sang tiếng Anh': 'Used when the interface is in English',
   'VD: Summer Kickoff, New Member Offer': 'e.g. Summer Kickoff, New Member Offer',
   'Điều kiện (EN)': 'Conditions (EN)',
+  'Không có yêu cầu nào chờ duyệt': 'No requests pending approval',
+  'Không có yêu cầu phù hợp': 'No matching requests',
 };
