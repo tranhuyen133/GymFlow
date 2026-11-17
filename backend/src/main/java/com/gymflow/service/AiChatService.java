@@ -90,7 +90,7 @@ public class AiChatService {
         sb.append("- Hôm nay: ").append(DOW[today.getDayOfWeek().getValue() - 1])
                 .append(", ").append(today.format(DATE)).append('\n');
         appendSubscription(sb, member, today);
-        appendActivePlan(sb, member);
+        appendActivePlan(sb, member, today);
         appendWeekSchedule(sb, member, today);
         appendRecentSessions(sb, member);
         appendRecentWeights(sb, member);
@@ -130,7 +130,7 @@ public class AiChatService {
                 .append(", còn ").append(daysLeft).append(" ngày\n");
     }
 
-    private void appendActivePlan(StringBuilder sb, Member member) {
+    private void appendActivePlan(StringBuilder sb, Member member, LocalDate today) {
         WorkoutPlan plan = planRepository
                 .findFirstByMemberIdAndStatusOrderByStartDateDesc(member.getId(), PlanStatus.ACTIVE)
                 .orElse(null);
@@ -148,15 +148,27 @@ public class AiChatService {
         for (Map.Entry<Integer, List<WorkoutPlanItem>> entry : itemsByDay.entrySet()) {
             int day = entry.getKey();
             if (day < 1 || day > 7) continue;
-            List<WorkoutPlanItem> items = entry.getValue().stream()
-                    .sorted(Comparator.comparing(WorkoutPlanItem::getSortOrder))
-                    .limit(MAX_ITEMS_PER_DAY)
-                    .toList();
-            String line = items.stream()
-                    .map(item -> item.getExercise().getName() + " " + item.getSets() + "x" + item.getReps())
-                    .collect(Collectors.joining(", "));
-            sb.append("  + ").append(DOW[day - 1]).append(": ").append(line).append('\n');
+            sb.append("  + ").append(DOW[day - 1]).append(": ")
+                    .append(formatItems(entry.getValue())).append('\n');
         }
+
+        // Chốt sẵn bài của đúng hôm nay để AI không tự chọn nhầm thứ khác trong giáo án.
+        int todayDow = today.getDayOfWeek().getValue();
+        List<WorkoutPlanItem> todayItems = itemsByDay.getOrDefault(todayDow, List.of());
+        sb.append("  + Hôm nay (").append(DOW[todayDow - 1]).append("): ");
+        if (todayItems.isEmpty()) {
+            sb.append("không có bài tập trong giáo án\n");
+        } else {
+            sb.append(formatItems(todayItems)).append('\n');
+        }
+    }
+
+    private static String formatItems(List<WorkoutPlanItem> items) {
+        return items.stream()
+                .sorted(Comparator.comparing(WorkoutPlanItem::getSortOrder))
+                .limit(MAX_ITEMS_PER_DAY)
+                .map(item -> item.getExercise().getName() + " " + item.getSets() + "x" + item.getReps())
+                .collect(Collectors.joining(", "));
     }
 
     private void appendWeekSchedule(StringBuilder sb, Member member, LocalDate today) {
