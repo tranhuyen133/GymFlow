@@ -9,13 +9,22 @@ import java.util.Optional;
 /**
  * Các câu trả lời sẵn của trợ lý GymFlow. Không gọi AI/API ngoài;
  * mỗi chủ đề được trả lời từ dữ liệu thật của hệ thống theo vai trò người dùng.
+ *
+ * <p>Trợ lý AI chỉ phục vụ hội viên (Role.MEMBER). Các chủ đề dành cho
+ * ADMIN/TRAINER vẫn giữ lại để ChatAssistantService dùng nội bộ
+ * (grounding, thống kê) nhưng ChatService sẽ chặn ở tầng API.</p>
  */
 public enum ChatTopic {
     SCHEDULE_TODAY("Lịch tập hôm nay", true, true, true),
+    SCHEDULE_WEEK("Lịch 7 ngày tới", false, false, true),
     WHO_TODAY("Hôm nay ai tập", true, true, false),
     NEXT_SESSION("Buổi tập kế tiếp", true, true, true),
     MY_PACKAGE("Gói tập còn hạn", false, false, true),
+    MY_PLAN("Giáo án của tôi", false, false, true),
+    MY_PROGRESS("Cân nặng & tiến độ", false, false, true),
+    WORKOUT_HISTORY("Buổi đã tập", false, false, true),
     TODAY_EXERCISES("Bài tập hôm nay", false, false, true),
+    PLAN_CATALOG("Gói tập & giá", false, false, true),
     EXERCISE_TIPS("Gợi ý bài tập & nhóm cơ", true, true, true),
     EQUIPMENT_GUIDE("Hướng dẫn sử dụng thiết bị", true, true, true),
     WORKOUT_PLANS("Gợi ý lịch tập mẫu", true, true, true),

@@ -2,6 +2,7 @@ package com.gymflow.service;
 
 import com.gymflow.ai.AssistantProvider;
 import com.gymflow.ai.AssistantProviderService;
+import com.gymflow.ai.RuleBasedProvider;
 import com.gymflow.common.ApiException;
 import com.gymflow.config.AiConfig;
 import com.gymflow.domain.ChatConversation;
@@ -39,6 +40,7 @@ class ChatServiceTest {
     @Mock UserRepository userRepository;
     @Mock ChatAssistantService assistant;
     @Mock AssistantProviderService assistantProviderService;
+    @Mock RuleBasedProvider ruleBasedProvider;
     @Mock AssistantProvider activeProvider;
     @Mock AiConfig aiConfig;
 
@@ -48,7 +50,7 @@ class ChatServiceTest {
     @BeforeEach
     void setUp() {
         service = new ChatService(conversationRepository, messageRepository, userRepository, assistant,
-                assistantProviderService, aiConfig,
+                assistantProviderService, ruleBasedProvider, aiConfig,
                 Clock.fixed(Instant.parse("2026-11-10T10:00:00Z"), ZoneOffset.UTC));
         owner = new AuthUser(7L, "owner@example.test", Role.MEMBER, "Owner");
     }
@@ -156,5 +158,47 @@ class ChatServiceTest {
         assertThat(res.suggestions())
                 .extracting(ChatSuggestion::key)
                 .containsExactly("HELP");
+    }
+
+    @Test
+    void trainerKeepsAssistantButUsesRuleProviderWithoutCallingGemini() {
+        AuthUser trainer = new AuthUser(8L, "trainer@example.test", Role.TRAINER, "Trainer");
+        ChatConversation conversation = conversation();
+        when(conversationRepository.findByIdAndUser_Id(1L, trainer.id())).thenReturn(Optional.of(conversation));
+        when(ruleBasedProvider.getProviderName()).thenReturn("rule");
+        when(ruleBasedProvider.answerText(trainer, "Lịch tập hôm nay thế nào?", conversation))
+                .thenReturn("Hôm nay có 2 buổi tập.");
+        when(messageRepository.findTop1ByConversation_IdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
+        when(messageRepository.save(any(ChatMessage.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = service.send(trainer, new ChatSendRequest(1L, null, "Lịch tập hôm nay thế nào?"));
+
+        assertThat(response.provider()).isEqualTo("RULE");
+        assertThat(response.content()).isEqualTo("Hôm nay có 2 buổi tập.");
+        verify(ruleBasedProvider).answerText(trainer, "Lịch tập hôm nay thế nào?", conversation);
+        verifyNoInteractions(assistantProviderService);
+    }
+
+    @Test
+    void trainerCannotUseMemberOnlyTopic() {
+        AuthUser trainer = new AuthUser(8L, "trainer@example.test", Role.TRAINER, "Trainer");
+        ChatConversation conversation = conversation();
+        when(conversationRepository.findByIdAndUser_Id(1L, trainer.id())).thenReturn(Optional.of(conversation));
+
+        assertThatThrownBy(() -> service.send(trainer, new ChatSendRequest(1L, "MY_PACKAGE")))
+                .isInstanceOfSatisfying(ApiException.class, error ->
+                        assertThat(error.getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+        verifyNoInteractions(messageRepository, assistantProviderService);
+    }
+
+    @Test
+    void suggestionsStayAvailableForTrainer() {
+        AuthUser trainer = new AuthUser(8L, "trainer@example.test", Role.TRAINER, "Trainer");
+        when(assistant.suggestions(trainer)).thenReturn(List.of(new ChatSuggestion("WHO_TODAY", "Hôm nay ai tập")));
+        when(assistantProviderService.isFreeTextEnabled()).thenReturn(true);
+
+        assertThat(service.suggestions(trainer).suggestions())
+                .extracting(ChatSuggestion::key)
+                .containsExactly("WHO_TODAY");
     }
 }

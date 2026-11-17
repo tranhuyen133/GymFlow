@@ -10,10 +10,13 @@ import org.springframework.stereotype.Service;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
- * Thu thập và định dạng dữ liệu thực tế từ hệ thống GymFlow để đưa vào ngữ cảnh (Grounding) của AI.
- * Đảm bảo: AI không trực tiếp truy vấn DB, không sinh SQL, và tuân thủ nghiêm ngặt quyền của người dùng.
+ * Thu thập và định dạng dữ liệu thực tế từ MySQL để đưa vào ngữ cảnh (Grounding) của AI.
+ *
+ * <p>Phạm vi: chỉ hội viên (Role.MEMBER) và chỉ dữ liệu của chính họ. AI không trực tiếp
+ * truy vấn DB, không sinh SQL; mọi con số đều do backend truy vấn rồi ghép vào prompt.</p>
  */
 @Slf4j
 @Service
@@ -23,73 +26,70 @@ public class AiDataGroundingService {
     private final ChatAssistantService chatAssistantService;
 
     public String buildGroundingContext(AuthUser user, String userQuery) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("--- DỮ LIỆU HỆ THỐNG GYMFLOW (chỉ dùng dữ liệu này để trả lời) ---\n");
         if (user == null) {
-            return "Không có thông tin người dùng.";
+            sb.append("Không có thông tin người dùng.\n");
+            return sb.append("--- HẾT DỮ LIỆU HỆ THỐNG ---\n").toString();
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("--- DỮ LIỆU HỆ THỐNG GYMFLOW (Chỉ dùng dữ liệu này để trả lời) ---\n");
-        sb.append("Tên người dùng: ").append(user.fullName()).append("\n");
-        sb.append("Vai trò trong hệ thống: ").append(user.role().name()).append("\n\n");
+        sb.append("Người đang hỏi: ").append(user.fullName())
+                .append(" · vai trò ").append(user.role().name()).append("\n\n");
 
-        String lower = (userQuery == null ? "" : userQuery.trim().toLowerCase(Locale.ROOT));
+        if (!user.isMember()) {
+            sb.append("[PHẠM VI PHỤC VỤ]: Trợ lý AI chỉ phục vụ tài khoản hội viên (MEMBER) ")
+                    .append("và chỉ trả lời dữ liệu của chính hội viên đang đăng nhập. ")
+                    .append("Hãy lịch sự từ chối và hướng dẫn liên hệ quầy lễ tân nếu cần hỗ trợ.\n");
+            return sb.append("--- HẾT DỮ LIỆU HỆ THỐNG ---\n").toString();
+        }
+
+        String lower = userQuery == null ? "" : userQuery.trim().toLowerCase(Locale.ROOT);
         Set<String> facts = new LinkedHashSet<>();
 
-        // 1. Kiểm tra yêu cầu bảo mật / danh sách hội viên khác
-        if (containsAny(lower, "ai tập", "danh sách hội viên", "người khác", "lịch người khác", "hội viên khác", "thông tin người khác")) {
-            if (user.isAdmin() || user.isTrainer()) {
-                facts.add("[Lịch hội viên hôm nay]:\n" + chatAssistantService.answer(user, ChatTopic.WHO_TODAY));
-            } else {
-                facts.add("[CẢNH BÁO BẢO MẬT]: Người dùng này là HỘI VIÊN (MEMBER), KHÔNG CÓ QUYỀN xem lịch tập hoặc thông tin của bất kỳ hội viên nào khác. Bạn phải từ chối rõ ràng và giải thích nguyên tắc bảo mật thông tin cá nhân của GymFlow.");
-            }
+        // Dữ liệu cốt lõi của hội viên: luôn có trong prompt để AI trả lời đúng ngữ cảnh.
+        addFact(facts, "Hồ sơ hội viên", () -> chatAssistantService.memberProfile(user));
+        addFact(facts, "Gói tập của tôi", () -> chatAssistantService.myPackages(user));
+        addFact(facts, "Giáo án đang áp dụng", () -> chatAssistantService.answer(user, ChatTopic.MY_PLAN));
+        addFact(facts, "Lịch tập hôm nay", () -> chatAssistantService.answer(user, ChatTopic.SCHEDULE_TODAY));
+        addFact(facts, "Buổi tập kế tiếp", () -> chatAssistantService.answer(user, ChatTopic.NEXT_SESSION));
+        addFact(facts, "Buổi tập đã hoàn thành", () -> chatAssistantService.answer(user, ChatTopic.WORKOUT_HISTORY));
+        addFact(facts, "Cân nặng và tiến độ", () -> chatAssistantService.answer(user, ChatTopic.MY_PROGRESS));
+
+        // Dữ liệu bổ sung theo ý định của câu hỏi.
+        if (containsAny(lower, "lịch", "tuần", "hôm nay", "sắp tới", "khi nào", "bao giờ", "thời gian", "mai")) {
+            addFact(facts, "Lịch tập 7 ngày tới", () -> chatAssistantService.answer(user, ChatTopic.SCHEDULE_WEEK));
         }
 
-        // 2. Lịch tập hôm nay & Buổi tập kế tiếp
-        if (containsAny(lower, "hôm nay", "lịch", "tập gì", "kế tiếp", "tiếp theo", "sắp tới", "bao giờ", "khi nào", "thời gian")) {
-            facts.add("[Lịch tập hôm nay]:\n" + chatAssistantService.answer(user, ChatTopic.SCHEDULE_TODAY));
-            facts.add("[Buổi tập kế tiếp gần nhất]:\n" + chatAssistantService.answer(user, ChatTopic.NEXT_SESSION));
+        if (containsAny(lower, "bài tập", "động tác", "giáo án", "tập gì", "luyện tập", "hiệp", "rep")) {
+            addFact(facts, "Bài tập trong giáo án hôm nay", () -> chatAssistantService.answer(user, ChatTopic.TODAY_EXERCISES));
+            addFact(facts, "Lịch tập mẫu tham khảo", () -> chatAssistantService.answer(user, ChatTopic.WORKOUT_PLANS));
         }
 
-        // 3. Gói tập & số buổi PT (cho Hội viên)
-        if (containsAny(lower, "gói", "hạn", "bao lâu", "hết hạn", "ngày", "pt", "dịch vụ", "đăng ký")) {
-            if (ChatTopic.MY_PACKAGE.allowedFor(user)) {
-                facts.add("[Thông tin gói tập hiện tại]:\n" + chatAssistantService.answer(user, ChatTopic.MY_PACKAGE));
-            } else {
-                facts.add("[Gói tập]: Tài khoản Huấn luyện viên / Quản trị viên không sở hữu gói tập hội viên.");
-            }
+        if (containsAny(lower, "gói", "giá", "bao nhiêu", "hạn", "hết hạn", "pt", "dịch vụ", "đăng ký", "mua")) {
+            addFact(facts, "Gói tập hiện tại", () -> chatAssistantService.answer(user, ChatTopic.MY_PACKAGE));
+            addFact(facts, "Các gói đang bán", () -> chatAssistantService.answer(user, ChatTopic.PLAN_CATALOG));
         }
 
-        // 4. Bài tập trong ngày / giáo án
-        if (containsAny(lower, "bài tập", "động tác", "giáo án", "luyện tập", "hôm nay tập gì")) {
-            if (ChatTopic.TODAY_EXERCISES.allowedFor(user)) {
-                facts.add("[Bài tập trong giáo án hôm nay]:\n" + chatAssistantService.answer(user, ChatTopic.TODAY_EXERCISES));
-            }
-            facts.add("[Gợi ý giáo án mẫu & chia lịch]:\n" + chatAssistantService.answer(user, ChatTopic.WORKOUT_PLANS));
+        if (containsAny(lower, "kỹ thuật", "nhóm cơ", "ngực", "lưng", "vai", "tay", "chân", "bụng",
+                "squat", "bench press", "deadlift")) {
+            addFact(facts, "Hướng dẫn kỹ thuật và nhóm cơ", () -> chatAssistantService.answer(user, ChatTopic.EXERCISE_TIPS));
         }
 
-        // 5. Kỹ thuật bài tập & Nhóm cơ
-        if (containsAny(lower, "kỹ thuật", "nhóm cơ", "ngực", "lưng", "vai", "tay", "chân", "bụng", "squat", "bench press", "deadlift")) {
-            facts.add("[Hướng dẫn kỹ thuật bài tập & nhóm cơ]:\n" + chatAssistantService.answer(user, ChatTopic.EXERCISE_TIPS));
+        if (containsAny(lower, "thiết bị", "dụng cụ", "máy", "tạ", "đòn", "cáp", "kettlebell",
+                "foam roller", "an toàn")) {
+            addFact(facts, "Hướng dẫn thiết bị phòng gym", () -> chatAssistantService.answer(user, ChatTopic.EQUIPMENT_GUIDE));
         }
 
-        // 6. Dụng cụ & Thiết bị
-        if (containsAny(lower, "thiết bị", "dụng cụ", "máy", "tạ", "đòn", "cáp", "kettlebell", "foam roller", "an toàn")) {
-            facts.add("[Hướng dẫn thiết bị phòng gym]:\n" + chatAssistantService.answer(user, ChatTopic.EQUIPMENT_GUIDE));
-        }
-
-        // 7. Cảnh báo chấn thương / đau nhức
         if (containsAny(lower, "đau", "chấn thương", "mỏi", "nhức", "rách cơ", "chuột rút", "sưng", "gãy")) {
-            facts.add("[LƯU Ý Y TẾ QUAN TRỌNG]: Nếu có dấu hiệu đau nhói bất thường, chấn thương khớp hoặc cơ: KHUYÊN HỘI VIÊN DỪNG TẬP NGAY LẬP TỨC và đến cơ sở y tế để được thăm khám. Trợ lý GymFlow không có chức năng chẩn đoán hay điều trị y tế.");
+            facts.add("[LƯU Ý Y TẾ QUAN TRỌNG]: Nếu có dấu hiệu đau nhói bất thường, chấn thương khớp hoặc cơ: "
+                    + "KHUYÊN HỘI VIÊN DỪNG TẬP NGAY LẬP TỨC và đến cơ sở y tế để được thăm khám. "
+                    + "Trợ lý GymFlow không có chức năng chẩn đoán hay điều trị y tế.");
         }
 
-        // Nếu không khớp từ khoá nào cụ thể, cung cấp dữ liệu cơ bản tổng quan về người dùng
-        if (facts.isEmpty()) {
-            facts.add("[Lịch tập hôm nay]:\n" + chatAssistantService.answer(user, ChatTopic.SCHEDULE_TODAY));
-            facts.add("[Buổi tập kế tiếp gần nhất]:\n" + chatAssistantService.answer(user, ChatTopic.NEXT_SESSION));
-            if (ChatTopic.MY_PACKAGE.allowedFor(user)) {
-                facts.add("[Thông tin gói tập hiện tại]:\n" + chatAssistantService.answer(user, ChatTopic.MY_PACKAGE));
-            }
-            facts.add("[Trợ giúp & an toàn]:\n" + chatAssistantService.answer(user, ChatTopic.HELP));
+        if (containsAny(lower, "hội viên khác", "người khác", "ai tập", "danh sách hội viên",
+                "lịch của bạn khác", "thông tin người khác")) {
+            facts.add("[QUY TẮC BẢO MẬT]: Đây là tài khoản HỘI VIÊN. Không được tiết lộ lịch tập, gói tập "
+                    + "hay thông tin cá nhân của bất kỳ hội viên nào khác. Hãy từ chối lịch sự.");
         }
 
         for (String fact : facts) {
@@ -97,13 +97,29 @@ public class AiDataGroundingService {
         }
 
         sb.append("--- HẾT DỮ LIỆU HỆ THỐNG ---\n");
-        sb.append("CHỈ DẪN TRÌNH BÀY: Dựa vào các thông tin hệ thống trên, hãy soạn câu trả lời bằng tiếng Việt tự nhiên, thân thiện và mạch lạc. Sử dụng định dạng văn bản trực quan (in đậm các thông tin then chốt, gạch đầu dòng danh sách, hoặc bảng tóm tắt nếu cần) để người dùng dễ theo dõi.");
+        sb.append("CHỈ DẪN TRÌNH BÀY: Chỉ trả lời dựa trên dữ liệu hệ thống ở trên, bằng tiếng Việt tự nhiên, ")
+                .append("thân thiện và mạch lạc. Không bịa thêm ngày giờ, số buổi, số tiền hay tên giáo án. ")
+                .append("Nếu dữ liệu không có, nói rõ \"Hiện tại hệ thống GymFlow chưa ghi nhận thông tin này của bạn\" ")
+                .append("và gợi ý liên hệ quầy lễ tân/huấn luyện viên. Dùng in đậm cho thông tin quan trọng, ")
+                .append("gạch đầu dòng khi liệt kê, có thể dùng bảng Markdown khi tóm tắt số liệu.");
         return sb.toString();
     }
 
+    private void addFact(Set<String> facts, String label, Supplier<String> supplier) {
+        try {
+            String value = supplier.get();
+            if (value != null && !value.isBlank()) {
+                facts.add("[" + label + "]\n" + value);
+            }
+        } catch (Exception ex) {
+            log.warn("Không lấy được dữ liệu grounding '{}': {}", label, ex.getMessage());
+            facts.add("[" + label + "]\nHệ thống chưa lấy được dữ liệu này.");
+        }
+    }
+
     private static boolean containsAny(String text, String... keywords) {
-        for (String kw : keywords) {
-            if (text.contains(kw)) {
+        for (String keyword : keywords) {
+            if (text.contains(keyword)) {
                 return true;
             }
         }

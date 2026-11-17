@@ -26,12 +26,15 @@ Sao chép `.env.example` thành `.env` ở thư mục gốc. Dùng secret từ n
 
 ### Trợ lý AI GymFlow (Google Gemini API)
 
+Trợ lý AI Gemini + grounding dữ liệu cá nhân **chỉ phục vụ tài khoản hội viên (`Role.MEMBER`)**, và hội viên chỉ hỏi được dữ liệu của chính mình. `ADMIN`/`TRAINER` vẫn giữ nút trợ lý như trước nhưng được trả lời bằng `RuleBasedProvider` từ dữ liệu nội bộ, không gọi Gemini và không nhận dữ liệu cá nhân của hội viên.
+
 Hệ thống trợ lý hỗ trợ 2 chế độ triển khai:
 
 1. **Chế độ Google Gemini API (`AI_PROVIDER=gemini`)** *(Mặc định)*:
    * Sử dụng API Key từ Google AI Studio ([aistudio.google.com](https://aistudio.google.com/)).
    * Model khuyến nghị: `gemini-3.5-flash-lite` (tốc độ cao < 1s, phản hồi tiếng Việt xuất sắc, tối ưu chi phí).
-   * **Cơ chế neo dữ liệu thật (Grounding)**: Toàn bộ thông tin lịch tập, gói tập, bài tập, thiết bị được backend tự động truy vấn theo đúng quyền hạn người dùng rồi truyền vào `system_instruction`. Gemini chỉ tổng hợp câu trả lời dựa trên dữ liệu thật này, tuyệt đối không truy vấn DB trực tiếp hay sinh SQL.
+   * **Cơ chế neo dữ liệu thật (Grounding)**: Backend tự động truy vấn MySQL theo đúng hội viên đang đăng nhập rồi truyền vào `system_instruction`: hồ sơ hội viên, gói tập và số buổi PT còn lại, giáo án đang áp dụng, lịch tập hôm nay/7 ngày tới, các buổi đã hoàn thành (`WorkoutLog`), cân nặng/BMI/chuyên cần (`WeightRecord` + `ProgressService`), danh mục gói và bài tập/thiết bị. Gemini chỉ tổng hợp câu trả lời từ dữ liệu này, tuyệt đối không truy vấn DB trực tiếp hay sinh SQL.
+   * API key chỉ đọc từ biến môi trường `GEMINI_API_KEY` ở backend, không gửi xuống frontend và không commit lên git.
    * **Cơ chế dự phòng an toàn (Fallback)**: Khi mất mạng, lỗi hạn ngạch API hoặc lỗi key, hệ thống tự động chuyển về chế độ `RuleBasedProvider` mà không bao giờ làm gián đoạn trải nghiệm người dùng hay gây lỗi 500.
 
 2. **Chế độ nút bấm sẵn (`AI_PROVIDER=rule`)**:
