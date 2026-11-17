@@ -75,6 +75,10 @@ public interface WorkoutScheduleRepository extends JpaRepository<WorkoutSchedule
 
     List<WorkoutSchedule> findByMemberIdOrderByStartTimeAsc(Long memberId);
 
+    /** 5 buổi gần nhất đã có kết quả (hoàn thành/vắng) của hội viên — dùng cho ngữ cảnh trợ lý AI. */
+    List<WorkoutSchedule> findTop5ByMemberIdAndStatusInOrderByStartTimeDesc(
+            Long memberId, List<ScheduleStatus> statuses);
+
     List<WorkoutSchedule> findByPlanId(Long planId);
 
     List<WorkoutSchedule> findByMemberIdAndStartTimeBetweenOrderByStartTimeAsc(Long memberId, LocalDateTime from, LocalDateTime to);

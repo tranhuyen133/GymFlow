@@ -10,6 +10,9 @@ import java.util.Optional;
 public interface WeightRecordRepository extends JpaRepository<WeightRecord, Long> {
     List<WeightRecord> findByMemberIdOrderByRecordedDateAsc(Long memberId);
 
+    /** 3 lần cân gần nhất của hội viên, mới nhất trước — dùng cho ngữ cảnh trợ lý AI. */
+    List<WeightRecord> findTop3ByMemberIdOrderByRecordedDateDesc(Long memberId);
+
     Optional<WeightRecord> findByMemberIdAndRecordedDate(Long memberId, LocalDate recordedDate);
 
     Optional<WeightRecord> findFirstByMemberIdOrderByRecordedDateDesc(Long memberId);
