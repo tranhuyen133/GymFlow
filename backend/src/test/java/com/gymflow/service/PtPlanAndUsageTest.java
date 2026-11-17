@@ -90,7 +90,7 @@ class PtPlanAndUsageTest {
         lenient().doNothing().when(calorieEstimationService).saveExercises(any(), any());
 
         lenient().when(promotionService.validate(any(), any()))
-                .thenReturn(new PromotionValidationResponse(true, null, null, null, null, null, DiscountType.NONE, 0L, 500_000L, 0L, 500_000L, List.of()));
+                .thenReturn(new PromotionValidationResponse(true, null, null, null, null, null, null, null, DiscountType.NONE, 0L, 500_000L, 0L, 500_000L, List.of()));
 
         User memberUser = new User();
         memberUser.setId(10L);

@@ -33,6 +33,9 @@ public class PromotionGrant {
     @Column(name = "conditions", length = 255)
     private String conditions;
 
+    @Column(name = "conditions_en", length = 255)
+    private String conditionsEn;
+
     public PromotionGrant(Promotion promotion, ServiceItem service, int quantity, int validDays, String conditions) {
         this.promotion = promotion;
         this.service = service;

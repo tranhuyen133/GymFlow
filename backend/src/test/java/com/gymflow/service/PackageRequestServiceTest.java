@@ -79,7 +79,7 @@ class PackageRequestServiceTest {
         plan.setActive(true);
         lenient().when(mappers.today()).thenReturn(TODAY);
         lenient().when(promotionService.validate(any(), any()))
-                .thenReturn(new com.gymflow.dto.Dtos.PromotionValidationResponse(true, null, null, null, null, null,
+                .thenReturn(new com.gymflow.dto.Dtos.PromotionValidationResponse(true, null, null, null, null, null, null, null,
                         DiscountType.NONE, 0L, 500_000L, 0L, 500_000L, List.of()));
         lenient().when(access.requireMemberOf(memberUser)).thenReturn(member);
         lenient().when(planService.load(2L)).thenReturn(plan);

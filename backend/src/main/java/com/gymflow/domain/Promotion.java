@@ -28,8 +28,14 @@ public class Promotion {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
+    @Column(name = "name_en", length = 100)
+    private String nameEn;
+
     @Column(name = "description", length = 1000)
     private String description;
+
+    @Column(name = "description_en", length = 1000)
+    private String descriptionEn;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "discount_type", nullable = false, length = 20)

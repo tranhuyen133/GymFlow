@@ -147,6 +147,7 @@ export interface PackageRequest {
   promotionId?: number | null;
   promotionCode?: string | null;
   promotionName?: string | null;
+  promotionNameEn?: string | null;
   originalPrice?: number;
   discountAmount?: number;
   finalPrice?: number;
@@ -250,13 +251,16 @@ export interface PromotionGrant {
   quantity: number;
   validDays: number;
   conditions?: string | null;
+  conditionsEn?: string | null;
 }
 
 export interface Promotion {
   id: number;
   code: string | null;
   name: string;
+  nameEn?: string | null;
   description: string | null;
+  descriptionEn?: string | null;
   discountType: DiscountType;
   discountValue: number;
   startsAt: string;
@@ -280,7 +284,9 @@ export interface PromotionValidationResponse {
   promotionId: number | null;
   promotionCode: string | null;
   promotionName: string | null;
+  promotionNameEn?: string | null;
   description: string | null;
+  descriptionEn?: string | null;
   discountType: DiscountType | null;
   discountValue: number | null;
   originalPrice: number;

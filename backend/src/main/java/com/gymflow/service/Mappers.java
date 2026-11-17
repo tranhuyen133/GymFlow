@@ -128,13 +128,15 @@ public class Mappers {
 
     // ---------- Promotion ----------
     public PromotionGrantDto promotionGrant(PromotionGrant g) {
-        return new PromotionGrantDto(g.getService().getId(), g.getService().getName(), g.getQuantity(), g.getValidDays(), g.getConditions());
+        return new PromotionGrantDto(g.getService().getId(), g.getService().getName(), g.getQuantity(),
+                g.getValidDays(), g.getConditions(), g.getConditionsEn());
     }
 
     public PromotionResponse promotion(Promotion p) {
         List<Long> planIds = p.getPlans() == null ? List.of() : p.getPlans().stream().map(MembershipPlan::getId).toList();
         List<PromotionGrantDto> grants = p.getGrants() == null ? List.of() : p.getGrants().stream().map(this::promotionGrant).toList();
-        return new PromotionResponse(p.getId(), p.getCode(), p.getName(), p.getDescription(),
+        return new PromotionResponse(p.getId(), p.getCode(), p.getName(), p.getNameEn(),
+                p.getDescription(), p.getDescriptionEn(),
                 p.getDiscountType(), p.getDiscountValue(), p.getStartsAt(), p.getEndsAt(),
                 p.getMaxUses(), p.getUsedCount(), p.isNewMembersOnly(), p.isRenewalOnly(),
                 p.isStackable(), p.isActive(), p.getCreatedAt(), planIds, grants,

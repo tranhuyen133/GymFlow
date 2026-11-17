@@ -115,7 +115,7 @@ class SubscriptionUpgradeServiceTest {
         when(subscriptionRepository.existsOverlapExcluding(eq(100L), any(), any(), any())).thenReturn(false);
         when(promotionService.validateFor(any(), any(), any(), anyLong(), eq(true))).thenAnswer(inv -> {
             long base = inv.getArgument(3);
-            return new PromotionValidationResponse(true, null, null, null, null, null, DiscountType.NONE, 0L, base, 0L, base, List.of());
+            return new PromotionValidationResponse(true, null, null, null, null, null, null, null, DiscountType.NONE, 0L, base, 0L, base, List.of());
         });
     }
 

@@ -68,7 +68,7 @@ public class PromotionService {
                 best = res;
             }
         }
-        return best != null ? best : new PromotionValidationResponse(true, null, null, null, null, null,
+        return best != null ? best : new PromotionValidationResponse(true, null, null, null, null, null, null, null,
                 DiscountType.NONE, 0L, basePrice, 0L, basePrice, List.of());
     }
 
@@ -129,7 +129,8 @@ public class PromotionService {
                 : promo.getGrants().stream().map(mappers::promotionGrant).toList();
 
         return new PromotionValidationResponse(
-                true, null, promo.getId(), promo.getCode(), promo.getName(), promo.getDescription(),
+                true, null, promo.getId(), promo.getCode(), promo.getName(), promo.getNameEn(),
+                promo.getDescription(), promo.getDescriptionEn(),
                 promo.getDiscountType(), promo.getDiscountValue(),
                 originalPrice, discountAmount, finalPrice, gifts
         );
@@ -145,12 +146,13 @@ public class PromotionService {
     }
 
     private PromotionValidationResponse invalidResult(long originalPrice, String reason) {
-        return new PromotionValidationResponse(false, reason, null, null, null, null,
+        return new PromotionValidationResponse(false, reason, null, null, null, null, null, null,
                 DiscountType.NONE, 0L, originalPrice, 0L, originalPrice, List.of());
     }
 
     private PromotionValidationResponse invalidResult(Promotion promo, long originalPrice, String reason) {
-        return new PromotionValidationResponse(false, reason, promo.getId(), promo.getCode(), promo.getName(), promo.getDescription(),
+        return new PromotionValidationResponse(false, reason, promo.getId(), promo.getCode(), promo.getName(), promo.getNameEn(),
+                promo.getDescription(), promo.getDescriptionEn(),
                 promo.getDiscountType(), promo.getDiscountValue(), originalPrice, 0L, originalPrice, List.of());
     }
 
@@ -205,7 +207,9 @@ public class PromotionService {
     private void copyProperties(Promotion p, PromotionRequest req) {
         p.setCode(Mappers.blankToNull(req.code() == null ? null : req.code().trim().toUpperCase()));
         p.setName(req.name().trim());
+        p.setNameEn(Mappers.blankToNull(req.nameEn()));
         p.setDescription(Mappers.blankToNull(req.description()));
+        p.setDescriptionEn(Mappers.blankToNull(req.descriptionEn()));
         p.setDiscountType(req.discountType());
         p.setDiscountValue(req.discountValue() == null ? 0L : req.discountValue());
         p.setStartsAt(req.startsAt());
@@ -231,7 +235,9 @@ public class PromotionService {
             for (PromotionGrantDto g : req.grants()) {
                 ServiceItem s = serviceItemRepository.findById(g.serviceId())
                         .orElseThrow(() -> ApiException.badRequest("Dịch vụ quà tặng #" + g.serviceId() + " không tồn tại"));
-                p.getGrants().add(new PromotionGrant(p, s, g.quantity(), g.validDays(), Mappers.blankToNull(g.conditions())));
+                PromotionGrant grant = new PromotionGrant(p, s, g.quantity(), g.validDays(), Mappers.blankToNull(g.conditions()));
+                grant.setConditionsEn(Mappers.blankToNull(g.conditionsEn()));
+                p.getGrants().add(grant);
             }
         }
     }

@@ -348,6 +348,7 @@ public class PackageRequestService {
                 r.getPromotion() == null ? null : r.getPromotion().getId(),
                 r.getPromotion() == null ? null : r.getPromotion().getCode(),
                 r.getPromotion() == null ? null : r.getPromotion().getName(),
+                r.getPromotion() == null ? null : r.getPromotion().getNameEn(),
                 r.getOriginalPrice(), r.getDiscountAmount(), r.getFinalPrice(),
                 r.getRequestType() == null ? PackageRequestType.NEW : r.getRequestType(),
                 r.getUpgradeFrom() == null ? null : r.getUpgradeFrom().getId(),

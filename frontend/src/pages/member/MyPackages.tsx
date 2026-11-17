@@ -534,7 +534,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
         setPromoResult(res);
         setPromoError(null);
         if (res.promotionCode) {
-          toast.success(t('Đã áp dụng mã ưu đãi: {name}', { name: res.promotionName || res.promotionCode }));
+          toast.success(t('Đã áp dụng mã ưu đãi: {name}', { name: localizeText(res.promotionNameEn, res.promotionName) || res.promotionCode }));
         }
       } else {
         setPromoResult(null);
@@ -661,7 +661,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
           <div className="pc-gifts" style={{ padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 8, fontSize: 13 }}>
             <div className="row" style={{ gap: 6, fontWeight: 600, color: 'var(--primary)', marginBottom: 4 }}>
               <Icon name="trophy" size={14} />
-              <span>{t('Quà tặng từ ưu đãi ({name}):', { name: promoResult.promotionName || promoResult.promotionCode || '' })}</span>
+              <span>{t('Quà tặng từ ưu đãi ({name}):', { name: localizeText(promoResult.promotionNameEn, promoResult.promotionName) || promoResult.promotionCode || '' })}</span>
             </div>
             <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.5 }}>
               {promoResult.gifts.map((g, idx) => (
@@ -713,7 +713,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
             <div className="tiny ok mt-4 row" style={{ gap: 4, alignItems: 'center' }}>
               <Icon name="check" size={12} />
               <span>
-                {t('Đang áp dụng: {name}', { name: promoResult.promotionName ? t(promoResult.promotionName) : (promoResult.promotionCode || '') })}
+                {t('Đang áp dụng: {name}', { name: localizeText(promoResult.promotionNameEn, promoResult.promotionName) || promoResult.promotionCode || '' })}
                 {promoResult.discountAmount > 0 && ` ${t('(giảm {v})', { v: fmtMoney(promoResult.discountAmount) })}`}
               </span>
             </div>

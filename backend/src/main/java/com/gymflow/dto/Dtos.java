@@ -1184,13 +1184,16 @@ public final class Dtos {
             String serviceName,
             @Min(value = 1, message = "Số lượt tối thiểu là 1") int quantity,
             @Min(value = 1, message = "Số ngày hiệu lực tối thiểu là 1") int validDays,
-            @Size(max = 255) String conditions) {
+            @Size(max = 255) String conditions,
+            @Size(max = 255, message = "Điều kiện tiếng Anh tối đa 255 ký tự") String conditionsEn) {
     }
 
     public record PromotionRequest(
             @Size(max = 50, message = "Mã ưu đãi tối đa 50 ký tự") String code,
             @NotBlank(message = "Vui lòng nhập tên chương trình ưu đãi") @Size(max = 100) String name,
+            @Size(max = 100, message = "Tên tiếng Anh tối đa 100 ký tự") String nameEn,
             @Size(max = 1000) String description,
+            @Size(max = 1000, message = "Mô tả tiếng Anh tối đa 1000 ký tự") String descriptionEn,
             @NotNull(message = "Vui lòng chọn loại giảm giá") DiscountType discountType,
             @Min(value = 0, message = "Mức giảm không âm") Long discountValue,
             @NotNull(message = "Thiếu thời gian bắt đầu") LocalDateTime startsAt,
@@ -1207,7 +1210,7 @@ public final class Dtos {
     }
 
     public record PromotionResponse(
-            Long id, String code, String name, String description,
+            Long id, String code, String name, String nameEn, String description, String descriptionEn,
             DiscountType discountType, Long discountValue,
             LocalDateTime startsAt, LocalDateTime endsAt,
             Integer maxUses, int usedCount,
@@ -1223,7 +1226,8 @@ public final class Dtos {
 
     public record PromotionValidationResponse(
             boolean valid, String reason,
-            Long promotionId, String promotionCode, String promotionName, String description,
+            Long promotionId, String promotionCode, String promotionName, String promotionNameEn,
+            String description, String descriptionEn,
             DiscountType discountType, Long discountValue,
             long originalPrice, long discountAmount, long finalPrice,
             List<PromotionGrantDto> gifts) {

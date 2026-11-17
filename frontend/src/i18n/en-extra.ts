@@ -2297,4 +2297,8 @@ export const EN_EXTRA: Record<string, string> = {
   'Ảnh động minh hoạ 180×180 từ exercises-dataset': '180×180 animated demo from exercises-dataset',
   'Ảnh động minh hoạ bài tập 180×180 (qua exercises-dataset)': 'Animated exercise demo 180×180 (via exercises-dataset)',
   'Media © Gym visual, phân phối lại trong exercises-dataset; giữ kích thước 180×180 và ghi nguồn': 'Media © Gym visual, redistributed in exercises-dataset; kept at 180×180 with attribution',
+  'Tên chương trình (EN)': 'Program name (EN)',
+  'Dùng khi giao diện chuyển sang tiếng Anh': 'Used when the interface is in English',
+  'VD: Summer Kickoff, New Member Offer': 'e.g. Summer Kickoff, New Member Offer',
+  'Điều kiện (EN)': 'Conditions (EN)',
 };

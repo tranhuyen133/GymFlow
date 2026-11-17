@@ -58,7 +58,7 @@ public final class PackageRequestDtos {
                                          LocalDateTime decidedAt, Long subscriptionId, LocalDateTime createdAt,
                                          boolean includesTrainer, Long trainerId, String trainerName,
                                          PaymentMethod paymentMethod, String paymentCode, LocalDateTime memberPaidAt,
-                                         Long promotionId, String promotionCode, String promotionName,
+                                         Long promotionId, String promotionCode, String promotionName, String promotionNameEn,
                                          long originalPrice, long discountAmount, long finalPrice,
                                          /** V49 · đơn nâng cấp lên PT: gói cũ và số tiền bù trừ */
                                          PackageRequestType requestType, Long upgradeFromSubscriptionId,

@@ -7,6 +7,7 @@ import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlo
 import { t } from '../../i18n';
 import { fmtDateTime, fmtMoney } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
+import { localizeText } from '../../lib/planText';
 
 export default function Promotions() {
   const toast = useToast();
@@ -18,7 +19,7 @@ export default function Promotions() {
 
   const planNameMap = useMemo(() => {
     const map = new Map<number, string>();
-    (plans.data ?? []).forEach((p) => map.set(p.id, p.name));
+    (plans.data ?? []).forEach((p) => map.set(p.id, localizeText(p.nameEn, p.name)));
     return map;
   }, [plans.data]);
 
@@ -95,11 +96,11 @@ export default function Promotions() {
                           ) : (
                             <span className="chip">{t('Tự áp dụng')}</span>
                           )}
-                          <b>{p.name}</b>
+                          <b>{localizeText(p.nameEn, p.name)}</b>
                         </div>
                         {p.description && (
                           <div className="tiny faint ellipsis" style={{ maxWidth: 260, marginTop: 4 }}>
-                            {p.description}
+                            {localizeText(p.descriptionEn, p.description)}
                           </div>
                         )}
                       </td>
@@ -147,7 +148,7 @@ export default function Promotions() {
                               <li key={idx}>
                                 {t('{q} lượt {name} ({d} ngày)', {
                                   q: g.quantity,
-                                  name: g.serviceName || `#${g.serviceId}`,
+                                  name: g.serviceName ? t(g.serviceName) : `#${g.serviceId}`,
                                   d: g.validDays,
                                 })}
                               </li>
@@ -227,7 +228,9 @@ function PromotionFormModal({
   const toast = useToast();
   const [code, setCode] = useState(promo?.code ?? '');
   const [name, setName] = useState(promo?.name ?? '');
+  const [nameEn, setNameEn] = useState(promo?.nameEn ?? '');
   const [description, setDescription] = useState(promo?.description ?? '');
+  const [descriptionEn, setDescriptionEn] = useState(promo?.descriptionEn ?? '');
   const [discountType, setDiscountType] = useState<DiscountType>(promo?.discountType ?? 'PERCENT');
   const [discountValue, setDiscountValue] = useState(promo?.discountValue != null ? String(promo.discountValue) : '10');
 
@@ -270,6 +273,7 @@ function PromotionFormModal({
         quantity: 1,
         validDays: 30,
         conditions: '',
+        conditionsEn: '',
       },
     ]);
   };
@@ -330,7 +334,9 @@ function PromotionFormModal({
     const body = {
       code: code.trim().toUpperCase() || null,
       name: trimmedName,
+      nameEn: nameEn.trim() || null,
       description: description.trim() || null,
+      descriptionEn: descriptionEn.trim() || null,
       discountType,
       discountValue: val,
       startsAt: startsAt.length === 16 ? startsAt + ':00' : startsAt,
@@ -347,6 +353,7 @@ function PromotionFormModal({
         quantity: g.quantity,
         validDays: g.validDays,
         conditions: g.conditions?.trim() || null,
+        conditionsEn: g.conditionsEn?.trim() || null,
       })),
     };
 
@@ -407,12 +414,31 @@ function PromotionFormModal({
           </div>
         </div>
 
+        <Field label={t('Tên chương trình (EN)')} hint={t('Dùng khi giao diện chuyển sang tiếng Anh')}>
+          <Input
+            maxLength={100}
+            value={nameEn}
+            onChange={(e) => setNameEn(e.target.value)}
+            placeholder={t('VD: Summer Kickoff, New Member Offer')}
+          />
+        </Field>
+
         <Field label={t('Mô tả')} hint={t('{n}/1000', { n: description.length })}>
           <Textarea
             maxLength={1000}
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            placeholder={t('Mô tả ngắn gọn thể lệ ưu đãi để hội viên và lễ tân nắm rõ')}
+          />
+        </Field>
+
+        <Field label={t('Mô tả (EN)')} hint={t('{n}/1000', { n: descriptionEn.length })}>
+          <Textarea
+            maxLength={1000}
+            rows={2}
+            value={descriptionEn}
+            onChange={(e) => setDescriptionEn(e.target.value)}
             placeholder={t('Mô tả ngắn gọn thể lệ ưu đãi để hội viên và lễ tân nắm rõ')}
           />
         </Field>
@@ -645,11 +671,18 @@ function PromotionFormModal({
                     </div>
 
                     <div style={{ flex: 2, minWidth: 140 }}>
-                      <Input
-                        value={g.conditions ?? ''}
-                        onChange={(e) => updateGrant(idx, { conditions: e.target.value })}
-                        placeholder={t('Điều kiện (VD: trong giờ vàng)')}
-                      />
+                      <div className="stack-sm">
+                        <Input
+                          value={g.conditions ?? ''}
+                          onChange={(e) => updateGrant(idx, { conditions: e.target.value })}
+                          placeholder={t('Điều kiện (VD: trong giờ vàng)')}
+                        />
+                        <Input
+                          value={g.conditionsEn ?? ''}
+                          onChange={(e) => updateGrant(idx, { conditionsEn: e.target.value })}
+                          placeholder={t('Điều kiện (EN)')}
+                        />
+                      </div>
                     </div>
 
                     <Button
