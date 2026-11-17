@@ -1,0 +1,102 @@
+/* V53 · Check-in tại quầy, biểu đồ giờ đông, trang "Hôm nay". Bổ sung cho styles.css, không sửa quy tắc cũ. */
+
+/* ---------- Mức đông ---------- */
+.crowd-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; background: var(--surface-2); border: 1px solid var(--hairline);
+}
+.crowd-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.crowd-chip.quiet i { background: #00d95b; box-shadow: 0 0 0 3px rgba(0, 217, 91, 0.18); }
+.crowd-chip.normal i { background: #ffb020; box-shadow: 0 0 0 3px rgba(255, 176, 32, 0.18); }
+.crowd-chip.busy i { background: #ff6b61; box-shadow: 0 0 0 3px rgba(255, 107, 97, 0.2); }
+
+.crowd-bars { display: flex; align-items: stretch; gap: 3px; padding-top: 18px; }
+.crowd-col { position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+.crowd-bar { width: 100%; max-width: 26px; border-radius: 5px 5px 2px 2px; transition: height 0.5s ease; }
+.crowd-bar.quiet { background: rgba(0, 217, 91, 0.55); }
+.crowd-bar.normal { background: rgba(255, 176, 32, 0.75); }
+.crowd-bar.busy { background: rgba(255, 107, 97, 0.85); }
+.crowd-col.past .crowd-bar { opacity: 0.45; }
+.crowd-col.now .crowd-bar { outline: 2px solid var(--ink); outline-offset: 1px; }
+.crowd-h { height: 16px; margin-top: 4px; font-size: 10px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.crowd-now {
+  position: absolute; top: -18px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+  font-size: 10px; font-weight: 800; color: var(--ink); background: var(--surface-2); padding: 1px 6px; border-radius: 6px;
+}
+.crowd-foot { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+.heat { display: grid; gap: 3px; align-items: center; }
+.heat-h { font-size: 10px; color: var(--faint); text-align: center; }
+.heat-d { font-size: 11px; color: var(--muted); }
+.heat-d.today { color: var(--primary-bright); font-weight: 800; }
+.heat-c { aspect-ratio: 1; min-height: 10px; border-radius: 3px; background: rgba(0, 217, 91, calc(0.06 + var(--a, 0) * 0.85)); }
+.heat-c.now { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+/* ---------- Quầy check-in ---------- */
+.kiosk { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.kiosk-qr {
+  display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 24px; text-align: center;
+  border-radius: 22px; background: var(--surface); border: 1px solid var(--hairline);
+}
+.kiosk-qr .qr-frame { padding: 10px; border-radius: 18px; background: #fff; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25); line-height: 0; }
+.qr-svg { display: block; max-width: 100%; height: auto; }
+.kiosk-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 44px; font-weight: 800; letter-spacing: 0.14em; color: var(--primary-bright); line-height: 1; }
+.kiosk-timer { width: 100%; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.kiosk-timer i { display: block; height: 100%; background: var(--primary); animation: kiosk-shrink linear forwards; transform-origin: left; }
+@keyframes kiosk-shrink { from { transform: scaleX(var(--from, 1)); } to { transform: scaleX(0); } }
+.kiosk-steps { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; text-align: left; font-size: 13px; color: var(--muted); width: 100%; }
+.kiosk-steps li { display: flex; gap: 8px; align-items: flex-start; }
+.kiosk-steps b { flex: none; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: var(--on-primary, #04130a); font-size: 11px; }
+.kiosk-full { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--bg, #070b08); padding: 24px; }
+.kiosk-full .kiosk-qr { border: 0; background: transparent; }
+.kiosk-full .kiosk-code { font-size: 64px; }
+.kiosk-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.kiosk-stat { padding: 12px 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--hairline); }
+.kiosk-stat b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+.kiosk-stat span { font-size: 12px; color: var(--muted); }
+.checkin-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px dashed var(--hairline); }
+.checkin-row:last-child { border-bottom: 0; }
+.checkin-row .time { flex: none; width: 48px; font-variant-numeric: tabular-nums; font-weight: 700; }
+.checkin-row .who { flex: 1 1 auto; min-width: 0; }
+.checkin-flash { animation: checkin-flash 1.6s ease; }
+@keyframes checkin-flash { 0% { background: rgba(0, 217, 91, 0.28); } 100% { background: transparent; } }
+@media (max-width: 900px) {
+  .kiosk { grid-template-columns: minmax(0, 1fr); }
+  .kiosk-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ---------- Hội viên quét mã ---------- */
+.scan-page { max-width: 520px; margin: 0 auto; }
+.scan-result { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 28px 20px; text-align: center; }
+.scan-tick {
+  display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%;
+  background: rgba(0, 217, 91, 0.15); color: var(--primary-bright); animation: scan-pop 0.5s cubic-bezier(.2, 1.4, .4, 1);
+}
+.scan-tick.warn { background: rgba(255, 176, 32, 0.15); color: #ffb020; }
+@keyframes scan-pop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.scan-video { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 18px; background: #000; }
+.code-input {
+  width: 100%; text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 30px; font-weight: 800; letter-spacing: 0.4em; padding: 12px 8px 12px 20px;
+}
+
+/* ---------- Trang Hôm nay ---------- */
+.today-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: center; }
+.today-date { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.today-checkin {
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 16px; min-width: 260px;
+  background: var(--surface-2); border: 1px solid var(--hairline);
+}
+.today-checkin.done { background: rgba(0, 217, 91, 0.1); border-color: rgba(0, 217, 91, 0.4); }
+.today-checkin .ic { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: var(--surface); color: var(--primary-bright); }
+.today-ex { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--hairline); color: inherit; text-decoration: none; }
+.today-ex:hover { border-color: rgba(0, 217, 91, 0.4); }
+.today-ex .n { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; font-size: 12px; font-weight: 800; background: var(--surface); }
+.today-ex .dose { flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+.today-tip { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--muted); }
+.today-tip + .today-tip { margin-top: 8px; }
+.today-tip svg { flex: none; margin-top: 2px; color: var(--primary-bright); }
+@media (max-width: 720px) {
+  .today-hero { grid-template-columns: minmax(0, 1fr); }
+  .today-checkin { min-width: 0; }
+}

@@ -30,6 +30,7 @@ interface NavItem { to: string; label: string; icon: IconName; roles: Role[]; gr
 export const NAV: NavItem[] = [
   // --- Member: các mục chính tối giản, chuẩn mobile & desktop ---
   { to: '/dashboard', label: 'Trang chủ', icon: 'dashboard', roles: ['MEMBER'], tab: true },
+  { to: '/today', label: 'Hôm nay', icon: 'sun', roles: ['MEMBER'], tab: true },
   { to: '/me/schedule', label: 'Lịch tập', icon: 'calendar', roles: ['MEMBER'], tab: true },
   { to: '/me/plan', label: 'Giáo án', icon: 'clipboard', roles: ['MEMBER'], tab: true },
   { to: '/knowledge', label: 'Kho kiến thức', icon: 'dumbbell', roles: ['MEMBER'], tab: true },
@@ -52,6 +53,7 @@ export const NAV: NavItem[] = [
   // --- Quản trị viên (Admin) ---
   { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard', roles: ['ADMIN'], tab: true },
   { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['ADMIN'], tab: true },
+  { to: '/admin/checkin', label: 'Check-in quầy', icon: 'checkCircle', roles: ['ADMIN'] },
   { to: '/members', label: 'Hội viên', icon: 'users', roles: ['ADMIN'], group: 'Huấn luyện', tab: true },
   { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['ADMIN'], group: 'Huấn luyện' },
   { to: '/admin/conversations', label: 'Tin nhắn', icon: 'message', roles: ['ADMIN'], group: 'Huấn luyện' },

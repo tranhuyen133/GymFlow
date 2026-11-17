@@ -46,6 +46,9 @@ import WorkoutPlans from './pages/shared/WorkoutPlans';
 import TrainerDashboard from './pages/trainer/TrainerDashboard';
 import CoachDetail from './pages/member/CoachDetail';
 import Messages from './pages/shared/Messages';
+import Today from './pages/member/Today';
+import CheckinScan from './pages/member/CheckinScan';
+import CheckinKiosk from './pages/admin/CheckinKiosk';
 
 function Splash() {
   return (
@@ -135,6 +138,9 @@ export default function App() {
         {/* Gõ nhầm kiểu /dashboard/login thì về trang tổng quan (chưa đăng nhập sẽ được chuyển sang đăng nhập trước) */}
         <Route path="/dashboard/*" element={<Navigate to="/dashboard" replace />} />
         <Route path="/me/schedule" element={<MeScheduleRoute />} />
+        <Route path="/today" element={<Only roles={MEMBER}><Today /></Only>} />
+        <Route path="/checkin" element={<Only roles={MEMBER}><CheckinScan /></Only>} />
+        <Route path="/admin/checkin" element={<Only roles={ADMIN}><CheckinKiosk /></Only>} />
         <Route path="/me/plan" element={<Only roles={MEMBER}><MyPlan /></Only>} />
         <Route path="/me/plan/new" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
         <Route path="/me/plan/:id" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
