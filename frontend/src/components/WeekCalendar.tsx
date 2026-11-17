@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { Schedule } from '../api/types';
 import { t } from '../i18n';
 import { addDays, DAYS, fmtTime, isSameDay, parseDateTime, scheduleStatus } from '../lib/format';
+import { displayPersonName } from '../lib/names';
 import { Badge } from './ui';
 
 const HOUR_PX = 52;
@@ -58,8 +59,8 @@ export function WeekCalendar({ weekStart, events, onSelect, showMember = true }:
                   <div key={e.id} className={`ev ${e.status}`} style={{ top: top(s) + 1, height: h, animationDelay: `${k * 0.04}s` }}
                     role="button" tabIndex={0} onClick={() => onSelect(e)} onKeyDown={(ev) => { if (ev.key === 'Enter') onSelect(e); }}
                     title={`${t(e.title)} · ${fmtTime(e.startTime)}–${fmtTime(e.endTime)}`}>
-                    <b>{fmtTime(e.startTime)} {showMember ? e.memberName : t(e.title)}</b>
-                    {h > 40 && <span>{showMember ? t(e.title) : e.trainerName ?? t('Tự tập')}</span>}
+                    <b>{fmtTime(e.startTime)} {showMember ? displayPersonName(e.memberName) : t(e.title)}</b>
+                    {h > 40 && <span>{showMember ? t(e.title) : (e.trainerName ? displayPersonName(e.trainerName) : t('Tự tập'))}</span>}
                   </div>
                 );
               })}
@@ -85,7 +86,7 @@ export function WeekCalendar({ weekStart, events, onSelect, showMember = true }:
                     <button key={e.id} className="row between btn btn-secondary" style={{ height: 'auto', padding: '10px 12px', justifyContent: 'space-between' }} onClick={() => onSelect(e)}>
                       <span style={{ textAlign: 'left' }}>
                         <b>{fmtTime(e.startTime)}–{fmtTime(e.endTime)}</b>
-                        <span className="tiny muted" style={{ display: 'block' }}>{showMember ? e.memberName + ' · ' : ''}{t(e.title)}</span>
+                        <span className="tiny muted" style={{ display: 'block' }}>{showMember ? displayPersonName(e.memberName) + ' · ' : ''}{t(e.title)}</span>
                       </span>
                       <Badge tone={tone}>{label}</Badge>
                     </button>

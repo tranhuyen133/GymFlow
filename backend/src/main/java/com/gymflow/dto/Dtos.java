@@ -369,7 +369,7 @@ public final class Dtos {
     }
 
     public record SubscriptionResponse(Long id, Long memberId, String memberName, String memberCode,
-                                       Long planId, String planName, LocalDate startDate, LocalDate endDate,
+                                       Long planId, String planName, String planNameEn, LocalDate startDate, LocalDate endDate,
                                        Long pricePaid, SubscriptionState state, long daysLeft, boolean cancelled,
                                        LocalDateTime cancelledAt, String note, LocalDateTime createdAt, String createdByName,
                                        Integer ptSessionsTotal, Integer ptSessionsUsed, Integer ptSessionsRemaining, LocalDate ptValidUntil,
@@ -381,7 +381,7 @@ public final class Dtos {
                                     Long pricePaid, SubscriptionState state, long daysLeft, boolean cancelled,
                                     LocalDateTime cancelledAt, String note, LocalDateTime createdAt, String createdByName,
                                     Integer ptSessionsTotal, Integer ptSessionsUsed, Integer ptSessionsRemaining, LocalDate ptValidUntil) {
-            this(id, memberId, memberName, memberCode, planId, planName, startDate, endDate, pricePaid, state, daysLeft,
+            this(id, memberId, memberName, memberCode, planId, planName, null, startDate, endDate, pricePaid, state, daysLeft,
                     cancelled, cancelledAt, note, createdAt, createdByName, ptSessionsTotal, ptSessionsUsed,
                     ptSessionsRemaining, ptValidUntil, null, null, null, null, null, null);
         }
@@ -389,7 +389,7 @@ public final class Dtos {
 
     /** V24 · một dòng theo dõi buổi PT cho quản lý / HLV. ptSessionsRemaining = null khi gói chưa khai báo số buổi. */
     public record PtOverviewRow(Long subscriptionId, Long memberId, String memberCode, String memberName,
-                                Long trainerId, String trainerName, String planName,
+                                Long trainerId, String trainerName, String planName, String planNameEn,
                                 LocalDate startDate, LocalDate endDate, LocalDate ptValidUntil, SubscriptionState state,
                                 Integer ptSessionsTotal, long ptSessionsUsed, long ptSessionsScheduled,
                                 Integer ptSessionsRemaining, Integer ptSessionMinutes) {
@@ -1168,7 +1168,7 @@ public final class Dtos {
     public record MemberServiceEntitlementResponse(
             Long id, Long memberId, String memberName, String memberCode,
             Long serviceId, String serviceName,
-            EntitlementSource source, Long subscriptionId, String planName, Long packageRequestId,
+            EntitlementSource source, Long subscriptionId, String planName, String planNameEn, Long packageRequestId,
             int grantedQty, int usedQty, int remainingQty,
             LocalDate validFrom, LocalDate validUntil, String conditions,
             EntitlementStatus status, boolean usable, LocalDateTime createdAt,

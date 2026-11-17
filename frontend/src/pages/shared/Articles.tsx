@@ -8,6 +8,7 @@ import { useToast } from '../../components/Toast';
 import { Alert, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, SearchInput, Select, StatusBadge, Table, Textarea } from '../../components/ui';
 import { articleCategoryLabel, articleStatusLabel, fmtDateTime } from '../../lib/format';
 import { localizeText } from '../../lib/planText';
+import { displayPersonName } from '../../lib/names';
 import { errMsg, fieldErrs, useAsync, usePaged } from '../../lib/hooks';
 import { t } from '../../i18n';
 
@@ -106,7 +107,7 @@ function ArticleReview({ article: a, isAdmin, canEdit, onClose, onChanged }: { a
         <div className="row row-wrap">
           <StatusBadge map={articleStatusLabel} value={a.status} />
           <span className="chip">{articleCategoryLabel[a.category]}</span>
-          <span className="tiny faint">{a.authorName ? t('Tác giả: {name}', { name: a.authorName }) : t('Dữ liệu khởi tạo')}{a.reviewedByName && ` · ${t('Duyệt bởi {name} lúc {d}', { name: a.reviewedByName, d: fmtDateTime(a.reviewedAt) })}`}</span>
+          <span className="tiny faint">{a.authorName ? t('Tác giả: {name}', { name: displayPersonName(a.authorName) }) : t('Dữ liệu khởi tạo')}{a.reviewedByName && ` · ${t('Duyệt bởi {name} lúc {d}', { name: displayPersonName(a.reviewedByName), d: fmtDateTime(a.reviewedAt) })}`}</span>
         </div>
         {a.reviewNote && <Alert kind={a.status === 'DRAFT' ? 'warning' : 'info'}>{t('Ghi chú duyệt:')} {a.reviewNote}</Alert>}
         <p className="lead small">{localizeText(a.summaryEn, a.summary)}</p>

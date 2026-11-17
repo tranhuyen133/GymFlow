@@ -21,6 +21,7 @@ import { t } from '../../i18n';
 import { DAY_NAMES, fmtDate, fmtDateTime, genderLabel, memberStatus, roleLabel, subState, todayIso } from '../../lib/format';
 import { covered, GYM_CLOSE, GYM_OPEN, hm, mergeSlots, slotError, type WeekSlot } from '../../lib/hours';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
+import { displayPersonName } from '../../lib/names';
 import { checkDateOfBirth, checkFullName, checkHeight, checkPhone, HAS_DIGIT, NOT_NUMBER, NOT_PHONE, toNumber, useLiveErrors } from '../../lib/validation';
 
 type Section = 'info' | 'training' | 'progress' | 'journey' | 'security';
@@ -64,7 +65,7 @@ export default function Profile() {
         </button>
         <div className="profile-id">
           <div className="eyebrow-sm">{t('Hồ sơ cá nhân')}</div>
-          <h1>{me.fullName}</h1>
+          <h1>{displayPersonName(me.fullName)}</h1>
           <div className="small muted ellipsis">{me.email}{me.phone && ` · ${me.phone}`}</div>
           <div className="row row-wrap mt-8" style={{ gap: 6 }}>
             <Badge tone="green">{roleLabel[me.role]}</Badge>
@@ -162,7 +163,7 @@ function AccountCard({ onAvatar }: { onAvatar: () => void }) {
     <Card title={t('Thông tin tài khoản')} icon="user" actions={<Button size="sm" variant="primary" loading={busy} disabled={!dirty || Object.keys(errors).length > 0} onClick={submit}>{t('Lưu')}</Button>}>
       <div className="row" style={{ gap: 14, marginBottom: 18 }}>
         <button type="button" className="avatar-btn" onClick={onAvatar} aria-label={t('Đổi ảnh đại diện')}><MyAvatar size="lg" /></button>
-        <div style={{ minWidth: 0 }}><b style={{ fontSize: 18 }}>{me.fullName}</b><div className="small muted ellipsis">{me.email}</div></div>
+        <div style={{ minWidth: 0 }}><b style={{ fontSize: 18 }}>{displayPersonName(me.fullName)}</b><div className="small muted ellipsis">{me.email}</div></div>
       </div>
       <div className="form-grid">
         <Field label={t('Họ và tên')} error={errors.fullName} required>
@@ -255,7 +256,7 @@ function MemberSelfCard({ data, onSaved }: { data: Member; onSaved: () => void }
         </Field>
         <Field label={t('Mục tiêu')}><Input maxLength={255} autoComplete="off" value={f.goal} placeholder={t('VD: giảm 5 kg trong 3 tháng')} onChange={(e) => setF({ ...f, goal: e.target.value })} /></Field>
         <Field label={t('Địa chỉ')} className="span-2"><Input maxLength={255} autoComplete="street-address" value={f.address} placeholder={t('Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành')} onChange={(e) => setF({ ...f, address: e.target.value })} /></Field>
-        <Field label={t('Huấn luyện viên')} className="span-2" hint={data.trainerName ? undefined : t('Quản lý phòng tập sẽ phân công huấn luyện viên cho bạn')}><Input disabled value={data.trainerName ?? t('Chưa được phân công huấn luyện viên')} /></Field>
+        <Field label={t('Huấn luyện viên')} className="span-2" hint={data.trainerName ? undefined : t('Quản lý phòng tập sẽ phân công huấn luyện viên cho bạn')}><Input disabled value={data.trainerName ? displayPersonName(data.trainerName) : t('Chưa được phân công huấn luyện viên')} /></Field>
       </div>
     </Card>
   );
@@ -347,7 +348,7 @@ export function ShiftEditor({ trainer, onSaved }: { trainer: Trainer; onSaved: (
             const ok = covered(shifts, p);
             return (
               <span key={`${p.memberId}-${k}`} className={`pref-chip ${ok ? 'ok' : 'miss'}`} title={ok ? t('Đã nằm trong ca') : t('Chưa có ca phủ khung giờ này')}>
-                <Icon name={ok ? 'check' : 'alert'} size={12} />{p.memberName} · {hm(p.startTime)}–{hm(p.endTime)}
+                <Icon name={ok ? 'check' : 'alert'} size={12} />{displayPersonName(p.memberName)} · {hm(p.startTime)}–{hm(p.endTime)}
               </span>
             );
           })} />

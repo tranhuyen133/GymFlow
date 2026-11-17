@@ -8,6 +8,7 @@ import { useToast } from '../../components/Toast';
 import { Avatar, Button, Confirm, Empty, ErrorState, LoadingBlock, SearchInput } from '../../components/ui';
 import { fmtTime, relativeTime } from '../../lib/format';
 import { errMsg } from '../../lib/hooks';
+import { displayPersonName } from '../../lib/names';
 import { t } from '../../i18n';
 import { ChatAttachment } from './ChatAttachment';
 import { ConversationMedia } from './ConversationMedia';
@@ -480,7 +481,7 @@ export default function Messages() {
                     </span>
                     <div className="conversation-meta">
                       <div className="conversation-top">
-                        <span className="conversation-name ellipsis">{name}</span>
+                        <span className="conversation-name ellipsis">{displayPersonName(name)}</span>
                         {timeStr && <span className="conversation-time">{timeStr}</span>}
                       </div>
                       <div className="row between" style={{ alignItems: 'center', gap: 6 }}>
@@ -530,7 +531,7 @@ export default function Messages() {
                     {showOnline && <span className="presence-dot" aria-label={t('Đang online')} />}
                   </span>
                   <div style={{ minWidth: 0 }}>
-                    <b style={{ fontSize: 15 }}>{otherName}</b>
+                    <b style={{ fontSize: 15 }}>{displayPersonName(otherName)}</b>
                     <div className="row" style={{ gap: 6, alignItems: 'center' }}>
                       <span className="tiny faint">{activeConv.relation === 'ASSIGNED' ? t('HLV phụ trách') : t('Đang tư vấn')}</span>
                       <span className="tiny faint">·</span>

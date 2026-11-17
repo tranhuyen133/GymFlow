@@ -105,6 +105,7 @@ public class ReportService {
             rows.add(new PtOverviewRow(s.getId(), m.getId(), m.getCode(), m.getUser().getFullName(),
                     t == null ? null : t.getId(), t == null ? null : t.getUser().getFullName(),
                     s.getPlanNameSnapshot() != null ? s.getPlanNameSnapshot() : s.getPlan().getName(),
+                    s.getPlan().getNameEn(),
                     s.getStartDate(), s.getEndDate(), s.getPtValidUntil(), s.stateOn(today),
                     total, used, booked, remaining, s.getPtSessionMinutesSnapshot()));
         }

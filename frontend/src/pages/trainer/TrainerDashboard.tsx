@@ -9,6 +9,7 @@ import { DayTimeline } from '../../components/motivation';
 import { Badge, Card, CountUp, Empty, ErrorState, LoadingBlock, PageHead, Person, Stat, StatusBadge, Table } from '../../components/ui';
 import { fmtDate, fmtTime, parseDateTime, scheduleStatus } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
+import { displayPersonName } from '../../lib/names';
 import { SessionModal } from '../shared/Schedules';
 import { t } from '../../i18n';
 import { PtOverview } from '../../components/PtOverview';
@@ -27,8 +28,8 @@ export default function TrainerDashboard() {
 
   return (
     <div className="page">
-      <PageHead eyebrow="Huấn luyện viên" title={t('Hôm nay của {name}', { name: me.fullName.split(' ').slice(-1)[0] })}
-        desc={next ? t('Buổi tiếp theo lúc {time} với {name}.', { time: fmtTime(next.startTime), name: next.memberName }) : 'Không còn buổi nào trong hôm nay.'}
+      <PageHead eyebrow={t('Huấn luyện viên')} title={t('Hôm nay của {name}', { name: displayPersonName(me.fullName).split(' ').slice(-1)[0] })}
+        desc={next ? t('Buổi tiếp theo lúc {time} với {name}.', { time: fmtTime(next.startTime), name: displayPersonName(next.memberName) }) : t('Không còn buổi nào trong hôm nay.')}
         actions={<>
           <Link className="btn btn-secondary" to="/workout-plans/new"><Icon name="clipboard" /><span>{t('Soạn giáo án')}</span></Link>
           <Link className="btn btn-primary" to="/schedules?new=1"><Icon name="plus" /><span>{t('Xếp lịch')}</span></Link>

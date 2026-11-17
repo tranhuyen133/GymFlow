@@ -2,6 +2,7 @@ import { cloneElement, isValidElement, useEffect, useId, useLayoutEffect, useRef
 import { createPortal } from 'react-dom';
 import { locale, t, tx } from '../i18n';
 import { hueOf, initials, type Tone } from '../lib/format';
+import { displayPersonName } from '../lib/names';
 import { Icon, type IconName } from './Icon';
 import './sport.css';
 
@@ -33,15 +34,16 @@ export function StatusBadge({ map, value }: { map: Record<string, [string, Tone]
 
 // ---------- Avatar / Person ----------
 export function Avatar({ name, size, src }: { name: string; size?: 'sm' | 'lg' | 'xl'; src?: string | null }) {
+  const shown = displayPersonName(name);
   if (src) return <img className={`avatar avatar-img ${size ?? ''}`} src={src} alt="" aria-hidden decoding="async" />;
-  return <div className={`avatar ${size ?? ''}`} style={{ ['--h' as string]: hueOf(name) }} aria-hidden>{initials(name)}</div>;
+  return <div className={`avatar ${size ?? ''}`} style={{ ['--h' as string]: hueOf(shown) }} aria-hidden>{initials(shown)}</div>;
 }
 export function Person({ name, sub, size, src }: { name: string; sub?: ReactNode; size?: 'sm' | 'lg'; src?: string | null }) {
   return (
     <div className="person">
       <Avatar name={name} size={size} src={src} />
       <div style={{ minWidth: 0 }}>
-        <div className="name">{name}</div>
+        <div className="name">{displayPersonName(name)}</div>
         {sub && <div className="sub">{sub}</div>}
       </div>
     </div>

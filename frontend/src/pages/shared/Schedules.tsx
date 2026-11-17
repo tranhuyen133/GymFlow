@@ -14,6 +14,7 @@ import { useToast } from '../../components/Toast';
 import { WeekCalendar } from '../../components/WeekCalendar';
 import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
 import { getLang, t, tn } from '../../i18n';
+import { displayPersonName } from '../../lib/names';
 import { localizeScheduleNote, localizeScheduleTitle, localizeText } from '../../lib/planText';
 import { addDays, DAY_NAMES, fmtDate, fmtDateTime, fmtTime, fmtWeekday, formatEquipment, exTitle, parseDateTime, scheduleStatus, startOfWeek, todayIso, toIsoDate, toIsoDateTime } from '../../lib/format';
 import { checkWeight, toNumber } from '../../lib/validation';
@@ -118,11 +119,11 @@ export default function Schedules() {
                 </>
               ) : member.data?.trainerName ? (
                 <>
-                  <div className="small muted mt-4">{t('Huấn luyện viên {name} sẽ xếp lịch tập cho bạn. Bạn có thể nhắn tin trao đổi về thời gian tập thuận tiện.', { name: member.data.trainerName })}</div>
+                  <div className="small muted mt-4">{t('Huấn luyện viên {name} sẽ xếp lịch tập cho bạn. Bạn có thể nhắn tin trao đổi về thời gian tập thuận tiện.', { name: displayPersonName(member.data.trainerName) })}</div>
                   <div className="mt-12">
                     <Link to="/messages" className="btn btn-secondary">
                       <Icon name="message" size={16} />
-                      <span>{t('Nhắn HLV {name}', { name: member.data.trainerName })}</span>
+                      <span>{t('Nhắn HLV {name}', { name: displayPersonName(member.data.trainerName) })}</span>
                     </Link>
                   </div>
                 </>
@@ -181,7 +182,7 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
           </div>
           <dl className="kv">
             <dt>{t('Hội viên')}</dt><dd><Person name={session.memberName} size="sm" /></dd>
-            <dt>{t('Huấn luyện viên')}</dt><dd>{session.trainerName ?? <span className="faint">{t('Tự tập')}</span>}</dd>
+            <dt>{t('Huấn luyện viên')}</dt><dd>{session.trainerName ? displayPersonName(session.trainerName) : <span className="faint">{t('Tự tập')}</span>}</dd>
             <dt>{t('Giáo án')}</dt><dd>{session.planName ? localizeText(session.planNameEn, session.planName) : <span className="faint">{t('Không gắn')}</span>}</dd>
             {session.note && <><dt>{t('Ghi chú')}</dt><dd>{localizeScheduleNote(session)}</dd></>}
           </dl>

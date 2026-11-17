@@ -9,10 +9,12 @@ import { api } from '../api/client';
 import type { Notification, OnboardingData, Role } from '../api/types';
 import { useMe, useAuth } from '../auth/AuthContext';
 import { relativeTime, roleLabel } from '../lib/format';
+import { displayPersonName } from '../lib/names';
 import { Brand } from './Brand';
 import { Icon, type IconName } from './Icon';
 import { MyAvatar } from './AvatarEditor';
 import { ChatWidget } from './ChatWidget';
+import { AiChatWidget } from './AiChatWidget';
 import { Badge, Button, Confirm } from './ui';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { locale, t } from '../i18n';
@@ -30,7 +32,6 @@ export const NAV: NavItem[] = [
   { to: '/dashboard', label: 'Trang chủ', icon: 'dashboard', roles: ['MEMBER'], tab: true },
   { to: '/me/schedule', label: 'Lịch tập', icon: 'calendar', roles: ['MEMBER'], tab: true },
   { to: '/me/plan', label: 'Giáo án', icon: 'clipboard', roles: ['MEMBER'], tab: true },
-  { to: '/member/ai-chat', label: 'Trợ lý AI', icon: 'sparkle', roles: ['MEMBER'] },
   { to: '/knowledge', label: 'Kho kiến thức', icon: 'dumbbell', roles: ['MEMBER'], tab: true },
   { to: '/me/packages', label: 'Gói & Dịch vụ', icon: 'ticket', roles: ['MEMBER'] },
   { to: '/messages', label: 'Tin nhắn', icon: 'message', roles: ['MEMBER'] },
@@ -174,9 +175,9 @@ function AccountMenu({ onLogout }: { onLogout: () => void }) {
   return (
     <div className="account" ref={ref} data-tour="account">
       <button type="button" className="account-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}
-        aria-label={t('Tài khoản: {name}', { name: user.fullName })}>
+        aria-label={t('Tài khoản: {name}', { name: displayPersonName(user.fullName) })}>
         <MyAvatar size="sm" />
-        <span className="account-name">{user.fullName}</span>
+        <span className="account-name">{displayPersonName(user.fullName)}</span>
         <Icon name="chevronDown" size={15} className="account-caret" />
       </button>
       {open && (
@@ -184,7 +185,7 @@ function AccountMenu({ onLogout }: { onLogout: () => void }) {
           <div className="account-head">
             <MyAvatar size="lg" />
             <div style={{ minWidth: 0 }}>
-              <b className="ellipsis">{user.fullName}</b>
+              <b className="ellipsis">{displayPersonName(user.fullName)}</b>
               <div className="tiny muted ellipsis">{user.email}</div>
               <div className="mt-4"><Badge tone="green">{roleLabel[user.role]}</Badge></div>
             </div>
@@ -328,10 +329,10 @@ export function Layout() {
         </nav>
         <div className="side-prefs"><ThemeToggle /></div>
         <div className="side-user">
-          <Link to="/profile" className="side-user-link" aria-label={t('Hồ sơ cá nhân')} title={mini ? user.fullName : undefined}>
+          <Link to="/profile" className="side-user-link" aria-label={t('Hồ sơ cá nhân')} title={mini ? displayPersonName(user.fullName) : undefined}>
             <MyAvatar />
             <div className="grow" style={{ minWidth: 0 }}>
-              <div>{user.fullName}</div>
+              <div>{displayPersonName(user.fullName)}</div>
               <div className="tiny faint">{roleLabel[user.role]}</div>
             </div>
           </Link>
@@ -383,7 +384,8 @@ export function Layout() {
 
       {askLogout && <Confirm title={t('Đăng xuất?')} message={t('Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng GymFlow.')} confirmText={t('Đăng xuất')}
         onClose={() => setAskLogout(false)} onConfirm={doLogout} />}
-      <ChatWidget />
+      {user.role !== 'MEMBER' && <ChatWidget />}
+      <AiChatWidget />
     </div>
   );
 }

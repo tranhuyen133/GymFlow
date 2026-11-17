@@ -52,7 +52,7 @@ public final class PackageRequestDtos {
     }
 
     public record PackageRequestResponse(Long id, Long memberId, String memberName, String memberCode, String memberPhone,
-                                         Long planId, String planName, Long price, Integer durationDays,
+                                         Long planId, String planName, String planNameEn, Long price, Integer durationDays,
                                          boolean planStillOnSale, LocalDate desiredStartDate, String note,
                                          PackageRequestStatus status, String decisionNote, String decidedByName,
                                          LocalDateTime decidedAt, Long subscriptionId, LocalDateTime createdAt,

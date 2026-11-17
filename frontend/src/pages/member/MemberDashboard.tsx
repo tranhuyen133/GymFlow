@@ -9,6 +9,7 @@ import { achievements, ActivityRings, BadgeShelf, weekRings } from '../../compon
 import { Alert, Badge, Button, Card, CountUp, Empty, ErrorState, LoadingBlock, Meter, PageHead, Stat, StatusBadge } from '../../components/ui';
 import { t, tn } from '../../i18n';
 import { DAYS, fmtDate, fmtTime, fmtWeekday, parseDate, parseDateTime, scheduleStatus, subState } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
 import { useAsync } from '../../lib/hooks';
 import { SessionModal } from '../shared/Schedules';
 
@@ -26,7 +27,7 @@ export default function MemberDashboard() {
   if (loading || !data) return <div className="page"><PageHead title="Trang chủ" /><LoadingBlock rows={6} /></div>;
 
   const sub = data.currentSubscription;
-  const firstName = data.member.fullName.split(' ').slice(-1)[0];
+  const firstName = displayPersonName(data.member.fullName).split(' ').slice(-1)[0];
   const totalDays = sub ? (parseDate(sub.endDate).getTime() - parseDate(sub.startDate).getTime()) / 86400000 + 1 : 1;
   const now = new Date();
   const toComplete = data.weekSessions.find((s) => s.status === 'SCHEDULED' && parseDateTime(s.startTime) <= now);
@@ -252,7 +253,7 @@ export default function MemberDashboard() {
                     </div>
                     <div className="grow" style={{ textAlign: 'left' }}>
                       <div>{t(s.title)}</div>
-                      <div className="tiny muted">{fmtTime(s.startTime)}–{fmtTime(s.endTime)} · {s.trainerName ?? t('Tự tập')}</div>
+                      <div className="tiny muted">{fmtTime(s.startTime)}–{fmtTime(s.endTime)} · {s.trainerName ? displayPersonName(s.trainerName) : t('Tự tập')}</div>
                     </div>
                     <StatusBadge map={scheduleStatus} value={s.status} />
                   </button>
@@ -276,7 +277,7 @@ export default function MemberDashboard() {
                     <Link to="/me/plan" className="link tiny">{t('Xem bài tập')}</Link>
                   </div>
                   <b>{t(data.currentPlan.name)}</b>
-                  <span className="small muted">{t('{days} ngày/tuần · {items} bài · HLV {trainer}', { days: data.currentPlan.trainingDays, items: data.currentPlan.itemCount, trainer: data.currentPlan.trainerName ?? '—' })}</span>
+                  <span className="small muted">{t('{days} ngày/tuần · {items} bài · HLV {trainer}', { days: data.currentPlan.trainingDays, items: data.currentPlan.itemCount, trainer: data.currentPlan.trainerName ? displayPersonName(data.currentPlan.trainerName) : '—' })}</span>
                   <Badge tone="green">{t('Đến {date}', { date: fmtDate(data.currentPlan.endDate) })}</Badge>
                 </div>
               ) : (

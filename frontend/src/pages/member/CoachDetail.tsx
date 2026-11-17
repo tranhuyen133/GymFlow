@@ -6,6 +6,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Avatar, Button, ErrorState, LoadingBlock } from '../../components/ui';
 import { DAY_NAMES, DAYS } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
 import { errMsg, useAsync } from '../../lib/hooks';
 import { t } from '../../i18n';
 import { useAssignedTrainers } from './Coaches';
@@ -69,7 +70,7 @@ export default function CoachDetail() {
             {mine && <span className="cz-mine"><Icon name="checkCircle" size={13} />{t('HLV của bạn')}</span>}
             {(specs.length ? specs : [t('Huấn luyện thể hình')]).map((s) => <span key={s} className="cz-spec">{t(s)}</span>)}
           </div>
-          <h1 className="cd-name">{coach.fullName}</h1>
+          <h1 className="cd-name">{displayPersonName(coach.fullName)}</h1>
           <div className="cd-facts">
             <span><Icon name="trophy" size={15} />{t('{n} năm kinh nghiệm', { n: coach.experienceYears })}</span>
             <span><Icon name="calendar" size={15} />{t('{n} ca/tuần · {h} giờ', { n: coach.shifts.length, h: weeklyHours(coach.shifts) })}</span>

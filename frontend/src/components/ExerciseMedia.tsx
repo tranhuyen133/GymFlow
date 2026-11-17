@@ -33,7 +33,7 @@ export function ExerciseMedia({ imageKey, alt, play, playOnHover, tag, className
         {playing && <img className="gv-anim" src={exerciseImage(imageKey, 1)} alt="" aria-hidden width={180} height={180} decoding="async" />}
         {!playing && playOnHover && <span className="gv-play" aria-hidden><Icon name="play" size={12} /></span>}
         {tag && <span className="ex-media-tag">{tag}</span>}
-        <span className="gv-credit">© Gym visual</span>
+        <span className="gv-credit" title={t('Ảnh động minh hoạ 180×180 từ exercises-dataset')}>© Gym visual</span>
       </div>
     );
   }

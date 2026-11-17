@@ -4,6 +4,7 @@ import type { AdminConversationSummary, PageResponse, Trainer } from '../../api/
 import { Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Select, Table } from '../../components/ui';
 import { ConversationHistoryModal } from '../../components/ConversationHistoryModal';
 import { relativeTime } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
 import { errMsg } from '../../lib/hooks';
 import { t } from '../../i18n';
 
@@ -83,7 +84,7 @@ export default function AdminConversations() {
             <option value="">{t('Tất cả HLV')}</option>
             {trainers.map((tr) => (
               <option key={tr.id} value={tr.id}>
-                {tr.fullName}
+                {displayPersonName(tr.fullName)}
               </option>
             ))}
           </Select>

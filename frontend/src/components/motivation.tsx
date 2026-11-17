@@ -1,6 +1,7 @@
 import type { Progress, Schedule, WeekAttendance } from '../api/types';
 import { t } from '../i18n';
 import { fmtDateShort, fmtNum, fmtTime, parseDateTime } from '../lib/format';
+import { displayPersonName } from '../lib/names';
 import { GYM_CLOSE, GYM_OPEN, toMin } from '../lib/hours';
 import { Icon, type IconName } from './Icon';
 import './motivation.css';
@@ -192,8 +193,8 @@ export function DayTimeline({ sessions, onOpen }: { sessions: Schedule[]; onOpen
           const left = pos(a); const width = Math.max(2.5, pos(b) - left);
           return (
             <button key={s.id} type="button" className={`dl-block ${s.status}`} style={{ left: `${left}%`, width: `${width}%` }}
-              onClick={() => onOpen(s)} title={`${fmtTime(s.startTime)}–${fmtTime(s.endTime)} · ${s.memberName} · ${s.title}`}>
-              <span>{s.memberName.split(' ').slice(-1)[0]}</span>
+              onClick={() => onOpen(s)} title={`${fmtTime(s.startTime)}–${fmtTime(s.endTime)} · ${displayPersonName(s.memberName)} · ${s.title}`}>
+              <span>{displayPersonName(s.memberName).split(' ').slice(-1)[0]}</span>
             </button>
           );
         })}

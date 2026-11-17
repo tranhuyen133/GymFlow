@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { Member, MemberDetail, MemberStatus, Page } from '../api/types';
 import { Icon } from './Icon';
 import { useDebounced } from '../lib/hooks';
+import { displayPersonName } from '../lib/names';
 import { t } from '../i18n';
 
 export interface MemberSelectProps {
@@ -191,7 +192,7 @@ export function MemberSelect({
   const hasSelection = !!selectedMember || (!!value && !!initialMemberName);
 
   if (hasSelection && !isSearching) {
-    const displayName = selectedMember ? `${selectedMember.fullName} · ${selectedMember.code}` : (initialMemberName ?? String(value));
+    const displayName = selectedMember ? `${displayPersonName(selectedMember.fullName)} · ${selectedMember.code}` : (initialMemberName ? displayPersonName(initialMemberName) : String(value));
     const noPackage = selectedMember && (selectedMember.subscriptionState === 'EXPIRED' || !selectedMember.subscriptionState);
     return (
       <div
@@ -250,7 +251,7 @@ export function MemberSelect({
             onMouseDown={(e) => { e.preventDefault(); handleSelect(m); }}
           >
             <div style={{ minWidth: 0 }}>
-              <b className="ellipsis">{m.fullName}</b> <span className="muted small">· {m.code}</span>
+              <b className="ellipsis">{displayPersonName(m.fullName)}</b> <span className="muted small">· {m.code}</span>
               {(m.phone || m.email) && <div className="tiny faint ellipsis">{[m.phone, m.email].filter(Boolean).join(' · ')}</div>}
             </div>
             {(m.subscriptionState === 'EXPIRED' || !m.subscriptionState) && (

@@ -8,6 +8,8 @@ import { ActivityRings } from '../../components/motivation';
 import { Badge, Card, CountUp, Empty, ErrorState, LoadingBlock, PageHead, Person, Stat, Table } from '../../components/ui';
 import { t, tn } from '../../i18n';
 import { actionLabel, fmtDate, fmtMoney, fmtMoneyShort, pctChange, relativeTime } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
+import { localizeText } from '../../lib/planText';
 import { useAsync } from '../../lib/hooks';
 
 export default function AdminDashboard() {
@@ -25,7 +27,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="page">
-      <PageHead eyebrow={t(greet)} title={t('Xin chào, {name}', { name: me.fullName.split(' ').slice(-1)[0] })}
+      <PageHead eyebrow={t(greet)} title={t('Xin chào, {name}', { name: displayPersonName(me.fullName).split(' ').slice(-1)[0] })}
         desc={t('Toàn cảnh phòng tập hôm nay: hội viên, doanh thu, gói sắp hết hạn và hoạt động mới nhất.')}
         actions={<>
           <Link className="btn btn-secondary" to="/reports"><Icon name="chart" /><span>{t('Báo cáo')}</span></Link>
@@ -84,7 +86,7 @@ export default function AdminDashboard() {
                 {data.expiring.map((s) => (
                   <tr key={s.id} className="clickable" onClick={() => navigate(`/members/${s.memberId}`)}>
                     <td><Person name={s.memberName} sub={s.memberCode} size="sm" /></td>
-                    <td>{t(s.planName)}</td>
+                    <td>{localizeText(s.planNameEn, s.planName)}</td>
                     <td className="nowrap">{fmtDate(s.endDate)}</td>
                     <td className="right"><Badge tone={s.daysLeft <= 3 ? 'red' : 'amber'}>{t('{n} ngày', { n: s.daysLeft })}</Badge></td>
                   </tr>

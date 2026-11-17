@@ -5,6 +5,7 @@ import { BarChart, Donut, LineChart } from '../../components/charts';
 import { Button, Card, ErrorState, Field, Input, LoadingBlock, Meter, PageHead, Segmented, Stat } from '../../components/ui';
 import { csvText, downloadCsv } from '../../lib/csv';
 import { addDays, fmtMoney, fmtMoneyShort, genderLabel, memberStatus, toIsoDate } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
 import { useAsync } from '../../lib/hooks';
 import { t } from '../../i18n';
 
@@ -35,7 +36,7 @@ export default function Reports() {
       { group: sum, label: t('Tỉ lệ chuyên cần (%)'), value: data.attendanceRate ?? '' },
       ...data.revenueByMonth.map((r) => ({ group: t('Doanh thu theo tháng'), label: csvText(r.label), value: r.value })),
       ...data.revenueByPlan.map((r) => ({ group: t('Doanh thu theo gói'), label: r.label, value: r.value })),
-      ...data.byTrainer.map((tr) => ({ group: t('Buổi tập theo HLV'), label: tr.trainerName, value: csvText(t('{c}/{n} (vắng {m})', { c: tr.completed, n: tr.total, m: tr.missed })) })),
+      ...data.byTrainer.map((tr) => ({ group: t('Buổi tập theo HLV'), label: displayPersonName(tr.trainerName), value: csvText(t('{c}/{n} (vắng {m})', { c: tr.completed, n: tr.total, m: tr.missed })) })),
       ...data.newMembersByMonth.map((r) => ({ group: t('Hội viên mới'), label: csvText(r.label), value: r.value })),
       ...data.membersByStatus.map((r) => ({ group: t('Trạng thái hội viên'), label: memberStatus[r.label as keyof typeof memberStatus]?.[0] ?? r.label, value: r.value })),
       ...data.membersByGender.map((r) => ({ group: t('Giới tính'), label: genderLabel[r.label as keyof typeof genderLabel] ?? t('Chưa rõ'), value: r.value })),
@@ -77,7 +78,7 @@ export default function Reports() {
                     const rate = tr.completed + tr.missed ? Math.round((tr.completed / (tr.completed + tr.missed)) * 100) : 0;
                     return (
                       <div key={tr.trainerId}>
-                        <div className="row between small"><b>{tr.trainerName}</b><span className="muted">{t('{c}/{n} buổi', { c: tr.completed, n: tr.total })} · <span className={rate >= 75 ? 'ok' : 'warn'}>{rate}%</span></span></div>
+                        <div className="row between small"><b>{displayPersonName(tr.trainerName)}</b><span className="muted">{t('{c}/{n} buổi', { c: tr.completed, n: tr.total })} · <span className={rate >= 75 ? 'ok' : 'warn'}>{rate}%</span></span></div>
                         <div className="mt-4"><Meter value={rate} color={rate >= 75 ? undefined : 'var(--warning)'} /></div>
                       </div>
                     );

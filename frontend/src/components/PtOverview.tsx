@@ -9,6 +9,8 @@ import type { PtOverviewRow } from '../api/types';
 import { Badge, Card, Empty, ErrorState, LoadingBlock, Person, Table } from './ui';
 import { fmtDate } from '../lib/format';
 import { useAsync } from '../lib/hooks';
+import { displayPersonName } from '../lib/names';
+import { localizeText } from '../lib/planText';
 import { t } from '../i18n';
 
 export function PtOverview({ title = 'Theo dõi buổi PT' }: { title?: string }) {
@@ -32,8 +34,8 @@ export function PtOverview({ title = 'Theo dõi buổi PT' }: { title?: string }
                   {data.map((r) => (
                     <tr key={r.subscriptionId}>
                       <td><Link to={`/members/${r.memberId}`}><Person name={r.memberName} sub={r.memberCode} size="sm" /></Link></td>
-                      <td>{t(r.planName)}</td>
-                      <td>{r.trainerName ?? <span className="muted">{t('Chưa phân công')}</span>}</td>
+                      <td>{localizeText(r.planNameEn, r.planName)}</td>
+                      <td>{r.trainerName ? displayPersonName(r.trainerName) : <span className="muted">{t('Chưa phân công')}</span>}</td>
                       <td className="right num">{r.ptSessionsUsed}</td>
                       <td className="right num">{r.ptSessionsScheduled}</td>
                       <td className="right">

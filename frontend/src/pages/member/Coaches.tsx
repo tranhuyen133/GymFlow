@@ -6,6 +6,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Avatar, Button, Card, Empty, ErrorState, LoadingBlock, PageHead, SearchInput } from '../../components/ui';
 import { DAYS } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
 import { errMsg, useAsync } from '../../lib/hooks';
 import { t } from '../../i18n';
 import { allSpecialties, canMessage, certificateList, fold, isoDay, matchesCoach, specialtyCounts, splitSpecialties, todayShift, weeklyHours } from './coachRules';
@@ -116,12 +117,12 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
               return (
                 <article key={tr.id} className={`cz-card ${mine ? 'is-mine' : ''}`}>
                   <div className="cz-head">
-                    <Link to={`/coaches/${tr.id}`} className="cz-avatar" aria-label={t('Xem hồ sơ {name}', { name: tr.fullName })}>
+                    <Link to={`/coaches/${tr.id}`} className="cz-avatar" aria-label={t('Xem hồ sơ {name}', { name: displayPersonName(tr.fullName) })}>
                       <Avatar name={tr.fullName} src={tr.avatar} size="lg" />
                       <i className={shift ? 'on' : ''} title={shift ? t('Có ca hôm nay') : t('Hôm nay nghỉ')} />
                     </Link>
                     <div className="cz-id">
-                      <Link to={`/coaches/${tr.id}`} className="cz-name">{tr.fullName}</Link>
+                      <Link to={`/coaches/${tr.id}`} className="cz-name">{displayPersonName(tr.fullName)}</Link>
                       <div className="cz-specs">
                         {specs.length ? specs.slice(0, 3).map((s) => <span key={s} className="cz-spec">{t(s)}</span>)
                           : <span className="cz-spec">{t('Huấn luyện thể hình')}</span>}

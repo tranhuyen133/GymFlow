@@ -5,6 +5,8 @@ import { MemberSelect } from './MemberSelect';
 import { t, tn } from '../i18n';
 import { durationLabel, fmtDate, fmtMoney } from '../lib/format';
 import { errMsg, useAsync } from '../lib/hooks';
+import { displayPersonName } from '../lib/names';
+import { localizeText } from '../lib/planText';
 import { useToast } from './Toast';
 import { Alert, Button, Field, Input, Modal, Select, Textarea } from './ui';
 
@@ -34,27 +36,30 @@ export function SubscriptionForm({ memberId: preset, onClose, onSaved }: { membe
   }, [memberId, planId, startDate]);
 
   const submit = async () => {
-    if (!memberId || !planId) { setError('Chọn hội viên và gói tập'); return; }
+    if (!memberId || !planId) { setError(t('Chọn hội viên và gói tập')); return; }
     const p = price === '' ? null : Number(price);
-    if (p != null && (!Number.isFinite(p) || p < 0)) { setError('Số tiền không hợp lệ'); return; }
+    if (p != null && (!Number.isFinite(p) || p < 0)) { setError(t('Số tiền không hợp lệ')); return; }
     setBusy(true); setError(null);
     try {
       const s = await api.post<Subscription>('/subscriptions', { memberId: Number(memberId), planId: Number(planId), startDate: startDate || null, pricePaid: p, note: note || null });
-      toast.success(t('Đã đăng ký {plan} cho {member}', { plan: t(s.planName), member: s.memberName }));
+      toast.success(t('Đã đăng ký {plan} cho {member}', {
+        plan: localizeText(s.planNameEn, s.planName),
+        member: displayPersonName(s.memberName),
+      }));
       onSaved(s);
     } catch (e) { setError(errMsg(e)); } finally { setBusy(false); }
   };
 
   return (
-    <Modal title="Đăng ký / gia hạn gói" onClose={onClose} footer={<>
-      <Button variant="ghost" onClick={onClose}>Huỷ</Button>
-      <Button variant="primary" icon="check" loading={busy} onClick={submit}>Xác nhận thu tiền</Button>
+    <Modal title={t('Đăng ký / gia hạn gói')} onClose={onClose} footer={<>
+      <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
+      <Button variant="primary" icon="check" loading={busy} onClick={submit}>{t('Xác nhận thu tiền')}</Button>
     </>}>
       <div className="stack">
         {error && <Alert kind="error">{error}</Alert>}
         <div className="form-grid">
           {!preset && (
-            <Field label="Hội viên" required className="span-2">
+            <Field label={t('Hội viên')} required className="span-2">
               <MemberSelect
                 value={memberId}
                 invalid={!!error && !memberId}
@@ -62,15 +67,15 @@ export function SubscriptionForm({ memberId: preset, onClose, onSaved }: { membe
               />
             </Field>
           )}
-          <Field label="Gói tập" required className="span-2">
+          <Field label={t('Gói tập')} required className="span-2">
             <Select value={planId} onChange={(e) => { setPlanId(e.target.value); setPrice(''); }}>
               <option value="">{t('— Chọn gói —')}</option>
-              {plans.data?.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name} · {durationLabel(p.durationDays)} · {fmtMoney(p.price)}</option>)}
+              {plans.data?.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{localizeText(p.nameEn, p.name)} · {durationLabel(p.durationDays)} · {fmtMoney(p.price)}</option>)}
             </Select>
           </Field>
-          <Field label="Ngày bắt đầu" hint="Để trống để nối tiếp gói hiện tại"><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></Field>
-          <Field label="Số tiền thu (₫)" hint={plan ? t('Giá niêm yết {price}', { price: fmtMoney(plan.price) }) : undefined}><Input type="number" min={0} step={1000} value={price} onChange={(e) => setPrice(e.target.value)} /></Field>
-          <Field label="Ghi chú" className="span-2"><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: chuyển khoản, giảm 10% sinh viên" /></Field>
+          <Field label={t('Ngày bắt đầu')} hint={t('Để trống để nối tiếp gói hiện tại')}><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></Field>
+          <Field label={t('Số tiền thu (₫)')} hint={plan ? t('Giá niêm yết {price}', { price: fmtMoney(plan.price) }) : undefined}><Input type="number" min={0} step={1000} value={price} onChange={(e) => setPrice(e.target.value)} /></Field>
+          <Field label={t('Ghi chú')} className="span-2"><Textarea maxLength={255} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('VD: chuyển khoản, giảm 10% sinh viên')} /></Field>
         </div>
         {preview && (
           <Alert kind={preview.chained ? 'info' : 'success'}>

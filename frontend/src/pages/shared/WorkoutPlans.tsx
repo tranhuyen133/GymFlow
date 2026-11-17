@@ -4,6 +4,7 @@ import { api } from '../../api/client';
 import type { PlanStatus, WorkoutPlanSummary } from '../../api/types';
 import { Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, StatusBadge, Table, Button } from '../../components/ui';
 import { fmtDate, planStatus, relativeTime } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
 import { localizePlanName } from '../../lib/planText';
 import { useAsync, usePaged } from '../../lib/hooks';
 import { t } from '../../i18n';
@@ -40,7 +41,7 @@ export default function WorkoutPlans() {
                   <tr key={p.id} className="clickable" onClick={() => navigate(`/workout-plans/${p.id}`)}>
                     <td><b>{localizePlanName(p)}</b><div className="tiny faint">{t('Tạo {d}', { d: relativeTime(p.createdAt) })}</div></td>
                     <td><Person name={p.memberName} size="sm" /></td>
-                    <td className="muted">{p.trainerName ?? '—'}</td>
+                    <td className="muted">{p.trainerName ? displayPersonName(p.trainerName) : '—'}</td>
                     <td className="small nowrap">{fmtDate(p.startDate)} → {fmtDate(p.endDate)}</td>
                     <td className="small">{t('{d} ngày/tuần · {n} bài', { d: p.trainingDays, n: p.itemCount })}</td>
                     <td><StatusBadge map={planStatus} value={p.status} /></td>

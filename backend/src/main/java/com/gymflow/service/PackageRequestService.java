@@ -339,7 +339,7 @@ public class PackageRequestService {
         Member m = r.getMember();
         Trainer t = r.getTrainer();
         return new PackageRequestResponse(r.getId(), m.getId(), m.getUser().getFullName(), m.getCode(), m.getUser().getPhone(),
-                r.getPlan().getId(), r.getPlanName(), r.getPrice(), r.getDurationDays(), r.getPlan().isActive(),
+                r.getPlan().getId(), r.getPlanName(), r.getPlan().getNameEn(), r.getPrice(), r.getDurationDays(), r.getPlan().isActive(),
                 r.getDesiredStartDate(), r.getMemberNote(), r.getStatus(), r.getDecisionNote(),
                 r.getDecidedBy() == null ? null : r.getDecidedBy().getFullName(), r.getDecidedAt(),
                 r.getSubscription() == null ? null : r.getSubscription().getId(), r.getCreatedAt(),

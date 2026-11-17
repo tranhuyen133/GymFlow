@@ -19,6 +19,7 @@ import { Icon, type IconName } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Badge, Button, Empty, ErrorState, LoadingBlock, Modal, Pager, SearchInput } from '../../components/ui';
 import { articleCategoryLabel, fmtDateTime, formatEquipment, levelLabel, locationLabel } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
 import { errMsg, useAsync, useDebounced, usePaged } from '../../lib/hooks';
 import { localizeText } from '../../lib/planText';
 import { t, useLang } from '../../i18n';
@@ -642,7 +643,7 @@ export default function Knowledge() {
                     <h3 className="font-bold mb-8" style={{ fontSize: 17, lineHeight: 1.3 }}>{localizeText(art.titleEn, art.title)}</h3>
                     <p className="small muted mb-12 line-clamp-3" style={{ margin: 0, flex: 1 }}>{localizeText(art.summaryEn, art.summary)}</p>
                     <div className="row between pt-10" style={{ borderTop: '1px solid var(--hairline-soft)', alignItems: 'center' }}>
-                      <span className="tiny faint">{art.authorName || 'GymFlow Team'}</span>
+                      <span className="tiny faint">{art.authorName ? displayPersonName(art.authorName) : 'GymFlow Team'}</span>
                       <span className="small primary font-bold">{t('Đọc hướng dẫn')} →</span>
                     </div>
                   </article>
