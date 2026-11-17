@@ -4,6 +4,7 @@ import type { Me } from '../api/types';
 import { useAuth, useMe } from '../auth/AuthContext';
 import { t } from '../i18n';
 import { errMsg } from '../lib/hooks';
+import { displayPersonName } from '../lib/names';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
 import { Alert, Avatar, Button, Confirm, Modal } from './ui';
@@ -46,7 +47,7 @@ export function useMyAvatar(): string | null {
 /** Avatar của chính mình, có ảnh thì hiện ảnh, chưa có thì chữ viết tắt. */
 export function MyAvatar({ size }: { size?: 'sm' | 'lg' | 'xl' }) {
   const me = useMe();
-  return <Avatar name={me.fullName} size={size} src={useMyAvatar()} />;
+  return <Avatar name={displayPersonName(me.fullName)} size={size} src={useMyAvatar()} />;
 }
 
 // ---------- Hộp thoại đổi ảnh ----------
@@ -175,7 +176,7 @@ export function AvatarEditor({ onClose }: { onClose: () => void }) {
             <button type="button" className={`avatar-drop ${dragOver ? 'over' : ''}`} onClick={() => fileRef.current?.click()}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
               onDrop={(e) => { e.preventDefault(); setDragOver(false); pick(e.dataTransfer.files?.[0]); }}>
-              <Avatar name={me.fullName} size="xl" src={current} />
+              <Avatar name={displayPersonName(me.fullName)} size="xl" src={current} />
               <span className="row" style={{ gap: 6, fontWeight: 700 }}><Icon name="upload" size={16} />{t('Chọn ảnh từ thiết bị')}</span>
               <span className="tiny faint">{t('JPG, PNG hoặc WebP · tối đa 8 MB · hoặc kéo thả vào đây')}</span>
             </button>

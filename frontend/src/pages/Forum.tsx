@@ -15,6 +15,7 @@ import { Alert, Avatar, Badge, Button, Confirm, Empty, ErrorState, Field, Input,
 import { t } from '../i18n';
 import { fmtDateTime, relativeTime, roleLabel } from '../lib/format';
 import { localizeText } from '../lib/planText';
+import { displayPersonName } from '../lib/names';
 import { errMsg, fieldErrs, useAsync, useDebounced } from '../lib/hooks';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { canEditReply, canModerateAuthor, charCount, cleanLine, cleanText, LIMITS, replyBlock, validateReason, validateReply, validateTopic } from './forumRules';
@@ -87,7 +88,7 @@ function AuthorLine({ author, at, edited }: { author: ForumAuthor; at: string; e
   return (
     <div className="row row-wrap forum-author">
       <Avatar name={author.name} size="sm" />
-      <b className="small">{author.name}</b>
+      <b className="small">{displayPersonName(author.name)}</b>
       {author.role !== 'MEMBER' && <Badge tone={author.role === 'ADMIN' ? 'violet' : 'blue'}>{roleLabel[author.role]}</Badge>}
       <span className="tiny faint" title={fmtDateTime(at)}>{relativeTime(at)}</span>
       {edited && <span className="tiny faint" title={fmtDateTime(edited)}>· {t('đã sửa')}</span>}

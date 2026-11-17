@@ -11,6 +11,7 @@ import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge, Table, Textarea } from '../../components/ui';
 import { downloadCsv } from '../../lib/csv';
 import { EMAIL_RE, fmtDate, genderLabel, memberStatus, subState } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
 import { errMsg, fieldErrs, useAsync, useDebounced } from '../../lib/hooks';
 import { t, tn } from '../../i18n';
 
@@ -57,9 +58,9 @@ export default function Members() {
         currentPage++;
       }
       downloadCsv(`hoi-vien-${new Date().toISOString().slice(0, 10)}`, items, [
-        { header: 'Mã', value: (m) => m.code }, { header: 'Họ tên', value: (m) => m.fullName }, { header: 'Email', value: (m) => m.email },
+        { header: 'Mã', value: (m) => m.code }, { header: 'Họ tên', value: (m) => displayPersonName(m.fullName) }, { header: 'Email', value: (m) => m.email },
         { header: 'SĐT', value: (m) => m.phone }, { header: 'Giới tính', value: (m) => (m.gender ? genderLabel[m.gender] : '') },
-        { header: 'HLV', value: (m) => m.trainerName }, { header: 'Trạng thái', value: (m) => memberStatus[m.status][0] },
+        { header: 'HLV', value: (m) => displayPersonName(m.trainerName) }, { header: 'Trạng thái', value: (m) => memberStatus[m.status][0] },
         { header: 'Gói hiện tại', value: (m) => m.currentPlanName }, { header: 'Hết hạn', value: (m) => m.subscriptionEndDate },
         { header: 'Ngày tham gia', value: (m) => m.joinedAt },
       ]);
@@ -90,7 +91,7 @@ export default function Members() {
         {admin && (
           <Select value={trainerId} onChange={(e) => setTrainerId(e.target.value)} aria-label="HLV">
             <option value="">{t('Mọi HLV')}</option>
-            {trainers.data?.map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}</option>)}
+            {trainers.data?.map((tr) => <option key={tr.id} value={tr.id}>{displayPersonName(tr.fullName)}</option>)}
           </Select>
         )}
       </div>
@@ -109,7 +110,7 @@ export default function Members() {
                         <tr key={m.id} className="clickable" onClick={() => navigate(`/members/${m.id}`)}>
                           <td><Person name={m.fullName} sub={m.code} /></td>
                           <td><div className="small">{m.phone ?? '—'}</div><div className="tiny faint">{m.email}</div></td>
-                          <td>{m.trainerName ?? <span className="faint">{t('Chưa phân công')}</span>}</td>
+                          <td>{m.trainerName ? displayPersonName(m.trainerName) : <span className="faint">{t('Chưa phân công')}</span>}</td>
                           <td>
                             {m.currentPlanName ? <div className="stack-sm" style={{ gap: 4 }}>
                               <span className="small">{t(m.currentPlanName)}</span>
@@ -214,7 +215,7 @@ export function MemberFormModal({ member, onClose, onSaved }: { member?: Member;
           <Field label="Huấn luyện viên phụ trách">
             <Select value={f.trainerId ?? ''} onChange={(e) => set('trainerId', e.target.value ? Number(e.target.value) : null)}>
               <option value="">{t('Chưa phân công')}</option>
-              {trainers.data?.filter((tr) => tr.active || tr.id === f.trainerId).map((tr) => <option key={tr.id} value={tr.id}>{t('{name} · {n} HV', { name: tr.fullName, n: tr.memberCount })}</option>)}
+              {trainers.data?.filter((tr) => tr.active || tr.id === f.trainerId).map((tr) => <option key={tr.id} value={tr.id}>{t('{name} · {n} HV', { name: displayPersonName(tr.fullName), n: tr.memberCount })}</option>)}
             </Select>
           </Field>
           <Field label="Mục tiêu tập luyện"><Input maxLength={255} value={f.goal} onChange={(e) => set('goal', e.target.value)} placeholder="Giảm mỡ, tăng cơ…" /></Field>

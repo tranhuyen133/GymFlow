@@ -6,6 +6,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Avatar, Badge, Button, Card, Empty, ErrorState, LoadingBlock, PageHead, SearchInput } from '../../components/ui';
 import { DAYS } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
 import { errMsg, useAsync } from '../../lib/hooks';
 import { t } from '../../i18n';
 
@@ -165,7 +166,7 @@ export default function Coaches({ embedded }: { embedded?: boolean } = {}) {
                         style={{ fontSize: 16, display: 'block' }}
                         onClick={() => navigate(`/coaches/${tr.id}`)}
                       >
-                        {tr.fullName}
+                        {displayPersonName(tr.fullName)}
                       </b>
                       <div className="tiny muted ellipsis mt-2">
                         {formatSpecialty(tr.specialty) || t('Huấn luyện thể hình')}

@@ -12,6 +12,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, PasswordInput, Person, Textarea } from '../../components/ui';
 import { DAYS, EMAIL_RE } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { ShiftEditor } from '../shared/Profile';
 import { t, tn } from '../../i18n';
@@ -70,12 +71,12 @@ export default function Trainers() {
       {editing && <TrainerForm trainer={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)}
         onSaved={(c) => { setEditing(null); void reload(); if (c) setCreated(c); }} />}
       {shifts && (
-        <Modal title={t('Ca làm · {name}', { name: shifts.fullName })} size="wide" onClose={() => setShifts(null)}>
+        <Modal title={t('Ca làm · {name}', { name: displayPersonName(shifts.fullName) })} size="wide" onClose={() => setShifts(null)}>
           <ShiftEditor trainer={shifts} onSaved={() => { setShifts(null); void reload(); }} />
         </Modal>
       )}
       {toggling && <Confirm title={toggling.active ? 'Tạm ngừng HLV?' : 'Kích hoạt HLV?'} confirmText={toggling.active ? 'Tạm ngừng' : 'Kích hoạt'} danger={toggling.active}
-        message={toggling.active ? t('{name} sẽ không được phân công hội viên mới hay xếp lịch mới. Hội viên hiện tại vẫn giữ nguyên.', { name: toggling.fullName }) : t('{name} sẽ nhận hội viên mới trở lại.', { name: toggling.fullName })}
+        message={toggling.active ? t('{name} sẽ không được phân công hội viên mới hay xếp lịch mới. Hội viên hiện tại vẫn giữ nguyên.', { name: displayPersonName(toggling.fullName) }) : t('{name} sẽ nhận hội viên mới trở lại.', { name: displayPersonName(toggling.fullName) })}
         onClose={() => setToggling(null)}
         onConfirm={async () => { try { await api.put(`/trainers/${toggling.id}/active`, { active: !toggling.active }); toast.success('Đã cập nhật'); void reload(); } catch (e) { toast.error(errMsg(e)); throw e; } }} />}
       {created && (

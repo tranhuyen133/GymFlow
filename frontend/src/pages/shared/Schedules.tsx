@@ -15,6 +15,7 @@ import { WeekCalendar } from '../../components/WeekCalendar';
 import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
 import { getLang, t, tn } from '../../i18n';
 import { localizeScheduleNote, localizeScheduleTitle, localizeText } from '../../lib/planText';
+import { displayPersonName } from '../../lib/names';
 import { addDays, DAY_NAMES, fmtDate, fmtDateTime, fmtTime, fmtWeekday, formatEquipment, exTitle, parseDateTime, scheduleStatus, startOfWeek, toIsoDate, toIsoDateTime } from '../../lib/format';
 import { covered, fromMin, GYM_CLOSE, GYM_OPEN, hm, timeOptions, toMin, type WeekSlot } from '../../lib/hours';
 import '../../components/week-slots.css';
@@ -78,7 +79,7 @@ export default function Schedules() {
         {me.role === 'ADMIN' && (
           <Select value={trainerId} onChange={(e) => setTrainerId(e.target.value)} aria-label={t('Lọc theo HLV')}>
             <option value="">{t('Tất cả HLV')}</option>
-            {trainers.data?.map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}</option>)}
+            {trainers.data?.map((tr) => <option key={tr.id} value={tr.id}>{displayPersonName(tr.fullName)}</option>)}
           </Select>
         )}
         <Segmented<Filter> value={filter} onChange={setFilter} options={[
@@ -106,11 +107,11 @@ export default function Schedules() {
                 </>
               ) : member.data?.trainerName ? (
                 <>
-                  <div className="small muted mt-4">{t('Huấn luyện viên {name} sẽ xếp lịch tập cho bạn. Bạn có thể nhắn tin trao đổi về thời gian tập thuận tiện.', { name: member.data.trainerName })}</div>
+                  <div className="small muted mt-4">{t('Huấn luyện viên {name} sẽ xếp lịch tập cho bạn. Bạn có thể nhắn tin trao đổi về thời gian tập thuận tiện.', { name: displayPersonName(member.data.trainerName) })}</div>
                   <div className="mt-12">
                     <Link to="/messages" className="btn btn-secondary">
                       <Icon name="message" size={16} />
-                      <span>{t('Nhắn HLV {name}', { name: member.data.trainerName })}</span>
+                      <span>{t('Nhắn HLV {name}', { name: displayPersonName(member.data.trainerName) })}</span>
                     </Link>
                   </div>
                 </>
@@ -169,7 +170,7 @@ export function SessionModal({ session, onClose, onChanged }: { session: Schedul
           </div>
           <dl className="kv">
             <dt>{t('Hội viên')}</dt><dd><Person name={session.memberName} size="sm" /></dd>
-            <dt>{t('Huấn luyện viên')}</dt><dd>{session.trainerName ?? <span className="faint">{t('Tự tập')}</span>}</dd>
+            <dt>{t('Huấn luyện viên')}</dt><dd>{session.trainerName ? displayPersonName(session.trainerName) : <span className="faint">{t('Tự tập')}</span>}</dd>
             <dt>{t('Giáo án')}</dt><dd>{session.planName ? localizeText(session.planNameEn, session.planName) : <span className="faint">{t('Không gắn')}</span>}</dd>
             {session.note && <><dt>{t('Ghi chú')}</dt><dd>{localizeScheduleNote(session)}</dd></>}
           </dl>
@@ -511,7 +512,7 @@ export function ScheduleForm({ edit, presetMemberId, presetExerciseId, onClose, 
             <Field label={t('Huấn luyện viên')} hint={t('Để trống = HLV phụ trách của hội viên')}>
               <Select value={trainerId} onChange={(e) => setTrainerId(e.target.value)}>
                 <option value="">{t('Mặc định')}</option>
-                {trainers.data?.filter((tr) => tr.active).map((tr) => <option key={tr.id} value={tr.id}>{tr.fullName}</option>)}
+                {trainers.data?.filter((tr) => tr.active).map((tr) => <option key={tr.id} value={tr.id}>{displayPersonName(tr.fullName)}</option>)}
               </Select>
             </Field>
           )}
@@ -573,7 +574,7 @@ export function ScheduleForm({ edit, presetMemberId, presetExerciseId, onClose, 
               <Alert kind="warning">
                 {!fitsMember && <div>{t('Giờ này nằm ngoài khung hội viên đã đăng ký. Nên chọn một khung ở trên hoặc hỏi lại hội viên.')}</div>}
                 {!fitsTrainer && <div>{t('Giờ này nằm ngoài ca làm của HLV {name} ({shifts}). Cập nhật ca ở Hồ sơ › Ca làm nếu cần.', {
-                  name: trainer.data?.fullName ?? '',
+                  name: trainer.data?.fullName ? displayPersonName(trainer.data.fullName) : '',
                   shifts: shifts.filter((s) => s.dayOfWeek === dow).map((s) => `${hm(s.startTime)}–${hm(s.endTime)}`).join(', ') || t('nghỉ ngày này'),
                 })}</div>}
               </Alert>

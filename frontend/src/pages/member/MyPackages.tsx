@@ -29,6 +29,7 @@ import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Meter, Modal, PageHead, Segmented, StatusBadge, Table, Textarea } from '../../components/ui';
 import { getLang, t, tn } from '../../i18n';
 import { localizeText } from '../../lib/planText';
+import { displayPersonName } from '../../lib/names';
 import { addDays, durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus, parseDate, subState, toIsoDate, todayIso } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
 
@@ -127,17 +128,17 @@ export default function MyPackages() {
           </div>}>
             {pending.memberPaidAt
               ? tn('Bạn đã báo chuyển khoản {price} cho đơn {plan} lúc {at}. Quản lý sẽ đối chiếu tài khoản và kích hoạt gói.', {
-                price: <b>{fmtMoney(pending.price)}</b>, plan: <b>{t(pending.planName)}</b>, at: fmtDateTime(pending.memberPaidAt),
+                price: <b>{fmtMoney(pending.price)}</b>, plan: <b>{localizeText(pending.planNameEn, pending.planName)}</b>, at: fmtDateTime(pending.memberPaidAt),
               })
               : tn('Đơn {plan} đang chờ thanh toán. Chuyển khoản {price} với nội dung {code}, rồi bấm "Tôi đã chuyển khoản".', {
-                plan: <b>{t(pending.planName)}</b>, price: <b>{fmtMoney(pending.price)}</b>, code: <b className="num">{pending.paymentCode}</b>,
+                plan: <b>{localizeText(pending.planNameEn, pending.planName)}</b>, price: <b>{fmtMoney(pending.price)}</b>, code: <b className="num">{pending.paymentCode}</b>,
               })}
           </Alert>
         )}
         {pending && pending.paymentMethod !== 'BANK_TRANSFER' && (
           <Alert kind="info" action={<Button size="sm" variant="ghost" onClick={() => setCancelling(pending)}>{t('Huỷ đơn')}</Button>}>
             {tn('Đơn đăng ký {plan} ({price}) đang chờ xác nhận. Vui lòng thanh toán tại quầy lễ tân để được kích hoạt gói.', {
-              plan: <b>{t(pending.planName)}</b>, price: fmtMoney(pending.price),
+              plan: <b>{localizeText(pending.planNameEn, pending.planName)}</b>, price: fmtMoney(pending.price),
             })}
           </Alert>
         )}
@@ -169,7 +170,7 @@ export default function MyPackages() {
                     <span>{Math.round((current.daysLeft / total) * 100)}%</span>
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <h2 style={{ margin: 0 }}>{t(current.planName)}</h2>
+                    <h2 style={{ margin: 0 }}>{localizeText(current.planNameEn, current.planName)}</h2>
                     <div className="row" style={{ alignItems: 'baseline', gap: 8, marginTop: 6 }}>
                       <span className="pkg-days" key={current.daysLeft}>{current.daysLeft}</span>
                       <span className="muted">{t('ngày còn lại')}</span>
@@ -200,7 +201,7 @@ export default function MyPackages() {
                     <Meter value={current.ptSessionsUsed ?? 0} max={current.ptSessionsTotal} color="var(--primary)" />
                     <div className="tiny muted mt-8">
                       {[
-                        current.trainerName ? t('HLV phụ trách: {name}', { name: current.trainerName }) : t('Chưa phân công HLV'),
+                        current.trainerName ? t('HLV phụ trách: {name}', { name: displayPersonName(current.trainerName) }) : t('Chưa phân công HLV'),
                         current.ptSessionMinutes ? t('{n} phút mỗi buổi', { n: current.ptSessionMinutes }) : null,
                         current.ptCancelNoticeHours != null ? t('Huỷ hoặc dời buổi PT trước ít nhất {n} giờ', { n: current.ptCancelNoticeHours }) : null,
                       ].filter(Boolean).join(' · ')}
@@ -235,7 +236,7 @@ export default function MyPackages() {
                 {upcoming.map((s) => (
                   <div key={s.id} className="row between row-wrap" style={{ padding: '10px 16px', gap: 8 }}>
                     <div>
-                      <b className="small">{t(s.planName)}</b>
+                      <b className="small">{localizeText(s.planNameEn, s.planName)}</b>
                       <div className="tiny faint">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</div>
                     </div>
                     <div className="row" style={{ gap: 8, alignItems: 'center' }}>
@@ -251,7 +252,7 @@ export default function MyPackages() {
           <Card title={t('Đơn đăng ký của tôi')} icon="clipboard" flush>
             {reqs.error ? <div style={{ padding: 16 }}><ErrorState message={reqs.error} onRetry={reqs.reload} /></div>
               : !reqs.data ? <div style={{ padding: 16 }}><LoadingBlock rows={2} /></div>
-              : reqs.data.length === 0 ? <Empty icon="clipboard" title="Chưa có đơn đăng ký nào" desc="Chọn gói ở mục Các gói đang mở bán để gửi đơn." />
+              : reqs.data.length === 0 ? <Empty icon="clipboard" title={t('Chưa có đơn đăng ký nào')} desc={t('Chọn gói ở mục Các gói đang mở bán để gửi đơn.')} />
               : (
                 <Table caption={t('Đơn đăng ký của tôi')}>
                   <thead>
@@ -261,14 +262,14 @@ export default function MyPackages() {
                     {reqs.data.map((r) => (
                       <tr key={r.id}>
                         <td>
-                          <b>{t(r.planName)}</b>
+                          <b>{localizeText(r.planNameEn, r.planName)}</b>
                           <div className="tiny faint">
                             {durationLabel(r.durationDays)} · {r.desiredStartDate ? t('Bắt đầu mong muốn {d}', { d: fmtDate(r.desiredStartDate) }) : t('Bắt đầu sớm nhất')}
                           </div>
                           {r.note && <div className="tiny faint">{t('Ghi chú: {note}', { note: r.note })}</div>}
                           <div className="tiny faint">
                             {r.paymentMethod === 'BANK_TRANSFER' ? t('Chuyển khoản · {code}', { code: r.paymentCode ?? '' }) : t('Trả tại quầy')}
-                            {r.trainerName && <> · {t('HLV {name}', { name: r.trainerName })}</>}
+                            {r.trainerName && <> · {t('HLV {name}', { name: displayPersonName(r.trainerName) })}</>}
                           </div>
                         </td>
                         <td className="num nowrap">{fmtMoney(r.price)}</td>
@@ -292,7 +293,7 @@ export default function MyPackages() {
 
           <Card title={t('Lịch sử gói tập')} icon="scroll" flush>
             {subs.data.length === 0 ? (
-              <Empty icon="ticket" title="Chưa có gói nào" desc="Gói đã được kích hoạt sẽ hiện ở đây." />
+              <Empty icon="ticket" title={t('Chưa có gói nào')} desc={t('Gói đã được kích hoạt sẽ hiện ở đây.')} />
             ) : (
               <Table caption={t('Lịch sử gói tập')}>
                 <thead><tr><th>{t('Gói')}</th><th>{t('Thời gian')}</th><th>{t('Số tiền')}</th><th>{t('Trạng thái')}</th><th aria-label={t('Chi tiết')} /></tr></thead>
@@ -300,7 +301,7 @@ export default function MyPackages() {
                   {subs.data.map((s) => (
                     <tr key={s.id}>
                       <td>
-                        <b>{t(s.planName)}</b>{s.note && <div className="tiny faint">{s.note}</div>}
+                        <b>{localizeText(s.planNameEn, s.planName)}</b>{s.note && <div className="tiny faint">{s.note}</div>}
                         {s.ptSessionsTotal != null && (
                           <div className="tiny faint">
                             {t('PT: còn {rem}/{tot} buổi', { rem: s.ptSessionsRemaining ?? 0, tot: s.ptSessionsTotal })}
@@ -347,7 +348,7 @@ export default function MyPackages() {
                   </div>
                 </div>
               ) : (
-                <Empty icon="ticket" title="Chưa có gói nào đang mở bán" />
+                <Empty icon="ticket" title={t('Chưa có gói nào đang mở bán')} />
               )
             )}
             {onSale.map((p) => {
@@ -388,7 +389,7 @@ export default function MyPackages() {
       {viewUsagesSubId && <PtUsagesModal subscriptionId={viewUsagesSubId} onClose={() => setViewUsagesSubId(null)} />}
       {cancelling && (
         <Confirm title={t('Huỷ đơn đăng ký?')} danger confirmText={t('Huỷ đơn')}
-          message={tn('Đơn đăng ký {plan} sẽ bị huỷ. Bạn có thể gửi đơn mới bất cứ lúc nào.', { plan: <b>{t(cancelling.planName)}</b> })}
+          message={tn('Đơn đăng ký {plan} sẽ bị huỷ. Bạn có thể gửi đơn mới bất cứ lúc nào.', { plan: <b>{localizeText(cancelling.planNameEn, cancelling.planName)}</b> })}
           onConfirm={cancelRequest} onClose={() => setCancelling(null)} />
       )}
     </div>
@@ -483,13 +484,13 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
   const start = mode === 'asap' ? asapStart : date;
   const end = start ? toIsoDate(addDays(parseDate(start), plan.durationDays - 1)) : '';
   const dateRule = mode !== 'date' ? undefined
-    : !date ? 'Vui lòng chọn ngày bắt đầu'
-    : date < today ? 'Ngày bắt đầu không được ở quá khứ'
-    : date > maxDate ? `Chỉ chọn trong vòng ${MAX_START_DAYS} ngày tới`
-    : overlaps(subs, date, end) ? 'Trùng với gói bạn đang có. Chọn "Sớm nhất" để gói mới nối tiếp gói hiện tại.'
+    : !date ? t('Vui lòng chọn ngày bắt đầu')
+    : date < today ? t('Ngày bắt đầu không được ở quá khứ')
+    : date > maxDate ? t('Chỉ chọn trong vòng {n} ngày tới', { n: MAX_START_DAYS })
+    : overlaps(subs, date, end) ? t('Trùng với gói bạn đang có. Chọn "Sớm nhất" để gói mới nối tiếp gói hiện tại.')
     : undefined;
-  const noteError = note.length > 255 ? 'Ghi chú tối đa 255 ký tự' : undefined;
-  const trainerRule = pt && !trainerId ? 'Chọn huấn luyện viên phụ trách bạn' : undefined;
+  const noteError = note.length > 255 ? t('Ghi chú tối đa 255 ký tự') : undefined;
+  const trainerRule = pt && !trainerId ? t('Chọn huấn luyện viên phụ trách bạn') : undefined;
   // Ngày đã chọn mà sai thì báo ngay (người dùng vừa thao tác); ô còn trống chỉ báo sau khi bấm Gửi
   const dateError = date || tried ? dateRule : undefined;
   const trainerError = tried ? trainerRule : undefined;
@@ -628,8 +629,8 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
             <div className="tiny ok mt-4 row" style={{ gap: 4, alignItems: 'center' }}>
               <Icon name="check" size={12} />
               <span>
-                {t('Đang áp dụng: {name}', { name: promoResult.promotionName || promoResult.promotionCode || '' })}
-                {promoResult.discountAmount > 0 && ` (giảm ${fmtMoney(promoResult.discountAmount)})`}
+                {t('Đang áp dụng: {name}', { name: promoResult.promotionName ? t(promoResult.promotionName) : (promoResult.promotionCode || '') })}
+                {promoResult.discountAmount > 0 && ` ${t('(giảm {v})', { v: fmtMoney(promoResult.discountAmount) })}`}
               </span>
             </div>
           )}
@@ -648,7 +649,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
                 <div className="pick-grid" role="radiogroup" aria-label={t('Huấn luyện viên')}>
                   {activeTrainers.map((tr) => (
                     <PickCard key={tr.id} on={trainerId === String(tr.id)} onClick={() => setTrainerId(String(tr.id))} avatar={initials(tr.fullName)}
-                      title={<>{tr.fullName}{tr.id === currentTrainerId && <span className="tiny faint" style={{ fontWeight: 600 }}> · {t('HLV hiện tại')}</span>}</>}
+                      title={<>{displayPersonName(tr.fullName)}{tr.id === currentTrainerId && <span className="tiny faint" style={{ fontWeight: 600 }}> · {t('HLV hiện tại')}</span>}</>}
                       sub={[tr.specialty, tr.experienceYears > 0 ? t('{n} năm kinh nghiệm', { n: tr.experienceYears }) : null].filter(Boolean).join(' · ') || undefined} />
                   ))}
                 </div>
@@ -725,7 +726,7 @@ export function PayModal({ req, settings, onClose, onPaid }: { req: PackageReque
     </>}>
       <div className="stack">
         <div className="plan-summary">
-          <div><span className="tiny muted">{t('Gói')}</span><b>{t(req.planName)}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
+          <div><span className="tiny muted">{t('Gói')}</span><b>{localizeText(req.planNameEn, req.planName)}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
           {req.discountAmount && req.discountAmount > 0 ? (
             <>
               <div><span className="tiny muted">{t('Giá gốc')}</span><b className="num" style={{ textDecoration: 'line-through' }}>{fmtMoney(req.originalPrice ?? req.price)}</b></div>
@@ -735,7 +736,7 @@ export function PayModal({ req, settings, onClose, onPaid }: { req: PackageReque
           ) : (
             <div><span className="tiny muted">{t('Số tiền')}</span><b className="num">{fmtMoney(payAmount)}</b></div>
           )}
-          <div><span className="tiny muted">{t('HLV')}</span><b>{req.trainerName ?? t('Tự tập')}</b></div>
+          <div><span className="tiny muted">{t('HLV')}</span><b>{req.trainerName ? displayPersonName(req.trainerName) : t('Tự tập')}</b></div>
         </div>
         {req.memberPaidAt && (
           <div className="pay-status"><Icon name="checkCircle" size={18} />
@@ -776,8 +777,8 @@ export function PtUsagesModal({ subscriptionId, onClose }: { subscriptionId: num
                 <tr key={u.id}>
                   <td className="small nowrap">{fmtDateTime(u.usedAt)}</td>
                   <td><b>{u.scheduleTitle || t('Buổi #{id}', { id: u.scheduleId })}</b></td>
-                  <td>{u.trainerName || '—'}</td>
-                  <td className="small muted">{u.createdByName || '—'}</td>
+                  <td>{u.trainerName ? displayPersonName(u.trainerName) : '—'}</td>
+                  <td className="small muted">{u.createdByName ? displayPersonName(u.createdByName) : '—'}</td>
                 </tr>
               ))}
             </tbody>

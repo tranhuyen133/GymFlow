@@ -11,6 +11,8 @@ import { ConversationHistoryModal } from '../../components/ConversationHistoryMo
 import { useToast } from '../../components/Toast';
 import { Alert, Avatar, Badge, Button, Card, Empty, ErrorState, Field, LoadingBlock, Modal, Person, Segmented, Select, Stat, StatusBadge, Table, Textarea } from '../../components/ui';
 import { age, fmtDate, fmtMoney, genderLabel, memberStatus, planStatus, relativeTime, subState, todayIso } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
+import { localizeText } from '../../lib/planText';
 import { errMsg, useAsync } from '../../lib/hooks';
 import { ScheduleForm } from './Schedules';
 import { MemberFormModal } from './Members';
@@ -69,7 +71,7 @@ export default function MemberDetail() {
           <div className="row" style={{ gap: 16 }}>
             <Avatar name={m.fullName} size="lg" />
             <div>
-              <h2>{m.fullName}</h2>
+              <h2>{displayPersonName(m.fullName)}</h2>
               <div className="row row-wrap mt-8" style={{ gap: 8 }}>
                 <span className="chip">{m.code}</span>
                 <StatusBadge map={memberStatus} value={m.status} />
@@ -117,7 +119,7 @@ export default function MemberDetail() {
                     <tbody>
                       {data.subscriptions.map((s) => (
                         <tr key={s.id}>
-                          <td><b>{t(s.planName)}</b>{s.note && <div className="tiny faint ellipsis" style={{ maxWidth: 220 }}>{s.note}</div>}</td>
+                          <td><b>{localizeText(s.planNameEn, s.planName)}</b>{s.note && <div className="tiny faint ellipsis" style={{ maxWidth: 220 }}>{s.note}</div>}</td>
                           <td className="nowrap small">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</td>
                           <td className="num">{fmtMoney(s.pricePaid)}</td>
                           <td><StatusBadge map={subState} value={s.state} />{(s.state === 'ACTIVE' || s.state === 'EXPIRING') && <div className="tiny faint mt-4">{t('còn {n} ngày', { n: s.daysLeft })}</div>}</td>
@@ -136,7 +138,7 @@ export default function MemberDetail() {
                   <dt>{t('Ngày sinh')}</dt><dd>{fmtDate(m.dateOfBirth)}{age(m.dateOfBirth) != null && <span className="faint"> · {t('{n} tuổi', { n: age(m.dateOfBirth) })}</span>}</dd>
                   <dt>{t('Chiều cao')}</dt><dd>{m.heightCm ? `${m.heightCm} cm` : '—'}</dd>
                   <dt>{t('Mục tiêu')}</dt><dd>{m.goal ?? '—'}</dd>
-                  <dt>{t('HLV')}</dt><dd>{m.trainerName ?? <span className="faint">{t('Chưa phân công')}</span>}</dd>
+                  <dt>{t('HLV')}</dt><dd>{m.trainerName ? displayPersonName(m.trainerName) : <span className="faint">{t('Chưa phân công')}</span>}</dd>
                   <dt>{t('Địa chỉ')}</dt><dd>{m.address ?? '—'}</dd>
                   <dt>{t('Tham gia')}</dt><dd>{fmtDate(m.joinedAt)}</dd>
                   {m.note && <><dt>{t('Ghi chú')}</dt><dd className="warn">{m.note}</dd></>}
@@ -155,7 +157,7 @@ export default function MemberDetail() {
                   {data.plans.map((p) => (
                     <tr key={p.id} className="clickable" onClick={() => navigate(`/workout-plans/${p.id}`)}>
                       <td><b>{p.name}</b><div className="tiny faint">{p.goal}</div></td>
-                      <td>{p.trainerName ?? '—'}</td>
+                      <td>{p.trainerName ? displayPersonName(p.trainerName) : '—'}</td>
                       <td className="small nowrap">{fmtDate(p.startDate)} → {fmtDate(p.endDate)}</td>
                       <td className="small">{p.trainingDays} ngày/tuần · {p.itemCount} bài</td>
                       <td><StatusBadge map={planStatus} value={p.status} /></td>
@@ -259,7 +261,7 @@ export default function MemberDetail() {
           </Card>
         )}
         {tab === 'messages' && admin && (
-          <AdminMemberMessagesTab memberId={m.id} memberName={m.fullName} />
+          <AdminMemberMessagesTab memberId={m.id} memberName={displayPersonName(m.fullName)} />
         )}
       </div>
 
@@ -358,7 +360,7 @@ function UseEntitlementModal({
 
         <div className="small muted">
           <div>
-            {t('Hội viên:')} <b>{member.fullName}</b> ({member.code})
+            {t('Hội viên:')} <b>{displayPersonName(member.fullName)}</b> ({member.code})
           </div>
           <div>
             {t('Dịch vụ:')} <b>{entitlement.serviceName}</b>

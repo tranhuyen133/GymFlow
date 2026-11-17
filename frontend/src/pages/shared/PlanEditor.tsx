@@ -14,6 +14,7 @@ import { localizeExercise } from '../../lib/exercise';
 import { localizePlanName, localizeText } from '../../lib/planText';
 import { addDays, DAYS, DAY_NAMES, formatEquipment, levelLabel, muscleColor, muscleLabel, planStatus, toIsoDate } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
+import { displayPersonName } from '../../lib/names';
 import { checkPlanName, itemProblems, type ItemField } from '../../lib/validation';
 import { isMuscleKey, MUSCLE_BY_KEY, type MuscleKey } from '../../lib/anatomy';
 import { PROGRAM_BY_SLUG, PROGRAMS, resolveItem, type Program } from '../../lib/programs';
@@ -310,12 +311,12 @@ export default function PlanEditor() {
       <div className="page">
         <PageHead eyebrow={t('Tập luyện')} title={localizePlanName(summary)} />
         <Alert kind="info" action={<Link to="/me/plan" className="btn btn-secondary btn-sm"><span>{t('Giáo án của tôi')}</span></Link>}>
-          {t('Giáo án này do HLV {name} soạn nên bạn chỉ xem được. Cần đổi bài, hãy nhắn HLV.', { name: summary.trainerName ?? '' })}
+          {t('Giáo án này do HLV {name} soạn nên bạn chỉ xem được. Cần đổi bài, hãy nhắn HLV.', { name: displayPersonName(summary.trainerName) })}
         </Alert>
       </div>
     );
   }
-  const ownDesc = self ? t('Tự soạn · {member}', { member: summary?.memberName ?? '' }) : null;
+  const ownDesc = self ? t('Tự soạn · {member}', { member: displayPersonName(summary?.memberName) }) : null;
 
   return (
     <div className="page">
@@ -329,8 +330,8 @@ export default function PlanEditor() {
       </button>
       <PageHead eyebrow={isNew ? t('Giáo án mới') : t('Giáo án #{id}', { id })} title={isNew ? t('Soạn giáo án') : localizeText(nameEn, name) || t('Giáo án')}
         desc={summary ? <span className="row" style={{ gap: 8 }}><StatusBadge map={planStatus} value={summary.status} /> {ownDesc ?? (summary.trainerId == null
-          ? tn('Hội viên tự soạn · {member}', { member: summary.memberName })
-          : tn('HLV {trainer} · {member}', { trainer: summary.trainerName ?? '—', member: summary.memberName }))}</span>
+          ? tn('Hội viên tự soạn · {member}', { member: displayPersonName(summary.memberName) })
+          : tn('HLV {trainer} · {member}', { trainer: displayPersonName(summary.trainerName) || '—', member: displayPersonName(summary.memberName) }))}</span>
           : self ? 'Chọn bài trong thư viện cho từng ngày trong tuần. Tạo xong, giáo án cũ (nếu có) tự chuyển sang lưu trữ; vào Lịch tập để tự xếp buổi.'
           : 'Chọn bài theo từng ngày trong tuần, đặt số hiệp, số lần, mức tạ và thời gian nghỉ.'}
         actions={<>

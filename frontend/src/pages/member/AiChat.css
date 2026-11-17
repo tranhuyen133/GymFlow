@@ -106,3 +106,130 @@
     max-width: 88%;
   }
 }
+
+/* ---------- Widget nổi ở góc (thu nhỏ / phóng to / neo cạnh) ---------- */
+.aiw {
+  position: fixed;
+  right: 22px;
+  bottom: 82px;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.aiw.docked {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  align-items: stretch;
+}
+
+.aiw-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--rail);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-float);
+}
+
+.aiw.corner .aiw-panel {
+  width: min(420px, calc(100vw - 24px));
+  height: min(600px, calc(100dvh - 120px));
+}
+
+.aiw.expanded .aiw-panel {
+  width: min(780px, calc(100vw - 24px));
+  height: min(80dvh, 760px);
+}
+
+.aiw.docked .aiw-panel {
+  width: min(480px, 100vw);
+  height: 100dvh;
+  border-radius: 0;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.aiw-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.aiw-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.aiw-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.aiw-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.aiw-body .ai-chat {
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+  gap: 10px;
+}
+
+.aiw-body .ai-chat-window {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
+.aiw-launcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  color: var(--on-primary);
+  background: var(--primary);
+  box-shadow: var(--shadow-float);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.aiw-launcher:hover {
+  background: var(--primary-press);
+}
+
+@media (max-width: 640px) {
+  .aiw {
+    right: 12px;
+    bottom: calc(var(--tabbar-h) + 10px);
+  }
+
+  .aiw.corner .aiw-panel,
+  .aiw.expanded .aiw-panel {
+    width: calc(100vw - 24px);
+    height: min(76dvh, calc(100dvh - var(--tabbar-h) - 92px));
+  }
+
+  .aiw.docked .aiw-panel {
+    width: 100vw;
+  }
+}

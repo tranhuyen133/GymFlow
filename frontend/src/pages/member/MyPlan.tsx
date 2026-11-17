@@ -13,6 +13,7 @@ import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, LoadingBlock, M
 import { t, tn } from '../../i18n';
 import { fmtDate, fmtDateTime, planStatus } from '../../lib/format';
 import { localizePlanGoal, localizePlanName, localizeText } from '../../lib/planText';
+import { displayPersonName } from '../../lib/names';
 import { errMsg, useAsync } from '../../lib/hooks';
 import Programs from '../shared/Programs';
 
@@ -72,7 +73,7 @@ export default function MyPlan() {
   ) : me.data?.trainerName ? (
     <Link to="/messages" className="btn btn-primary">
       <Icon name="message" size={16} />
-      <span>{t('Nhắn HLV {name}', { name: me.data.trainerName })}</span>
+      <span>{t('Nhắn HLV {name}', { name: displayPersonName(me.data.trainerName) })}</span>
     </Link>
   ) : undefined;
 
@@ -102,7 +103,7 @@ export default function MyPlan() {
                   n: data.summary.trainingDays,
                 })
               : t('HLV {trainer} · {from} → {to} · {n} buổi/tuần', {
-                  trainer: data.summary.trainerName ?? '—',
+                  trainer: displayPersonName(data.summary.trainerName) || '—',
                   from: fmtDate(data.summary.startDate),
                   to: fmtDate(data.summary.endDate),
                   n: data.summary.trainingDays,
@@ -158,7 +159,7 @@ export default function MyPlan() {
                   icon="clipboard"
                   title={t('Chưa có giáo án đang áp dụng')}
                   desc={t('HLV {name} sẽ soạn giáo án phù hợp với thể trạng và mục tiêu của bạn. Trong lúc chờ, bạn có thể tham khảo các lịch tập mẫu và thư viện bài tập.', {
-                    name: me.data?.trainerName ?? '',
+                    name: me.data?.trainerName ? displayPersonName(me.data.trainerName) : '',
                   })}
                   action={
                     <Button variant="primary" onClick={() => setTab('templates')}>

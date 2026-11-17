@@ -7,6 +7,8 @@ import { SubscriptionForm } from '../../components/SubscriptionForm';
 import { Button, Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, Select, Stat, StatusBadge, Table } from '../../components/ui';
 import { downloadCsv } from '../../lib/csv';
 import { fmtDate, fmtDateTime, fmtMoney, fmtMoneyShort, subState } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
+import { localizeText } from '../../lib/planText';
 import { useAsync, usePaged } from '../../lib/hooks';
 import { t } from '../../i18n';
 
@@ -24,10 +26,10 @@ export default function Subscriptions() {
 
   const list = useMemo(() => (data ?? []).filter((s) => (filter === 'ALL' || s.state === filter)
     && (!planId || String(s.planId) === planId)
-    && (!q || `${s.memberName} ${s.memberCode} ${s.planName}`.toLowerCase().includes(q.toLowerCase()))), [data, filter, planId, q]);
+    && (!q || `${s.memberName} ${s.memberCode} ${s.planName} ${s.planNameEn ?? ''}`.toLowerCase().includes(q.toLowerCase()))), [data, filter, planId, q]);
   // Danh sách gói lấy từ chính các đăng ký đã có, để lọc được cả gói đã ngừng bán
-  const planOptions = useMemo(() => [...new Map((data ?? []).map((s) => [s.planId, s.planName])).entries()]
-    .sort((a, b) => a[1].localeCompare(b[1], 'vi')), [data]);
+  const planOptions = useMemo(() => [...new Map((data ?? []).map((s) => [s.planId, localizeText(s.planNameEn, s.planName)])).entries()]
+    .sort((a, b) => a[1].localeCompare(b[1])), [data]);
   const paged = usePaged(list, 'subscriptions', `${filter}|${planId}|${q}`);
   const count = (st: SubscriptionState) => (data ?? []).filter((s) => s.state === st).length;
   // Tháng theo giờ máy (VN), không dùng toISOString vì đó là giờ UTC – sau 0h ngày 1 vẫn bị tính sang tháng trước
@@ -42,9 +44,9 @@ export default function Subscriptions() {
       <PageHead eyebrow="Kinh doanh" title="Đăng ký gói" desc="Đăng ký mới, gia hạn nối tiếp và huỷ gói. CSDL chặn mọi trường hợp hai gói chồng thời gian."
         actions={<>
           <Button icon="download" onClick={() => downloadCsv('dang-ky-goi', list, [
-            { header: t('Mã HV'), value: (s) => s.memberCode }, { header: t('Hội viên'), value: (s) => s.memberName }, { header: t('Gói'), value: (s) => t(s.planName) },
+            { header: t('Mã HV'), value: (s) => s.memberCode }, { header: t('Hội viên'), value: (s) => displayPersonName(s.memberName) }, { header: t('Gói'), value: (s) => localizeText(s.planNameEn, s.planName) },
             { header: t('Bắt đầu'), value: (s) => s.startDate }, { header: t('Kết thúc'), value: (s) => s.endDate }, { header: t('Số tiền'), value: (s) => s.pricePaid },
-            { header: t('Trạng thái'), value: (s) => subState[s.state][0] }, { header: t('Ngày thu'), value: (s) => s.createdAt.slice(0, 10) }, { header: t('Người tạo'), value: (s) => s.createdByName },
+            { header: t('Trạng thái'), value: (s) => subState[s.state][0] }, { header: t('Ngày thu'), value: (s) => s.createdAt.slice(0, 10) }, { header: t('Người tạo'), value: (s) => displayPersonName(s.createdByName) },
           ])}>Xuất CSV</Button>
           <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Đăng ký gói mới</Button>
         </>} />
@@ -78,11 +80,11 @@ export default function Subscriptions() {
                 {paged.items.map((s) => (
                   <tr key={s.id}>
                     <td className="clickable" onClick={() => navigate(`/members/${s.memberId}`)}><Person name={s.memberName} sub={s.memberCode} size="sm" /></td>
-                    <td>{t(s.planName)}</td>
+                    <td>{localizeText(s.planNameEn, s.planName)}</td>
                     <td className="small nowrap">{fmtDate(s.startDate)} → {fmtDate(s.endDate)}</td>
                     <td className="num">{fmtMoney(s.pricePaid)}</td>
                     <td><StatusBadge map={subState} value={s.state} />{(s.state === 'ACTIVE' || s.state === 'EXPIRING') && <div className="tiny faint mt-4">{t('còn {n} ngày', { n: s.daysLeft })}</div>}</td>
-                    <td className="tiny muted nowrap">{fmtDateTime(s.createdAt)}<div className="faint">{s.createdByName ?? ''}</div></td>
+                    <td className="tiny muted nowrap">{fmtDateTime(s.createdAt)}<div className="faint">{displayPersonName(s.createdByName)}</div></td>
                     <td className="actions">{!s.cancelled && s.state !== 'EXPIRED' && <Button size="sm" variant="ghost" icon="ban" aria-label="Huỷ" title="Huỷ gói" onClick={() => setCancelling(s)} />}</td>
                   </tr>
                 ))}

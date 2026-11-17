@@ -12,6 +12,8 @@ import { initials, PickCard } from '../../components/PaymentQr';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, Person, SearchInput, Segmented, Stat, StatusBadge, Table, Textarea } from '../../components/ui';
 import { durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
+import { localizeText } from '../../lib/planText';
 import { errMsg, useAsync, usePaged } from '../../lib/hooks';
 import { t, tn } from '../../i18n';
 
@@ -71,10 +73,10 @@ export default function PackageRequests() {
                   <tr key={r.id}>
                     <td><Link to={`/members/${r.memberId}`}><Person name={r.memberName} sub={[r.memberCode, r.memberPhone].filter(Boolean).join(' · ')} size="sm" /></Link></td>
                     <td>
-                      <b>{t(r.planName)}</b>
+                      <b>{localizeText(r.planNameEn, r.planName)}</b>
                       <div className="tiny faint">{durationLabel(r.durationDays)}</div>
                       {r.status === 'PENDING' && !r.planStillOnSale && <Badge tone="red">{t('Gói đã ngừng bán')}</Badge>}
-                      {r.trainerName ? <div className="tiny">{t('HLV {name}', { name: r.trainerName })}</div>
+                      {r.trainerName ? <div className="tiny">{t('HLV {name}', { name: displayPersonName(r.trainerName) })}</div>
                         : r.includesTrainer && r.status === 'PENDING' && <Badge tone="amber">{t('Chưa chọn HLV')}</Badge>}
                       {r.note && <div className="tiny faint">{t('Ghi chú: {note}', { note: r.note })}</div>}
                     </td>
@@ -92,7 +94,7 @@ export default function PackageRequests() {
                     <td className="tiny muted nowrap">{fmtDateTime(r.createdAt)}</td>
                     <td>
                       <StatusBadge map={packageRequestStatus} value={r.status} />
-                      {r.decidedAt && r.status !== 'CANCELLED' && <div className="tiny faint mt-4">{r.decidedByName ?? ''} · {fmtDateTime(r.decidedAt)}</div>}
+                      {r.decidedAt && r.status !== 'CANCELLED' && <div className="tiny faint mt-4">{r.decidedByName ? displayPersonName(r.decidedByName) : ''} · {fmtDateTime(r.decidedAt)}</div>}
                       {r.decisionNote && <div className="tiny muted">{r.decisionNote}</div>}
                     </td>
                     <td className="actions nowrap">
@@ -139,7 +141,7 @@ function ApproveModal({ req, onClose, onDone }: { req: PackageRequest; onClose: 
     setBusy(true); setServerError('');
     try {
       await api.put(`/package-requests/${req.id}/approve`, { note: note.trim() || null, trainerId: pt ? Number(trainerId) : null });
-      toast.success(t('Đã duyệt và kích hoạt gói cho {name}', { name: req.memberName }));
+      toast.success(t('Đã duyệt và kích hoạt gói cho {name}', { name: displayPersonName(req.memberName) }));
       onDone();
     } catch (e) { setServerError(errMsg(e)); } finally { setBusy(false); }
   };
@@ -151,7 +153,7 @@ function ApproveModal({ req, onClose, onDone }: { req: PackageRequest; onClose: 
     </>}>
       <div className="stack">
         <div className="plan-summary">
-          <div><span className="tiny muted">{t('Hội viên')}</span><b>{req.memberName}</b><span className="tiny faint">{req.memberCode}</span></div>
+          <div><span className="tiny muted">{t('Hội viên')}</span><b>{displayPersonName(req.memberName)}</b><span className="tiny faint">{req.memberCode}</span></div>
           <div><span className="tiny muted">{t('Gói')}</span><b>{t(req.planName)}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
           <div><span className="tiny muted">{transfer ? t('Số tiền phải nhận') : t('Số tiền cần thu')}</span><b className="num">{fmtMoney(req.price)}</b>
             <span className="tiny faint">{transfer ? t('Chuyển khoản · {code}', { code: req.paymentCode ?? '' }) : t('Tại quầy')}</span></div>
@@ -170,12 +172,12 @@ function ApproveModal({ req, onClose, onDone }: { req: PackageRequest; onClose: 
         </p>
         {pt && (
           <Field label={t('Huấn luyện viên phụ trách')} required error={trainerError ?? (chosenInactive ? t('HLV này đã nghỉ, chọn HLV khác') : undefined)}
-            hint={req.trainerName ? t('Hội viên chọn {name}. Duyệt xong HLV này phụ trách giáo án và lịch tập.', { name: req.trainerName }) : t('Duyệt xong HLV này phụ trách giáo án và lịch tập.')}>
+            hint={req.trainerName ? t('Hội viên chọn {name}. Duyệt xong HLV này phụ trách giáo án và lịch tập.', { name: displayPersonName(req.trainerName) }) : t('Duyệt xong HLV này phụ trách giáo án và lịch tập.')}>
             {trainers.loading ? <LoadingBlock rows={2} /> : (
               <div className="pick-grid" role="radiogroup" aria-label={t('Huấn luyện viên phụ trách')}>
                 {activeTrainers.map((tr) => (
                   <PickCard key={tr.id} on={trainerId === String(tr.id)} onClick={() => setTrainerId(String(tr.id))} avatar={initials(tr.fullName)}
-                    title={tr.fullName}
+                    title={displayPersonName(tr.fullName)}
                     sub={[tr.id === req.trainerId ? t('hội viên chọn') : null, t('{n} hội viên', { n: tr.memberCount })].filter(Boolean).join(' · ')} />
                 ))}
               </div>
@@ -212,7 +214,7 @@ function RejectModal({ req, onClose, onDone }: { req: PackageRequest; onClose: (
     setBusy(true); setServerError('');
     try {
       await api.put(`/package-requests/${req.id}/reject`, { reason: reason.trim() });
-      toast.success(t('Đã từ chối đơn của {name}', { name: req.memberName }));
+      toast.success(t('Đã từ chối đơn của {name}', { name: displayPersonName(req.memberName) }));
       onDone();
     } catch (e) { setServerError(errMsg(e)); } finally { setBusy(false); }
   };
@@ -223,7 +225,7 @@ function RejectModal({ req, onClose, onDone }: { req: PackageRequest; onClose: (
       <Button variant="danger" icon="x" loading={busy} disabled={touched && !!error} onClick={submit}>{t('Từ chối đơn')}</Button>
     </>}>
       <div className="stack">
-        <p className="small" style={{ margin: 0 }}>{tn('Đơn {plan} của {name}. Hội viên sẽ thấy lý do trong mục Gói tập của tôi.', { plan: <b>{t(req.planName)}</b>, name: <b>{req.memberName}</b> })}</p>
+        <p className="small" style={{ margin: 0 }}>{tn('Đơn {plan} của {name}. Hội viên sẽ thấy lý do trong mục Gói tập của tôi.', { plan: <b>{t(req.planName)}</b>, name: <b>{displayPersonName(req.memberName)}</b> })}</p>
         <Field htmlFor="reject-reason" label={t('Lý do')} required error={touched ? error : undefined} hint={t('{n}/255', { n: reason.length })}>
           <Textarea id="reject-reason" maxLength={255} value={reason} invalid={touched && !!error} placeholder={t('VD: chưa thanh toán sau 3 ngày, vui lòng gửi lại đơn khi đến quầy')}
             onChange={(e) => { setReason(e.target.value); setTouched(true); }} onBlur={() => setTouched(true)} />

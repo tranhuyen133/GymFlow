@@ -156,7 +156,8 @@ export default function ExerciseDetail() {
           {gif ? (
             <>
               <img src={exerciseImage(ex.imageKey!, 1)} alt={localized.title} width={180} height={180} />
-              <a className="exd-credit" href="https://gymvisual.com/" target="_blank" rel="noreferrer">{GYM_VISUAL_CREDIT}</a>
+              <a className="exd-credit" href="https://gymvisual.com/" target="_blank" rel="noreferrer"
+                title={t('Ảnh động minh hoạ 180×180 từ exercises-dataset')}>{GYM_VISUAL_CREDIT}</a>
             </>
           ) : ex.imageKey ? (
             <>

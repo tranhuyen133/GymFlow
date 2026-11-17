@@ -7,6 +7,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Avatar, Button, Empty, ErrorState, LoadingBlock, SearchInput } from '../../components/ui';
 import { fmtTime, relativeTime } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
 import { errMsg } from '../../lib/hooks';
 import { t } from '../../i18n';
 import './messages.css';
@@ -321,7 +322,7 @@ export default function Messages() {
                     <Avatar name={otherName} src={otherAvatar} />
                     <div className="conversation-meta">
                       <div className="conversation-top">
-                        <span className="conversation-name ellipsis">{otherName}</span>
+                        <span className="conversation-name ellipsis">{displayPersonName(otherName)}</span>
                         {timeStr && <span className="conversation-time">{timeStr}</span>}
                       </div>
                       <div className="row between" style={{ alignItems: 'center', gap: 6 }}>
@@ -394,7 +395,7 @@ export default function Messages() {
                   />
                   <div>
                     <b style={{ fontSize: 15 }}>
-                      {user.role === 'MEMBER' ? activeConv.trainerName : activeConv.memberName}
+                      {user.role === 'MEMBER' ? displayPersonName(activeConv.trainerName) : displayPersonName(activeConv.memberName)}
                     </b>
                     <div className="row" style={{ gap: 6, alignItems: 'center' }}>
                       <span className="tiny faint">

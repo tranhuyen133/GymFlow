@@ -116,7 +116,9 @@ public class Mappers {
         return new MemberServiceEntitlementResponse(
                 e.getId(), m.getId(), m.getUser().getFullName(), m.getCode(),
                 s.getId(), e.getServiceNameSnapshot(), e.getSource(),
-                sub == null ? null : sub.getId(), sub == null ? null : sub.getPlan().getName(),
+                sub == null ? null : sub.getId(),
+                sub == null ? null : sub.getPlan().getName(),
+                sub == null ? null : sub.getPlan().getNameEn(),
                 e.getPackageRequest() == null ? null : e.getPackageRequest().getId(),
                 e.getGrantedQty(), e.getUsedQty(), e.getRemainingQty(),
                 e.getValidFrom(), e.getValidUntil(), e.getConditionsSnapshot(),
@@ -165,9 +167,10 @@ public class Mappers {
         }
         // V24: tên gói theo ảnh chụp lúc bán; gói bán trước V24 chưa có ảnh chụp thì dùng tên gói hiện tại.
         String planName = s.getPlanNameSnapshot() != null ? s.getPlanNameSnapshot() : s.getPlan().getName();
+        String planNameEn = s.getPlan().getNameEn();
         Trainer trainer = m.getTrainer();
         return new SubscriptionResponse(s.getId(), m.getId(), m.getUser().getFullName(), m.getCode(),
-                s.getPlan().getId(), planName, s.getStartDate(), s.getEndDate(), s.getPricePaid(),
+                s.getPlan().getId(), planName, planNameEn, s.getStartDate(), s.getEndDate(), s.getPricePaid(),
                 s.stateOn(today), s.daysLeft(today), s.isCancelled(), s.getCancelledAt(), s.getNote(),
                 s.getCreatedAt(), s.getCreatedBy() == null ? null : s.getCreatedBy().getFullName(),
                 ptTotal, ptUsed, ptRemaining, s.getPtValidUntil(),

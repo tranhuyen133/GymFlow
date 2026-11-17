@@ -96,7 +96,7 @@ export interface MembershipPlan {
   ptCancelNoticeHours?: number | null;
 }
 export interface Subscription {
-  id: number; memberId: number; memberName: string; memberCode: string; planId: number; planName: string;
+  id: number; memberId: number; memberName: string; memberCode: string; planId: number; planName: string; planNameEn?: string | null;
   startDate: string; endDate: string; pricePaid: number; state: SubscriptionState; daysLeft: number;
   cancelled: boolean; cancelledAt: string | null; note: string | null; createdAt: string; createdByName: string | null;
   ptSessionsTotal?: number | null;
@@ -114,7 +114,7 @@ export interface Subscription {
 /** V24 · GET /subscriptions/pt-overview. ptSessionsRemaining = null khi gói chưa khai báo số buổi. */
 export interface PtOverviewRow {
   subscriptionId: number; memberId: number; memberCode: string; memberName: string;
-  trainerId: number | null; trainerName: string | null; planName: string;
+  trainerId: number | null; trainerName: string | null; planName: string; planNameEn?: string | null;
   startDate: string; endDate: string; ptValidUntil: string | null; state: SubscriptionState;
   ptSessionsTotal: number | null; ptSessionsUsed: number; ptSessionsScheduled: number;
   ptSessionsRemaining: number | null; ptSessionMinutes: number | null;
@@ -137,7 +137,7 @@ export type PackageRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCEL
 export type PaymentMethod = 'COUNTER' | 'BANK_TRANSFER';
 export interface PackageRequest {
   id: number; memberId: number; memberName: string; memberCode: string; memberPhone: string | null;
-  planId: number; planName: string; price: number; durationDays: number; planStillOnSale: boolean;
+  planId: number; planName: string; planNameEn?: string | null; price: number; durationDays: number; planStillOnSale: boolean;
   desiredStartDate: string | null; note: string | null; status: PackageRequestStatus; decisionNote: string | null;
   decidedByName: string | null; decidedAt: string | null; subscriptionId: number | null; createdAt: string;
   includesTrainer: boolean; trainerId: number | null; trainerName: string | null;
@@ -193,6 +193,7 @@ export interface MemberServiceEntitlement {
   source: EntitlementSource;
   subscriptionId: number | null;
   planName: string | null;
+  planNameEn?: string | null;
   packageRequestId: number | null;
   grantedQty: number;
   usedQty: number;

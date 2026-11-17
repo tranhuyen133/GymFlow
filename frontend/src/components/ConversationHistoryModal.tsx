@@ -4,6 +4,7 @@ import type { ChatMessageItem } from '../api/types';
 import { Avatar, Button, Empty, ErrorState, LoadingBlock, Modal } from './ui';
 import { fmtTime } from '../lib/format';
 import { errMsg } from '../lib/hooks';
+import { displayPersonName } from '../lib/names';
 import { t } from '../i18n';
 import '../pages/shared/messages.css';
 
@@ -79,9 +80,9 @@ export function ConversationHistoryModal({
       title={
         <div className="row" style={{ alignItems: 'center', gap: 10 }}>
           <span>{t('Hội thoại:')}</span>
-          <b style={{ color: 'var(--ink)' }}>{memberName}</b>
+          <b style={{ color: 'var(--ink)' }}>{displayPersonName(memberName)}</b>
           <span className="tiny faint">↔</span>
-          <b style={{ color: 'var(--primary)' }}>{trainerName}</b>
+          <b style={{ color: 'var(--primary)' }}>{displayPersonName(trainerName)}</b>
         </div>
       }
       size="wide"

@@ -7,6 +7,8 @@ import { Badge, Button, Card, Empty, ErrorState, LoadingBlock, Modal, PageHead, 
 import { t } from '../../i18n';
 import { fmtDate, fmtDateTime, todayIso } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
+import { displayPersonName } from '../../lib/names';
+import { localizeText } from '../../lib/planText';
 
 export default function MyEntitlements({ embedded }: { embedded?: boolean } = {}) {
   const { data, error, loading, reload } = useAsync(() => api.get<MemberServiceEntitlement[]>('/me/entitlements'), []);
@@ -100,7 +102,7 @@ export default function MyEntitlements({ embedded }: { embedded?: boolean } = {}
                           {e.source === 'PLAN' && (
                             <span className="chip on">
                               <Icon name="ticket" size={12} />
-                              {t('Tặng kèm gói {plan}', { plan: e.planName ? t(e.planName) : '' })}
+                              {t('Tặng kèm gói {plan}', { plan: e.planName ? localizeText(e.planNameEn, e.planName) : '' })}
                             </span>
                           )}
                           {e.source === 'PURCHASE' && (
@@ -234,7 +236,7 @@ function EntitlementUsagesModal({
                 {usages.map((u) => (
                   <tr key={u.id}>
                     <td className="small nowrap">{fmtDateTime(u.usedAt)}</td>
-                    <td>{u.confirmedByName || '—'}</td>
+                    <td>{u.confirmedByName ? displayPersonName(u.confirmedByName) : '—'}</td>
                     <td className="small muted">{u.note || '—'}</td>
                   </tr>
                 ))}

@@ -6,6 +6,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Avatar, Badge, Button, Card, Empty, ErrorState, LoadingBlock, PageHead } from '../../components/ui';
 import { DAYS } from '../../lib/format';
+import { displayPersonName } from '../../lib/names';
 import { errMsg, useAsync } from '../../lib/hooks';
 import { t } from '../../i18n';
 
@@ -68,7 +69,7 @@ export default function CoachDetail() {
 
       <PageHead
         eyebrow="Huấn luyện viên"
-        title={coach.fullName}
+        title={displayPersonName(coach.fullName)}
         desc={coach.specialty ?? t('Huấn luyện viên thể hình chuyên nghiệp')}
         actions={
           <div className="row" style={{ gap: 8 }}>
@@ -97,7 +98,7 @@ export default function CoachDetail() {
             <div className="row" style={{ gap: 20, alignItems: 'center' }}>
               <Avatar name={coach.fullName} src={coach.avatar} size="xl" />
               <div style={{ minWidth: 0 }}>
-                <h2 style={{ margin: '0 0 6px 0', fontSize: 24 }}>{coach.fullName}</h2>
+                <h2 style={{ margin: '0 0 6px 0', fontSize: 24 }}>{displayPersonName(coach.fullName)}</h2>
                 <div className="row wrap" style={{ gap: 8, alignItems: 'center' }}>
                   <Badge tone="green">{t('{n} năm kinh nghiệm', { n: coach.experienceYears })}</Badge>
                   {coach.specialty && <Badge tone="blue">{coach.specialty}</Badge>}

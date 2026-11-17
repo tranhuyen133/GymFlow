@@ -2285,4 +2285,13 @@ export const EN_EXTRA: Record<string, string> = {
   'Hôm nay mình tập gì?': 'What am I training today?',
   'Gói tập của mình còn bao lâu?': 'How long is left on my package?',
   'Tuần này mình vắng mấy buổi?': 'How many sessions did I miss this week?',
+  'Trả lời từ dữ liệu của bạn': 'Answers from your own data',
+  'Mở trợ lý AI': 'Open AI assistant',
+  'Neo cạnh phải': 'Dock to the right',
+  'Bỏ neo cạnh': 'Undock',
+  'Mở trang đầy đủ': 'Open full page',
+  'Chỉ chọn trong vòng {n} ngày tới': 'Choose within the next {n} days',
+  '(giảm {v})': '({v} off)',
+  'Huỷ gói': 'Cancel package',
+  'Ảnh động minh hoạ 180×180 từ exercises-dataset': '180×180 animated demo from exercises-dataset',
 };

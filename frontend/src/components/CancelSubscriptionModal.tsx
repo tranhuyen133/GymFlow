@@ -5,6 +5,8 @@ import { useToast } from './Toast';
 import { Alert, Confirm, Textarea } from './ui';
 import { fmtDate } from '../lib/format';
 import { errMsg } from '../lib/hooks';
+import { displayPersonName } from '../lib/names';
+import { localizeText } from '../lib/planText';
 import { t, tn } from '../i18n';
 
 export function CancelSubscriptionModal({ sub, onClose, onDone }: { sub: Subscription; onClose: () => void; onDone: () => void }) {
@@ -15,14 +17,14 @@ export function CancelSubscriptionModal({ sub, onClose, onDone }: { sub: Subscri
   return (
     <Confirm
       danger
-      title={t('Huỷ gói {name}?', { name: t(sub.planName) })}
-      confirmText="Huỷ gói"
+      title={t('Huỷ gói {name}?', { name: localizeText(sub.planNameEn, sub.planName) })}
+      confirmText={t('Huỷ gói')}
       onClose={onClose}
       message={
         <div className="stack">
           <span>
             {tn('Gói của {name} ({from} → {to}) sẽ hết hiệu lực ngay. Thao tác được ghi vào nhật ký.', {
-              name: <b>{sub.memberName}</b>,
+              name: <b>{displayPersonName(sub.memberName)}</b>,
               from: fmtDate(sub.startDate),
               to: fmtDate(sub.endDate),
             })}
@@ -34,7 +36,7 @@ export function CancelSubscriptionModal({ sub, onClose, onDone }: { sub: Subscri
               setReason(e.target.value);
               setError(null);
             }}
-            placeholder="Lý do huỷ (bắt buộc)"
+            placeholder={t('Lý do huỷ (bắt buộc)')}
           />
           {error && <Alert kind="error">{error}</Alert>}
         </div>

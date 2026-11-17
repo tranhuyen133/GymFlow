@@ -20,6 +20,7 @@ import { Icon } from '../../components/Icon';
 import { PaymentInfo, PickCard } from '../../components/PaymentQr';
 import { benefitsOf, pickBest, PlanCard, savings, unitPrice } from '../../components/PlanCard';
 import { useToast } from '../../components/Toast';
+import { localizeText } from '../../lib/planText';
 import {
   Alert,
   Badge,
@@ -125,7 +126,7 @@ export default function PackagesCatalog({ embedded }: { embedded?: boolean } = {
         <div style={{ marginBottom: 16 }}>
           <Alert kind="info">
             {tn('Bạn đang có đơn đăng ký gói {plan} chờ xử lý. Để chọn gói khác, vui lòng vào trang Gói của tôi để huỷ đơn hiện tại.', {
-              plan: <b>{t(pending.planName)}</b>,
+              plan: <b>{localizeText(pending.planNameEn, pending.planName)}</b>,
             })}
           </Alert>
         </div>
