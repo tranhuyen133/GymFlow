@@ -75,6 +75,7 @@ export type PlanType = 'GYM' | 'GYM_PT';
 export interface PlanServiceGrant {
   serviceId: number;
   serviceName?: string;
+  serviceNameEn?: string | null;
   quantity: number;
   validDays: number;
   conditions?: string | null;
@@ -92,6 +93,7 @@ export interface MembershipPlan {
   /** V24 · null = chưa khai báo */
   code?: string | null;
   usageTerms?: string | null;
+  usageTermsEn?: string | null;
   ptSessionMinutes?: number | null;
   ptCancelNoticeHours?: number | null;
 }
@@ -108,7 +110,9 @@ export interface Subscription {
   ptSessionMinutes?: number | null;
   ptCancelNoticeHours?: number | null;
   benefits?: string | null;
+  benefitsEn?: string | null;
   usageTerms?: string | null;
+  usageTermsEn?: string | null;
   trainerName?: string | null;
 }
 /** V24 · GET /subscriptions/pt-overview. ptSessionsRemaining = null khi gói chưa khai báo số buổi. */
@@ -231,6 +235,7 @@ export interface MemberServiceEntitlement {
   memberCode: string;
   serviceId: number;
   serviceName: string;
+  serviceNameEn?: string | null;
   source: EntitlementSource;
   subscriptionId: number | null;
   planName: string | null;
@@ -251,6 +256,7 @@ export interface MemberServiceEntitlement {
 export interface PromotionGrant {
   serviceId: number;
   serviceName?: string;
+  serviceNameEn?: string | null;
   quantity: number;
   validDays: number;
   conditions?: string | null;
@@ -306,6 +312,7 @@ export interface ServiceRequest {
   memberPhone: string | null;
   serviceId: number;
   serviceName: string;
+  serviceNameEn?: string | null;
   quantity: number;
   unitPrice: number;
   totalPrice: number;

@@ -218,13 +218,13 @@ export default function PackagesCatalog({ embedded }: { embedded?: boolean } = {
                     {s.openingNote && (
                       <div className="tiny muted row" style={{ gap: 4, alignItems: 'center' }}>
                         <Icon name="clock" size={13} />
-                        <span>{s.openingNote}</span>
+                        <span>{localizeText(s.openingNoteEn, s.openingNote)}</span>
                       </div>
                     )}
 
                     {s.description && (
                       <p className="small muted" style={{ margin: 0, lineHeight: 1.5, flex: 1 }}>
-                        {s.description}
+                        {localizeText(s.descriptionEn, s.description)}
                       </p>
                     )}
 
@@ -477,7 +477,7 @@ function PlanDetailModal({
           </div>
         ) : null}
 
-        {plan.description && <p style={{ margin: 0, lineHeight: 1.6 }}>{t(plan.description)}</p>}
+        {plan.description && <p style={{ margin: 0, lineHeight: 1.6 }}>{localizeText(plan.descriptionEn, plan.description)}</p>}
 
         {plan.serviceGrants && plan.serviceGrants.length > 0 && (
           <Card title={t('Quà tặng dịch vụ kèm theo')} icon="sparkle" flush>
@@ -488,7 +488,7 @@ function PlanDetailModal({
                     <Icon name="sparkle" size={12} />
                   </span>
                   <span>
-                    <b>{t('Tặng {q} lượt {s}', { q: g.quantity, s: g.serviceName || t('Dịch vụ') })}</b> · {t('hạn {d} ngày', { d: g.validDays })}
+                    <b>{t('Tặng {q} lượt {s}', { q: g.quantity, s: localizeText(g.serviceNameEn, g.serviceName) || t('Dịch vụ') })}</b> · {t('hạn {d} ngày', { d: g.validDays })}
                     {g.conditions ? ` (${g.conditions})` : ''}
                   </span>
                 </li>
@@ -686,7 +686,7 @@ function PlanComparisonModal({
                     <ul style={{ margin: 0, paddingLeft: 14, fontSize: 12, lineHeight: 1.5 }}>
                       {grants.map((g, idx) => (
                         <li key={idx}>
-                          <b>{t('{q} lượt {s}', { q: g.quantity, s: g.serviceName || t('Dịch vụ') })}</b>
+                          <b>{t('{q} lượt {s}', { q: g.quantity, s: localizeText(g.serviceNameEn, g.serviceName) || t('Dịch vụ') })}</b>
                           <div className="tiny faint">{t('Hạn {d} ngày', { d: g.validDays })}</div>
                         </li>
                       ))}
@@ -923,7 +923,7 @@ function PayServiceModal({
         <div className="plan-summary">
           <div>
             <span className="tiny muted">{t('Dịch vụ')}</span>
-            <b>{req.serviceName}</b>
+            <b>{localizeText(req.serviceNameEn, req.serviceName)}</b>
           </div>
           <div>
             <span className="tiny muted">{t('Số lượng')}</span>

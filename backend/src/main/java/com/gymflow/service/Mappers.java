@@ -89,12 +89,14 @@ public class Mappers {
         return new PlanResponse(p.getId(), p.getName(), p.getDescription(), p.getPrice(), p.getDurationDays(),
                 p.getBenefits(), p.isActive(), subscriptionRepository.countCurrentByPlan(p.getId(), today()),
                 p.isIncludesTrainer(), p.getPlanType(), p.getPtSessions(), p.getPtValidDays(), grants,
-                p.getCode(), p.getUsageTerms(), p.getPtSessionMinutes(), p.getPtCancelNoticeHours(),
+                p.getCode(), p.getUsageTerms(), p.getUsageTermsEn(),
+                p.getPtSessionMinutes(), p.getPtCancelNoticeHours(),
                 p.getNameEn(), p.getDescriptionEn(), p.getBenefitsEn());
     }
 
     public PlanServiceGrantDto planServiceGrant(PlanServiceGrant g) {
-        return new PlanServiceGrantDto(g.getService().getId(), g.getService().getName(), g.getQuantity(), g.getValidDays(), g.getConditions());
+        return new PlanServiceGrantDto(g.getService().getId(), g.getService().getName(), g.getService().getNameEn(),
+                g.getQuantity(), g.getValidDays(), g.getConditions());
     }
 
     // ---------- Services & Entitlements ----------
@@ -117,7 +119,7 @@ public class Mappers {
         List<ServiceUsageResponse> list = usages == null ? List.of() : usages.stream().map(this::serviceUsage).toList();
         return new MemberServiceEntitlementResponse(
                 e.getId(), m.getId(), m.getUser().getFullName(), m.getCode(),
-                s.getId(), e.getServiceNameSnapshot(), e.getSource(),
+                s.getId(), e.getServiceNameSnapshot(), s.getNameEn(), e.getSource(),
                 sub == null ? null : sub.getId(),
                 sub == null ? null : sub.getPlan().getName(),
                 sub == null ? null : sub.getPlan().getNameEn(),
@@ -130,8 +132,8 @@ public class Mappers {
 
     // ---------- Promotion ----------
     public PromotionGrantDto promotionGrant(PromotionGrant g) {
-        return new PromotionGrantDto(g.getService().getId(), g.getService().getName(), g.getQuantity(),
-                g.getValidDays(), g.getConditions(), g.getConditionsEn());
+        return new PromotionGrantDto(g.getService().getId(), g.getService().getName(), g.getService().getNameEn(),
+                g.getQuantity(), g.getValidDays(), g.getConditions(), g.getConditionsEn());
     }
 
     public PromotionResponse promotion(Promotion p) {
@@ -151,7 +153,8 @@ public class Mappers {
         User dec = r.getDecidedBy();
         return new ServiceRequestResponse(
                 r.getId(), m.getId(), m.getUser().getFullName(), m.getCode(), m.getUser().getPhone(),
-                r.getService().getId(), r.getServiceName(), r.getQuantity(), r.getUnitPrice(), r.getTotalPrice(),
+                r.getService().getId(), r.getServiceName(), r.getService().getNameEn(),
+                r.getQuantity(), r.getUnitPrice(), r.getTotalPrice(),
                 r.getPaymentMethod(), r.getPaymentCode(), r.getMemberPaidAt(), r.getMemberNote(),
                 r.getStatus(), r.getDecisionNote(), dec == null ? null : dec.getFullName(),
                 r.getDecidedAt(), r.getEntitlement() == null ? null : r.getEntitlement().getId(), r.getCreatedAt()
@@ -180,7 +183,8 @@ public class Mappers {
                 s.getCreatedAt(), s.getCreatedBy() == null ? null : s.getCreatedBy().getFullName(),
                 ptTotal, ptUsed, ptRemaining, s.getPtValidUntil(),
                 s.getPlan().getPlanType(), s.getPtSessionMinutesSnapshot(), s.getPtCancelNoticeHoursSnapshot(),
-                s.getBenefitsSnapshot(), s.getUsageTermsSnapshot(),
+                s.getBenefitsSnapshot(), s.getPlan().getBenefitsEn(),
+                s.getUsageTermsSnapshot(), s.getPlan().getUsageTermsEn(),
                 trainer == null ? null : trainer.getUser().getFullName());
     }
 

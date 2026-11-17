@@ -96,7 +96,7 @@ export default function MyEntitlements({ embedded }: { embedded?: boolean } = {}
                             fontSize: 18,
                           }}
                         >
-                          {t(e.serviceName)}
+                          {localizeText(e.serviceNameEn, e.serviceName)}
                         </h3>
                         <div className="row row-wrap mt-4" style={{ gap: 6 }}>
                           {e.source === 'PLAN' && (
@@ -203,7 +203,7 @@ function EntitlementUsagesModal({
 
   return (
     <Modal
-      title={t('Lịch sử sử dụng: {service}', { service: entitlement.serviceName })}
+      title={t('Lịch sử sử dụng: {service}', { service: localizeText(entitlement.serviceNameEn, entitlement.serviceName) })}
       onClose={onClose}
       footer={
         <Button variant="ghost" onClick={onClose}>
@@ -213,7 +213,7 @@ function EntitlementUsagesModal({
     >
       <div className="stack" style={{ gap: 12 }}>
         <div className="small muted">
-          {t('Quyền lợi')} <b>{entitlement.serviceName}</b> · {t('Đã dùng {used}/{total} lượt', { used: entitlement.usedQty, total: entitlement.grantedQty })}
+          {t('Quyền lợi')} <b>{localizeText(entitlement.serviceNameEn, entitlement.serviceName)}</b> · {t('Đã dùng {used}/{total} lượt', { used: entitlement.usedQty, total: entitlement.grantedQty })}
         </div>
 
         {usages.length === 0 ? (

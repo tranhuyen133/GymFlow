@@ -256,6 +256,7 @@ public final class Dtos {
     public record PlanServiceGrantDto(
             @NotNull(message = "Chọn dịch vụ") Long serviceId,
             String serviceName,
+            String serviceNameEn,
             @Min(value = 1, message = "Số lượt tối thiểu là 1") int quantity,
             @Min(value = 1, message = "Số ngày hiệu lực tối thiểu là 1") int validDays,
             @Size(max = 255) String conditions) {
@@ -276,6 +277,7 @@ public final class Dtos {
             /** V24 · mã gói, để trống được. */
             @Size(max = 30, message = "Mã gói tối đa 30 ký tự") @Pattern(regexp = "^$|^[A-Za-z0-9_-]+$", message = "Mã gói chỉ gồm chữ không dấu, số, - và _") String code,
             @Size(max = 1000, message = "Điều kiện sử dụng tối đa 1000 ký tự") String usageTerms,
+            @Size(max = 1000, message = "Điều kiện sử dụng tiếng Anh tối đa 1000 ký tự") String usageTermsEn,
             @Min(value = 15, message = "Buổi PT tối thiểu 15 phút") @Max(value = 240, message = "Buổi PT tối đa 240 phút") Integer ptSessionMinutes,
             @Min(value = 0, message = "Số giờ báo trước không âm") @Max(value = 168, message = "Báo trước tối đa 168 giờ (7 ngày)") Integer ptCancelNoticeHours,
             @Size(max = 100) String nameEn,
@@ -286,7 +288,7 @@ public final class Dtos {
                            boolean includesTrainer, PlanType planType, Integer ptSessions, Integer ptValidDays,
                            List<PlanServiceGrantDto> serviceGrants) {
             this(name, description, price, durationDays, benefits, includesTrainer, planType, ptSessions, ptValidDays,
-                    serviceGrants, null, null, null, null, null, null, null);
+                    serviceGrants, null, null, null, null, null, null, null, null);
         }
 
         /** Giữ chữ ký V24. */
@@ -295,7 +297,7 @@ public final class Dtos {
                            List<PlanServiceGrantDto> serviceGrants, String code, String usageTerms,
                            Integer ptSessionMinutes, Integer ptCancelNoticeHours) {
             this(name, description, price, durationDays, benefits, includesTrainer, planType, ptSessions, ptValidDays,
-                    serviceGrants, code, usageTerms, ptSessionMinutes, ptCancelNoticeHours, null, null, null);
+                    serviceGrants, code, usageTerms, null, ptSessionMinutes, ptCancelNoticeHours, null, null, null);
         }
 
         public PlanRequest(String name, String description, Long price, Integer durationDays, String benefits) {
@@ -316,7 +318,8 @@ public final class Dtos {
                                String benefits, boolean active, long currentSubscriptions, boolean includesTrainer,
                                PlanType planType, Integer ptSessions, Integer ptValidDays,
                                List<PlanServiceGrantDto> serviceGrants,
-                               String code, String usageTerms, Integer ptSessionMinutes, Integer ptCancelNoticeHours,
+                               String code, String usageTerms, String usageTermsEn,
+                               Integer ptSessionMinutes, Integer ptCancelNoticeHours,
                                String nameEn, String descriptionEn, String benefitsEn) {
         /** Giữ chữ ký trước V24. */
         public PlanResponse(Long id, String name, String description, Long price, Integer durationDays,
@@ -324,7 +327,7 @@ public final class Dtos {
                             PlanType planType, Integer ptSessions, Integer ptValidDays,
                             List<PlanServiceGrantDto> serviceGrants) {
             this(id, name, description, price, durationDays, benefits, active, currentSubscriptions, includesTrainer,
-                    planType, ptSessions, ptValidDays, serviceGrants, null, null, null, null, null, null, null);
+                    planType, ptSessions, ptValidDays, serviceGrants, null, null, null, null, null, null, null, null);
         }
 
         /** Giữ chữ ký V24. */
@@ -334,7 +337,7 @@ public final class Dtos {
                             List<PlanServiceGrantDto> serviceGrants,
                             String code, String usageTerms, Integer ptSessionMinutes, Integer ptCancelNoticeHours) {
             this(id, name, description, price, durationDays, benefits, active, currentSubscriptions, includesTrainer,
-                    planType, ptSessions, ptValidDays, serviceGrants, code, usageTerms, ptSessionMinutes,
+                    planType, ptSessions, ptValidDays, serviceGrants, code, usageTerms, null, ptSessionMinutes,
                     ptCancelNoticeHours, null, null, null);
         }
     }
@@ -374,7 +377,8 @@ public final class Dtos {
                                        LocalDateTime cancelledAt, String note, LocalDateTime createdAt, String createdByName,
                                        Integer ptSessionsTotal, Integer ptSessionsUsed, Integer ptSessionsRemaining, LocalDate ptValidUntil,
                                        PlanType planType, Integer ptSessionMinutes, Integer ptCancelNoticeHours,
-                                       String benefits, String usageTerms, String trainerName) {
+                                       String benefits, String benefitsEn, String usageTerms, String usageTermsEn,
+                                       String trainerName) {
         /** Giữ chữ ký trước V24. */
         public SubscriptionResponse(Long id, Long memberId, String memberName, String memberCode,
                                     Long planId, String planName, LocalDate startDate, LocalDate endDate,
@@ -383,7 +387,7 @@ public final class Dtos {
                                     Integer ptSessionsTotal, Integer ptSessionsUsed, Integer ptSessionsRemaining, LocalDate ptValidUntil) {
             this(id, memberId, memberName, memberCode, planId, planName, null, startDate, endDate, pricePaid, state, daysLeft,
                     cancelled, cancelledAt, note, createdAt, createdByName, ptSessionsTotal, ptSessionsUsed,
-                    ptSessionsRemaining, ptValidUntil, null, null, null, null, null, null);
+                    ptSessionsRemaining, ptValidUntil, null, null, null, null, null, null, null, null);
         }
     }
 
@@ -1172,7 +1176,7 @@ public final class Dtos {
 
     public record MemberServiceEntitlementResponse(
             Long id, Long memberId, String memberName, String memberCode,
-            Long serviceId, String serviceName,
+            Long serviceId, String serviceName, String serviceNameEn,
             EntitlementSource source, Long subscriptionId, String planName, String planNameEn, Long packageRequestId,
             int grantedQty, int usedQty, int remainingQty,
             LocalDate validFrom, LocalDate validUntil, String conditions,
@@ -1187,6 +1191,7 @@ public final class Dtos {
     public record PromotionGrantDto(
             @NotNull(message = "Chọn dịch vụ") Long serviceId,
             String serviceName,
+            String serviceNameEn,
             @Min(value = 1, message = "Số lượt tối thiểu là 1") int quantity,
             @Min(value = 1, message = "Số ngày hiệu lực tối thiểu là 1") int validDays,
             @Size(max = 255) String conditions,
@@ -1248,7 +1253,7 @@ public final class Dtos {
 
     public record ServiceRequestResponse(
             Long id, Long memberId, String memberName, String memberCode, String memberPhone,
-            Long serviceId, String serviceName, int quantity, long unitPrice, long totalPrice,
+            Long serviceId, String serviceName, String serviceNameEn, int quantity, long unitPrice, long totalPrice,
             PaymentMethod paymentMethod, String paymentCode, LocalDateTime memberPaidAt,
             String memberNote, PackageRequestStatus status, String decisionNote, String decidedByName,
             LocalDateTime decidedAt, Long entitlementId, LocalDateTime createdAt) {

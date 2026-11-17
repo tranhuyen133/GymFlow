@@ -119,6 +119,7 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
   const [ptValidDays, setPtValidDays] = useState(plan?.ptValidDays != null ? String(plan.ptValidDays) : String(plan?.durationDays ?? 30));
   const [code, setCode] = useState(plan?.code ?? '');
   const [usageTerms, setUsageTerms] = useState(plan?.usageTerms ?? '');
+  const [usageTermsEn, setUsageTermsEn] = useState(plan?.usageTermsEn ?? '');
   const [ptMinutes, setPtMinutes] = useState(plan?.ptSessionMinutes != null ? String(plan.ptSessionMinutes) : '');
   const [ptNotice, setPtNotice] = useState(plan?.ptCancelNoticeHours != null ? String(plan.ptCancelNoticeHours) : '');
   const [serviceGrants, setServiceGrants] = useState<PlanServiceGrant[]>(
@@ -212,6 +213,7 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
       ptValidDays: pt ? Number(ptValidDays) : null,
       code: code.trim() ? code.trim().toUpperCase() : null,
       usageTerms: usageTerms.trim() || null,
+      usageTermsEn: usageTermsEn.trim() || null,
       ptSessionMinutes: pt && ptMinutes !== '' ? Number(ptMinutes) : null,
       ptCancelNoticeHours: pt && ptNotice !== '' ? Number(ptNotice) : null,
       serviceGrants: serviceGrants.map((g) => ({
@@ -284,9 +286,13 @@ function PlanForm({ plan, others, onClose, onSaved }: { plan?: MembershipPlan; o
             )}
             <Field label="Quyền lợi" hint="Mỗi dòng hoặc dấu phẩy là một quyền lợi" className="span-2"><Textarea maxLength={1000} rows={4} value={f.benefits} onChange={(e) => set('benefits', e.target.value)} placeholder={'Tủ đồ cá nhân\nNước uống miễn phí\n1 buổi PT'} /></Field>
             <Field label="Quyền lợi (EN)" hint="Mỗi dòng hoặc dấu phẩy là một quyền lợi" className="span-2"><Textarea maxLength={1000} rows={4} value={f.benefitsEn} onChange={(e) => set('benefitsEn', e.target.value)} /></Field>
-            <Field label="Điều kiện sử dụng" className="span-2" hint={t('{n}/1000', { n: usageTerms.length })}>
+            <Field label={t('Điều kiện sử dụng')} className="span-2" hint={t('{n}/1000', { n: usageTerms.length })}>
               <Textarea maxLength={1000} rows={3} value={usageTerms} onChange={(e) => setUsageTerms(e.target.value)}
                 placeholder="VD: Đặt lịch PT trước 24 giờ. Đổi HLV tại quầy lễ tân." />
+            </Field>
+            <Field label={t('Điều kiện sử dụng (EN)')} className="span-2" hint={t('{n}/1000', { n: usageTermsEn.length })}>
+              <Textarea maxLength={1000} rows={3} value={usageTermsEn} onChange={(e) => setUsageTermsEn(e.target.value)}
+                placeholder="e.g. Book PT sessions 24 hours in advance. Change trainer at reception." />
             </Field>
 
             {/* Quà tặng dịch vụ kèm theo */}

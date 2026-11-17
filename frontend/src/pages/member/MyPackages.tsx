@@ -256,8 +256,8 @@ export default function MyPackages() {
                 </div>
                 {(current.benefits || current.usageTerms) && (
                   <div className="small mt-16 stack-sm" style={{ gap: 4 }}>
-                    {current.benefits && <div><b>{t('Quyền lợi đã mua')}:</b> <span className="muted">{current.benefits}</span></div>}
-                    {current.usageTerms && <div><b>{t('Điều kiện sử dụng')}:</b> <span className="muted">{current.usageTerms}</span></div>}
+                    {current.benefits && <div><b>{t('Quyền lợi đã mua')}:</b> <span className="muted">{localizeText(current.benefitsEn, current.benefits)}</span></div>}
+                    {current.usageTerms && <div><b>{t('Điều kiện sử dụng')}:</b> <span className="muted">{localizeText(current.usageTermsEn, current.usageTerms)}</span></div>}
                   </div>
                 )}
               </div>
@@ -647,7 +647,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
                 <li key={idx}>
                   {t('Tặng {q} lượt {s} (hạn {d} ngày)', {
                     q: g.quantity,
-                    s: g.serviceName || t('Dịch vụ'),
+                    s: localizeText(g.serviceNameEn, g.serviceName) || t('Dịch vụ'),
                     d: g.validDays,
                   })}
                 </li>
@@ -668,7 +668,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
                 <li key={idx}>
                   {t('Tặng {q} lượt {s} (hạn {d} ngày)', {
                     q: g.quantity,
-                    s: g.serviceName || t('Dịch vụ'),
+                    s: localizeText(g.serviceNameEn, g.serviceName) || t('Dịch vụ'),
                     d: g.validDays,
                   })}
                 </li>

@@ -69,6 +69,9 @@ public class MembershipPlan {
     @Column(name = "usage_terms", length = 1000)
     private String usageTerms;
 
+    @Column(name = "usage_terms_en", length = 1000)
+    private String usageTermsEn;
+
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<PlanServiceGrant> serviceGrants = new java.util.ArrayList<>();
 

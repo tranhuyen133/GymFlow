@@ -244,6 +244,7 @@ public class PlanService {
         if (notice != null && (notice < 0 || notice > 168)) throw ApiException.badRequest("Số giờ báo huỷ buổi PT từ 0 đến 168");
         p.setCode(code);
         p.setUsageTerms(terms);
+        p.setUsageTermsEn(Mappers.blankToNull(req.usageTermsEn()));
         p.setPtSessionMinutes(minutes);
         p.setPtCancelNoticeHours(notice);
 

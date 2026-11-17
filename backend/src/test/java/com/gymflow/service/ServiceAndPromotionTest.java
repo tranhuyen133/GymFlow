@@ -290,7 +290,7 @@ class ServiceAndPromotionTest {
         when(planRepository.findById(5L)).thenReturn(Optional.of(gym3mPlan));
 
         // Admin sửa gói thành tặng 5 lượt
-        PlanServiceGrantDto newGrantDto = new PlanServiceGrantDto(1L, "Xông hơi Sauna", 5, 45, "Ưu đãi mới");
+        PlanServiceGrantDto newGrantDto = new PlanServiceGrantDto(1L, "Xông hơi Sauna", null, 5, 45, "Ưu đãi mới");
         PlanRequest updateReq = new PlanRequest(
                 "Gói Gym 3 tháng", "Mô tả", 1_500_000L, 90, null, false, PlanType.GYM, null, null, List.of(newGrantDto)
         );

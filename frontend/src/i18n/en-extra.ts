@@ -2308,4 +2308,5 @@ export const EN_EXTRA: Record<string, string> = {
   'Mô tả dịch vụ (EN)': 'Service description (EN)',
   'Lưu ý khung giờ (EN)': 'Opening-hours note (EN)',
   'VD: Daily 09:00–21:00, book 2 hours in advance': 'e.g. Daily 09:00–21:00, book 2 hours in advance',
+  'Điều kiện sử dụng (EN)': 'Usage terms (EN)',
 };
