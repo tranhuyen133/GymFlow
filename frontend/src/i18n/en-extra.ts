@@ -2295,4 +2295,6 @@ export const EN_EXTRA: Record<string, string> = {
   '(giảm {v})': '({v} off)',
   'Huỷ gói': 'Cancel package',
   'Ảnh động minh hoạ 180×180 từ exercises-dataset': '180×180 animated demo from exercises-dataset',
+  'Ảnh động minh hoạ bài tập 180×180 (qua exercises-dataset)': 'Animated exercise demo 180×180 (via exercises-dataset)',
+  'Media © Gym visual, phân phối lại trong exercises-dataset; giữ kích thước 180×180 và ghi nguồn': 'Media © Gym visual, redistributed in exercises-dataset; kept at 180×180 with attribution',
 };

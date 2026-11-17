@@ -50,7 +50,7 @@ export function SourceList({ sources, origin }: { sources: Source[]; origin: Con
       <ul className="source-list">
         {sources.map((s) => (
           <li key={s.id}>
-            <a href={s.url} target="_blank" rel="noreferrer noopener" lang="en"><b>{s.title}</b> <Icon name="arrowRight" size={12} style={{ display: 'inline', verticalAlign: -1 }} /></a>
+            <a href={s.url} target="_blank" rel="noreferrer noopener" lang="en"><b>{t(s.title)}</b> <Icon name="arrowRight" size={12} style={{ display: 'inline', verticalAlign: -1 }} /></a>
             <div className="tiny muted">
               {s.publisher}
               {s.publisherReviewed && <> · {t('Trang ghi rà soát {d}', { d: fmtDate(s.publisherReviewed) })}</>}
@@ -60,7 +60,7 @@ export function SourceList({ sources, origin }: { sources: Source[]; origin: Con
               {s.license
                 ? (s.licenseUrl ? <a className="muted" href={s.licenseUrl} target="_blank" rel="noreferrer noopener">{t(s.license)}</a> : <span className="muted">{t(s.license)}</span>)
                 : <Missing />}
-              {!s.licenseVerified && <Badge tone="amber">Giấy phép chưa xác minh</Badge>}
+              {!s.licenseVerified && <Badge tone="amber">{t('Giấy phép chưa xác minh')}</Badge>}
             </div>
           </li>
         ))}
