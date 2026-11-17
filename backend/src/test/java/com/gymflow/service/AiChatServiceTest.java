@@ -172,6 +172,7 @@ class AiChatServiceTest {
 
         assertThat(prompt)
                 .contains("Bạn là trợ lý tập luyện của phòng gym GymFlow")
+                .contains("Hôm nay: Thứ 3, 17/11/2026")
                 .contains("Gói tập: Gói 3 tháng")
                 .contains("hết hạn 27/11/2026")
                 .contains("còn 10 ngày")

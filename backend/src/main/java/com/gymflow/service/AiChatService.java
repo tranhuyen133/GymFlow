@@ -87,6 +87,8 @@ public class AiChatService {
         LocalDate today = LocalDate.now(clock);
 
         StringBuilder sb = new StringBuilder();
+        sb.append("- Hôm nay: ").append(DOW[today.getDayOfWeek().getValue() - 1])
+                .append(", ").append(today.format(DATE)).append('\n');
         appendSubscription(sb, member, today);
         appendActivePlan(sb, member);
         appendWeekSchedule(sb, member, today);
