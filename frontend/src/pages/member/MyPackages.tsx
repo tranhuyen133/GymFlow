@@ -27,6 +27,8 @@ import type {
 } from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { initials, PaymentInfo, PickCard } from '../../components/PaymentQr';
+import { codeNotApplied, PromoPicker, type PromoChoice } from '../../components/PromoPicker';
+import { HelpTip } from '../../components/Help';
 import { benefitsOf, PlanCard, pickBest, savings } from '../../components/PlanCard';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Meter, Modal, PageHead, Segmented, StatusBadge, Table, Textarea } from '../../components/ui';
@@ -122,6 +124,12 @@ export default function MyPackages() {
         title={pageTitle}
         desc={t('Quản lý gói tập hiện tại, đăng ký gói mới, kiểm tra lượt quà tặng và kết nối với huấn luyện viên.')}
       />
+      <HelpTip id="my-packages" title="Mua và nâng cấp gói thế nào?" steps={[
+        'Chọn gói ở mục Gói tập › Đăng ký, chọn ngày bắt đầu và cách thanh toán (tại quầy hoặc chuyển khoản QR).',
+        'Ưu đãi không tự áp: chọn một ưu đãi trong danh sách hoặc nhập mã rồi bấm Áp dụng. Số tiền cuối cùng hiện ngay trên đơn.',
+        'Đang tập gói tự tập muốn có HLV: bấm Nâng cấp lên PT, phần gói cũ chưa dùng được trừ vào giá gói mới.',
+        'Chuyển khoản: ghi đúng nội dung là mã đơn GF…, rồi bấm "Tôi đã chuyển khoản". Gói kích hoạt khi quản lý xác nhận.',
+      ]} />
 
       <div className="mb-20">
         <Segmented
@@ -502,69 +510,51 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
   const [note, setNote] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('COUNTER');
   const [trainerId, setTrainerId] = useState(currentTrainerId ? String(currentTrainerId) : '');
-  const [promoCode, setPromoCode] = useState('');
-  const [validatingPromo, setValidatingPromo] = useState(false);
-  const [promoResult, setPromoResult] = useState<PromotionValidationResponse | null>(null);
+  const [choice, setChoice] = useState<PromoChoice>({ kind: 'none' });
+  const [draft, setDraft] = useState('');
+  const [offers, setOffers] = useState<PromotionValidationResponse[]>([]);
+  const [loadingOffers, setLoadingOffers] = useState(true);
+  const [codeResult, setCodeResult] = useState<PromotionValidationResponse | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [agree, setAgree] = useState(false);
   const [tried, setTried] = useState(false);
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState('');
 
-  // Tự động kiểm tra xem có ưu đãi toàn hệ thống áp dụng cho gói này không
+  // Ưu đãi không cần mã mà bạn đủ điều kiện: chỉ liệt kê để chọn, không tự áp.
   useEffect(() => {
     let unmounted = false;
-    api.post<PromotionValidationResponse>('/promotions/validate', { planId: plan.id })
-      .then((res) => {
-        if (!unmounted && res.valid) {
-          setPromoResult(res);
-        }
-      })
-      .catch(() => {});
+    setLoadingOffers(true);
+    api.get<PromotionValidationResponse[]>('/promotions/offers', { planId: plan.id })
+      .then((list) => { if (!unmounted) setOffers(list); })
+      .catch(() => { if (!unmounted) setOffers([]); })
+      .finally(() => { if (!unmounted) setLoadingOffers(false); });
     return () => { unmounted = true; };
   }, [plan.id]);
 
-  const applyPromo = async () => {
-    const code = promoCode.trim().toUpperCase();
-    setValidatingPromo(true);
-    setPromoError(null);
-    try {
-      const res = await api.post<PromotionValidationResponse>('/promotions/validate', {
-        code: code || null,
-        planId: plan.id,
-      });
-      if (res.valid) {
-        setPromoResult(res);
-        setPromoError(null);
-        if (res.promotionCode) {
-          toast.success(t('Đã áp dụng mã ưu đãi: {name}', { name: localizeText(res.promotionNameEn, res.promotionName) || res.promotionCode }));
-        }
-      } else {
-        setPromoResult(null);
-        setPromoError(res.reason || t('Mã ưu đãi không hợp lệ'));
-      }
-    } catch (e) {
-      setPromoResult(null);
-      setPromoError(errMsg(e));
-    } finally {
-      setValidatingPromo(false);
-    }
-  };
+  const appliedCode = choice.kind === 'code' ? choice.code : '';
+  // Kiểm tra mã ngay khi bấm Áp dụng; kết quả cũ bị bỏ nếu đổi mã khác.
+  useEffect(() => {
+    setCodeResult(null); setPromoError(null);
+    if (!appliedCode) return;
+    let stale = false;
+    api.post<PromotionValidationResponse>('/promotions/validate', { code: appliedCode, planId: plan.id })
+      .then((res) => {
+        if (stale) return;
+        if (res.valid && res.promotionId != null) {
+          setCodeResult(res);
+          toast.success(t('Đã áp dụng mã ưu đãi: {name}', { name: localizeText(res.promotionNameEn, res.promotionName) || appliedCode }));
+        } else setPromoError(res.reason || t('Mã ưu đãi không hợp lệ'));
+      })
+      .catch((e) => { if (!stale) setPromoError(errMsg(e)); });
+    return () => { stale = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedCode, plan.id]);
 
-  const removePromo = async () => {
-    setPromoCode('');
-    setPromoError(null);
-    setValidatingPromo(true);
-    try {
-      const res = await api.post<PromotionValidationResponse>('/promotions/validate', { planId: plan.id });
-      setPromoResult(res.valid ? res : null);
-    } catch {
-      setPromoResult(null);
-    } finally {
-      setValidatingPromo(false);
-    }
-  };
-
+  const promoResult: PromotionValidationResponse | null = choice.kind === 'offer'
+    ? offers.find((o) => o.promotionId === choice.id) ?? null
+    : choice.kind === 'code' ? codeResult : null;
+  const promoPending = choice.kind === 'code' && (codeNotApplied(choice, draft) || !appliedCode || (!codeResult && !promoError));
   const finalAmount = promoResult?.valid ? promoResult.finalPrice : plan.price;
   const discountAmount = promoResult?.valid ? promoResult.discountAmount : 0;
 
@@ -581,7 +571,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
   // Ngày đã chọn mà sai thì báo ngay (người dùng vừa thao tác); ô còn trống chỉ báo sau khi bấm Gửi
   const dateError = date || tried ? dateRule : undefined;
   const trainerError = tried ? trainerRule : undefined;
-  const invalid = !!dateRule || !!noteError || !!trainerRule || !agree;
+  const invalid = !!dateRule || !!noteError || !!trainerRule || !agree || promoPending || (choice.kind === 'code' && !!promoError);
 
   const submit = async () => {
     setTried(true);
@@ -591,7 +581,8 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
       const created = await api.post<PackageRequest>('/package-requests', {
         planId: plan.id, desiredStartDate: mode === 'date' ? date : null, note: note.trim() || null,
         paymentMethod: method, trainerId: pt ? Number(trainerId) : null,
-        promotionCode: promoResult?.valid && promoResult.promotionCode ? promoResult.promotionCode : (promoCode.trim().toUpperCase() || null),
+        promotionCode: choice.kind === 'code' && codeResult ? appliedCode : null,
+        promotionId: choice.kind === 'offer' ? choice.id : null,
       });
       toast.success(method === 'BANK_TRANSFER'
         ? t('Đã gửi đơn. Quét mã QR để chuyển khoản, nội dung {code}.', { code: created.paymentCode ?? '' })
@@ -680,48 +671,14 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
           </div>
         )}
 
-        {/* Nhập mã ưu đãi */}
-        <div style={{ padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>
-            <Icon name="trophy" size={13} style={{ display: 'inline', verticalAlign: -2, marginRight: 4 }} />
-            {t('Mã ưu đãi / Giảm giá')}
-          </span>
-          <div className="row" style={{ gap: 8 }}>
-            <Input
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-              placeholder={t('Nhập mã giảm giá (nếu có)')}
-              style={{ flex: 1 }}
-            />
-            <Button
-              size="sm"
-              variant="secondary"
-              loading={validatingPromo}
-              onClick={applyPromo}
-            >
-              {t('Áp dụng')}
-            </Button>
-            {promoResult?.promotionCode && (
-              <Button size="sm" variant="ghost" onClick={removePromo}>
-                {t('Bỏ mã')}
-              </Button>
-            )}
-          </div>
-          {promoError && (
-            <div className="tiny" style={{ color: 'var(--danger)', marginTop: 6 }}>
-              {promoError}
-            </div>
-          )}
-          {promoResult?.valid && (
-            <div className="tiny ok mt-4 row" style={{ gap: 4, alignItems: 'center' }}>
-              <Icon name="check" size={12} />
-              <span>
-                {t('Đang áp dụng: {name}', { name: localizeText(promoResult.promotionNameEn, promoResult.promotionName) || promoResult.promotionCode || '' })}
-                {promoResult.discountAmount > 0 && ` ${t('(giảm {v})', { v: fmtMoney(promoResult.discountAmount) })}`}
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Chọn ưu đãi: mặc định không dùng; chọn ưu đãi trong danh sách hoặc nhập mã rồi bấm Áp dụng */}
+        <Field label={t('Ưu đãi')} hint={t('Không tự áp ưu đãi: bạn chọn một ưu đãi hoặc nhập mã. Mỗi đơn dùng một ưu đãi.')}>
+          <PromoPicker offers={offers} loading={loadingOffers} choice={choice}
+            onChoice={(c) => { setChoice(c); if (c.kind !== 'code') setDraft(''); }}
+            draft={draft} onDraft={setDraft} codeProblem={promoError}
+            codeResult={codeResult ? { discountAmount: codeResult.discountAmount, name: localizeText(codeResult.promotionNameEn, codeResult.promotionName) } : null} />
+          {tried && promoPending && <div className="promo-note warn">{t('Bấm Áp dụng mã hoặc chọn "Không dùng ưu đãi" để gửi đơn')}</div>}
+        </Field>
 
         {benefitsOf(getLang() === 'en' && plan.benefitsEn ? { benefits: plan.benefitsEn } : plan).length > 0 && (
           <ul className="plan-benefits">{benefitsOf(getLang() === 'en' && plan.benefitsEn ? { benefits: plan.benefitsEn } : plan).map((b) => <li key={b}><Icon name="check" size={13} className="ok" />{getLang() === 'en' && plan.benefitsEn ? b : t(b)}</li>)}</ul>

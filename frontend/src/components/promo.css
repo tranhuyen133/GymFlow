@@ -1,0 +1,32 @@
+.promo-pick { display: grid; gap: 6px; }
+.promo-opt {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer;
+  border: 1px solid var(--hairline); border-radius: 10px; background: var(--surface);
+  transition: border-color .15s, background .15s;
+}
+.promo-opt:hover { border-color: var(--primary); }
+.promo-opt.on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, var(--surface)); }
+.promo-opt input { accent-color: var(--primary); margin: 0; flex: none; }
+.promo-txt { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.promo-txt b { font-size: 13.5px; }
+.promo-txt small { color: var(--muted); font-size: 12px; }
+.promo-amt { color: var(--primary); white-space: nowrap; }
+.promo-loading, .promo-empty { cursor: default; padding: 6px 4px; display: flex; align-items: center; gap: 6px; border: 0; }
+.promo-code { display: grid; gap: 6px; padding: 2px 0 2px 30px; }
+.promo-note { font-size: 12.5px; display: flex; align-items: center; gap: 4px; }
+.promo-note.warn { color: var(--warning); }
+.promo-note.err { color: var(--danger); }
+.promo-note.ok { color: var(--primary); }
+
+/* Gợi ý cách dùng (HelpTip) và nút quay lại dùng chung */
+.help-tip { border: 1px dashed var(--hairline); border-radius: 12px; background: var(--surface-2); margin-bottom: 14px; }
+.help-tip > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 9px 14px;
+  font-size: 13px; font-weight: 600; color: var(--ink);
+}
+.help-tip > summary::-webkit-details-marker { display: none; }
+.help-tip > summary .help-chev { margin-left: auto; transition: transform .15s; color: var(--muted); }
+.help-tip[open] > summary .help-chev { transform: rotate(180deg); }
+.help-tip ol, .help-tip ul { margin: 0; padding: 0 16px 12px 34px; display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.back-btn { margin-bottom: 8px; }
+.quick-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }

@@ -9,6 +9,7 @@ import { MuscleMap } from '../../components/MuscleMap';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, SearchInput, Segmented, Select, StatusBadge, Textarea } from '../../components/ui';
+import { HelpTip } from '../../components/Help';
 import { exSub, exTitle, fmtDateTime, formatEquipment, goalLabel, levelLabel, locationLabel, muscleLabel, reviewLabel } from '../../lib/format';
 import { localizeExercise, localizeExerciseContent, hasMissingExerciseEnglish } from '../../lib/exercise';
 import { errMsg, fieldErrs, useAsync, useDebounced, usePaged } from '../../lib/hooks';
@@ -58,6 +59,7 @@ export default function Exercises() {
   const [goal, setGoal] = useState<'' | ExerciseGoal>(() => (params.get('goal') as ExerciseGoal) || '');
   const [review, setReview] = useState<'' | ReviewStatus>(() => (params.get('review') as ReviewStatus) || '');
   const [showHidden, setShowHidden] = useState(() => params.get('hidden') === 'true');
+  const [withVideo, setWithVideo] = useState(() => params.get('video') === '1');
   const [sort, setSort] = useState<Sort>('name');
   const [editing, setEditing] = useState<{ exercise?: Exercise; copyOf?: Exercise } | null>(null);
   const [viewingId, setViewingId] = useState<number | null>(null);
@@ -97,10 +99,11 @@ export default function Exercises() {
     if (goal) next.set('goal', goal);
     if (review) next.set('review', review);
     if (showHidden) next.set('hidden', 'true');
+    if (withVideo) next.set('video', '1');
     if (muscle) next.set('muscle', muscle);
     if (equip) next.set('equipment', equip);
     setParams(next, { replace: true });
-  }, [dq, group, level, location, goal, review, showHidden, muscle, equip, setParams]);
+  }, [dq, group, level, location, goal, review, showHidden, withVideo, muscle, equip, setParams]);
 
   useEffect(() => {
     const handler = (ev: MouseEvent) => {
@@ -121,7 +124,7 @@ export default function Exercises() {
   }, [data, q]);
 
   // Hội viên chỉ hiển thị bài đã duyệt; Quản lý/HLV xem được mọi trạng thái duyệt
-  const byRole = useMemo(() => (data ?? []).filter((e) => staff || e.reviewStatus === 'APPROVED'), [data, staff]);
+  const byRole = useMemo(() => (data ?? []).filter((e) => (staff || e.reviewStatus === 'APPROVED') && (!withVideo || !!e.videoUrl)), [data, staff, withVideo]);
   const byEquip = useMemo(() => byRole.filter((e) => !equip || equipOf(e).includes(equip)), [byRole, equip]);
   const muscleCounts = useMemo(() => {
     const c: Partial<Record<MuscleKey, number>> = {};
@@ -139,11 +142,11 @@ export default function Exercises() {
   const muscleInfo = muscle ? MUSCLE_BY_KEY.get(muscle) : null;
 
   const sorted = useMemo(() => [...shown].sort(SORTERS[sort]), [shown, sort]);
-  const paged = usePaged(sorted, 'exercises', `${dq}|${group}|${level}|${location}|${goal}|${review}|${showHidden}|${sort}|${muscle}|${equip}|${withSecondary}`, 12);
+  const paged = usePaged(sorted, 'exercises', `${dq}|${group}|${level}|${location}|${goal}|${review}|${showHidden}|${withVideo}|${sort}|${muscle}|${equip}|${withSecondary}`, 12);
   const pendingCount = data?.filter((e) => e.reviewStatus !== 'APPROVED').length ?? 0;
   const viewing = data?.find((e) => e.id === viewingId) ?? null;
-  const filtered = !!(q || group || level || location || goal || review || showHidden || muscle || equip);
-  const clearFilters = () => { setQ(''); setGroup(''); setLevel(''); setLocation(''); setGoal(''); setReview(''); setShowHidden(false); setMuscle(null); setEquip(''); };
+  const filtered = !!(q || group || level || location || goal || review || showHidden || withVideo || muscle || equip);
+  const clearFilters = () => { setQ(''); setGroup(''); setLevel(''); setLocation(''); setGoal(''); setReview(''); setShowHidden(false); setWithVideo(false); setMuscle(null); setEquip(''); };
   const isAdmin = me.role === 'ADMIN';
 
   // Hàng chờ duyệt: danh sách id cố định lúc mở, duyệt xong bài nào tự sang bài kế tiếp
@@ -178,6 +181,15 @@ export default function Exercises() {
           </Link>
           {staff && <Button variant="primary" icon="plus" onClick={() => setEditing({})}>Thêm bài tập</Button>}
         </>} />
+
+      {staff && (
+        <HelpTip id="exercises-staff" steps={[
+          'Tìm bài theo tên, nhóm cơ, dụng cụ; bấm vào bản đồ cơ để lọc nhanh theo vùng cơ.',
+          'Đánh dấu "Chỉ bài có video" để chọn bài có video hướng dẫn cho hội viên.',
+          'Bài mới hoặc bài vừa sửa ở trạng thái Chờ duyệt; quản lý duyệt xong hội viên mới thấy.',
+          'Bài đã nằm trong giáo án chỉ ẩn được, không xoá được, để giữ lịch sử tập.',
+        ]} />
+      )}
 
       {data && pendingCount > 0 && !isAdmin && (
         <Alert kind="warning" action={staff && sort !== 'review' && <Button size="sm" onClick={() => setSort('review')}>Xem bài cần duyệt</Button>}>
@@ -287,6 +299,7 @@ export default function Exercises() {
             <Icon name="list" size={16} />
           </button>
         </div>
+        <label className="check"><input type="checkbox" checked={withVideo} onChange={(e) => setWithVideo(e.target.checked)} /><Icon name="play" size={13} /> {t('Chỉ bài có video')}</label>
         {staff && <label className="check"><input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />{t('Hiện cả bài đã ẩn')}</label>}
         {filtered && <Button variant="ghost" size="sm" icon="x" onClick={clearFilters}>Xoá bộ lọc</Button>}
       </div>
@@ -1020,7 +1033,7 @@ function ExerciseForm({ exercise, copyOf, isAdmin, onClose, onSaved }: { exercis
                   <div className="video-embed-container" style={{ borderRadius: 'var(--r-sm)' }}>
                     <iframe src={getEmbedUrl(f.videoUrl)!} title="Xem trước video" allowFullScreen />
                   </div>
-                  <div className="tiny faint mt-4">✓ Xem trước video nhúng</div>
+                  <div className="tiny faint mt-4">✓ {t('Xem trước video nhúng')}</div>
                 </div>
               )}
             </Field>

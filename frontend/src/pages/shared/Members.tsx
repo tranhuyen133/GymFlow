@@ -9,6 +9,7 @@ import type { Gender, Member, MemberCreated, MemberForm as Form, MemberStatus, P
 import { useMe } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge, Table, Textarea } from '../../components/ui';
+import { HelpTip } from '../../components/Help';
 import { downloadCsv } from '../../lib/csv';
 import { EMAIL_RE, fmtDate, genderLabel, memberStatus, subState } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
@@ -81,6 +82,20 @@ export default function Members() {
           <Button icon="download" loading={exporting} onClick={() => void exportCsv()}>Xuất CSV</Button>
           {admin && <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Thêm hội viên</Button>}
         </>} />
+
+      {admin ? (
+        <HelpTip id="members-admin" steps={[
+          'Tìm theo tên, email, số điện thoại hoặc mã HV; lọc theo trạng thái, HLV phụ trách.',
+          'Bấm vào hội viên để xem gói, giáo án, lịch tập, cân nặng và phân công HLV.',
+          'Thêm hội viên tại quầy: hệ thống tạo mật khẩu tạm, đưa cho hội viên để đăng nhập lần đầu.',
+        ]} />
+      ) : (
+        <HelpTip id="members-trainer" steps={[
+          'Đây là các hội viên bạn đang phụ trách. Bấm vào tên để xem tiến độ, cân nặng và lịch sử tập.',
+          'Hội viên chưa có giáo án: vào Giáo án › Soạn giáo án. Chưa có lịch: vào Lịch tập › Xếp lịch.',
+          'Cột gói tập cho biết ai sắp hết hạn để nhắc gia hạn hoặc nâng cấp.',
+        ]} />
+      )}
 
       <div className="toolbar">
         <SearchInput value={q} onChange={setQ} placeholder="Tìm theo tên, email, SĐT, mã HV…" />

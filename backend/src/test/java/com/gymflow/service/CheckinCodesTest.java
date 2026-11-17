@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CheckinCodesTest {
 
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    /** 08:00 ngày 17/11/2026 giờ Việt Nam */
     private static final Instant T0 = Instant.parse("2026-11-17T01:00:05Z");
 
     private CheckinCodes at(Instant t) {
@@ -20,24 +22,26 @@ class CheckinCodesTest {
     }
 
     @Test
-    @DisplayName("Mã 6 chữ số, cố định trong một chu kỳ 30 giây")
-    void stableWithinPeriod() {
+    @DisplayName("Mỗi ngày một mã 6 chữ số, giữ nguyên cả ngày theo giờ Việt Nam")
+    void stableWithinDay() {
         String a = at(T0).current();
         assertThat(a).matches("\\d{6}");
-        assertThat(at(T0.plusSeconds(20)).current()).isEqualTo(a);
-        assertThat(at(T0).secondsLeft()).isEqualTo(25);
+        assertThat(at(T0).today()).isEqualTo(LocalDate.of(2026, 11, 17));
+        assertThat(at(Instant.parse("2026-11-16T17:00:00Z")).current()).isEqualTo(a); // 00:00 ngày 17 giờ VN
+        assertThat(at(Instant.parse("2026-11-17T16:59:59Z")).current()).isEqualTo(a); // 23:59:59 ngày 17 giờ VN
+        assertThat(at(Instant.parse("2026-11-17T17:00:00Z")).current()).isEqualTo(at(T0).codeFor(LocalDate.of(2026, 11, 18)));
     }
 
     @Test
-    @DisplayName("Nhận mã của 4 chu kỳ trước, từ chối mã cũ hơn hoặc sai định dạng")
-    void verifyWindow() {
-        String code = at(T0).current();
-        assertThat(at(T0).verify(code)).isTrue();
-        assertThat(at(T0.plusSeconds(30L * CheckinCodes.ACCEPT_PREVIOUS)).verify(code)).isTrue();
-        assertThat(at(T0.plusSeconds(30L * (CheckinCodes.ACCEPT_PREVIOUS + 1))).verify(code)).isFalse();
-        assertThat(at(T0).verify("12345")).isFalse();
-        assertThat(at(T0).verify(null)).isFalse();
-        assertThat(at(T0).verify("abcdef")).isFalse();
+    @DisplayName("Chỉ nhận mã của hôm nay, từ chối mã hôm qua hoặc sai định dạng")
+    void verifyToday() {
+        CheckinCodes c = at(T0);
+        assertThat(c.verify(c.current())).isTrue();
+        String yesterday = c.codeFor(LocalDate.of(2026, 11, 16));
+        if (!yesterday.equals(c.current())) assertThat(c.verify(yesterday)).isFalse();
+        assertThat(c.verify("12345")).isFalse();
+        assertThat(c.verify(null)).isFalse();
+        assertThat(c.verify("abcdef")).isFalse();
     }
 
     @Test

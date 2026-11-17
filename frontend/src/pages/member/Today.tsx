@@ -8,6 +8,7 @@ import { api } from '../../api/client';
 import type { TodayData, TodayExercise } from '../../api/checkinTypes';
 import type { Schedule } from '../../api/types';
 import { CrowdBars, CrowdChip, CrowdFoot, fmtHour } from '../../components/checkin';
+import { MemberCardModal } from '../../components/DeskCheckin';
 import { Icon, type IconName } from '../../components/Icon';
 import { Alert, Badge, Card, Empty, ErrorState, LoadingBlock, Meter, PageHead, Stat, StatusBadge } from '../../components/ui';
 import { t, tn } from '../../i18n';
@@ -38,6 +39,7 @@ function dose(e: TodayExercise) {
 export default function Today() {
   const { data, error, loading, reload } = useAsync(() => api.get<TodayData>('/me/today'), []);
   const [open, setOpen] = useState<Schedule | null>(null);
+  const [showCard, setShowCard] = useState(false);
 
   // Mức đông thay đổi theo giờ: tải lại mỗi phút khi trang đang mở
   useEffect(() => {
@@ -61,7 +63,7 @@ export default function Today() {
 
   const tips: { icon: IconName; text: string }[] = [];
   if (!data.checkin && upcomingToday.length > 0) {
-    tips.push({ icon: 'clock', text: t('Có buổi {title} lúc {time} – nhớ quét mã check-in ở quầy khi tới.', { title: t(upcomingToday[0].title), time: fmtTime(upcomingToday[0].startTime) }) });
+    tips.push({ icon: 'clock', text: t('Có buổi {title} lúc {time} – nhớ check-in ở quầy khi tới.', { title: t(upcomingToday[0].title), time: fmtTime(upcomingToday[0].startTime) }) });
   }
   if (crowd.level === 'BUSY' && crowd.quietHour != null) {
     tips.push({ icon: 'users', text: t('Phòng đang đông. Nếu linh hoạt giờ giấc, đến lúc {h} sẽ thoải mái hơn.', { h: fmtHour(crowd.quietHour) }) });
@@ -101,8 +103,9 @@ export default function Today() {
               <div className="ic"><Icon name="camera" size={22} /></div>
               <div className="grow">
                 <b>{t('Chưa check-in hôm nay')}</b>
-                <div className="tiny muted">{t('Quét mã QR ở quầy lễ tân')}</div>
+                <div className="tiny muted">{t('Đưa thẻ hội viên cho lễ tân quét, hoặc tự nhập mã hôm nay dán ở quầy')}</div>
               </div>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => setShowCard(true)}><Icon name="card" size={15} /><span>{t('Thẻ hội viên')}</span></button>
               <Link to="/checkin" className={`btn btn-sm ${canCheckin ? 'btn-primary' : 'btn-secondary'}`}><span>{t('Check-in')}</span></Link>
             </div>
           )}
@@ -227,6 +230,7 @@ export default function Today() {
       </div>
 
       {open && <SessionModal session={open} onClose={() => setOpen(null)} onChanged={() => { setOpen(null); void reload(); }} />}
+      {showCard && <MemberCardModal onClose={() => setShowCard(false)} />}
     </div>
   );
 }

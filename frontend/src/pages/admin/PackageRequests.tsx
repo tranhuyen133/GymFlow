@@ -12,6 +12,7 @@ import { changeTypeLabel } from '../../components/SubscriptionChangeModal';
 import { initials, PickCard } from '../../components/PaymentQr';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, Person, SearchInput, Segmented, Stat, StatusBadge, Table, Textarea } from '../../components/ui';
+import { HelpTip } from '../../components/Help';
 import { addDays, durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus, parseDate, toIsoDate } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
 import { localizeText } from '../../lib/planText';
@@ -47,6 +48,14 @@ export default function PackageRequests() {
       <PageHead eyebrow={t('Kinh doanh')} title={t('Duyệt đăng ký gói')}
         desc={t('Hội viên tự chọn gói trong ứng dụng, trả tại quầy hoặc chuyển khoản theo mã QR. Thu tiền tại quầy hoặc đối chiếu sao kê theo mã đơn (GF…) rồi bấm Duyệt để kích hoạt gói. Gói có HLV kèm: duyệt là giao HLV cho hội viên.')}
         actions={<Link to="/payment-settings" className="btn btn-secondary"><span>{t('Cài đặt thanh toán')}</span></Link>} />
+
+      <HelpTip id="package-requests" steps={[
+        'Đơn mới hiện ở tab Đơn đăng ký / nâng cấp với trạng thái Chờ xác nhận.',
+        'Trả tại quầy: thu đúng số tiền "Cần thanh toán" rồi bấm Duyệt. Chuyển khoản: đối chiếu sao kê theo mã đơn GF… trước khi duyệt.',
+        'Số tiền trên đơn đã trừ ưu đãi hội viên chọn và phần gói cũ chưa dùng (đơn nâng cấp) – không cần tính lại.',
+        'Sai thông tin hoặc chưa nhận được tiền: bấm Từ chối và ghi lý do, hội viên sẽ thấy lý do này.',
+        'Tab Yêu cầu điều chỉnh: duyệt đổi ngày bắt đầu, tạm dừng gói hoặc đổi HLV.',
+      ]} />
 
       <div className="mb-20">
         <Segmented value={tab} onChange={(v) => setParams(v === 'orders' ? {} : { tab: v })} options={[

@@ -29,13 +29,19 @@ public final class PackageRequestDtos {
             @Size(max = 255, message = "Ghi chú tối đa 255 ký tự") String note,
             PaymentMethod paymentMethod,
             Long trainerId,
-            String promotionCode) {
+            String promotionCode,
+            Long promotionId) {
         public CreatePackageRequest(Long planId, LocalDate desiredStartDate, String note) {
-            this(planId, desiredStartDate, note, null, null, null);
+            this(planId, desiredStartDate, note, null, null, null, null);
         }
 
         public CreatePackageRequest(Long planId, LocalDate desiredStartDate, String note, PaymentMethod paymentMethod, Long trainerId) {
-            this(planId, desiredStartDate, note, paymentMethod, trainerId, null);
+            this(planId, desiredStartDate, note, paymentMethod, trainerId, null, null);
+        }
+
+        public CreatePackageRequest(Long planId, LocalDate desiredStartDate, String note, PaymentMethod paymentMethod, Long trainerId,
+                                    String promotionCode) {
+            this(planId, desiredStartDate, note, paymentMethod, trainerId, promotionCode, null);
         }
     }
 
@@ -91,7 +97,12 @@ public final class PackageRequestDtos {
             Long trainerId,
             PaymentMethod paymentMethod,
             @Size(max = 50, message = "Mã ưu đãi tối đa 50 ký tự") String promotionCode,
-            @Size(max = 255, message = "Ghi chú tối đa 255 ký tự") String note) {
+            @Size(max = 255, message = "Ghi chú tối đa 255 ký tự") String note,
+            Long promotionId) {
+        public CreateUpgradeRequest(Long planId, LocalDate startDate, Long trainerId, PaymentMethod paymentMethod,
+                                    String promotionCode, String note) {
+            this(planId, startDate, trainerId, paymentMethod, promotionCode, note, null);
+        }
     }
 
     /**

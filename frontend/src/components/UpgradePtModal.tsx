@@ -5,9 +5,10 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
-import type { MembershipPlan, PackageRequest, PaymentMethod, PaymentSettings, Trainer, UpgradeQuote } from '../api/types';
+import type { MembershipPlan, PackageRequest, PaymentMethod, PaymentSettings, PromotionValidationResponse, Trainer, UpgradeQuote } from '../api/types';
 import { Icon } from './Icon';
 import { initials, PickCard } from './PaymentQr';
+import { codeNotApplied, PromoPicker, type PromoChoice } from './PromoPicker';
 import { useToast } from './Toast';
 import { Alert, Button, Field, Input, LoadingBlock, Modal, Textarea } from './ui';
 import { t, tn } from '../i18n';
@@ -32,8 +33,10 @@ export default function UpgradePtModal({ initialPlanId, payment, onClose, onDone
 
   const [planId, setPlanId] = useState<number | null>(initialPlanId ?? null);
   const [start, setStart] = useState('');
-  const [code, setCode] = useState('');
-  const [appliedCode, setAppliedCode] = useState('');
+  const [choice, setChoice] = useState<PromoChoice>({ kind: 'none' });
+  const [draft, setDraft] = useState('');
+  const [offers, setOffers] = useState<PromotionValidationResponse[]>([]);
+  const [loadingOffers, setLoadingOffers] = useState(false);
   const [trainerId, setTrainerId] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('COUNTER');
   const [note, setNote] = useState('');
@@ -47,12 +50,36 @@ export default function UpgradePtModal({ initialPlanId, payment, onClose, onDone
     if (planId == null && ptPlans.length > 0) setPlanId(ptPlans[0].id);
   }, [planId, ptPlans]);
 
-  // Báo giá chạy lại mỗi khi đổi gói / ngày / mã; huỷ kết quả cũ nếu người dùng bấm nhanh.
+  const appliedCode = choice.kind === 'code' ? choice.code : '';
+  const offerId = choice.kind === 'offer' ? choice.id : null;
+
+  // Ưu đãi không cần mã phụ thuộc số tiền sau bù trừ → tải lại khi đổi gói / ngày. Ưu đãi đang chọn không còn hợp lệ thì bỏ chọn.
+  useEffect(() => {
+    if (planId == null) return;
+    let stale = false;
+    setLoadingOffers(true);
+    const timer = setTimeout(() => {
+      api.get<PromotionValidationResponse[]>('/package-requests/upgrade-offers', { planId, startDate: start || undefined })
+        .then((list) => {
+          if (stale) return;
+          setOffers(list);
+          setChoice((c) => (c.kind === 'offer' && !list.some((o) => o.promotionId === c.id) ? { kind: 'none' } : c));
+        })
+        .catch(() => { if (!stale) setOffers([]); })
+        .finally(() => { if (!stale) setLoadingOffers(false); });
+    }, 200);
+    return () => { stale = true; clearTimeout(timer); };
+  }, [planId, start]);
+
+  // Báo giá chạy lại mỗi khi đổi gói / ngày / ưu đãi; huỷ kết quả cũ nếu người dùng bấm nhanh.
   useEffect(() => {
     let stale = false;
     setLoadingQuote(true);
     const timer = setTimeout(() => {
-      api.get<UpgradeQuote>('/package-requests/upgrade-quote', { planId: planId ?? undefined, startDate: start || undefined, code: appliedCode || undefined })
+      api.get<UpgradeQuote>('/package-requests/upgrade-quote', {
+        planId: planId ?? undefined, startDate: start || undefined,
+        code: appliedCode || undefined, promotionId: offerId ?? undefined,
+      })
         .then((q) => {
           if (stale) return;
           setQuote(q);
@@ -64,7 +91,7 @@ export default function UpgradePtModal({ initialPlanId, payment, onClose, onDone
     }, 200);
     return () => { stale = true; clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planId, start, appliedCode]);
+  }, [planId, start, appliedCode, offerId]);
 
   const plan = ptPlans.find((p) => p.id === planId) ?? null;
   const tomorrow = toIsoDate(addDays(new Date(), 1));
@@ -77,11 +104,9 @@ export default function UpgradePtModal({ initialPlanId, payment, onClose, onDone
     : undefined;
   const trainerError = !trainerId ? t('Chọn huấn luyện viên phụ trách bạn') : undefined;
   const noteError = note.length > 255 ? t('Ghi chú tối đa 255 ký tự') : undefined;
-  const promoProblem = appliedCode && quote?.promotionReason ? quote.promotionReason : null;
-  const canSubmit = !!quote?.eligible && !startError && !trainerError && !noteError && !promoProblem && agree && !loadingQuote;
-
-  const applyCode = () => setAppliedCode(code.trim().toUpperCase());
-  const clearCode = () => { setCode(''); setAppliedCode(''); };
+  const promoProblem = (appliedCode || offerId != null) && quote?.promotionReason ? quote.promotionReason : null;
+  const promoPending = codeNotApplied(choice, draft) || (choice.kind === 'code' && !appliedCode);
+  const canSubmit = !!quote?.eligible && !startError && !trainerError && !noteError && !promoProblem && !promoPending && agree && !loadingQuote;
 
   const submit = async () => {
     if (!canSubmit || !plan) return;
@@ -89,7 +114,7 @@ export default function UpgradePtModal({ initialPlanId, payment, onClose, onDone
     try {
       const created = await api.post<PackageRequest>('/package-requests/upgrade', {
         planId: plan.id, startDate: start, trainerId: Number(trainerId), paymentMethod: method,
-        promotionCode: appliedCode || quote?.promotionCode || null, note: note.trim() || null,
+        promotionCode: appliedCode || null, promotionId: offerId, note: note.trim() || null,
       });
       toast.success(method === 'BANK_TRANSFER'
         ? t('Đã gửi đơn nâng cấp. Quét mã QR để chuyển khoản, nội dung {code}.', { code: created.paymentCode ?? '' })
@@ -141,22 +166,20 @@ export default function UpgradePtModal({ initialPlanId, payment, onClose, onDone
               </div>
             </Field>
 
-            <div className="grid grid-2" style={{ gap: 12 }}>
-              <Field htmlFor="upg-start" label={t('Gói PT bắt đầu từ')} required error={start ? startError : undefined}
-                hint={t('Sớm nhất ngày mai · muộn nhất {d}', { d: fmtDate(maxStart) })}>
-                <Input id="upg-start" type="date" min={minStart} max={maxStart} value={start} invalid={!!(start && startError)}
-                  onChange={(e) => setStart(e.target.value)} />
-              </Field>
-              <Field label={t('Mã ưu đãi')} error={promoProblem ?? undefined}
-                hint={promoProblem ? undefined : t('Bỏ trống để tự áp ưu đãi tốt nhất đang có')}>
-                <div className="row" style={{ gap: 6 }}>
-                  <Input value={code} placeholder="LENPT300" onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => { if (e.key === 'Enter') applyCode(); }} />
-                  <Button size="sm" variant="secondary" onClick={applyCode} disabled={!code.trim()}>{t('Áp dụng')}</Button>
-                  {appliedCode && <Button size="sm" variant="ghost" icon="x" aria-label={t('Bỏ mã')} onClick={clearCode} />}
-                </div>
-              </Field>
-            </div>
+            <Field htmlFor="upg-start" label={t('Gói PT bắt đầu từ')} required error={start ? startError : undefined}
+              hint={t('Sớm nhất ngày mai · muộn nhất {d}', { d: fmtDate(maxStart) })}>
+              <Input id="upg-start" type="date" min={minStart} max={maxStart} value={start} invalid={!!(start && startError)}
+                onChange={(e) => setStart(e.target.value)} />
+            </Field>
+
+            <Field label={t('Ưu đãi')} hint={t('Không tự áp ưu đãi: bạn chọn một ưu đãi hoặc nhập mã. Mỗi đơn dùng một ưu đãi.')}>
+              <PromoPicker offers={offers} loading={loadingOffers} choice={choice}
+                onChoice={(c) => { setChoice(c); if (c.kind !== 'code') setDraft(''); }}
+                draft={draft} onDraft={setDraft} codeProblem={appliedCode ? promoProblem : null}
+                codeResult={appliedCode && quote && !quote.promotionReason
+                  ? { discountAmount: quote.discountAmount, name: quote.promotionName } : null} />
+              {offerId != null && promoProblem && <div className="promo-note err">{t(promoProblem)}</div>}
+            </Field>
 
             <Field label={t('Huấn luyện viên')} required error={trainerError && agree ? trainerError : undefined}
               hint={t('HLV nhận bạn ngay khi quản lý duyệt: thấy lịch tập, giáo án và các buổi bạn đã tự xếp.')}>
@@ -237,6 +260,7 @@ export default function UpgradePtModal({ initialPlanId, payment, onClose, onDone
               price: <b>{fmtMoney(quote?.finalPrice ?? 0)}</b>,
             })}</span>
           </label>
+          {promoPending && <div className="promo-note warn">{t('Bấm Áp dụng mã hoặc chọn "Không dùng ưu đãi" để gửi đơn')}</div>}
           {serverError && <Alert kind="error">{serverError}</Alert>}
         </div>
       )}

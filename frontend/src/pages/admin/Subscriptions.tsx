@@ -6,6 +6,7 @@ import { AdjustDatesModal } from '../../components/AdjustDatesModal';
 import { CancelSubscriptionModal } from '../../components/CancelSubscriptionModal';
 import { SubscriptionForm } from '../../components/SubscriptionForm';
 import { Button, Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, Select, Stat, StatusBadge, Table } from '../../components/ui';
+import { HelpTip } from '../../components/Help';
 import { downloadCsv } from '../../lib/csv';
 import { fmtDate, fmtDateTime, fmtMoney, fmtMoneyShort, subState } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
@@ -52,6 +53,13 @@ export default function Subscriptions() {
           ])}>Xuất CSV</Button>
           <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>Đăng ký gói mới</Button>
         </>} />
+
+      <HelpTip id="subscriptions" steps={[
+        'Bán gói tại quầy: bấm "Đăng ký gói mới", chọn hội viên và gói; để trống ngày bắt đầu thì gói mới nối tiếp gói hiện tại.',
+        'Hội viên tự mua trong ứng dụng: duyệt đơn ở Duyệt đăng ký gói, gói sẽ tự hiện ở đây.',
+        'Bấm vào một dòng để sửa thời gian, xem lịch sử điều chỉnh hoặc huỷ gói (buổi đã xếp ngoài thời gian mới tự huỷ).',
+        'Lọc "Sắp hết hạn" để nhắc hội viên gia hạn trước 7 ngày.',
+      ]} />
 
       <div className="grid grid-4" style={{ marginBottom: 18 }}>
         <Stat icon="checkCircle" label="Còn hiệu lực" value={count('ACTIVE')} />

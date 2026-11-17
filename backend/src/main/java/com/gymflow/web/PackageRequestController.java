@@ -52,8 +52,18 @@ public class PackageRequestController {
     @PreAuthorize("hasRole('MEMBER')")
     public UpgradeQuote upgradeQuote(@RequestParam(required = false) Long planId,
                                      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-                                     @RequestParam(required = false) String code) {
-        return upgradeService.quote(CurrentUser.get(), planId, startDate, code);
+                                     @RequestParam(required = false) String code,
+                                     @RequestParam(required = false) Long promotionId) {
+        return upgradeService.quote(CurrentUser.get(), planId, startDate, code, promotionId);
+    }
+
+    /** Ưu đãi không cần mã dùng được khi nâng cấp (tính trên số tiền sau bù trừ), để hội viên tự chọn. */
+    @GetMapping("/upgrade-offers")
+    @PreAuthorize("hasRole('MEMBER')")
+    public List<com.gymflow.dto.Dtos.PromotionValidationResponse> upgradeOffers(
+            @RequestParam(required = false) Long planId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate) {
+        return upgradeService.offers(CurrentUser.get(), planId, startDate);
     }
 
     /** V49 · Gửi đơn nâng cấp: chờ thanh toán + quản lý duyệt như đơn thường. */

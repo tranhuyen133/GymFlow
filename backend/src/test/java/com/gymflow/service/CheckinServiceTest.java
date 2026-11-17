@@ -4,6 +4,7 @@ import com.gymflow.common.ApiException;
 import com.gymflow.domain.*;
 import com.gymflow.dto.CheckinDtos.CheckinResult;
 import com.gymflow.repository.GymCheckinRepository;
+import com.gymflow.repository.MemberRepository;
 import com.gymflow.repository.MemberSubscriptionRepository;
 import com.gymflow.repository.UserRepository;
 import com.gymflow.repository.WorkoutScheduleRepository;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 
 import java.time.*;
@@ -37,6 +39,7 @@ class CheckinServiceTest {
     @Mock UserRepository userRepository;
     @Mock AccessService access;
     @Mock Mappers mappers;
+    @Mock MemberRepository memberRepository;
 
     CheckinCodes codes;
     CheckinService service;
@@ -48,7 +51,7 @@ class CheckinServiceTest {
         Clock clock = Clock.fixed(NOW.atZone(ZONE).toInstant(), ZONE);
         codes = new CheckinCodes("test-secret-at-least-32-characters-long!!", "http://localhost", clock);
         service = new CheckinService(checkinRepository, subscriptionRepository, scheduleRepository, userRepository,
-                access, codes, mappers, clock);
+                access, codes, mappers, clock, memberRepository);
         User u = new User();
         u.setId(9L);
         u.setFullName("Nguyễn Văn An");
@@ -137,5 +140,44 @@ class CheckinServiceTest {
         CheckinResult r = service.manual(new AuthUser(2L, "admin@gymflow.vn", Role.ADMIN, "Quản lý"), 1L);
         assertThat(r.checkin().method()).isEqualTo(CheckinMethod.MANUAL);
         assertThat(r.checkin().createdByName()).isEqualTo("Quản lý GymFlow");
+    }
+
+    @Test
+    @DisplayName("Lễ tân quét thẻ (mã HV) hoặc gõ số điện thoại: tìm đúng một hội viên rồi ghi lượt MANUAL")
+    void deskByCodeOrPhone() {
+        AuthUser admin = new AuthUser(2L, "admin@gymflow.vn", Role.ADMIN, "Quản lý");
+        member.getUser().setPhone("0912345678");
+        when(memberRepository.search(eq("HV00001"), isNull(), isNull(), any())).thenReturn(new PageImpl<>(List.of(member)));
+        when(memberRepository.search(eq("912345678"), isNull(), isNull(), any())).thenReturn(new PageImpl<>(List.of(member)));
+
+        assertThat(service.desk(admin, " HV00001 ").checkin().method()).isEqualTo(CheckinMethod.MANUAL);
+        assertThat(service.desk(admin, "+84 912 345 678").checkin().memberCode()).isEqualTo("HV00001");
+    }
+
+    @Test
+    @DisplayName("Lễ tân gõ mã không khớp hoặc số điện thoại trùng nhiều người thì báo rõ, không ghi lượt")
+    void deskNotFoundOrAmbiguous() {
+        AuthUser admin = new AuthUser(2L, "admin@gymflow.vn", Role.ADMIN, "Quản lý");
+        when(memberRepository.search(eq("HV9"), isNull(), isNull(), any())).thenReturn(new PageImpl<>(List.of(member)));
+        assertThatThrownBy(() -> service.desk(admin, "HV9")).isInstanceOf(ApiException.class).hasMessageContaining("Không tìm thấy");
+
+        Member twin = new Member();
+        twin.setId(2L);
+        twin.setCode("HV00002");
+        User u2 = new User();
+        u2.setPhone("0912345678");
+        twin.setUser(u2);
+        member.getUser().setPhone("0912345678");
+        when(memberRepository.search(eq("912345678"), isNull(), isNull(), any())).thenReturn(new PageImpl<>(List.of(member, twin)));
+        assertThatThrownBy(() -> service.desk(admin, "0912345678")).isInstanceOf(ApiException.class).hasMessageContaining("mã hội viên");
+        verify(checkinRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Thẻ hội viên: QR chứa đúng mã hội viên")
+    void card() {
+        var c = service.card(memberUser);
+        assertThat(c.memberCode()).isEqualTo("HV00001");
+        assertThat(c.qr()).isNotEmpty();
     }
 }

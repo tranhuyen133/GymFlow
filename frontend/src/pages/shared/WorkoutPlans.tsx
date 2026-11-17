@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { PlanStatus, WorkoutPlanSummary } from '../../api/types';
 import { Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, StatusBadge, Table, Button } from '../../components/ui';
+import { HelpTip } from '../../components/Help';
 import { fmtDate, planStatus, relativeTime } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
 import { localizePlanName } from '../../lib/planText';
@@ -24,6 +25,12 @@ export default function WorkoutPlans() {
     <div className="page">
       <PageHead eyebrow={t('Huấn luyện')} title={t('Giáo án')} desc={t('Mỗi hội viên có một giáo án đang áp dụng; giáo án mới sẽ tự chuyển giáo án cũ sang lưu trữ.')}
         actions={<Button variant="primary" icon="plus" onClick={() => navigate('/workout-plans/new')}>{t('Soạn giáo án')}</Button>} />
+      <HelpTip id="workout-plans" steps={[
+        'Bấm "Soạn giáo án", chọn hội viên, mục tiêu và thời gian áp dụng.',
+        'Thêm bài cho từng ngày trong tuần: số hiệp, số lần, mức tạ, thời gian nghỉ. Lọc "Chỉ bài có video" trong thư viện để hội viên dễ làm theo.',
+        'Mỗi hội viên chỉ có một giáo án đang áp dụng; giáo án mới tự chuyển giáo án cũ sang lưu trữ.',
+        'Sau khi có giáo án, vào Lịch tập để xếp buổi theo giáo án.',
+      ]} />
       <div className="toolbar">
         <SearchInput value={q} onChange={setQ} placeholder={t('Tìm theo tên giáo án, hội viên…')} />
         <div className="spacer" />

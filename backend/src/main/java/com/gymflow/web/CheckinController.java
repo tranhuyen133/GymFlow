@@ -23,11 +23,25 @@ public class CheckinController {
     private final CrowdService crowdService;
     private final TodayService todayService;
 
-    /** Màn hình quầy: mã 6 số + ma trận QR, gọi lại khi hết secondsLeft. */
-    @GetMapping("/checkins/kiosk")
+    /** Mã check-in của hôm nay (mỗi ngày một mã) + ma trận QR để in dán ở quầy. */
+    @GetMapping("/checkins/daily-code")
     @PreAuthorize("hasRole('ADMIN')")
-    public KioskCode kiosk(@RequestParam(required = false) String origin) {
-        return checkinService.kiosk(origin);
+    public DailyCode dailyCode(@RequestParam(required = false) String origin) {
+        return checkinService.dailyCode(origin);
+    }
+
+    /** Lễ tân quét thẻ hội viên hoặc gõ mã hội viên / số điện thoại. */
+    @PostMapping("/checkins/desk")
+    @PreAuthorize("hasRole('ADMIN')")
+    public CheckinResult desk(@Valid @RequestBody DeskCheckinRequest req) {
+        return checkinService.desk(CurrentUser.get(), req.query());
+    }
+
+    /** Thẻ hội viên (QR chứa mã hội viên) để đưa lễ tân quét. */
+    @GetMapping("/me/checkin-card")
+    @PreAuthorize("hasRole('MEMBER')")
+    public MemberCard card() {
+        return checkinService.card(CurrentUser.get());
     }
 
     @GetMapping("/checkins/today")

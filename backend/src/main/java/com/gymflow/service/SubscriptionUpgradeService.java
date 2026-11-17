@@ -63,8 +63,26 @@ public class SubscriptionUpgradeService {
 
     @Transactional(readOnly = true)
     public UpgradeQuote quote(AuthUser user, Long planId, LocalDate startDate, String promotionCode) {
+        return quote(user, planId, startDate, promotionCode, null);
+    }
+
+    /** Báo giá theo đúng ưu đãi hội viên chọn: mã đã nhập, hoặc một ưu đãi không cần mã (promotionId). Không chọn thì không giảm. */
+    @Transactional(readOnly = true)
+    public UpgradeQuote quote(AuthUser user, Long planId, LocalDate startDate, String promotionCode, Long promotionId) {
         Member m = access.requireMemberOf(user);
-        return build(user, m, planId == null ? null : planService.load(planId), startDate, promotionCode, true);
+        return build(user, m, planId == null ? null : planService.load(planId), startDate,
+                Mappers.blankToNull(promotionCode), promotionId, true);
+    }
+
+    /** Ưu đãi không cần mã dùng được khi nâng cấp, tính trên số tiền còn phải trả sau bù trừ; giảm nhiều nhất trước. */
+    @Transactional(readOnly = true)
+    public List<PromotionValidationResponse> offers(AuthUser user, Long planId, LocalDate startDate) {
+        Member m = access.requireMemberOf(user);
+        if (planId == null) return List.of();
+        MembershipPlan plan = planService.load(planId);
+        UpgradeQuote q = build(user, m, plan, startDate, null, null, false);
+        if (!q.eligible()) return List.of();
+        return promotionService.offers(user, plan, q.amountAfterCredit(), true);
     }
 
     @Transactional
@@ -74,9 +92,10 @@ public class SubscriptionUpgradeService {
         subscriptionRepository.lockMember(m.getId());
         MembershipPlan plan = planService.load(req.planId());
         String code = Mappers.blankToNull(req.promotionCode());
-        UpgradeQuote q = build(user, m, plan, req.startDate(), code, true);
+        Long promotionId = code == null ? req.promotionId() : null;
+        UpgradeQuote q = build(user, m, plan, req.startDate(), code, promotionId, true);
         if (!q.eligible()) throw ApiException.badRequest(q.reason());
-        if (code != null && q.promotionReason() != null) throw ApiException.badRequest(q.promotionReason());
+        if ((code != null || promotionId != null) && q.promotionReason() != null) throw ApiException.badRequest(q.promotionReason());
 
         PaymentMethod method = req.paymentMethod() == null ? PaymentMethod.COUNTER : req.paymentMethod();
         if (method == PaymentMethod.BANK_TRANSFER && !paymentSettings.onlineReady()) {
@@ -205,7 +224,8 @@ public class SubscriptionUpgradeService {
 
     // ---------------- Tính báo giá ----------------
 
-    private UpgradeQuote build(AuthUser user, Member m, MembershipPlan plan, LocalDate startDate, String code, boolean checkPending) {
+    private UpgradeQuote build(AuthUser user, Member m, MembershipPlan plan, LocalDate startDate, String code, Long promotionId,
+                               boolean checkPending) {
         LocalDate today = mappers.today();
         LocalDate minStart = today.plusDays(1);
         List<MemberSubscription> effective = subscriptionRepository.findEffective(m.getId(), today);
@@ -259,8 +279,10 @@ public class SubscriptionUpgradeService {
         String promoCode = null, promoName = null, promoReason = null;
         long discount = 0;
         List<com.gymflow.dto.Dtos.PromotionGrantDto> gifts = List.of();
-        if (plan != null && problem == null) {
-            PromotionValidationResponse v = promotionService.validateFor(user, code, plan, amount, true);
+        if (plan != null && problem == null && (code != null || promotionId != null)) {
+            PromotionValidationResponse v = code != null
+                    ? promotionService.validateFor(user, code, plan, amount, true)
+                    : promotionService.validateOffer(user, promotionId, plan, amount, true);
             if (v.valid() && v.promotionId() != null) {
                 promoId = v.promotionId();
                 promoCode = v.promotionCode();

@@ -7,6 +7,7 @@ import { BarChart, Ring } from '../../components/charts';
 import { Icon } from '../../components/Icon';
 import { DayTimeline } from '../../components/motivation';
 import { Badge, Card, CountUp, Empty, ErrorState, LoadingBlock, PageHead, Person, Stat, StatusBadge, Table } from '../../components/ui';
+import { QuickActions } from '../../components/Help';
 import { fmtDate, fmtTime, parseDateTime, scheduleStatus } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 import { displayPersonName } from '../../lib/names';
@@ -34,6 +35,15 @@ export default function TrainerDashboard() {
           <Link className="btn btn-secondary" to="/workout-plans/new"><Icon name="clipboard" /><span>{t('Soạn giáo án')}</span></Link>
           <Link className="btn btn-primary" to="/schedules?new=1"><Icon name="plus" /><span>{t('Xếp lịch')}</span></Link>
         </>} />
+
+      <QuickActions items={[
+        { to: '/schedules?new=1', label: 'Xếp lịch', icon: 'calendar' },
+        { to: '/workout-plans/new', label: 'Soạn giáo án', icon: 'clipboard' },
+        { to: '/members', label: 'Học viên của tôi', icon: 'users' },
+        { to: '/messages', label: 'Tin nhắn', icon: 'message' },
+        { to: '/exercises?video=1', label: 'Bài tập có video', icon: 'play' },
+        { to: '/schedules', label: 'Lịch tuần', icon: 'clock' },
+      ]} />
 
       <div className="grid grid-4">
         <Stat icon="users" label="Hội viên phụ trách" value={<CountUp value={data.memberCount} />} foot={t('{n} giáo án đang áp dụng', { n: data.activePlans })} />
