@@ -78,6 +78,8 @@ public class SecurityConfig {
                                 "/api/users/*/avatar").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Trợ lý AI chỉ dành cho hội viên (controller cũng có @PreAuthorize để chặn kép).
+                        .requestMatchers("/api/ai/**").hasRole("MEMBER")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .exceptionHandling(e -> e

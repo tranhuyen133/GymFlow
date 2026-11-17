@@ -1,6 +1,6 @@
 # Bảng chủ file (Code Owners)
 
-Cập nhật 28/10/2026, theo code trên `develop` sau khi chép bản của Kiên. Mỗi file chỉ chủ file được sửa; cần đổi thì nhắn chủ file.
+Cập nhật 17/11/2026, theo code trên `feature/ai-chat-member` (bổ sung file mới của Huyền). Mỗi file chỉ chủ file được sửa; cần đổi thì nhắn chủ file.
 
 Viết tắt: **B/** = `backend/src/main/java/com/gymflow/`, **R/** = `backend/src/main/resources/`, **T/** = `backend/src/test/java/com/gymflow/`, **F/** = `frontend/src/`
 
@@ -44,6 +44,9 @@ Viết tắt: **B/** = `backend/src/main/java/com/gymflow/`, **R/** = `backend/s
 | `B/domain/WorkoutLog.java`, `B/repository/WorkoutLogRepository.java` | SCRUM-186 |
 | `B/service/DashboardService.java`, `T/service/DashboardServiceTest.java` | SCRUM-187 |
 | `B/domain/Article.java`, `ArticleCategory.java`, `ArticleStatus.java`, `B/repository/ArticleRepository.java`, `B/service/ArticleService.java`, `B/web/KnowledgeController.java` | SCRUM-209, 210 |
+| `B/service/GeminiClient.java`, `B/service/AiChatService.java`, `B/web/AiChatController.java` | |
+| `F/api/aiChat.ts`, `F/api/types/aiChat.ts`, `F/pages/member/AiChat.tsx` | |
+| `F/api/mock/aiChat.ts`, `F/pages/member/AiChat.css`, `T/service/AiChatServiceTest.java`, `T/web/AiChatControllerQuotaTest.java`, `T/web/AiChatRequestValidationTest.java` | |
 
 ## Kiên (Nguyễn Thế Kiên)
 | File | Task |

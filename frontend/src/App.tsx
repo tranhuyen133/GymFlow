@@ -22,6 +22,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import { ForumList, ForumTopicPage } from './pages/Forum';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
+import AiChat from './pages/member/AiChat';
 import MemberDashboard from './pages/member/MemberDashboard';
 import MyPackages from './pages/member/MyPackages';
 import MyPlan from './pages/member/MyPlan';
@@ -135,6 +136,7 @@ export default function App() {
         <Route path="/me/plan" element={<Only roles={MEMBER}><MyPlan /></Only>} />
         <Route path="/me/plan/new" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
         <Route path="/me/plan/:id" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
+        <Route path="/member/ai-chat" element={<Only roles={MEMBER}><AiChat /></Only>} />
         <Route path="/me/progress" element={<Navigate to="/profile?tab=progress" replace />} />
         <Route path="/me/journey" element={<Navigate to="/profile?tab=journey" replace />} />
         <Route path="/me/packages" element={<Only roles={MEMBER}><MyPackages /></Only>} />

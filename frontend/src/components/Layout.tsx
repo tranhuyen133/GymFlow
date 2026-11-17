@@ -30,6 +30,7 @@ export const NAV: NavItem[] = [
   { to: '/dashboard', label: 'Trang chủ', icon: 'dashboard', roles: ['MEMBER'], tab: true },
   { to: '/me/schedule', label: 'Lịch tập', icon: 'calendar', roles: ['MEMBER'], tab: true },
   { to: '/me/plan', label: 'Giáo án', icon: 'clipboard', roles: ['MEMBER'], tab: true },
+  { to: '/member/ai-chat', label: 'Trợ lý AI', icon: 'sparkle', roles: ['MEMBER'] },
   { to: '/knowledge', label: 'Kho kiến thức', icon: 'dumbbell', roles: ['MEMBER'], tab: true },
   { to: '/me/packages', label: 'Gói & Dịch vụ', icon: 'ticket', roles: ['MEMBER'] },
   { to: '/messages', label: 'Tin nhắn', icon: 'message', roles: ['MEMBER'] },
