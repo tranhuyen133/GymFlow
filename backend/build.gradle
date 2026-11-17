@@ -40,6 +40,9 @@ dependencies {
     // Bản 2.8.x dành cho Spring Boot 3.5 (2.6.x chỉ hợp với Boot 3.3)
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
 
+    // V53 · Tạo mã QR check-in ở quầy (chỉ phần lõi, không kèm thư viện ảnh)
+    implementation 'com.google.zxing:core:3.5.3'
+
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
