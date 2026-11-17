@@ -36,7 +36,7 @@
 .pick-note .pick-ico { width: 30px; height: 30px; border-radius: 10px; }
 
 /* ---------- Khối chuyển khoản (V49: thẻ ngân hàng + QR + các bước) ---------- */
-.pay-wrap { display: flex; flex-direction: column; gap: 14px; }
+.pay-wrap { display: flex; flex-direction: column; gap: 14px; container-type: inline-size; container-name: pay; }
 .pay-box { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
 .pay-qr { display: flex; flex-direction: column; align-items: center; }
 .pay-qr .qr-frame { width: 100%; }
@@ -73,7 +73,7 @@
 }
 .bank-name { font-weight: 800; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.92; text-align: right; overflow-wrap: anywhere; }
 .bank-number { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.bank-number .mono { font-size: clamp(18px, 2.4vw, 22px); font-weight: 800; letter-spacing: 0.08em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.bank-number .mono { font-size: clamp(17px, 5cqi, 22px); font-weight: 800; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .bank-holder { display: flex; flex-direction: column; gap: 2px; }
 .bank-holder .tiny { opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; }
 .bank-holder b { font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; }
@@ -146,4 +146,37 @@
   .pay-box, .pay-steps { grid-template-columns: 1fr; }
   .pay-box .qr-frame { max-width: 240px; margin: 0 auto; }
   .qr-current { grid-template-columns: 96px minmax(0, 1fr); }
+}
+
+/* V50 · Khối chuyển khoản tự xếp theo bề rộng CHỖ ĐẶT nó (khung "Hội viên sẽ thấy", modal, trang hẹp),
+   không theo bề rộng màn hình – tránh thẻ ngân hàng bị bóp thành cột dọc. */
+@container pay (max-width: 620px) {
+  .pay-box { grid-template-columns: 1fr; gap: 16px; }
+  .pay-qr { order: 2; }
+  .pay-side { order: 1; }
+  .pay-qr .qr-frame { max-width: 220px; margin: 0 auto; }
+  .pay-steps { grid-template-columns: 1fr; }
+}
+@container pay (min-width: 621px) and (max-width: 760px) {
+  .pay-box { grid-template-columns: 180px minmax(0, 1fr); gap: 16px; }
+}
+
+/* V50 · Trang cài đặt: xem trước 2 khổ – máy tính và khung điện thoại */
+.pay-preview { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; align-items: start; }
+.pay-preview-label {
+  display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint);
+}
+.pay-preview-desktop { min-width: 0; padding: 18px; border-radius: 16px; border: 1px dashed var(--hairline); }
+.pay-preview-phone { display: flex; flex-direction: column; align-items: center; }
+.phone-frame {
+  position: relative; width: 320px; max-width: 100%; max-height: 640px; overflow: auto; padding: 34px 14px 18px;
+  border-radius: 38px; border: 10px solid #111; background: var(--bg, var(--surface));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  scrollbar-width: none;
+}
+.phone-frame::-webkit-scrollbar { display: none; }
+.phone-notch { position: absolute; top: 8px; left: 50%; width: 92px; height: 20px; margin-left: -46px; border-radius: 999px; background: #111; }
+@media (max-width: 1100px) {
+  .pay-preview { grid-template-columns: 1fr; }
 }
