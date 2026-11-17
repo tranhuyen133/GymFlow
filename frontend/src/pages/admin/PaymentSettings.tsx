@@ -162,12 +162,23 @@ export default function PaymentSettings() {
             )}
             {needQr && <p className="tiny" style={{ margin: '10px 0 0', color: 'var(--warning)' }}>{t('Cần có mã QR thì hội viên mới chọn được chuyển khoản.')}</p>}
           </Card>
-          <Card title="Hội viên sẽ thấy" icon="eye">
-            <PaymentInfo settings={preview} amount={500000} code="GF000123" />
-            <p className="tiny faint" style={{ margin: '12px 0 0' }}>{t('Số tiền và mã đơn ở trên chỉ là ví dụ; mỗi đơn có số tiền và mã riêng.')}</p>
-          </Card>
         </div>
       </div>
+
+      {/* V50 · Xem trước đặt riêng một hàng, rộng như màn hình hội viên, kèm bản điện thoại */}
+      <Card title="Hội viên sẽ thấy" icon="eye" className="mt-20"
+        actions={<span className="tiny faint">{t('Số tiền và mã đơn chỉ là ví dụ')}</span>}>
+        <div className="pay-preview">
+          <div className="pay-preview-desktop">
+            <span className="pay-preview-label"><Icon name="monitor" size={13} /> {t('Máy tính')}</span>
+            <PaymentInfo settings={preview} amount={500000} code="GF000123" />
+          </div>
+          <div className="pay-preview-phone" aria-label={t('Xem trên điện thoại')}>
+            <span className="pay-preview-label"><Icon name="phone" size={13} /> {t('Điện thoại')}</span>
+            <div className="phone-frame"><div className="phone-notch" aria-hidden /><PaymentInfo settings={preview} amount={500000} code="GF000123" /></div>
+          </div>
+        </div>
+      </Card>
 
       {cropping && <QrCropper file={cropping} onCancel={() => setCropping(null)} onDone={upload} />}
       {removing && <Confirm danger title="Xoá mã QR?" confirmText="Xoá" message={t('Hội viên sẽ không chọn được chuyển khoản cho tới khi có mã QR mới.')}
