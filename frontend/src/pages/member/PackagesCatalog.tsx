@@ -198,11 +198,11 @@ export default function PackagesCatalog({ embedded }: { embedded?: boolean } = {
                 <Card key={s.id}>
                   <div className="stack" style={{ gap: 12, flex: 1 }}>
                     <div className="row between" style={{ alignItems: 'flex-start' }}>
-                      <span className="chip on">{CATEGORY_LABELS[s.category] ?? s.category}</span>
+                      <span className="chip on">{t(CATEGORY_LABELS[s.category] ?? s.category)}</span>
                       {s.requiresBooking && <Badge tone="blue">{t('Cần đặt lịch trước')}</Badge>}
                     </div>
 
-                    <h3 style={{ margin: 0, fontSize: 18 }}>{s.name}</h3>
+                    <h3 style={{ margin: 0, fontSize: 18 }}>{localizeText(s.nameEn, s.name)}</h3>
 
                     <div className="pc-price" style={{ margin: '4px 0' }}>
                       {s.unitPrice != null ? (
@@ -781,7 +781,7 @@ function BuyServiceModal({
 
   return (
     <Modal
-      title={t('Mua lẻ dịch vụ: {name}', { name: service.name })}
+      title={t('Mua lẻ dịch vụ: {name}', { name: localizeText(service.nameEn, service.name) })}
       onClose={onClose}
       footer={
         <>
@@ -800,7 +800,7 @@ function BuyServiceModal({
         <div className="plan-summary">
           <div>
             <span className="tiny muted">{t('Dịch vụ')}</span>
-            <b>{service.name}</b>
+            <b>{localizeText(service.nameEn, service.name)}</b>
           </div>
           <div>
             <span className="tiny muted">{t('Đơn giá')}</span>
