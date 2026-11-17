@@ -178,6 +178,7 @@ class AiChatServiceTest {
                 .contains("còn 10 ngày")
                 .contains("Giáo án: Tăng cơ")
                 .contains("Thứ 2: Bench Press 4x8-10")
+                .contains("Hôm nay (Thứ 3): không có bài tập trong giáo án")
                 .contains("17/11 18:00-19:00, HLV: HLV Phúc")
                 .contains("15/11: hoàn thành")
                 .contains("14/11: vắng")
