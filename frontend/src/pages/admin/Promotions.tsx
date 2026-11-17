@@ -69,7 +69,8 @@ export default function Promotions() {
             <Table caption={t('Danh sách chương trình ưu đãi')}>
               <thead>
                 <tr>
-                  <th>{t('Mã / Tên chương trình')}</th>
+                  <th>{t('Mã')}</th>
+                  <th>{t('Tên chương trình')}</th>
                   <th>{t('Mức ưu đãi')}</th>
                   <th>{t('Thời gian hiệu lực')}</th>
                   <th>{t('Lượt sử dụng')}</th>
@@ -87,19 +88,19 @@ export default function Promotions() {
 
                   return (
                     <tr key={p.id}>
-                      <td>
-                        <div className="row" style={{ gap: 6, alignItems: 'center' }}>
-                          {p.code ? (
-                            <span className="chip on" style={{ fontWeight: 700 }}>
-                              {p.code}
-                            </span>
-                          ) : (
-                            <span className="chip">{t('Tự áp dụng')}</span>
-                          )}
-                          <b>{localizeText(p.nameEn, p.name)}</b>
-                        </div>
+                      <td className="nowrap">
+                        {p.code ? (
+                          <span className="chip on" style={{ fontWeight: 700 }}>{p.code}</span>
+                        ) : (
+                          <span className="chip">{t('Tự áp dụng')}</span>
+                        )}
+                      </td>
+                      <td style={{ minWidth: 220, maxWidth: 320 }}>
+                        <b className="ellipsis" style={{ display: 'block' }} title={localizeText(p.nameEn, p.name)}>
+                          {localizeText(p.nameEn, p.name)}
+                        </b>
                         {p.description && (
-                          <div className="tiny faint ellipsis" style={{ maxWidth: 260, marginTop: 4 }}>
+                          <div className="tiny faint ellipsis" style={{ maxWidth: 280, marginTop: 4 }}>
                             {localizeText(p.descriptionEn, p.description)}
                           </div>
                         )}
@@ -148,9 +149,12 @@ export default function Promotions() {
                               <li key={idx}>
                                 {t('{q} lượt {name} ({d} ngày)', {
                                   q: g.quantity,
-                                  name: g.serviceName ? t(g.serviceName) : `#${g.serviceId}`,
+                                  name: localizeText(g.serviceNameEn, g.serviceName) || `#${g.serviceId}`,
                                   d: g.validDays,
                                 })}
+                                {localizeText(g.conditionsEn, g.conditions) && (
+                                  <div className="tiny faint">{localizeText(g.conditionsEn, g.conditions)}</div>
+                                )}
                               </li>
                             ))}
                           </ul>
@@ -642,7 +646,7 @@ function PromotionFormModal({
                       >
                         {services.map((s) => (
                           <option key={s.id} value={s.id}>
-                            {s.name}
+                            {localizeText(s.nameEn, s.name)}
                           </option>
                         ))}
                       </select>
