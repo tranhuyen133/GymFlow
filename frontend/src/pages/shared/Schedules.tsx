@@ -13,6 +13,7 @@ import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
 import { WeekCalendar } from '../../components/WeekCalendar';
 import { Alert, Badge, Button, Confirm, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Person, Segmented, Select, Stars, StatusBadge, Textarea } from '../../components/ui';
+import { HelpTip } from '../../components/Help';
 import { getLang, t, tn } from '../../i18n';
 import { displayPersonName } from '../../lib/names';
 import { localizeScheduleNote, localizeScheduleTitle, localizeText } from '../../lib/planText';
@@ -72,6 +73,14 @@ export default function Schedules() {
         actions={staff ? <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>{t('Xếp lịch')}</Button>
           : selfTrain ? <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>{t('Tự xếp buổi tập')}</Button>
           : member.data?.trainerName ? <Link to="/messages" className="btn btn-secondary"><Icon name="message" size={16} /><span>{t('Nhắn HLV')}</span></Link> : undefined} />
+      {staff && (
+        <HelpTip id="schedules-staff" steps={[
+          'Bấm "Xếp lịch", chọn hội viên, ngày và giờ; chọn lặp hằng tuần để xếp nhiều buổi một lần.',
+          'Hệ thống tự chặn trùng giờ của HLV và hội viên, và chỉ cho xếp khi hội viên còn gói hiệu lực.',
+          'Sau buổi tập: bấm vào buổi › Hoàn thành (trừ 1 buổi PT) hoặc Vắng mặt.',
+          'Dùng nút tuần trước / tuần sau để xem và dời lịch.',
+        ]} />
+      )}
 
       <div className="toolbar">
         <div className="row">
@@ -320,9 +329,9 @@ function CompleteForm({ session, onClose, onDone }: { session: Schedule; onClose
                 {preview.data.exercises.map((e, i) => (
                   <li key={`${e.exerciseName}-${i}`}>
                     {getLang() === 'en' && e.exerciseNameEn ? e.exerciseNameEn : e.exerciseName}
-                    {e.sets != null && ` · ${e.sets} hiệp`}
+                    {e.sets != null && ` · ${t('{n} hiệp', { n: e.sets })}`}
                     {e.reps && ` × ${e.reps}`}
-                    {` · ${e.activeMinutes} phút vận động`}
+                    {` · ${t('{n} phút vận động', { n: e.activeMinutes })}`}
                     {e.calories != null && ` · ${e.calories} kcal`}
                   </li>
                 ))}

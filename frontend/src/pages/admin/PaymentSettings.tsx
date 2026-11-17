@@ -6,13 +6,15 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { PaymentSettings as Settings } from '../../api/types';
+import type { MembershipPlan, PackageRequest, PaymentSettings as Settings } from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { PaymentInfo, PickCard, QrCropper, useQrUrl } from '../../components/PaymentQr';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Confirm, ErrorState, Field, Input, LoadingBlock, PageHead } from '../../components/ui';
+import { Alert, Badge, Button, Card, Confirm, ErrorState, Field, Input, LoadingBlock, PageHead, Select } from '../../components/ui';
+import { HelpTip } from '../../components/Help';
 import { t } from '../../i18n';
-import { fmtDateTime } from '../../lib/format';
+import { localizeText } from '../../lib/planText';
+import { fmtDateTime, fmtMoney } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 
 const ACCEPT = /^image\/(png|jpe?g|webp)$/;
@@ -34,6 +36,25 @@ export default function PaymentSettings() {
   const [drag, setDrag] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const qrUrl = useQrUrl(data?.hasQr ? data.qrUpdatedAt : null);
+  // Xem trước bằng số liệu thật: đơn chuyển khoản đang chờ (đúng số tiền + mã đơn) hoặc giá một gói đang bán.
+  const plans = useAsync(() => api.get<MembershipPlan[]>('/plans'), []);
+  const requests = useAsync(() => api.get<PackageRequest[]>('/package-requests', { status: 'PENDING' }), []);
+  const [sample, setSample] = useState('');
+
+  const pendingTransfers = (requests.data ?? []).filter((r) => r.paymentMethod === 'BANK_TRANSFER' && r.paymentCode);
+  const salePlans = (plans.data ?? []).filter((p) => p.active).sort((a, b) => a.price - b.price);
+  const nextCode = `GF${String(Math.max(0, ...(requests.data ?? []).map((r) => r.id)) + 1).padStart(6, '0')}`;
+  const samples = [
+    ...pendingTransfers.map((r) => ({
+      key: `r${r.id}`, amount: r.finalPrice ?? r.price, code: r.paymentCode as string,
+      label: t('Đơn {code} · {name} · {m}', { code: r.paymentCode ?? '', name: r.memberName, m: fmtMoney(r.finalPrice ?? r.price) }),
+    })),
+    ...salePlans.map((p) => ({
+      key: `p${p.id}`, amount: p.price, code: nextCode,
+      label: t('Gói {name} · {m} (mã đơn ví dụ)', { name: localizeText(p.nameEn, p.name), m: fmtMoney(p.price) }),
+    })),
+  ];
+  const current = samples.find((s) => s.key === sample) ?? samples[0] ?? null;
 
   useEffect(() => {
     if (!data) return;
@@ -103,6 +124,13 @@ export default function PaymentSettings() {
         desc="Hội viên chọn trả tại quầy hoặc chuyển khoản theo mã QR khi gửi đơn. Chuyển khoản không tự kích hoạt gói: đối chiếu sao kê theo mã đơn rồi duyệt ở Duyệt đăng ký gói."
         actions={<Link to="/package-requests" className="btn btn-secondary"><span>{t('Duyệt đăng ký gói')}</span></Link>} />
 
+      <HelpTip title="Cách nhận chuyển khoản" steps={[
+        'Nhập ngân hàng, số tài khoản, chủ tài khoản rồi tải ảnh mã QR nhận tiền từ app ngân hàng.',
+        'Chọn "Tại quầy + chuyển khoản" rồi bấm Lưu để hội viên chọn được chuyển khoản.',
+        'Hội viên chuyển đúng số tiền với nội dung là mã đơn (GF + số đơn), rồi bấm "Tôi đã chuyển khoản".',
+        'Đối chiếu sao kê theo mã đơn ở Duyệt đăng ký gói, đúng tiền thì bấm Duyệt để kích hoạt gói.',
+      ]} />
+
       <div className="grid grid-main" style={{ alignItems: 'start' }}>
         <div className="stack" style={{ gap: 18 }}>
           <Card title="Cách nhận tiền" icon="wallet" actions={data.onlineEnabled ? <Badge tone="green">{t('Đang nhận chuyển khoản')}</Badge> : <Badge tone="muted">{t('Chỉ thu tại quầy')}</Badge>}>
@@ -167,17 +195,31 @@ export default function PaymentSettings() {
 
       {/* V50 · Xem trước đặt riêng một hàng, rộng như màn hình hội viên, kèm bản điện thoại */}
       <Card title="Hội viên sẽ thấy" icon="eye" className="mt-20"
-        actions={<span className="tiny faint">{t('Số tiền và mã đơn chỉ là ví dụ')}</span>}>
-        <div className="pay-preview">
-          <div className="pay-preview-desktop">
-            <span className="pay-preview-label"><Icon name="monitor" size={13} /> {t('Máy tính')}</span>
-            <PaymentInfo settings={preview} amount={500000} code="GF000123" />
+        actions={samples.length > 0 ? (
+          <Select aria-label="Xem trước với" value={current?.key ?? ''} onChange={(e) => setSample(e.target.value)} style={{ maxWidth: 360 }}>
+            {pendingTransfers.length > 0 && <optgroup label={t('Đơn chuyển khoản đang chờ')}>
+              {samples.filter((s) => s.key.startsWith('r')).map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            </optgroup>}
+            <optgroup label={t('Giá gói đang bán')}>
+              {samples.filter((s) => s.key.startsWith('p')).map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            </optgroup>
+          </Select>
+        ) : <span className="tiny faint">{t('Chưa có gói đang bán để xem trước số tiền')}</span>}>
+        {current ? (
+          <div className="pay-preview">
+            <div className="pay-preview-desktop">
+              <span className="pay-preview-label"><Icon name="monitor" size={13} /> {t('Máy tính')}</span>
+              <PaymentInfo settings={preview} amount={current.amount} code={current.code} />
+            </div>
+            <div className="pay-preview-phone" aria-label={t('Xem trên điện thoại')}>
+              <span className="pay-preview-label"><Icon name="phone" size={13} /> {t('Điện thoại')}</span>
+              <div className="phone-frame"><div className="phone-notch" aria-hidden /><PaymentInfo settings={preview} amount={current.amount} code={current.code} /></div>
+            </div>
           </div>
-          <div className="pay-preview-phone" aria-label={t('Xem trên điện thoại')}>
-            <span className="pay-preview-label"><Icon name="phone" size={13} /> {t('Điện thoại')}</span>
-            <div className="phone-frame"><div className="phone-notch" aria-hidden /><PaymentInfo settings={preview} amount={500000} code="GF000123" /></div>
-          </div>
-        </div>
+        ) : <LoadingBlock rows={3} />}
+        <p className="tiny faint" style={{ margin: '10px 0 0' }}>
+          {t('Mỗi đơn có số tiền riêng (đã trừ ưu đãi, bù trừ gói cũ) và mã nội dung riêng GF + số đơn. Chọn một đơn đang chờ để xem đúng thứ hội viên đó thấy.')}
+        </p>
       </Card>
 
       {cropping && <QrCropper file={cropping} onCancel={() => setCropping(null)} onDone={upload} />}

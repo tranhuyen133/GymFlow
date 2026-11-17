@@ -5,6 +5,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { todayIso } from './format';
+import { t } from '../i18n';
 
 export const LIMITS = {
   weightKg: { min: 20, max: 300 },
@@ -26,10 +27,10 @@ export function toNumber(s: string): number | null {
 /** Số đo: sai định dạng (chữ, số âm, quá 2 chữ số thập phân) → "không hợp lệ"; đúng định dạng nhưng ngoài khoảng → nói rõ giới hạn. */
 function measure(s: string, { min, max }: { min: number; max: number }, name: string, unit: string) {
   const v = s.trim();
-  if (!DECIMAL_RE.test(v)) return `${name} không hợp lệ`;
+  if (!DECIMAL_RE.test(v)) return t('{name} không hợp lệ', { name: t(name) });
   const n = toNumber(v) as number;
-  if (n < min) return `${name} phải từ ${min}${unit} trở lên`;
-  if (n > max) return `${name} không được vượt quá ${max}${unit}`;
+  if (n < min) return t('{name} phải từ {min}{unit} trở lên', { name: t(name), min, unit });
+  if (n > max) return t('{name} không được vượt quá {max}{unit}', { name: t(name), max, unit });
   return undefined;
 }
 
@@ -132,9 +133,9 @@ export const NAME_EN_RE = /^$|^[A-Za-z][A-Za-z0-9 ()'’\/,.&+-]*$/;
 
 function checkTitle(s: string, what: string, min: number, max: number, example: string) {
   const v = s.trim().replace(/\s+/g, ' ');
-  if (!v) return `Vui lòng nhập tên ${what}`;
-  if (v.length < min || v.length > max) return `Tên ${what} từ ${min} đến ${max} ký tự`;
-  return TITLE_RE.test(v) ? undefined : `Tên ${what} phải có chữ cái (có thể kèm số), VD: ${example}`;
+  if (!v) return t('Vui lòng nhập tên {what}', { what: t(what) });
+  if (v.length < min || v.length > max) return t('Tên {what} từ {min} đến {max} ký tự', { what: t(what), min, max });
+  return TITLE_RE.test(v) ? undefined : t('Tên {what} phải có chữ cái (có thể kèm số), VD: {example}', { what: t(what), example: t(example) });
 }
 export const checkPlanName = (s: string) => checkTitle(s, 'giáo án', 3, 120, 'Full body 3 buổi/tuần');
 export const checkExerciseName = (s: string) => checkTitle(s, 'bài tập', 2, 120, 'Squat thanh đòn');
@@ -179,8 +180,8 @@ export function autoChecks(e: Reviewable): CheckItem[] {
   const steps = countSteps(e.instructions);
   return [
     { id: 'source', label: 'Có ít nhất 1 nguồn tham khảo', ok: e.sourceCount > 0, hint: 'Tab "Nguồn và giấy phép"' },
-    { id: 'desc', label: `Mô tả ngắn từ ${MIN_DESCRIPTION} ký tự`, ok: desc >= MIN_DESCRIPTION, hint: `hiện ${desc} ký tự` },
-    { id: 'steps', label: `Hướng dẫn từ ${MIN_STEPS} bước (mỗi bước một dòng)`, ok: steps >= MIN_STEPS, hint: `hiện ${steps} bước` },
+    { id: 'desc', label: t('Mô tả ngắn từ {n} ký tự', { n: MIN_DESCRIPTION }), ok: desc >= MIN_DESCRIPTION, hint: t('hiện {n} ký tự', { n: desc }) },
+    { id: 'steps', label: t('Hướng dẫn từ {n} bước (mỗi bước một dòng)', { n: MIN_STEPS }), ok: steps >= MIN_STEPS, hint: t('hiện {n} bước', { n: steps }) },
     { id: 'safety', label: 'Có lưu ý an toàn', ok: !!(e.safetyNotes ?? '').trim() },
     { id: 'location', label: 'Đã chọn nơi tập', ok: !!e.location },
     { id: 'goals', label: 'Đã chọn mục tiêu', ok: e.goals.length > 0 },

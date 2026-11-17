@@ -15,6 +15,7 @@ import { Icon, type IconName } from './Icon';
 import { MyAvatar } from './AvatarEditor';
 import { ChatWidget } from './ChatWidget';
 import { AiChatWidget } from './AiChatWidget';
+import { QuickCheckin } from './DeskCheckin';
 import { Badge, Button, Confirm } from './ui';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { locale, t } from '../i18n';
@@ -361,6 +362,7 @@ export function Layout() {
             </div>
           )}
           <Link to="/help" className="btn btn-ghost btn-icon top-help" aria-label={t('Trợ giúp')} title={t('Trợ giúp')} data-tour="help"><Icon name="info" /></Link>
+          {user.role === 'ADMIN' && <QuickCheckin />}
           <Notifications userId={user.id} />
           <AccountMenu onLogout={() => setAskLogout(true)} />
         </header>

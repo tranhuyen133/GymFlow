@@ -24,6 +24,12 @@ public class PromotionController {
         return promotionService.validate(CurrentUser.get(), req);
     }
 
+    /** Ưu đãi không cần mã mà hội viên đủ điều kiện cho gói, để hội viên tự chọn. */
+    @GetMapping("/api/promotions/offers")
+    public List<PromotionValidationResponse> offers(@RequestParam Long planId) {
+        return promotionService.offers(CurrentUser.get(), planId);
+    }
+
     @GetMapping("/api/admin/promotions")
     @PreAuthorize("hasRole('ADMIN')")
     public List<PromotionResponse> listAllPromotions() {

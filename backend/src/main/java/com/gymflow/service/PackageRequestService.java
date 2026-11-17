@@ -113,9 +113,15 @@ public class PackageRequestService {
         long discountAmount = 0L;
         long finalPrice = originalPrice;
 
+        // Chỉ áp ưu đãi hội viên đã chọn: nhập mã, hoặc chọn một ưu đãi không cần mã. Không chọn gì thì giữ nguyên giá.
         String promoCode = Mappers.blankToNull(req.promotionCode());
-        PromotionValidationResponse validation = promotionService.validate(user, new PromotionValidateRequest(promoCode, plan.getId()));
+        PromotionValidationResponse validation = null;
         if (promoCode != null) {
+            validation = promotionService.validate(user, new PromotionValidateRequest(promoCode, plan.getId()));
+        } else if (req.promotionId() != null) {
+            validation = promotionService.validateOffer(user, req.promotionId(), plan, originalPrice, false);
+        }
+        if (validation != null) {
             if (!validation.valid()) {
                 throw ApiException.badRequest(validation.reason());
             }
@@ -124,10 +130,6 @@ public class PackageRequestService {
                 discountAmount = validation.discountAmount();
                 finalPrice = validation.finalPrice();
             }
-        } else if (validation.valid() && validation.promotionId() != null) {
-            promo = promotionRepository.findById(validation.promotionId()).orElse(null);
-            discountAmount = validation.discountAmount();
-            finalPrice = validation.finalPrice();
         }
 
         PackageRequest r = new PackageRequest();

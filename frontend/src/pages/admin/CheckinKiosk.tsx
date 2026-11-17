@@ -1,33 +1,36 @@
 /**
- * V53 · Màn hình quầy lễ tân: mã QR check-in đổi mỗi 30 giây (mở toàn màn hình trên máy tính bảng / TV ở quầy),
- * danh sách lượt đến hôm nay tự cập nhật, check-in hộ khi hội viên quên điện thoại, bản đồ giờ đông cả tuần.
+ * Check-in quầy (quản lý / lễ tân):
+ * - Quét thẻ hội viên hoặc gõ mã HV / số điện thoại – cách chính, nhanh nhất. Ô này cũng có trên thanh trên cùng ở mọi trang
+ *   (nút "Check-in"), nên không cần giữ trang này mở.
+ * - Mã tự check-in của hôm nay: mỗi ngày một mã, in hoặc viết lên bảng ở quầy từ đầu ngày; hội viên tự quét / nhập khi tới.
+ * - Danh sách lượt đến hôm nay, huỷ lượt bấm nhầm, bản đồ giờ đông cả tuần.
  */
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../api/client';
-import type { Checkin, CheckinResult, CheckinToday, Crowd, KioskCode } from '../../api/checkinTypes';
+import type { Checkin, CheckinResult, CheckinToday, Crowd, DailyCode } from '../../api/checkinTypes';
 import { CrowdFoot, CrowdHeatmap, CrowdChip, QrCode, fmtHour } from '../../components/checkin';
+import { DeskCheckinBox, fmtDaily } from '../../components/DeskCheckin';
+import { HelpTip } from '../../components/Help';
 import { Icon } from '../../components/Icon';
 import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, LoadingBlock, PageHead } from '../../components/ui';
+import { Badge, Button, Card, Confirm, Empty, ErrorState, LoadingBlock, PageHead } from '../../components/ui';
 import { t } from '../../i18n';
-import { fmtTime } from '../../lib/format';
+import { fmtDate, fmtTime } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
 import { errMsg, useAsync } from '../../lib/hooks';
 
-function KioskQr({ kiosk, big }: { kiosk: KioskCode; big?: boolean }) {
+function DailyCodeBlock({ daily, big }: { daily: DailyCode; big?: boolean }) {
   return (
-    <div className="kiosk-qr">
-      <div className="kicker">{t('GymFlow · Check-in')}</div>
-      <div className="qr-frame"><QrCode rows={kiosk.qr} size={big ? 440 : 300} /></div>
-      <div className="kiosk-code" aria-label={t('Mã check-in {code}', { code: kiosk.code })}>{kiosk.code.slice(0, 3)} {kiosk.code.slice(3)}</div>
-      <div className="kiosk-timer" aria-hidden>
-        <i key={kiosk.code} style={{ animationDuration: `${kiosk.secondsLeft}s`, ['--from' as string]: (kiosk.secondsLeft / kiosk.periodSeconds).toFixed(3) }} />
-      </div>
+    <div className="daily-code">
+      <div className="kicker">{t('GymFlow · Mã check-in hôm nay')}</div>
+      <div className="qr-frame"><QrCode rows={daily.qr} size={big ? 420 : 220} label={t('Mã check-in {code}', { code: daily.code })} /></div>
+      <div className="daily-code-num">{fmtDaily(daily.code)}</div>
+      <div className="tiny muted">{t('Dùng trong ngày {d}', { d: fmtDate(daily.date) })}</div>
       <ol className="kiosk-steps">
         <li><b>1</b>{t('Mở camera điện thoại, quét mã QR')}</li>
         <li><b>2</b>{t('Hoặc vào GymFlow › Hôm nay › Check-in rồi nhập 6 số')}</li>
-        <li><b>3</b>{t('Màn hình báo thành công là xong, chúc bạn tập tốt!')}</li>
+        <li><b>3</b>{t('Quên điện thoại? Đọc mã hội viên hoặc số điện thoại cho lễ tân')}</li>
       </ol>
     </div>
   );
@@ -42,11 +45,11 @@ function CheckinRow({ c, flash, onUndo }: { c: Checkin; flash: boolean; onUndo: 
         <div className="tiny muted ellipsis">
           {c.planName ? t(c.planName) : t('Không có gói')}
           {c.sessionTitle && c.sessionStart && <> · {t('Buổi {title} lúc {time}', { title: t(c.sessionTitle), time: fmtTime(c.sessionStart) })}</>}
-          {c.method === 'MANUAL' && c.createdByName && <> · {t('check-in hộ bởi {name}', { name: displayPersonName(c.createdByName) })}</>}
+          {c.method === 'MANUAL' && c.createdByName && <> · {t('check-in tại quầy bởi {name}', { name: displayPersonName(c.createdByName) })}</>}
         </div>
       </div>
       {c.daysLeft != null && c.daysLeft <= 7 && <Badge tone={c.daysLeft === 0 ? 'red' : 'amber'}>{t('Còn {n} ngày', { n: c.daysLeft })}</Badge>}
-      <Badge tone={c.method === 'QR' ? 'green' : 'blue'}>{c.method === 'QR' ? 'QR' : t('Quầy')}</Badge>
+      <Badge tone={c.method === 'QR' ? 'green' : 'blue'}>{c.method === 'QR' ? t('Tự check-in') : t('Quầy')}</Badge>
       <Button size="sm" variant="ghost" icon="undo" aria-label="Huỷ lượt check-in" title="Huỷ lượt check-in" onClick={onUndo} />
     </div>
   );
@@ -54,8 +57,7 @@ function CheckinRow({ c, flash, onUndo }: { c: Checkin; flash: boolean; onUndo: 
 
 export default function CheckinKiosk() {
   const toast = useToast();
-  const [kiosk, setKiosk] = useState<KioskCode | null>(null);
-  const [kioskErr, setKioskErr] = useState<string | null>(null);
+  const daily = useAsync(() => api.get<DailyCode>('/checkins/daily-code', { origin: window.location.origin }), []);
   const [full, setFull] = useState(false);
   const [memberId, setMemberId] = useState('');
   const [busy, setBusy] = useState(false);
@@ -66,33 +68,15 @@ export default function CheckinKiosk() {
   const crowd = useAsync(() => api.get<Crowd>('/checkins/crowd'), []);
   const reloadToday = today.reload;
   const reloadCrowd = crowd.reload;
-
-  // Lấy mã mới đúng lúc mã cũ hết hạn (theo đồng hồ máy chủ), lỗi mạng thì thử lại sau 5 giây
-  useEffect(() => {
-    let alive = true;
-    let timer = 0;
-    const load = async () => {
-      try {
-        const k = await api.get<KioskCode>('/checkins/kiosk', { origin: window.location.origin });
-        if (!alive) return;
-        setKiosk(k);
-        setKioskErr(null);
-        timer = window.setTimeout(() => { void load(); }, k.secondsLeft * 1000 + 300);
-      } catch (e) {
-        if (!alive) return;
-        setKioskErr(errMsg(e));
-        timer = window.setTimeout(() => { void load(); }, 5000);
-      }
-    };
-    void load();
-    return () => { alive = false; clearTimeout(timer); };
-  }, []);
+  const reloadDaily = daily.reload;
 
   useEffect(() => {
-    const a = setInterval(() => { if (!document.hidden) void reloadToday(); }, 10_000);
+    const a = setInterval(() => { if (!document.hidden) void reloadToday(); }, 15_000);
     const b = setInterval(() => { if (!document.hidden) void reloadCrowd(); }, 300_000);
-    return () => { clearInterval(a); clearInterval(b); };
-  }, [reloadToday, reloadCrowd]);
+    // Mở trang qua đêm: lấy lại mã khi sang ngày mới
+    const c = setInterval(() => { if (!document.hidden && daily.data && daily.data.date !== new Date().toLocaleDateString('sv-SE')) void reloadDaily(); }, 60_000);
+    return () => { clearInterval(a); clearInterval(b); clearInterval(c); };
+  }, [reloadToday, reloadCrowd, reloadDaily, daily.data]);
 
   // Lượt mới nhất vừa xuất hiện thì nháy sáng một lần
   useEffect(() => {
@@ -111,7 +95,6 @@ export default function CheckinKiosk() {
 
   const openFull = () => {
     setFull(true);
-    // Safari trên iPad/iPhone không có Fullscreen API: vẫn hiện lớp phủ toàn trang
     const el = document.documentElement;
     if (el.requestFullscreen) el.requestFullscreen().catch(() => undefined);
   };
@@ -119,6 +102,8 @@ export default function CheckinKiosk() {
     setFull(false);
     if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
   };
+
+  const onDesk = (r: CheckinResult) => { if (!r.already) void reloadToday(); };
 
   const manual = async () => {
     if (!memberId) return;
@@ -151,18 +136,34 @@ export default function CheckinKiosk() {
   const data = today.data;
   return (
     <div className="page">
-      <PageHead title="Check-in quầy" desc="Đặt màn hình này ở quầy lễ tân. Hội viên quét mã QR bằng điện thoại để check-in, mã tự đổi mỗi 30 giây."
-        actions={<Button variant="primary" icon="monitor" onClick={openFull} disabled={!kiosk}>{t('Toàn màn hình')}</Button>} />
+      <PageHead title="Check-in quầy"
+        desc="Quét thẻ hội viên hoặc gõ mã HV / số điện thoại. Hội viên cũng tự check-in được bằng mã của hôm nay dán ở quầy."
+        actions={<>
+          <Button icon="download" onClick={() => window.print()} disabled={!daily.data}>{t('In mã hôm nay')}</Button>
+          <Button variant="primary" icon="monitor" onClick={openFull} disabled={!daily.data}>{t('Hiện mã toàn màn hình')}</Button>
+        </>} />
+
+      <HelpTip id="checkin-desk" steps={[
+        'Hội viên tới quầy đưa thẻ hội viên (mục Hôm nay › Thẻ hội viên): quét bằng máy quét hoặc gõ mã HV / số điện thoại rồi Enter.',
+        'Ô check-in có sẵn ở nút "Check-in" trên thanh trên cùng, đang ở trang nào cũng dùng được – không cần giữ trang này mở.',
+        'Muốn hội viên tự check-in: đầu ngày bấm "In mã hôm nay" rồi dán ở quầy (mỗi ngày một mã, qua nửa đêm đổi mã mới).',
+        'Bấm nhầm thì huỷ lượt ở danh sách bên phải. Quét lại trong 3 giờ không bị tính thêm lượt.',
+      ]} />
 
       <div className="kiosk">
         <div className="stack">
-          {kioskErr && <Alert kind="error">{kioskErr}</Alert>}
-          {kiosk ? <KioskQr kiosk={kiosk} /> : !kioskErr && <Card><LoadingBlock rows={6} /></Card>}
-          <Card title="Check-in hộ" icon="user">
+          <Card title="Quét thẻ / nhập mã hội viên" icon="checkCircle">
+            <DeskCheckinBox autoFocus onDone={onDesk} />
+          </Card>
+          <Card title="Mã tự check-in hôm nay" icon="ticket">
+            {daily.error ? <ErrorState message={daily.error} onRetry={reloadDaily} />
+              : daily.data ? <div className="daily-print"><DailyCodeBlock daily={daily.data} /></div> : <LoadingBlock rows={5} />}
+          </Card>
+          <Card title="Tìm theo tên" icon="user">
             <div className="stack-sm">
-              <p className="tiny muted" style={{ margin: 0 }}>{t('Khi hội viên quên điện thoại: tìm theo tên, mã hoặc số điện thoại.')}</p>
+              <p className="tiny muted" style={{ margin: 0 }}>{t('Không nhớ mã: tìm theo tên, mã hoặc số điện thoại.')}</p>
               <MemberSelect value={memberId || null} onChange={(id) => setMemberId(id)} />
-              <Button variant="primary" icon="checkCircle" block loading={busy} disabled={!memberId} onClick={() => { void manual(); }}>{t('Check-in cho hội viên này')}</Button>
+              <Button variant="secondary" icon="checkCircle" block loading={busy} disabled={!memberId} onClick={() => { void manual(); }}>{t('Check-in cho hội viên này')}</Button>
             </div>
           </Card>
         </div>
@@ -174,9 +175,9 @@ export default function CheckinKiosk() {
             <div className="kiosk-stat"><b>{crowd.data?.peakHour != null ? fmtHour(crowd.data.peakHour) : '—'}</b><span>{t('Giờ đông nhất hôm nay')}</span></div>
           </div>
 
-          <Card title="Lượt check-in hôm nay" icon="clock" actions={<span className="tiny faint">{t('Tự cập nhật mỗi 10 giây')}</span>}>
+          <Card title="Lượt check-in hôm nay" icon="clock" actions={<span className="tiny faint">{t('Tự cập nhật mỗi 15 giây')}</span>}>
             {!data ? (today.error ? <ErrorState message={today.error} onRetry={reloadToday} /> : <LoadingBlock rows={4} />)
-              : data.items.length === 0 ? <Empty icon="users" title={t('Chưa có ai check-in hôm nay')} desc={t('Lượt mới sẽ hiện ở đây ngay khi hội viên quét mã.')} />
+              : data.items.length === 0 ? <Empty icon="users" title={t('Chưa có ai check-in hôm nay')} desc={t('Lượt mới sẽ hiện ở đây ngay khi quét thẻ hoặc hội viên tự check-in.')} />
                 : (
                   <div style={{ maxHeight: 460, overflowY: 'auto' }}>
                     {data.items.map((c) => <CheckinRow key={c.id} c={c} flash={c.id === flash} onUndo={() => setUndo(c)} />)}
@@ -191,9 +192,9 @@ export default function CheckinKiosk() {
         </div>
       </div>
 
-      {full && kiosk && (
-        <div className="kiosk-full" role="dialog" aria-modal="true" aria-label={t('Mã QR check-in toàn màn hình')}>
-          <KioskQr kiosk={kiosk} big />
+      {full && daily.data && (
+        <div className="kiosk-full" role="dialog" aria-modal="true" aria-label={t('Mã check-in hôm nay toàn màn hình')}>
+          <DailyCodeBlock daily={daily.data} big />
           <button type="button" className="btn btn-ghost" style={{ position: 'absolute', top: 16, right: 16 }} onClick={closeFull}>
             <Icon name="x" /><span>{t('Thoát (Esc)')}</span>
           </button>

@@ -1,0 +1,27 @@
+.desk-box { display: grid; gap: 8px; }
+.desk-box .input { flex: 1; min-width: 0; }
+.desk-msg { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; padding: 8px 10px; border-radius: 10px; }
+.desk-msg.ok { background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--ink); }
+.desk-msg.warn { background: color-mix(in srgb, var(--warning) 14%, transparent); color: var(--ink); }
+.desk-msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+.quick-checkin-pop { width: min(420px, calc(100vw - 24px)); padding: 12px; right: 0; }
+.quick-checkin-code { margin-top: 10px; }
+.quick-checkin-code b { font-size: 15px; letter-spacing: 2px; color: var(--ink); }
+@media (max-width: 720px) { .quick-checkin-label { display: none; } }
+
+.member-card { display: grid; justify-items: center; gap: 8px; }
+.member-card .qr-frame { background: #fff; padding: 14px; border-radius: 14px; }
+.member-card-name { font-size: 18px; }
+.member-card-code { font-size: 22px; letter-spacing: 3px; font-weight: 800; }
+
+.daily-code { display: grid; justify-items: center; gap: 10px; text-align: center; }
+.daily-code .qr-frame { background: #fff; padding: 14px; border-radius: 14px; }
+.daily-code-num { font-size: 40px; font-weight: 800; letter-spacing: 6px; font-variant-numeric: tabular-nums; }
+
+/* Bản in "Mã check-in hôm nay": chỉ in khối mã, ẩn mọi thứ khác */
+@media print {
+  body * { visibility: hidden !important; }
+  .daily-print, .daily-print * { visibility: visible !important; }
+  .daily-print { position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 16px; background: #fff; color: #000; }
+  .daily-print .daily-code-num { font-size: 72px; }
+}

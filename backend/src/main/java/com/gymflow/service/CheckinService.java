@@ -4,11 +4,13 @@ import com.gymflow.common.ApiException;
 import com.gymflow.domain.*;
 import com.gymflow.dto.CheckinDtos.*;
 import com.gymflow.repository.GymCheckinRepository;
+import com.gymflow.repository.MemberRepository;
 import com.gymflow.repository.MemberSubscriptionRepository;
 import com.gymflow.repository.UserRepository;
 import com.gymflow.repository.WorkoutScheduleRepository;
 import com.gymflow.security.AuthUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +22,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * V53 · Check-in tại quầy. Hội viên quét mã QR đang hiện ở quầy (mã 6 số đổi mỗi 30 giây) hoặc quản lý check-in hộ.
+ * Check-in tại quầy, hai cách:
+ * - Lễ tân quét thẻ QR của hội viên (hoặc gõ mã hội viên / số điện thoại) ở ô check-in nhanh trên thanh trên cùng – không cần mở trang riêng.
+ * - Hội viên tự quét / nhập mã check-in của hôm nay (mỗi ngày một mã, in dán ở quầy).
  * Điều kiện: hội viên không bảo lưu / ngừng và có gói còn hiệu lực hôm nay. Quét lại trong 3 giờ không ghi thêm lượt.
  */
 @Service
@@ -40,15 +44,47 @@ public class CheckinService {
     private final CheckinCodes codes;
     private final Mappers mappers;
     private final Clock clock;
+    private final MemberRepository memberRepository;
 
     /** Số lần nhập sai mã theo hội viên (chống dò mã 6 số). Chỉ giữ trong bộ nhớ, khởi động lại là xoá. */
     private final Map<Long, Deque<LocalDateTime>> wrongCodes = new ConcurrentHashMap<>();
 
     @Transactional(readOnly = true)
-    public KioskCode kiosk(String origin) {
+    public DailyCode dailyCode(String origin) {
         String code = codes.current();
         String url = codes.checkinUrl(origin, code);
-        return new KioskCode(code, url, codes.secondsLeft(), CheckinCodes.PERIOD_SECONDS, QrMatrix.encode(url));
+        return new DailyCode(code, codes.today(), url, QrMatrix.encode(url));
+    }
+
+    /** Thẻ hội viên: QR chỉ chứa mã hội viên (VD HV00012) để máy quét ở quầy gõ thẳng vào ô check-in. */
+    @Transactional(readOnly = true)
+    public MemberCard card(AuthUser user) {
+        Member m = access.requireMemberOf(user);
+        return new MemberCard(m.getCode(), m.getUser().getFullName(), QrMatrix.encode(m.getCode()));
+    }
+
+    /** Lễ tân quét thẻ / gõ mã hội viên hoặc số điện thoại. Chỉ nhận khi khớp đúng một hội viên. */
+    public CheckinResult desk(AuthUser admin, String query) {
+        String q = query == null ? "" : query.trim();
+        if (q.isEmpty()) throw ApiException.badRequest("Quét thẻ hoặc nhập mã hội viên / số điện thoại");
+        String digits = q.replaceAll("[\\s.()+-]", "");
+        // Số điện thoại: so 9 số cuối để 0912…, +84 912…, 84912… đều khớp
+        String last9 = digits.matches("\\d{9,12}") ? digits.substring(digits.length() - 9) : null;
+        String term = last9 != null ? last9 : (q.length() > 50 ? q.substring(0, 50) : q);
+        List<Member> found = memberRepository.search(term, null, null, PageRequest.of(0, 20)).getContent().stream()
+                .filter(m -> q.equalsIgnoreCase(m.getCode()) || (last9 != null && phoneDigits(m).endsWith(last9)))
+                .toList();
+        if (found.isEmpty()) throw ApiException.badRequest("Không tìm thấy hội viên có mã hoặc số điện thoại " + q);
+        if (found.size() > 1) {
+            throw ApiException.badRequest("Có " + found.size() + " hội viên trùng số điện thoại này – nhập mã hội viên (HV…) thay vì số điện thoại");
+        }
+        User by = userRepository.findById(admin.id()).orElse(null);
+        return record(found.get(0), CheckinMethod.MANUAL, by, LocalDateTime.now(clock));
+    }
+
+    private static String phoneDigits(Member m) {
+        String p = m.getUser() == null ? null : m.getUser().getPhone();
+        return p == null ? "" : p.replaceAll("\\D", "");
     }
 
     public CheckinResult checkin(AuthUser user, String code) {
@@ -62,7 +98,7 @@ public class CheckinService {
             }
             if (!codes.verify(code == null ? null : code.trim())) {
                 wrong.addLast(now);
-                throw ApiException.badRequest("Mã check-in không đúng hoặc đã hết hạn – quét lại mã QR đang hiện ở quầy");
+                throw ApiException.badRequest("Mã check-in hôm nay không đúng – xem mã dán ở quầy lễ tân hoặc đưa thẻ hội viên cho lễ tân quét");
             }
             wrong.clear();
         }

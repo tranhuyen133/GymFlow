@@ -8,6 +8,7 @@ import com.gymflow.dto.Dtos.WorkoutPlanSummary;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,8 +19,18 @@ public final class CheckinDtos {
     private CheckinDtos() {
     }
 
-    /** Mã đang hiện ở quầy. qr: ma trận mã QR, mỗi chuỗi là một hàng gồm '1' (ô đen) và '0' (ô trắng). */
-    public record KioskCode(String code, String url, int secondsLeft, int periodSeconds, List<String> qr) {
+    /** Mã check-in của hôm nay (in / dán ở quầy). qr: ma trận mã QR, mỗi chuỗi là một hàng gồm '1' (ô đen) và '0' (ô trắng). */
+    public record DailyCode(String code, LocalDate date, String url, List<String> qr) {
+    }
+
+    /** Thẻ hội viên: mã QR chứa mã hội viên, đưa lễ tân quét (máy quét hoặc gõ tay) để check-in. */
+    public record MemberCard(String memberCode, String fullName, List<String> qr) {
+    }
+
+    /** Lễ tân quét thẻ hoặc gõ mã hội viên / số điện thoại. */
+    public record DeskCheckinRequest(
+            @NotBlank(message = "Quét thẻ hoặc nhập mã hội viên / số điện thoại")
+            @Size(max = 100, message = "Mã tối đa 100 ký tự") String query) {
     }
 
     public record CheckinRequest(

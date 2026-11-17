@@ -42,13 +42,52 @@ public class PromotionService {
     public PromotionValidationResponse validate(AuthUser user, PromotionValidateRequest req) {
         MembershipPlan plan = planRepository.findById(req.planId())
                 .orElseThrow(() -> ApiException.notFound("gói tập"));
+        // Không nhập mã thì không áp gì: hội viên tự chọn ưu đãi trong danh sách (GET /api/promotions/offers).
+        if (Mappers.blankToNull(req.code()) == null) return noPromotion(plan.getPrice());
         return validateFor(user, req.code(), plan, plan.getPrice(), false);
+    }
+
+    /**
+     * Các ưu đãi không cần mã mà hội viên đủ điều kiện cho gói này, giảm nhiều nhất trước.
+     * Chỉ để hội viên chọn – không tự áp vào đơn.
+     */
+    @Transactional(readOnly = true)
+    public List<PromotionValidationResponse> offers(AuthUser user, Long planId) {
+        MembershipPlan plan = planRepository.findById(planId)
+                .orElseThrow(() -> ApiException.notFound("gói tập"));
+        return offers(user, plan, plan.getPrice(), false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PromotionValidationResponse> offers(AuthUser user, MembershipPlan plan, long basePrice, boolean upgrade) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        List<PromotionValidationResponse> out = new ArrayList<>();
+        for (Promotion p : promotionRepository.findByCodeIsNullAndActiveTrue()) {
+            PromotionValidationResponse res = checkEligibility(user, p, plan, now, basePrice, upgrade);
+            if (res.valid() && (res.discountAmount() > 0 || !res.gifts().isEmpty())) out.add(res);
+        }
+        out.sort(Comparator.comparingLong(PromotionValidationResponse::discountAmount).reversed());
+        return out;
+    }
+
+    /** Ưu đãi không cần mã mà hội viên đã chọn trong danh sách: kiểm tra lại đủ điều kiện ở thời điểm gửi đơn. */
+    @Transactional(readOnly = true)
+    public PromotionValidationResponse validateOffer(AuthUser user, Long promotionId, MembershipPlan plan, long basePrice, boolean upgrade) {
+        Promotion promo = promotionRepository.findById(promotionId).orElse(null);
+        if (promo == null) return invalidResult(basePrice, "Ưu đãi không còn tồn tại");
+        if (promo.getCode() != null) return invalidResult(promo, basePrice, "Ưu đãi này cần nhập mã");
+        return checkEligibility(user, promo, plan, LocalDateTime.now(clock), basePrice, upgrade);
+    }
+
+    private PromotionValidationResponse noPromotion(long basePrice) {
+        return new PromotionValidationResponse(true, null, null, null, null, null, null, null,
+                DiscountType.NONE, 0L, basePrice, 0L, basePrice, List.of());
     }
 
     /**
      * V49 · Kiểm tra ưu đãi trên một số tiền gốc bất kỳ: đăng ký thường thì là giá gói, nâng cấp thì là giá gói PT
      * đã trừ giá trị còn lại của gói cũ. upgrade = true mới dùng được ưu đãi dành cho nâng cấp.
-     * Không nhập mã: chọn ưu đãi tự áp dụng giảm nhiều nhất mà hội viên đủ điều kiện.
+     * Không nhập mã: trả về ưu đãi tự áp dụng giảm nhiều nhất (chỉ để gợi ý; đơn hàng không gọi nhánh này).
      */
     @Transactional(readOnly = true)
     public PromotionValidationResponse validateFor(AuthUser user, String rawCode, MembershipPlan plan, long basePrice, boolean upgrade) {

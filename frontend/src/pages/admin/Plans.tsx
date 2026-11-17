@@ -6,6 +6,7 @@ import { PlanCard, pickBest, savings } from '../../components/PlanCard';
 import { useToast } from '../../components/Toast';
 import { PickCard } from '../../components/PaymentQr';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Segmented, Textarea } from '../../components/ui';
+import { HelpTip } from '../../components/Help';
 import { durationLabel, fmtMoney } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { TITLE_RE } from '../../lib/validation';
@@ -40,6 +41,12 @@ export default function Plans() {
     <div className="page">
       <PageHead eyebrow="Kinh doanh" title="Gói tập" desc="Đổi giá không ảnh hưởng gói đã bán (số tiền thực thu lưu riêng). Gói đã có người mua chỉ ngừng bán, không xoá."
         actions={<Button variant="primary" icon="plus" onClick={() => setEditing('new')}>Thêm gói</Button>} />
+      <HelpTip id="plans" steps={[
+        'Gói Gym: hội viên tự tập. Gói Gym + PT: khai báo số buổi PT, hạn dùng buổi và thời lượng mỗi buổi.',
+        'Đổi giá chỉ áp cho đơn mới; gói đã bán giữ nguyên số tiền đã thu.',
+        'Gói đã có người mua chỉ ngừng bán được, không xoá được, để giữ lịch sử.',
+        'Điền tên, mô tả, quyền lợi bản tiếng Anh để hội viên dùng giao diện tiếng Anh không thấy tiếng Việt.',
+      ]} />
       {error ? <ErrorState message={error} onRetry={reload} /> : loading || !data ? <LoadingBlock rows={6} /> : data.length === 0 ? (
         <Card><Empty icon="ticket" title="Chưa có gói tập" desc="Tạo gói đầu tiên để hội viên đăng ký trên ứng dụng và trang chủ." action={<Button variant="primary" icon="plus" onClick={() => setEditing('new')}>Thêm gói</Button>} /></Card>
       ) : (

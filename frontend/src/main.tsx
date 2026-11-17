@@ -5,8 +5,11 @@ import App from './App';
 import { AuthProvider } from './auth/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { LangProvider } from './i18n';
+import { installDomTranslate } from './i18n/domTranslate';
 import { ThemeProvider } from './theme/ThemeContext';
 import './styles.css';
+
+installDomTranslate();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

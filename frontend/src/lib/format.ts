@@ -173,7 +173,7 @@ export const DAYS = translated(DAYS_VI);
 export const DAY_NAMES = translated(DAY_NAMES_VI);
 export const actionLabel: Record<string, string> = new Proxy(actionLabel_VI, {
   get(target, prop: string) {
-    if (getLang() === 'en') return ACTION_EN[prop] ?? target[prop] ?? prop;
+    if (getLang() === 'en') return ACTION_EN[prop] ?? (target[prop] ? t(target[prop]) : prop);
     return target[prop] ?? prop;
   },
 });

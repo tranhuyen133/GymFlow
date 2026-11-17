@@ -4,12 +4,20 @@ import type { MuscleGroup, Schedule, Subscription, WorkoutPlanSummary } from './
 export type CheckinMethod = 'QR' | 'MANUAL';
 export type CrowdLevel = 'QUIET' | 'NORMAL' | 'BUSY' | 'UNKNOWN';
 
-export interface KioskCode {
+/** Mã check-in của hôm nay (mỗi ngày một mã, in dán ở quầy). */
+export interface DailyCode {
   code: string;
+  /** YYYY-MM-DD */
+  date: string;
   url: string;
-  secondsLeft: number;
-  periodSeconds: number;
   /** Mỗi chuỗi là một hàng của mã QR: '1' ô đen, '0' ô trắng. */
+  qr: string[];
+}
+
+/** Thẻ hội viên: QR chứa mã hội viên để lễ tân quét. */
+export interface MemberCard {
+  memberCode: string;
+  fullName: string;
   qr: string[];
 }
 

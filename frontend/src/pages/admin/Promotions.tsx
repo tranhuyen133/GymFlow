@@ -4,6 +4,7 @@ import type { DiscountType, MembershipPlan, Promotion, PromotionAudience, Promot
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Segmented, Table, Textarea } from '../../components/ui';
+import { HelpTip } from '../../components/Help';
 import { t } from '../../i18n';
 import { fmtDateTime, fmtMoney } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
@@ -38,13 +39,21 @@ export default function Promotions() {
       <PageHead
         eyebrow={t('Kinh doanh')}
         title={t('Chương trình ưu đãi & Mã giảm giá')}
-        desc={t('Quản lý mã giảm giá, chương trình khuyến mãi tự động áp dụng khi đăng ký gói tập, và các quà tặng kèm.')}
+        desc={t('Quản lý mã giảm giá, ưu đãi không cần mã và quà tặng kèm. Hệ thống không tự áp: hội viên tự chọn ưu đãi khi đăng ký hoặc nâng cấp gói.')}
         actions={
           <Button variant="primary" icon="plus" onClick={() => setEditing('new')}>
             {t('Thêm ưu đãi')}
           </Button>
         }
       />
+
+      <HelpTip id="promotions" steps={[
+        'Có mã: hội viên phải nhập đúng mã rồi bấm Áp dụng. Để trống mã: ưu đãi hiện trong danh sách để hội viên chọn.',
+        'Đối tượng Nâng cấp chỉ dùng khi lên gói có PT, tính trên số tiền còn phải trả sau khi trừ gói cũ.',
+        'Đối tượng Sinh nhật chỉ dùng trong tháng sinh của hội viên (hội viên cần khai ngày sinh trong hồ sơ).',
+        'Mỗi đơn chỉ dùng một ưu đãi. Giới hạn lượt dùng chỉ trừ khi đơn được duyệt.',
+        'Tạm ngưng ưu đãi bằng nút bật / tắt thay vì xoá để giữ lịch sử các đơn đã dùng.',
+      ]} />
 
       {error ? (
         <ErrorState message={error} onRetry={reload} />
@@ -55,7 +64,7 @@ export default function Promotions() {
           <Empty
             icon="trophy"
             title={t('Chưa có chương trình ưu đãi nào')}
-            desc={t('Tạo mã giảm giá hoặc chương trình tự động áp dụng cho hội viên khi đăng ký gói.')}
+            desc={t('Tạo mã giảm giá hoặc ưu đãi không cần mã để hội viên chọn khi đăng ký gói.')}
             action={
               <Button variant="primary" icon="plus" onClick={() => setEditing('new')}>
                 {t('Thêm ưu đãi')}
@@ -92,7 +101,7 @@ export default function Promotions() {
                         {p.code ? (
                           <span className="chip on" style={{ fontWeight: 700 }}>{p.code}</span>
                         ) : (
-                          <span className="chip">{t('Tự áp dụng')}</span>
+                          <span className="chip">{t('Không cần mã')}</span>
                         )}
                       </td>
                       <td style={{ minWidth: 220, maxWidth: 320 }}>
@@ -397,7 +406,7 @@ function PromotionFormModal({
 
         <div className="row row-wrap" style={{ gap: 12 }}>
           <div style={{ flex: 1, minWidth: 200 }}>
-            <Field label={t('Mã ưu đãi (Code)')} hint={t('Để trống = Tự áp dụng toàn hệ thống')}>
+            <Field label={t('Mã ưu đãi (Code)')} hint={t('Để trống = ưu đãi không cần mã, hội viên chọn trong danh sách khi đăng ký')}>
               <Input
                 maxLength={50}
                 value={code}
@@ -513,7 +522,7 @@ function PromotionFormModal({
         </div>
 
         <Field label={t('Đối tượng áp dụng')} hint={audience === 'BIRTHDAY'
-          ? t('Chỉ hội viên có ngày sinh trong tháng hiện tại; để trống mã = tự áp khi đăng ký')
+          ? t('Chỉ hội viên có ngày sinh trong tháng hiện tại; để trống mã = hội viên chọn trong danh sách khi đăng ký')
           : audience === 'UPGRADE' ? t('Chỉ áp khi hội viên nâng gói tự tập lên gói có PT; tính trên số tiền sau khi trừ gói cũ') : undefined}>
           <Segmented<PromotionAudience> value={audience} onChange={(v) => { setAudience(v); if (v === 'UPGRADE') setNewMembersOnly(false); }} options={[
             { value: 'ALL', label: t('Mọi hội viên') },

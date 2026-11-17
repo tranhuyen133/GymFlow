@@ -6,6 +6,7 @@ import { BarChart, Donut } from '../../components/charts';
 import { Icon } from '../../components/Icon';
 import { ActivityRings } from '../../components/motivation';
 import { Badge, Card, CountUp, Empty, ErrorState, LoadingBlock, PageHead, Person, Stat, Table } from '../../components/ui';
+import { QuickActions } from '../../components/Help';
 import { t, tn } from '../../i18n';
 import { actionLabel, fmtDate, fmtMoney, fmtMoneyShort, pctChange, relativeTime } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
@@ -33,6 +34,16 @@ export default function AdminDashboard() {
           <Link className="btn btn-secondary" to="/reports"><Icon name="chart" /><span>{t('Báo cáo')}</span></Link>
           <Link className="btn btn-primary" to="/members?new=1"><Icon name="plus" /><span>{t('Thêm hội viên')}</span></Link>
         </>} />
+
+      <QuickActions items={[
+        { to: '/package-requests', label: 'Duyệt đăng ký gói', icon: 'checkCircle' },
+        { to: '/subscriptions', label: 'Đăng ký gói', icon: 'ticket' },
+        { to: '/members?new=1', label: 'Thêm hội viên', icon: 'plus' },
+        { to: '/promotions', label: 'Ưu đãi & Giảm giá', icon: 'star' },
+        { to: '/payment-settings', label: 'Thanh toán', icon: 'wallet' },
+        { to: '/schedules', label: 'Lịch tập tuần', icon: 'calendar' },
+        { to: '/reports', label: 'Báo cáo', icon: 'chart' },
+      ]} />
 
       <div className="grid grid-4">
         <Stat icon="users" label={t('Hội viên')} value={<CountUp value={data.totalMembers} />}

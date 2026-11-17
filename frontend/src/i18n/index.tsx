@@ -1,4 +1,5 @@
 import { Children, cloneElement, Fragment, isValidElement, createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { EN_V7, EN_V7_PATTERNS } from './en-v7';
 import { EN } from './en';
 import { EN_EXTRA } from './en-extra';
 import { EN_PT } from './en-pt';
@@ -27,7 +28,7 @@ let current: Lang = readLang();
 const missing = new Set<string>();
 // EN_PT (V24) đặt trước để không ghi đè bản dịch đã có trong EN / EN_EXTRA.
 // EN_KB (V30 kho kiến thức) gộp sau cùng: chỉ chứa chuỗi mới của giao diện kho kiến thức.
-const DICT: Record<string, string> = { ...EN_V6, ...EN_PT, ...EN, ...EN_EXTRA, ...EN_KB, ...EN_UX, ...EN_V2, ...EN_CHAT, ...EN_V3, ...EN_V4, ...EN_V5 };
+const DICT: Record<string, string> = { ...EN_V7, ...EN_V6, ...EN_PT, ...EN, ...EN_EXTRA, ...EN_KB, ...EN_UX, ...EN_V2, ...EN_CHAT, ...EN_V3, ...EN_V4, ...EN_V5 };
 
 type Vars = Record<string, string | number | null | undefined>;
 
@@ -38,8 +39,11 @@ export function t(vi: string, vars?: Vars): string {
     if (en !== undefined) {
       s = en;
     } else {
-      const m1 = vi.match(/^Buổi (\d+) – (.+)$/);
-      if (m1) {
+      const mp = EN_V7_PATTERNS.find(([re]) => re.test(vi));
+      const m1 = mp ? null : vi.match(/^Buổi (\d+) – (.+)$/);
+      if (mp) {
+        s = vi.replace(mp[0], mp[1]);
+      } else if (m1) {
         s = `Session ${m1[1]} – ${t(m1[2])}`;
       } else {
         const m2 = vi.match(/^Buổi (\d+)$/);
@@ -104,6 +108,12 @@ export function tFor(lang: Lang, vi: string): string {
 }
 /** Locale cho định dạng ngày/số. */
 export const locale = () => (current === 'en' ? 'en-GB' : 'vi-VN');
+/** Bản tiếng Anh của đúng một khoá, undefined nếu chưa có (dùng cho lưới dịch trên trang – domTranslate.ts). */
+export function lookup(vi: string): string | undefined {
+  if (Object.prototype.hasOwnProperty.call(DICT, vi)) return DICT[vi];
+  const mp = EN_V7_PATTERNS.find(([re]) => re.test(vi));
+  return mp ? vi.replace(mp[0], mp[1]) : undefined;
+}
 
 interface LangValue { lang: Lang; setLang: (l: Lang) => void }
 const LangContext = createContext<LangValue | null>(null);
