@@ -85,6 +85,11 @@ app:
     timeout-seconds: ${AI_TIMEOUT_SECONDS:15}
     max-input-chars: ${AI_MAX_INPUT_CHARS:500}
 
+# ---- Google Gemini API ----
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  model: gemini-4-hydrogen
+
 management:
   endpoints:
     web:
