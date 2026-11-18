@@ -3,7 +3,7 @@ CHỦ FILE: Linh (Hồ Khánh Linh)
 TASK: SCRUM-175 · HẠN: 05/11/2026
 TASK: SCRUM-199 · HẠN: 10/11/2026
 TASK: SCRUM-223 · HẠN: 13/11/2026
-CẦN LÀM: Hồi quy S1 (05/11), đối chiếu dashboard (10/11), hồi quy toàn hệ thống (13/11).
+TRẠNG THÁI: Đã lập báo cáo và kiểm kê test case; hồi quy toàn hệ thống chưa hoàn tất.
 Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
 -->
 
@@ -167,24 +167,46 @@ Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
 - Môi trường ưu tiên: Docker Local (`http://localhost:8081`, API `http://localhost:8080`, Swagger `http://localhost:8080/swagger-ui/index.html`).
 - Dữ liệu chuẩn bị: `SEED_DEMO_DATA=true`; dùng tài khoản demo theo kênh bảo mật, không ghi mật khẩu vào repository.
 - Trước khi chạy: xác nhận code đã merge vào `develop`, API ổn định, thời gian theo `Asia/Ho_Chi_Minh`.
-- Kết quả thực tế đã chứng minh môi trường hiện tại đang hoạt động: `docker compose ps` hiển thị 3 container chính đang chạy (`gymflow-backend`, `gymflow-frontend`, `gymflow-mysql`), backend phản hồi `UP` và frontend phản hồi HTTP 200 trên `http://localhost:8081`.
-- Bên cạnh đó, các API đăng nhập, phân quyền, tạo hội viên, xem danh sách, tạo gói, preview và đăng ký gói đã được gọi trực tiếp và trả về trạng thái thực tế từ backend. Do đó các kết quả dưới đây là kết quả đã được xác nhận bằng chạy môi trường thật, không còn là checklist lập sẵn.
+- Kiểm tra lại ngày 18/11/2026: `docker compose ps` cho thấy `gymflow-backend` và `gymflow-mysql` healthy, `gymflow-frontend` đang chạy; backend `/actuator/health` trả `200 {"status":"UP"}` và frontend trả HTTP 200.
+- Các API smoke và kiểm thử UI được ghi nhận theo từng mã test bên dưới. Bằng chứng chạy từ các phiên trước chỉ được giữ như lịch sử, không dùng thay cho kết quả có thể truy về test case.
 
 ### 3.3 Tổng hợp kết quả thực thi
-| Nhóm kiểm thử | Tổng | Đạt | Không đạt | Chặn | Chưa chạy | Ghi chú |
-| --- | :---: | :---: | :---: | :---: | :---: | --- |
-| **Sprint 1 (đã xác nhận trong mục 1)** | **30** | **30** | **0** | **0** | **0** | Đã ghi trong phần 1 của báo cáo hồi quy S1. |
-| **UC-04, UC-05 – thực thi API thực tế** | 24 | **11** | **0** | **0** | **13** | Các kiểm tra chính về login, phân quyền, tạo hội viên, trùng email, input sai, xem danh sách, tạo gói, preview/subscription và kiểm tra vai trò đã chạy thành công trên môi trường hiện tại. Các trường hợp nâng cao về giáo án/lịch tập và các màn hình UI không được đánh dấu PASS cho tới khi chạy đầy đủ. |
-| **UC-06, UC-07** | 17 | 0 | 0 | 0 | 17 | Chưa chạy đầy đủ trên UI/API; hiện tại còn trong trạng thái chưa được xác nhận thực tế tại môi trường demo. |
-| **UC-09, UC-10** | 13 | 0 | 0 | 0 | 13 | Chưa chạy đầy đủ trên UI/API; cần dữ liệu lịch tập/tiến độ cụ thể và kiểm tra đối chiếu cho từng vai trò. |
-| **Tổng hệ thống cần xác nhận trước demo** | **84** | **41** | **0** | **0** | **43** | Đã có bằng chứng thực tế cho nhóm AUTH/Member/Plan; hệ thống chưa đủ điều kiện khẳng định “đạt toàn bộ hồi quy trước demo” vì vẫn còn nhiều testcase UC-06 đến UC-10 chưa chạy trực tiếp. |
+| Nhóm kiểm thử | Tổng | PASS có mã ca | FAIL | Chặn | Chưa chạy | Chưa xác minh do thiếu truy vết |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Sprint 1 (đã xác nhận trong mục 1)** | **30** | **30** | **0** | **0** | **0** | **0** |
+| **UC-04, UC-05** | 24 | **2** | **0** | **0** | **0** | **22** |
+| **UC-06, UC-07** | 17 | 0 | 0 | 0 | 17 | 0 |
+| **UC-09, UC-10** | 13 | 0 | 0 | 0 | 13 | 0 |
+| **UC-199 – đối chiếu dashboard** | 10 | 0 | 0 | 0 | 10 | 0 |
+| **UC-14 – báo cáo và xuất CSV (SCRUM-222)** | 8 | 0 | 0 | 0 | 8 | 0 |
+| **TỔNG CÁC TEST CASE DUY NHẤT TRONG BỘ TÀI LIỆU** | **102** | **32** | **0** | **0** | **48** | **22** |
+
+> **Cách tính:** Có 102 mã test case thủ công duy nhất: 30 ca Sprint 1, 24 ca UC-04/05, 17 ca UC-06/07, 13 ca UC-09/10, 10 ca UC-199 và 8 ca UC-14. Không cộng lặp 24 mã UC-01/02/03 xuất hiện lại trong báo cáo hồi quy. Hai ca UC-04/05 vừa chạy có mã cụ thể là TC-04-09 và TC-04-10. Các ô kết quả của 22 ca UC-04/05 còn lại vẫn trống; báo cáo cũ chỉ nêu 11 PASS tổng hợp mà không chỉ mã hoặc bằng chứng, nên 22 ca này được xếp “Chưa xác minh do thiếu truy vết”, không tính PASS hay kết luận chắc chắn là chưa từng chạy.
+
+> **Test tự động backend (chạy 18/11/2026):** `cd backend && ./gradlew test` hoàn tất **527/527 PASS**, không có fail, error hay skipped.
+
+> **Kiểm tra frontend:** `cd frontend && npm run typecheck` và `cd frontend && npm run build` đều thành công. Build có cảnh báo bundle JS lớn hơn 500 kB; không phải lỗi build/test.
+
+> **Tổng kiểm kê (không dùng để thay thế tiêu chí hồi quy thủ công):** 629 lượt/test = 102 ca thủ công duy nhất + 527 test backend tự động; 559 PASS được xác nhận (32 thủ công + 527 tự động), 48 ca thủ công chưa chạy và 22 ca thủ công chưa xác minh do thiếu truy vết. Hai nhóm test khác loại; ngưỡng nghiệm thu trong `TEST_PLAN.md` chỉ tính theo bộ hồi quy thủ công.
+
+> **Phạm vi SCRUM-223:** 84 ca (Sprint 1, UC-04/05, UC-06/07, UC-09/10): 32 PASS có mã ca, 30 chưa chạy và 22 chưa xác minh do thiếu truy vết. Cần ít nhất 76/84 PASS để đạt ngưỡng tổng ≥90%; hiện còn thiếu ít nhất 44 PASS có bằng chứng, đồng thời phải đạt 100% test case mức Cao. UC-199 và UC-14 được liệt kê riêng, không tính vào 84 ca SCRUM-223.
 
 > **Kết luận thực tế tại thời điểm hiện tại:**
 > - Các test case thuộc **Sprint 1** vẫn là **30/30 PASS** và không bị thay đổi.
-> - Môi trường Docker hiện đang chạy ổn định, và đã có bằng chứng thực tế cho các luồng kiểm tra cơ bản của UC-04 và UC-05: xác thực, phân quyền, tạo hội viên, từ chối trùng email, validation dữ liệu, tạo gói, preview và đăng ký gói.
-> - Tuy nhiên, các testcase còn lại từ **UC-06 đến UC-10** vẫn cần thực thi trực tiếp trên UI/API để được đánh dấu `Đạt`. Hiện tại không thể khai báo “đạt toàn hệ thống” vì phần lớn các ca kiểm thử này còn ở trạng thái **Chưa chạy**.
+> - TC-04-09 và TC-04-10 đã được thực thi lại trên UI và có kết quả gắn đúng mã test.
+> - 22 ca UC-04/05 còn lại không có kết quả từng ca; 11 PASS tổng hợp cũ chưa đủ căn cứ xác định mã test nào đạt.
+> - UC-06/07, UC-09/10, UC-199 và UC-14 chưa chạy; chưa đủ điều kiện kết luận đạt nghiệm thu toàn hệ thống.
 
-### 3.4 Kiểm tra thực tế đã xác nhận (runtime evidence)
+### 3.4 Bằng chứng runtime
+- [x] Kiểm tra lại ngày 18/11/2026: `docker info` thành công; `docker compose ps` cho thấy backend/MySQL healthy và frontend đang chạy.
+- [x] `GET http://localhost:8080/actuator/health` trả `200` với `{"status":"UP"}`; frontend `http://localhost:8081/` trả `200`.
+- [x] UI TC-04-09: MEMBER mở trực tiếp `/members`, hiển thị trang 403 “Không có quyền truy cập”, không lộ danh sách.
+- [x] UI TC-04-10: tìm theo phần đầu tên trả một kết quả, từ khoá không khớp trả danh sách rỗng, xoá từ khoá khôi phục 5 hội viên.
+- [x] `cd backend && ./gradlew test`: 527/527 PASS.
+- [x] `cd frontend && npm run typecheck`: thành công.
+- [x] `cd frontend && npm run build`: thành công; có cảnh báo bundle JS vượt 500 kB.
+
+Các API smoke bên dưới được ghi nhận từ phiên kiểm thử trước, chưa gắn với từng mã test UC-04/05; không cộng chúng thành PASS riêng nếu thiếu bằng chứng truy vết.
 - [x] `docker info` thành công và Docker đang hoạt động.
 - [x] `docker compose ps` hiển thị `gymflow-backend`, `gymflow-frontend`, `gymflow-mysql` trong trạng thái `Up`.
 - [x] Backend login thành công với các tài khoản demo `admin@gymflow.vn`, `trainer@gymflow.vn`, `member@gymflow.vn`.
@@ -206,7 +228,7 @@ Chỉ chủ file được sửa. Cần thay đổi thì nhắn chủ file.
 - [x] Đối chiếu các file test case `UC-01-03.md`, `UC-04-05.md`, `UC-06-07.md`, `UC-09-10.md` và `UC-14.md`.
 - [x] Chạy và xác nhận Docker + stack local hoạt động.
 - [x] Thực hiện kiểm thử thực tế ở mức smoke cho AUTH, MEMBER, PLAN và dữ liệu không hợp lệ.
-- [x] Ghi rõ trạng thái `PASS / NOT TESTED` theo bằng chứng thực tế và không suy đoán bug khi chưa có dữ liệu.
+- [x] Kiểm kê mã test duy nhất và tách PASS đã xác nhận khỏi PASS tổng hợp chưa truy vết.
 - [ ] Hoàn tất toàn bộ testcase từ `UC-06` đến `UC-10` trên UI/API để đạt trạng thái “đạt nghiệm thu toàn hệ thống”.
 - [ ] Cập nhật `docs/test/BUGS.md` nếu phát hiện lệch sau khi chạy tiếp các testcase chưa xác nhận.
 - [ ] Hoàn tất đánh giá cuối cùng trước demo theo tiêu chí mức độ bug và tỷ lệ đạt trong `docs/test/TEST_PLAN.md`.
