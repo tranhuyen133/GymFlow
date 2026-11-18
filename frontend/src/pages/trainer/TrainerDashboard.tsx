@@ -40,6 +40,7 @@ export default function TrainerDashboard() {
         { to: '/schedules?new=1', label: 'Xếp lịch', icon: 'calendar' },
         { to: '/workout-plans/new', label: 'Soạn giáo án', icon: 'clipboard' },
         { to: '/members', label: 'Học viên của tôi', icon: 'users' },
+        { to: '/coach-stats', label: 'Thống kê của tôi', icon: 'chart' },
         { to: '/messages', label: 'Tin nhắn', icon: 'message' },
         { to: '/exercises?video=1', label: 'Bài tập có video', icon: 'play' },
         { to: '/schedules', label: 'Lịch tuần', icon: 'clock' },

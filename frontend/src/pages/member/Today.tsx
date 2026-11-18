@@ -9,6 +9,7 @@ import type { TodayData, TodayExercise } from '../../api/checkinTypes';
 import type { Schedule } from '../../api/types';
 import { CrowdBars, CrowdChip, CrowdFoot, fmtHour } from '../../components/checkin';
 import { MemberCardModal } from '../../components/DeskCheckin';
+import { BadgeStrip } from '../../components/Badges';
 import { Icon, type IconName } from '../../components/Icon';
 import { Alert, Badge, Card, Empty, ErrorState, LoadingBlock, Meter, PageHead, Stat, StatusBadge } from '../../components/ui';
 import { t, tn } from '../../i18n';
@@ -136,6 +137,7 @@ export default function Today() {
         </div>
       )}
 
+      <BadgeStrip />
       <div className="grid grid-3 mt-24">
         <Stat icon="flame" label="Chuỗi tuần tập" value={data.streakWeeks} unit={t('tuần')} accent="#ff6b61" />
         <Stat icon="checkCircle" label="Buổi hoàn thành tháng này" value={data.completedThisMonth} accent="#3d97ff" />

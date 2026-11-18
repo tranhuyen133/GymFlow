@@ -6,10 +6,12 @@ import { AuthProvider } from './auth/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { LangProvider } from './i18n';
 import { installDomTranslate } from './i18n/domTranslate';
+import { installLangSync } from './i18n/langSync';
 import { ThemeProvider } from './theme/ThemeContext';
 import './styles.css';
 
 installDomTranslate();
+installLangSync();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
