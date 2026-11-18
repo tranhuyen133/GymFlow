@@ -275,7 +275,7 @@ export function Layout() {
 
   const items = NAV.filter((n) => n.roles.includes(user.role) && (showAdv || !n.advanced || n.to === tourTo || (n.to !== '/' && (pathname === n.to || pathname.startsWith(n.to + '/')))));
   const current = items.find((n) => pathname === n.to || pathname.startsWith(n.to + '/'));
-  const tabs = user.role === 'MEMBER' ? items : items.filter((n) => n.tab).slice(0, 4);
+  const tabs = user.role === 'MEMBER' ? items.filter((n) => ['/dashboard', '/today', '/me/schedule', '/me/packages'].includes(n.to)) : items.filter((n) => n.tab).slice(0, 4);
   const doLogout = () => { logout(); navigate('/login'); };
 
   // Gom các mục liền nhau cùng group thành một khối
@@ -391,7 +391,7 @@ export function Layout() {
             {n.to === '/dashboard' && readyToTrain === false && <span className="nav-badge dot-remind" />}
           </NavLink>
         ))}
-        {user.role !== 'MEMBER' && (
+        {tabs.length < items.length && (
           <a href="#menu" aria-controls="app-sidebar" aria-expanded={open} onClick={(e) => { e.preventDefault(); setOpen(true); }}><Icon name="more" /><span>{t('Thêm')}</span></a>
         )}
       </nav>

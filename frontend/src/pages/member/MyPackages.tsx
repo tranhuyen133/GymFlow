@@ -29,6 +29,7 @@ import { Icon } from '../../components/Icon';
 import { initials, PaymentInfo, PickCard } from '../../components/PaymentQr';
 import { codeNotApplied, PromoPicker, type PromoChoice } from '../../components/PromoPicker';
 import { HelpTip } from '../../components/Help';
+import { BuySteps } from '../../components/DashBits';
 import { benefitsOf, PlanCard, pickBest, savings } from '../../components/PlanCard';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Meter, Modal, PageHead, Segmented, StatusBadge, Table, Textarea } from '../../components/ui';
@@ -597,6 +598,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
       <Button variant="primary" icon="check" loading={busy} disabled={!agree || isLegacyPt} onClick={submit}>{t('Gửi đơn đăng ký')}</Button>
     </>}>
       <div className="stack">
+        <BuySteps step={2} />
         <div className="plan-summary">
           <div><span className="tiny muted">{t('Gói')}</span><b>{localizeText(plan.nameEn, plan.name)}</b></div>
           <div><span className="tiny muted">{t('Loại gói')}</span><b>{pt ? t('Gói Gym + PT') : t('Gói Gym')}</b></div>
@@ -769,6 +771,7 @@ export function PayModal({ req, settings, onClose, onPaid }: { req: PackageReque
       {canPay && <Button variant="primary" icon="check" loading={busy} onClick={() => void markPaid()}>{t('Tôi đã chuyển khoản')}</Button>}
     </>}>
       <div className="stack">
+        <BuySteps step={req.memberPaidAt ? 4 : 3} />
         <div className="plan-summary">
           <div><span className="tiny muted">{t('Gói')}</span><b>{localizeText(req.planNameEn, req.planName)}</b><span className="tiny faint">{durationLabel(req.durationDays)}</span></div>
           {(req.discountAmount ?? 0) > 0 || (req.upgradeCredit ?? 0) > 0 ? (

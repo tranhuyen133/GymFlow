@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { MemberDashboard as Data, Progress, Schedule } from '../../api/types';
@@ -12,6 +12,23 @@ import { DAYS, fmtDate, fmtTime, fmtWeekday, parseDate, parseDateTime, scheduleS
 import { displayPersonName } from '../../lib/names';
 import { useAsync } from '../../lib/hooks';
 import { SessionModal } from '../shared/Schedules';
+
+/** Một bước trong checklist người mới. v10: dùng class thay style viết cứng để đổi được theo nền sáng / tối và điện thoại. */
+function OnbStep({ n, title, done, doneLabel, todoLabel, todoTone = 'amber', text, action }: {
+  n: number; title: string; done: boolean; doneLabel: string; todoLabel: string; todoTone?: 'amber' | 'muted'; text: string; action?: ReactNode;
+}) {
+  return (
+    <div className={`onb-step${done ? ' done' : ''}`}>
+      <div className="onb-step-top">
+        <span className="onb-num">{done ? <Icon name="check" size={14} /> : n}</span>
+        <b>{title}</b>
+        {done ? <Badge tone="green">{doneLabel}</Badge> : <Badge tone={todoTone}>{todoLabel}</Badge>}
+      </div>
+      <p>{text}</p>
+      {!done && action}
+    </div>
+  );
+}
 
 export default function MemberDashboard() {
   const me = useMe();
@@ -30,6 +47,7 @@ export default function MemberDashboard() {
   const firstName = displayPersonName(data.member.fullName).split(' ').slice(-1)[0];
   const totalDays = sub ? (parseDate(sub.endDate).getTime() - parseDate(sub.startDate).getTime()) / 86400000 + 1 : 1;
   const now = new Date();
+  const todayKey = now.toDateString();
   const toComplete = data.weekSessions.find((s) => s.status === 'SCHEDULED' && parseDateTime(s.startTime) <= now);
 
   // Điều kiện người mới: chưa có gói hoặc chưa có giáo án hoặc chưa có lịch tập
@@ -39,122 +57,44 @@ export default function MemberDashboard() {
   const step1Done = !!sub && sub.state !== 'EXPIRED';
   const step2Done = !!data.currentPlan;
   const step3Done = data.weekSessions.length > 0 || !!data.nextSession;
+  const stepsDone = [step1Done, step2Done, step3Done].filter(Boolean).length;
 
   return (
     <div className="page">
-      {/* Checklist 3 bước cho người mới (BƯỚC 4) */}
+      {/* Checklist 3 bước cho người mới */}
       {showChecklist && (
         <Card className="mb-20" flush>
-          <div style={{ padding: '18px 22px' }}>
-            <div className="row between row-wrap" style={{ gap: 12, marginBottom: 14 }}>
+          <div className="onb">
+            <div className="onb-head">
               <div>
-                <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-                  <Icon name="sparkle" size={20} style={{ color: 'var(--primary-bright)' }} />
-                  <h3 style={{ margin: 0, fontSize: 17 }}>{t('Khởi đầu cùng GymFlow (3 bước đơn giản)')}</h3>
-                </div>
-                <p className="tiny muted mt-4">
-                  {t('Hoàn thiện 3 bước dưới đây để bắt đầu buổi tập đầu tiên tại phòng tập.')}
-                </p>
+                <h3><Icon name="sparkle" size={20} />{t('Khởi đầu cùng GymFlow (3 bước đơn giản)')}</h3>
+                <p className="tiny muted mt-4">{t('Hoàn thiện 3 bước dưới đây để bắt đầu buổi tập đầu tiên tại phòng tập.')}</p>
               </div>
-              {step1Done && step2Done && step3Done && (
-                <Button size="sm" variant="ghost" onClick={() => setDismissChecklist(true)}>
-                  {t('Đóng')}
-                </Button>
-              )}
+              <div className="onb-progress">
+                <Meter value={stepsDone} max={3} />
+                <span className="small num">{stepsDone}/3</span>
+                {stepsDone === 3 && <Button size="sm" variant="ghost" onClick={() => setDismissChecklist(true)}>{t('Đóng')}</Button>}
+              </div>
             </div>
 
-            <div className="grid grid-3" style={{ gap: 12 }}>
-              {/* Bước 1: Gói tập */}
-              <div style={{
-                padding: '14px 16px',
-                borderRadius: 12,
-                background: step1Done ? 'rgba(0, 178, 75, 0.08)' : 'var(--surface-2)',
-                border: `1px solid ${step1Done ? 'rgba(0, 178, 75, 0.3)' : 'var(--hairline)'}`,
-                display: 'flex', flexDirection: 'column', gap: 10
-              }}>
-                <div className="row between">
-                  <span className="small bold">{t('1. Chọn gói tập')}</span>
-                  {step1Done ? (
-                    <Badge tone="green"><Icon name="checkCircle" size={13} /> {t('Đã kích hoạt')}</Badge>
-                  ) : (
-                    <Badge tone="amber">{t('Chưa hoàn thành')}</Badge>
-                  )}
-                </div>
-                <p className="tiny muted" style={{ margin: 0, flex: 1 }}>
-                  {step1Done
-                    ? t('Gói: {name}', { name: t(sub.planName) })
-                    : t('Chọn gói tự tập hoặc có HLV kèm và thanh toán tại quầy hoặc QR.')}
-                </p>
-                {!step1Done && (
-                  <Link to="/me/packages" className="btn btn-sm btn-primary">
-                    <span>{t('Đăng ký gói ngay')}</span>
-                  </Link>
-                )}
-              </div>
-
-              {/* Bước 2: Giáo án */}
-              <div style={{
-                padding: '14px 16px',
-                borderRadius: 12,
-                background: step2Done ? 'rgba(0, 178, 75, 0.08)' : 'var(--surface-2)',
-                border: `1px solid ${step2Done ? 'rgba(0, 178, 75, 0.3)' : 'var(--hairline)'}`,
-                display: 'flex', flexDirection: 'column', gap: 10
-              }}>
-                <div className="row between">
-                  <span className="small bold">{t('2. Chọn giáo án')}</span>
-                  {step2Done ? (
-                    <Badge tone="green"><Icon name="checkCircle" size={13} /> {t('Đã có giáo án')}</Badge>
-                  ) : (
-                    <Badge tone="amber">{t('Chưa hoàn thành')}</Badge>
-                  )}
-                </div>
-                <p className="tiny muted" style={{ margin: 0, flex: 1 }}>
-                  {step2Done
-                    ? t('Giáo án: {name}', { name: t(data.currentPlan!.name) })
-                    : t('Chọn một giáo án mẫu phù hợp mục tiêu hoặc tự soạn giáo án của bạn.')}
-                </p>
-                {!step2Done && (
-                  <Link to="/me/plan" className="btn btn-sm btn-secondary">
-                    <span>{t('Chọn giáo án')}</span>
-                  </Link>
-                )}
-              </div>
-
-              {/* Bước 3: Lịch tập */}
-              <div style={{
-                padding: '14px 16px',
-                borderRadius: 12,
-                background: step3Done ? 'rgba(0, 178, 75, 0.08)' : 'var(--surface-2)',
-                border: `1px solid ${step3Done ? 'rgba(0, 178, 75, 0.3)' : 'var(--hairline)'}`,
-                display: 'flex', flexDirection: 'column', gap: 10
-              }}>
-                <div className="row between">
-                  <span className="small bold">{t('3. Xem lịch tập')}</span>
-                  {step3Done ? (
-                    <Badge tone="green"><Icon name="checkCircle" size={13} /> {t('Đã lên lịch')}</Badge>
-                  ) : (
-                    <Badge tone="muted">{t('Chưa có lịch')}</Badge>
-                  )}
-                </div>
-                <p className="tiny muted" style={{ margin: 0, flex: 1 }}>
-                  {step3Done
-                    ? (data.nextSession
-                        ? t('Buổi tới: {d}', { d: fmtWeekday(data.nextSession.startTime) })
-                        : t('{n} buổi trong tuần này', { n: data.weekSessions.length }))
-                    : t('Sinh lịch tự động từ giáo án hoặc tự chọn khung giờ tập phù hợp.')}
-                </p>
-                {!step3Done && (
-                  <Link to="/me/schedule" className="btn btn-sm btn-secondary">
-                    <span>{t('Lên lịch tập')}</span>
-                  </Link>
-                )}
-              </div>
+            <div className="onb-steps">
+              <OnbStep n={1} title={t('1. Chọn gói tập')} done={step1Done} doneLabel={t('Đã kích hoạt')} todoLabel={t('Chưa hoàn thành')}
+                text={step1Done ? t('Gói: {name}', { name: t(sub.planName) }) : t('Chọn gói tự tập hoặc có HLV kèm và thanh toán tại quầy hoặc QR.')}
+                action={<Link to="/me/packages" className="btn btn-sm btn-primary"><span>{t('Đăng ký gói ngay')}</span></Link>} />
+              <OnbStep n={2} title={t('2. Chọn giáo án')} done={step2Done} doneLabel={t('Đã có giáo án')} todoLabel={t('Chưa hoàn thành')}
+                text={step2Done ? t('Giáo án: {name}', { name: t(data.currentPlan!.name) }) : t('Chọn một giáo án mẫu phù hợp mục tiêu hoặc tự soạn giáo án của bạn.')}
+                action={<Link to="/me/plan" className="btn btn-sm btn-secondary"><span>{t('Chọn giáo án')}</span></Link>} />
+              <OnbStep n={3} title={t('3. Xem lịch tập')} done={step3Done} doneLabel={t('Đã lên lịch')} todoLabel={t('Chưa có lịch')} todoTone="muted"
+                text={step3Done
+                  ? (data.nextSession ? t('Buổi tới: {d}', { d: fmtWeekday(data.nextSession.startTime) }) : t('{n} buổi trong tuần này', { n: data.weekSessions.length }))
+                  : t('Sinh lịch tự động từ giáo án hoặc tự chọn khung giờ tập phù hợp.')}
+                action={<Link to="/me/schedule" className="btn btn-sm btn-secondary"><span>{t('Lên lịch tập')}</span></Link>} />
             </div>
           </div>
         </Card>
       )}
 
-      {/* Hero Banner */}
+      {/* Hero */}
       <div className="hero">
         <div className="row between row-wrap" style={{ position: 'relative', gap: 20 }}>
           <div>
@@ -167,26 +107,19 @@ export default function MemberDashboard() {
             </p>
           </div>
           <div className="row" style={{ gap: 10 }}>
-            {/* 1 hành động chính nổi bật */}
             {toComplete ? (
-              <Button variant="primary" icon="checkCircle" onClick={() => setOpen(toComplete)}>
-                {t('Hoàn thành buổi tập')}
-              </Button>
+              <Button variant="primary" icon="checkCircle" onClick={() => setOpen(toComplete)}>{t('Hoàn thành buổi tập')}</Button>
             ) : (
               <Link to="/me/schedule" className="btn btn-primary">
                 <Icon name="calendar" />
                 <span>{data.nextSession ? t('Xem lịch tập') : t('+ Đặt lịch tập')}</span>
               </Link>
             )}
-            <Link to="/me/plan" className="btn btn-secondary">
-              <Icon name="clipboard" />
-              <span>{t('Giáo án')}</span>
-            </Link>
+            <Link to="/me/plan" className="btn btn-secondary"><Icon name="clipboard" /><span>{t('Giáo án')}</span></Link>
           </div>
         </div>
       </div>
 
-      {/* Thông báo buổi tập cần hoàn thành */}
       {toComplete && (
         <div className="mt-16">
           <Alert kind="success" action={<Button size="sm" variant="primary" onClick={() => setOpen(toComplete)}>{t('Đánh dấu hoàn thành')}</Button>}>
@@ -195,7 +128,6 @@ export default function MemberDashboard() {
         </div>
       )}
 
-      {/* Cảnh báo gói sắp hết hạn */}
       {sub && (sub.state === 'EXPIRING' || sub.state === 'EXPIRED') && (
         <div className="mt-16">
           <Alert kind="warning" action={<Link to="/me/packages" className="btn btn-sm btn-secondary"><span>{t('Gia hạn gói')}</span></Link>}>
@@ -206,7 +138,6 @@ export default function MemberDashboard() {
         </div>
       )}
 
-      {/* 4 Thẻ chỉ số nhanh */}
       <div className="grid grid-4 mt-24">
         <Stat icon="ticket" label="Gói hiện tại" value={sub ? <CountUp value={sub.daysLeft} /> : '—'} unit={sub ? t('ngày') : undefined}
           foot={sub ? <>{t(sub.planName)} · <StatusBadge map={subState} value={sub.state} /></> : t('Chưa đăng ký gói')} />
@@ -216,42 +147,24 @@ export default function MemberDashboard() {
         <Stat icon="heart" label="BMI" value={data.bmi ?? '—'} accent="#ffb020" foot={data.bmiCategory ? t(data.bmiCategory) : t('Cần chiều cao & cân nặng')} />
       </div>
 
-      {me.memberId && <div className="mt-24"><CalorieWeekCard memberId={me.memberId} /></div>}
-
-      {/* Vòng hoạt động & Huy hiệu */}
-      <div className="grid grid-main mt-24">
-        <Card title="Vòng tuần này" icon="activity"
-          actions={<span className="tiny faint">{t('Mục tiêu {n} phút/tuần theo WHO', { n: 150 })}</span>}>
-          <ActivityRings rings={weekRings(data.weekSessions, data.streakWeeks)} />
-        </Card>
-        <Card title="Huy hiệu đạt được" icon="trophy" actions={<Link to="/profile?tab=journey" className="link small">{t('Xem tất cả')}</Link>}>
-          {progress.data ? <BadgeShelf list={achievements(progress.data)} compact />
-            : progress.error ? <p className="small muted">{t('Chưa tải được huy hiệu.')}</p>
-              : <LoadingBlock rows={3} />}
-        </Card>
-      </div>
-
-      {/* Lịch tập tuần này & Trạng thái gói */}
+      {/* Lịch tuần & gói đứng trước vòng / huy hiệu: việc cần làm trước, thành tích sau */}
       <div className="grid grid-main mt-24">
         <Card title="Lịch tuần này" icon="calendar" actions={<Link to="/me/schedule" className="btn btn-sm btn-ghost">{t('Lịch đầy đủ')}</Link>}>
           {data.weekSessions.length === 0 ? (
-            <Empty
-              icon="calendar"
-              title={t('Tuần này chưa có buổi tập')}
+            <Empty icon="calendar" title={t('Tuần này chưa có buổi tập')}
               desc={t('Lên lịch tập từ giáo án hoặc tự chọn giờ để không bỏ lỡ buổi nào.')}
-              action={<Link to="/me/schedule" className="btn btn-sm btn-primary">{t('+ Lên lịch tập')}</Link>}
-            />
+              action={<Link to="/me/schedule" className="btn btn-sm btn-primary">{t('+ Lên lịch tập')}</Link>} />
           ) : (
-            <div className="stack-sm">
+            <div className="session-list">
               {data.weekSessions.map((s) => {
                 const d = parseDateTime(s.startTime);
                 return (
-                  <button key={s.id} className="btn btn-secondary" style={{ height: 'auto', padding: '12px 14px', justifyContent: 'flex-start', gap: 14 }} onClick={() => setOpen(s)}>
-                    <div style={{ width: 44, textAlign: 'center' }}>
+                  <button key={s.id} type="button" className={`session-row${d.toDateString() === todayKey ? ' is-today' : ''}`} onClick={() => setOpen(s)}>
+                    <div className="session-date">
                       <div className="tiny faint">{DAYS[(d.getDay() + 6) % 7]}</div>
-                      <div className="num" style={{ fontSize: 20 }}>{d.getDate()}</div>
+                      <span className="num">{d.getDate()}</span>
                     </div>
-                    <div className="grow" style={{ textAlign: 'left' }}>
+                    <div className="session-main">
                       <div>{t(s.title)}</div>
                       <div className="tiny muted">{fmtTime(s.startTime)}–{fmtTime(s.endTime)} · {s.trainerName ? displayPersonName(s.trainerName) : t('Tự tập')}</div>
                     </div>
@@ -265,8 +178,9 @@ export default function MemberDashboard() {
 
         <Card title="Gói tập & Giáo án" icon="ticket" actions={<Link to="/me/packages" className="btn btn-sm btn-ghost">{t('Chi tiết gói')}</Link>}>
           {sub ? (
-            <div className="stack">
-              <div className="row between"><b style={{ fontSize: 18 }}>{t(sub.planName)}</b><StatusBadge map={subState} value={sub.state} /></div>
+            <div className="sub-box">
+              <div className="sub-box-head"><b>{t(sub.planName)}</b><StatusBadge map={subState} value={sub.state} /></div>
+              <div className="sub-days"><span className="num">{sub.daysLeft}</span><span className="small muted">{t('ngày còn lại')}</span></div>
               <Meter value={Math.max(0, totalDays - sub.daysLeft)} max={totalDays} color={sub.state === 'EXPIRING' ? 'var(--warning)' : undefined} />
               <div className="row between small muted"><span>{fmtDate(sub.startDate)}</span><span>{fmtDate(sub.endDate)}</span></div>
               <div className="divider" />
@@ -281,22 +195,30 @@ export default function MemberDashboard() {
                   <Badge tone="green">{t('Đến {date}', { date: fmtDate(data.currentPlan.endDate) })}</Badge>
                 </div>
               ) : (
-                <Empty
-                  icon="clipboard"
-                  title={t('Chưa có giáo án')}
+                <Empty icon="clipboard" title={t('Chưa có giáo án')}
                   desc={t('Chọn giáo án mẫu hoặc tự soạn để lịch tập tự động đồng bộ.')}
-                  action={<Link to="/me/plan" className="btn btn-sm btn-secondary">{t('Chọn giáo án')}</Link>}
-                />
+                  action={<Link to="/me/plan" className="btn btn-sm btn-secondary">{t('Chọn giáo án')}</Link>} />
               )}
             </div>
           ) : (
-            <Empty
-              icon="ticket"
-              title={t('Chưa có gói tập')}
+            <Empty icon="ticket" title={t('Chưa có gói tập')}
               desc={t('Đăng ký gói tập ngay trên ứng dụng để bắt đầu hành trình.')}
-              action={<Link to="/me/packages" className="btn btn-sm btn-primary">{t('Xem các gói tập')}</Link>}
-            />
+              action={<Link to="/me/packages" className="btn btn-sm btn-primary">{t('Xem các gói tập')}</Link>} />
           )}
+        </Card>
+      </div>
+
+      {me.memberId && <div className="mt-24"><CalorieWeekCard memberId={me.memberId} /></div>}
+
+      <div className="grid grid-main mt-24">
+        <Card title="Vòng tuần này" icon="activity"
+          actions={<span className="tiny faint">{t('Mục tiêu {n} phút/tuần theo WHO', { n: 150 })}</span>}>
+          <ActivityRings rings={weekRings(data.weekSessions, data.streakWeeks)} />
+        </Card>
+        <Card title="Huy hiệu đạt được" icon="trophy" actions={<Link to="/profile?tab=journey" className="link small">{t('Xem tất cả')}</Link>}>
+          {progress.data ? <BadgeShelf list={achievements(progress.data)} compact />
+            : progress.error ? <p className="small muted">{t('Chưa tải được huy hiệu.')}</p>
+              : <LoadingBlock rows={3} />}
         </Card>
       </div>
 

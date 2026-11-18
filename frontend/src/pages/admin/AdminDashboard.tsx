@@ -7,6 +7,7 @@ import { Icon } from '../../components/Icon';
 import { ActivityRings } from '../../components/motivation';
 import { Badge, Card, CountUp, Empty, ErrorState, LoadingBlock, PageHead, Person, Stat, Table } from '../../components/ui';
 import { QuickActions } from '../../components/Help';
+import { AdminTodo } from '../../components/DashBits';
 import { t, tn } from '../../i18n';
 import { actionLabel, fmtDate, fmtMoney, fmtMoneyShort, pctChange, relativeTime } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
         { to: '/admin/reconcile', label: 'Đối soát chuyển khoản', icon: 'wallet' },
       ]} />
 
+      <AdminTodo data={data} />
       <div className="grid grid-4">
         <Stat icon="users" label={t('Hội viên')} value={<CountUp value={data.totalMembers} />}
           foot={tn('{n} tháng này · {active} đang hoạt động', { n: <span className="trend-up">+{data.newMembersThisMonth}</span>, active: data.activeMembers })} />

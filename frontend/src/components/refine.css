@@ -1,0 +1,251 @@
+/*
+ * v10 · Tinh chỉnh giao diện (nạp sau polish.css). Giữ tông tối + xanh lá, chỉ làm rõ thứ bậc và bớt rối:
+ *  1. Trang tổng quan: thẻ số liệu gọn, "việc cần làm", buổi tiếp theo, checklist người mới, danh sách buổi tập.
+ *  2. Mua gói & thanh toán: thẻ gói, thanh bước mua, tóm tắt đơn, khối chuyển khoản.
+ *  3. Trang chủ & đăng nhập: thẻ đăng nhập, tài khoản demo.
+ *  4. Điện thoại: hộp thoại dạng tấm trượt từ dưới, nút to dễ bấm, lưới 2 cột, thao tác nhanh vuốt ngang.
+ */
+
+/* =================== 1. Trang tổng quan =================== */
+
+/* Thẻ số liệu: nhãn nhỏ in hoa, số to, vạch nghiêng nhạt hơn */
+.content .stat { padding: 18px 20px 16px; transition: border-color .2s, transform .25s var(--ease-out); }
+.content .stat:hover { border-color: var(--line-strong); }
+.content .stat::after { opacity: .06; width: 64px; }
+.content .stat .label { text-transform: uppercase; letter-spacing: .06em; font-size: 11.5px; font-weight: 700; }
+.content .stat .label svg {
+  width: 26px; height: 26px; padding: 5px; border-radius: 8px;
+  background: color-mix(in srgb, var(--accent, var(--primary)) 16%, transparent);
+}
+.content .stat .value { font-size: 30px; margin-top: 12px; }
+.content .stat .foot { color: var(--muted); }
+
+/* Thao tác nhanh: dạng viên thuốc, có tiêu đề nhỏ */
+.quick-actions { gap: 8px; margin-bottom: 20px; }
+.quick-actions .btn { height: 34px; border-radius: 999px; padding: 0 14px 0 12px; background: var(--surface-2); border-color: var(--hairline-soft); color: var(--ink); }
+.quick-actions .btn svg { color: var(--primary-bright); }
+.quick-actions .btn:hover { border-color: color-mix(in srgb, var(--primary) 50%, var(--hairline)); background: color-mix(in srgb, var(--primary) 8%, var(--surface-2)); }
+
+/* Hero hội viên: thoáng hơn, nút hành động rõ */
+.content .hero { padding: 28px 30px; }
+.content .hero h2 { font-size: clamp(22px, 2.4vw, 28px); letter-spacing: -.015em; }
+.content .hero p { max-width: 60ch; line-height: 1.55; }
+
+/* Việc cần làm hôm nay (quản lý) */
+.todo-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+.todo-item {
+  position: relative; display: flex; align-items: center; gap: 12px; min-width: 0;
+  padding: 14px 16px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--hairline-soft);
+  transition: border-color .2s, background .2s, transform .2s var(--ease-out);
+}
+.todo-item:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+.todo-item .todo-ic { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; color: var(--c); background: color-mix(in srgb, var(--c) 15%, transparent); }
+.todo-item .todo-ic svg { width: 19px; height: 19px; }
+.todo-item .todo-n { font-size: 24px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.todo-item .todo-t { font-size: 12.5px; color: var(--muted); line-height: 1.35; margin-top: 3px; }
+.todo-item .todo-go { margin-left: auto; color: var(--faint); flex: none; }
+.todo-item.hot { border-color: color-mix(in srgb, var(--c) 45%, var(--hairline)); background: color-mix(in srgb, var(--c) 6%, var(--surface-2)); }
+.todo-item.calm .todo-n { color: var(--muted); }
+
+/* Buổi tiếp theo (HLV) */
+.next-up {
+  display: flex; align-items: center; gap: 18px; width: 100%; margin-bottom: 20px; padding: 16px 20px; text-align: left;
+  border-radius: var(--r-lg); border: 1px solid color-mix(in srgb, var(--primary) 40%, var(--hairline)); cursor: pointer; color: inherit;
+  background: radial-gradient(120% 160% at 0% 0%, rgba(0, 217, 91, .14), transparent 60%), var(--surface-2);
+  transition: border-color .2s, transform .2s var(--ease-out);
+}
+.next-up:hover { border-color: var(--primary); transform: translateY(-1px); }
+.next-up-time { flex: none; font-size: 30px; line-height: 1; color: var(--primary-bright); }
+.next-up-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.next-up-body b { font-size: 17px; }
+.next-up .btn { flex: none; pointer-events: none; }
+
+/* Checklist người mới (hội viên) */
+.onb { padding: 20px 22px; }
+.onb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.onb-head h3 { display: flex; align-items: center; gap: 8px; font-size: 17px; }
+.onb-head h3 svg { color: var(--primary-bright); }
+.onb-progress { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+.onb-progress .meter { flex: 1; }
+.onb-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.onb-step { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--hairline); }
+.onb-step.done { background: color-mix(in srgb, var(--primary) 8%, var(--surface-2)); border-color: color-mix(in srgb, var(--primary) 35%, var(--hairline)); }
+.onb-step-top { display: flex; align-items: center; gap: 10px; }
+.onb-num { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font-size: 13px; font-weight: 800; background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--muted); }
+.onb-step.done .onb-num { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.onb-step-top b { flex: 1; font-size: 14px; }
+.onb-step p { margin: 0; flex: 1; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.onb-step .btn { align-self: flex-start; }
+
+/* Danh sách buổi tập trong tuần (hội viên) */
+.session-list { display: flex; flex-direction: column; gap: 8px; }
+.session-row {
+  display: flex; align-items: center; gap: 14px; width: 100%; padding: 10px 14px; text-align: left; cursor: pointer; color: inherit;
+  border-radius: 12px; border: 1px solid var(--hairline-soft); background: var(--surface);
+  transition: border-color .2s, background .2s;
+}
+.session-row:hover { border-color: var(--line-strong); background: color-mix(in srgb, var(--surface) 85%, white 3%); }
+.session-row.is-today { border-color: color-mix(in srgb, var(--primary) 45%, var(--hairline)); }
+.session-date { flex: none; width: 46px; padding: 4px 0; text-align: center; border-radius: 10px; background: var(--surface-2); }
+.session-date .tiny { text-transform: uppercase; letter-spacing: .04em; }
+.session-date .num { display: block; font-size: 20px; line-height: 1.1; }
+.session-row.is-today .session-date { background: var(--primary); color: var(--on-primary); }
+.session-row.is-today .session-date .tiny { color: inherit; opacity: .85; }
+.session-main { flex: 1; min-width: 0; }
+.session-main > div:first-child { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Gói tập & giáo án (hội viên) */
+.sub-box { display: flex; flex-direction: column; gap: 12px; }
+.sub-box-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sub-box-head b { font-size: 18px; }
+.sub-days { display: flex; align-items: baseline; gap: 6px; }
+.sub-days .num { font-size: 34px; line-height: 1; }
+
+/* =================== 2. Mua gói & thanh toán =================== */
+
+/* Thẻ gói: giá nổi bật, quyền lợi dễ đọc, nút cuối thẻ rộng */
+.plan-card { gap: 12px; }
+.plan-card .pc-name { font-size: 21px; }
+.plan-card .pc-amount { font-size: 36px; }
+.plan-card.compact .pc-amount { font-size: 24px; }
+.plan-card .pc-perks { font-size: 13.5px; color: var(--ink); }
+.plan-card .pc-perks li { color: color-mix(in srgb, var(--ink) 88%, var(--muted)); }
+.plan-card .pc-foot .btn { width: 100%; }
+.plan-card .pc-gifts { background: var(--surface) !important; border: 1px dashed color-mix(in srgb, var(--primary) 35%, var(--hairline)); }
+.plan-grid { gap: 20px; }
+
+/* Thanh bước mua gói: Chọn gói → Xác nhận → Chuyển khoản → Tập */
+.buy-steps { display: flex; align-items: center; gap: 6px; margin: -4px 0 4px; padding: 0; list-style: none; counter-reset: bs; }
+.buy-steps li { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; font-size: 12.5px; font-weight: 700; color: var(--faint); counter-increment: bs; }
+.buy-steps li::before {
+  content: counter(bs); flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+  font-size: 12px; font-weight: 800; border: 1px solid var(--line-strong); background: var(--surface);
+}
+.buy-steps li:not(:last-child)::after { content: ''; flex: 1; height: 2px; min-width: 10px; border-radius: 2px; background: var(--hairline); }
+.buy-steps li.done { color: var(--muted); }
+.buy-steps li.done::before { content: '✓'; background: color-mix(in srgb, var(--primary) 20%, transparent); border-color: var(--primary); color: var(--primary-bright); }
+.buy-steps li.done::after { background: var(--primary); }
+.buy-steps li.on { color: var(--ink); }
+.buy-steps li.on::before { background: var(--primary); border-color: var(--primary); color: var(--on-primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent); }
+.buy-steps span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Tóm tắt đơn: nhãn nhỏ, giá trị rõ, ô số tiền phải trả nổi bật */
+.plan-summary { gap: 12px; padding: 14px 16px; border-radius: var(--r-md); border: 1px solid var(--hairline); }
+.plan-summary > div > .tiny.muted:first-child { text-transform: uppercase; letter-spacing: .05em; font-size: 11px; }
+.plan-summary b { font-size: 15px; }
+
+/* Khối chuyển khoản: mã nội dung to, khung QR sáng */
+.pay-memo-code { letter-spacing: .08em; }
+.pay-box .qr-frame { box-shadow: 0 18px 40px -24px rgba(0, 0, 0, .6); }
+.pay-steps li { line-height: 1.45; }
+
+/* Thẻ chọn (cách trả tiền, HLV) */
+.pick { min-height: 60px; }
+.pick.on { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); }
+
+/* =================== 3. Trang chủ & đăng nhập =================== */
+
+.auth-form .auth-card { padding: 30px 28px; gap: 16px; }
+.auth-form h2 { font-size: 30px; letter-spacing: -.02em; }
+.auth-form .btn-lg { height: 52px; }
+
+/* Tài khoản demo: dễ thấy, bấm một lần là vào */
+.demo-box { padding: 16px; gap: 12px; border-style: solid; border-color: color-mix(in srgb, var(--warning) 35%, var(--hairline)); background: color-mix(in srgb, var(--warning) 5%, var(--surface-2)); }
+.demo-box > .row:first-child { flex-wrap: wrap; gap: 4px 10px; }
+.demo-box > .row:first-child .tiny:first-child { font-size: 13px; font-weight: 800; color: var(--ink); }
+.quick-login { gap: 10px; }
+.quick-login button { padding: 14px 8px 12px; gap: 4px; font-size: 13px; color: var(--ink); background: var(--surface-2); }
+.quick-login button svg { width: 24px; height: 24px; margin-bottom: 4px; }
+.quick-login .demo-hint { font-size: 11px; font-weight: 600; color: var(--muted); text-align: center; line-height: 1.3; }
+.quick-login button:hover { background: color-mix(in srgb, var(--primary) 8%, var(--surface-2)); }
+
+/* Trang giới thiệu: khoảng thở giữa các phần */
+.public .section { padding-top: 64px; padding-bottom: 64px; }
+.public .section h2.display-sm + p { max-width: 60ch; }
+
+/* =================== 4. Điện thoại & máy tính bảng =================== */
+
+@media (max-width: 1180px) {
+  .todo-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  /* Tiêu đề trang: nút hành động xuống hàng, chia đều chiều ngang */
+  .content .page-head { align-items: stretch; gap: 12px; margin-bottom: 18px; }
+  .content .page-head > div:first-child { min-width: 0; }
+  .content .page-head .actions { width: 100%; }
+  .content .page-head .actions > .btn, .content .page-head .actions > a.btn { flex: 1 1 0; min-width: 0; }
+  .content .page-head p { font-size: 14px; }
+
+  /* Thao tác nhanh: một hàng vuốt ngang thay vì 3–4 hàng nút */
+  .quick-actions { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px 18px; padding: 2px 16px 6px; scroll-snap-type: x proximity; scrollbar-width: none; }
+  .quick-actions::-webkit-scrollbar { display: none; }
+  .quick-actions .btn { flex: none; scroll-snap-align: start; height: 38px; }
+
+  .onb-steps { grid-template-columns: minmax(0, 1fr); }
+  .content .hero { padding: 22px 20px; }
+  .content .hero .row { width: 100%; }
+  .content .hero .row > .btn { flex: 1 1 0; }
+  .next-up { flex-wrap: wrap; gap: 12px 16px; }
+  .next-up .btn { width: 100%; justify-content: center; }
+
+  /* Nút & ô nhập đủ to cho ngón tay */
+  .btn-sm { height: 36px; }
+  .input, .select { height: 46px; font-size: 16px; }
+  .textarea { font-size: 16px; }
+
+  /* Thanh tab dưới: mục đang chọn có vạch sáng */
+  .tabbar a { position: relative; font-size: 11px; font-weight: 700; }
+  .tabbar a.active::before { content: ''; position: absolute; top: 0; left: 28%; right: 28%; height: 3px; border-radius: 0 0 3px 3px; background: var(--grad-go); }
+
+  /* Đăng nhập: thẻ bắt đầu từ trên (chừa chỗ cho nút đổi giao diện), không bị đẩy xuống giữa màn hình */
+  .auth-form { padding: 64px 16px 32px; place-items: start center; }
+  .auth-form .auth-card { padding: 24px 20px; }
+}
+
+@media (max-width: 600px) {
+  /* Hộp thoại thành tấm trượt từ dưới lên, nút cuối luôn nằm trong tầm ngón cái */
+  .overlay { place-items: end stretch; padding: 0; }
+  .modal, .modal.wide, .modal.medium, .modal.narrow {
+    width: 100%; max-height: calc(100dvh - 24px); border-radius: 22px 22px 0 0; border-bottom: 0;
+    animation: sheetIn .32s var(--ease-out) both;
+  }
+  .modal-head { padding: 16px 18px 14px; position: relative; }
+  .modal-head::after { content: ''; position: absolute; top: 6px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 4px; background: var(--line-strong); }
+  .modal-head h2 { font-size: 18px; }
+  .modal-body { padding: 18px; }
+  .modal-foot { padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); }
+  .modal-foot > .btn { flex: 1 1 0; min-width: 0; height: 46px; }
+
+  /* Số liệu 2 cột thay vì một cột dài */
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .content .stat { padding: 14px 14px 12px; }
+  .content .stat .value { font-size: 24px; margin-top: 8px; }
+  .content .stat .label { font-size: 10.5px; gap: 6px; }
+  .content .stat .label svg { width: 22px; height: 22px; padding: 4px; }
+  .content .stat .foot { font-size: 11.5px; }
+  .todo-strip { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+
+  .buy-steps span { display: none; }
+  .buy-steps li.on span { display: inline; }
+  .plan-summary { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .plan-card .pc-amount { font-size: 30px; }
+
+  .quick-login button { flex-direction: row; justify-content: flex-start; gap: 12px; padding: 12px 14px; text-align: left; }
+  .quick-login button svg { margin: 0; }
+  .quick-login .demo-hint { margin-left: auto; text-align: right; }
+  .public .section { padding-top: 44px; padding-bottom: 44px; }
+}
+
+@keyframes sheetIn { from { transform: translateY(100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal { animation: none !important; }
+  .todo-item, .next-up, .content .stat { transition: none; }
+}
+
+/* Nền sáng: tăng viền cho các khối mới */
+:root[data-theme='light'] .todo-item,
+:root[data-theme='light'] .session-row,
+:root[data-theme='light'] .onb-step { box-shadow: 0 1px 2px rgba(16, 24, 40, .05); }
+:root[data-theme='light'] .session-row:hover { background: var(--surface-2); }
