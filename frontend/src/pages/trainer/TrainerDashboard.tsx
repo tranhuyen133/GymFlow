@@ -46,6 +46,17 @@ export default function TrainerDashboard() {
         { to: '/schedules', label: 'Lịch tuần', icon: 'clock' },
       ]} />
 
+      {next && (
+        <button type="button" className="next-up" onClick={() => setOpen(next)}>
+          <span className="next-up-time num">{fmtTime(next.startTime)}</span>
+          <span className="next-up-body">
+            <span className="tiny muted">{t('Buổi tiếp theo hôm nay')}</span>
+            <b className="ellipsis">{displayPersonName(next.memberName)}</b>
+            <span className="small muted ellipsis">{t(next.title)} · {fmtTime(next.startTime)}–{fmtTime(next.endTime)}</span>
+          </span>
+          <span className="btn btn-primary btn-sm"><Icon name="checkCircle" /><span>{t('Mở buổi tập')}</span></span>
+        </button>
+      )}
       <div className="grid grid-4">
         <Stat icon="users" label="Hội viên phụ trách" value={<CountUp value={data.memberCount} />} foot={t('{n} giáo án đang áp dụng', { n: data.activePlans })} />
         <Stat icon="calendar" label="Buổi hôm nay" value={<CountUp value={data.sessionsToday} />} accent="#3d97ff" foot={t('{n} buổi trong tuần', { n: data.sessionsThisWeek })} />

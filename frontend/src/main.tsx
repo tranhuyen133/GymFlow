@@ -10,6 +10,7 @@ import { installLangSync } from './i18n/langSync';
 import { ThemeProvider } from './theme/ThemeContext';
 import './styles.css';
 import './components/polish.css';
+import './components/refine.css';
 
 installDomTranslate();
 installLangSync();
