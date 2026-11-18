@@ -3,16 +3,22 @@ import { api } from '../../api/client';
 import type { AdminDashboard as Data } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { BarChart, Donut } from '../../components/charts';
+import { DxSpark } from '../../components/DashX';
 import { Icon } from '../../components/Icon';
 import { ActivityRings } from '../../components/motivation';
-import { Badge, Card, CountUp, Empty, ErrorState, LoadingBlock, PageHead, Person, Stat, Table } from '../../components/ui';
+import { Badge, Card, CountUp, Empty, ErrorState, LoadingBlock, PageHead, Person, Table } from '../../components/ui';
 import { QuickActions } from '../../components/Help';
 import { AdminTodo } from '../../components/DashBits';
-import { t, tn } from '../../i18n';
+import { t } from '../../i18n';
 import { actionLabel, fmtDate, fmtMoney, fmtMoneyShort, pctChange, relativeTime } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
 import { localizeText } from '../../lib/planText';
 import { useAsync } from '../../lib/hooks';
+
+const monthLabel = (label: string) => {
+  const [m, y] = label.split('/');
+  return m && y ? `T${m}/${y.slice(-2)}` : label;
+};
 
 export default function AdminDashboard() {
   const me = useMe();
@@ -26,15 +32,52 @@ export default function AdminDashboard() {
 
   const growth = pctChange(data.revenueThisMonth, data.revenuePrevMonth);
   const coverage = data.totalMembers ? Math.round((data.membersWithActivePackage / data.totalMembers) * 100) : 0;
+  const months = data.revenueByMonth;
 
   return (
     <div className="page">
-      <PageHead eyebrow={t(greet)} title={t('Xin chào, {name}', { name: displayPersonName(me.fullName).split(' ').slice(-1)[0] })}
-        desc={t('Toàn cảnh phòng tập hôm nay: hội viên, doanh thu, gói sắp hết hạn và hoạt động mới nhất.')}
-        actions={<>
-          <Link className="btn btn-secondary" to="/reports"><Icon name="chart" /><span>{t('Báo cáo')}</span></Link>
-          <Link className="btn btn-primary" to="/members?new=1"><Icon name="plus" /><span>{t('Thêm hội viên')}</span></Link>
-        </>} />
+      {/* Hero v11 "bảng điều hành": doanh thu tháng là số chính + đường 6 tháng; bên phải 3 chỉ số bấm được (thay hàng 4 ô số cũ) */}
+      <div className="hero dx-hero">
+        <div className="dx-hero-grid">
+          <div className="dx-hero-main">
+            <span className="dx-eyebrow">{t(greet)}, {displayPersonName(me.fullName).split(' ').slice(-1)[0]}</span>
+            <span className="dx-kicker"><Icon name="wallet" size={14} /> {t('Doanh thu tháng')}</span>
+            <div className="dx-money">
+              <span className="num"><CountUp value={data.revenueThisMonth} format={fmtMoneyShort} /></span>
+              <span className={`dx-delta ${growth >= 0 ? 'is-up' : 'is-down'}`}>
+                <Icon name={growth >= 0 ? 'trendUp' : 'trendDown'} size={14} /> {growth >= 0 ? '+' : ''}{growth}%
+              </span>
+            </div>
+            <span className="tiny faint">{t('Doanh thu tháng này: {a} · tháng trước: {b}', { a: fmtMoney(data.revenueThisMonth), b: fmtMoney(data.revenuePrevMonth) })}</span>
+            <DxSpark values={months.map((r) => r.value)} labels={months.map((r) => monthLabel(r.label))} />
+            <div className="row row-wrap" style={{ gap: 10 }}>
+              <Link className="btn btn-primary" to="/members?new=1"><Icon name="plus" /><span>{t('Thêm hội viên')}</span></Link>
+              <Link className="btn btn-secondary" to="/reports"><Icon name="chart" /><span>{t('Báo cáo')}</span></Link>
+            </div>
+          </div>
+
+          <div className="dx-hero-side dx-kpis">
+            <Link to="/members" className="dx-kpi">
+              <span className="dx-kpi-label"><Icon name="users" size={15} />{t('Hội viên')}</span>
+              <span className="dx-kpi-value num"><CountUp value={data.totalMembers} /></span>
+              <span className="tiny faint"><b className="trend-up">+{data.newMembersThisMonth}</b> {t('tháng này')} · {t('{n} đang hoạt động', { n: data.activeMembers })}</span>
+            </Link>
+            <Link to="/subscriptions" className="dx-kpi">
+              <span className="dx-kpi-label"><Icon name="ticket" size={15} />{t('Có gói hiệu lực')}</span>
+              <span className="dx-kpi-value num"><CountUp value={coverage} /><small>%</small></span>
+              <span className="dx-bar"><i style={{ width: `${coverage}%` }} /></span>
+              <span className="tiny faint">{t('{a}/{b} hội viên', { a: data.membersWithActivePackage, b: data.totalMembers })}</span>
+            </Link>
+            <Link to="/subscriptions?state=EXPIRING" className={`dx-kpi${data.expiringSoon > 0 ? ' is-warn' : ''}`}>
+              <span className="dx-kpi-label"><Icon name="clock" size={15} />{t('Sắp hết hạn (7 ngày)')}</span>
+              <span className="dx-kpi-value num"><CountUp value={data.expiringSoon} /></span>
+              <span className="tiny faint">{t('{n} buổi tập hôm nay · {m} HLV', { n: data.sessionsToday, m: data.activeTrainers })}</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <AdminTodo data={data} />
 
       <QuickActions items={[
         { to: '/package-requests', label: 'Duyệt đăng ký gói', icon: 'checkCircle' },
@@ -49,16 +92,17 @@ export default function AdminDashboard() {
         { to: '/admin/reconcile', label: 'Đối soát chuyển khoản', icon: 'wallet' },
       ]} />
 
-      <AdminTodo data={data} />
-      <div className="grid grid-4">
-        <Stat icon="users" label={t('Hội viên')} value={<CountUp value={data.totalMembers} />}
-          foot={tn('{n} tháng này · {active} đang hoạt động', { n: <span className="trend-up">+{data.newMembersThisMonth}</span>, active: data.activeMembers })} />
-        <Stat icon="ticket" label={t('Có gói hiệu lực')} value={<CountUp value={data.membersWithActivePackage} />} accent="#3d97ff"
-          foot={t('{n}% tổng hội viên', { n: coverage })} />
-        <Stat icon="wallet" label={t('Doanh thu tháng')} value={<CountUp value={data.revenueThisMonth} format={fmtMoneyShort} />} accent="#8b7cff" highlight
-          foot={tn('{pct} so với tháng trước', { pct: <span className={growth >= 0 ? 'trend-up' : 'trend-down'}><Icon name={growth >= 0 ? 'trendUp' : 'trendDown'} size={13} /> {growth >= 0 ? '+' : ''}{growth}%</span> })} />
-        <Stat icon="clock" label={t('Sắp hết hạn (7 ngày)')} value={<CountUp value={data.expiringSoon} />} accent="#ffb020"
-          foot={t('{n} buổi tập hôm nay · {m} HLV', { n: data.sessionsToday, m: data.activeTrainers })} />
+      <div className="grid grid-main mt-24">
+        <Card title={t('Doanh thu 6 tháng')} icon="chart" actions={<span className="tiny faint">{t('Theo ngày thu tiền')}</span>}>
+          <BarChart data={months.map((r) => ({ label: monthLabel(r.label), value: r.value }))} format={fmtMoneyShort} />
+        </Card>
+        <Card title={t('Gói đang hiệu lực')} icon="layers">
+          {data.planDistribution.length ? (
+            <Donut data={data.planDistribution.map((d) => ({ ...d, label: t(d.label) }))} sub={t('hội viên')} />
+          ) : (
+            <Empty title={t('Chưa có gói hiệu lực')} />
+          )}
+        </Card>
       </div>
 
       {/* Sức khoẻ phòng tập: 3 vòng tính từ số liệu thật của hôm nay (không đặt chỉ tiêu tự nghĩ ra) */}
@@ -70,28 +114,6 @@ export default function AdminDashboard() {
           { key: 'rev', label: t('Doanh thu so tháng trước'), value: data.revenueThisMonth, max: Math.max(1, data.revenuePrevMonth), color: 'var(--ring-3)', text: data.revenuePrevMonth ? `${Math.round((data.revenueThisMonth / data.revenuePrevMonth) * 100)}%` : '—' },
         ]} />
       </Card>
-
-      <div className="grid grid-main mt-24">
-        <Card title={t('Doanh thu 6 tháng')} icon="chart" actions={<span className="tiny faint">{t('Theo ngày thu tiền')}</span>}>
-          <BarChart
-            data={data.revenueByMonth.map((r) => {
-              const [m, y] = r.label.split('/');
-              return { label: m && y ? `T${m}/${y.slice(-2)}` : r.label, value: r.value };
-            })}
-            format={fmtMoneyShort}
-          />
-        </Card>
-        <Card title={t('Gói đang hiệu lực')} icon="layers">
-          {data.planDistribution.length ? (
-            <Donut
-              data={data.planDistribution.map((d) => ({ ...d, label: t(d.label) }))}
-              sub={t('hội viên')}
-            />
-          ) : (
-            <Empty title={t('Chưa có gói hiệu lực')} />
-          )}
-        </Card>
-      </div>
 
       <div className="grid grid-2 mt-24">
         <Card title={t('Gói sắp hết hạn')} icon="alert" flush actions={<Link to="/subscriptions?state=EXPIRING" className="link small">{t('Xem tất cả')}</Link>}>
@@ -112,22 +134,19 @@ export default function AdminDashboard() {
           )}
         </Card>
         <Card title={t('Hoạt động gần đây')} icon="activity" actions={<Link to="/audit-logs" className="link small">{t('Nhật ký')}</Link>}>
-          <div className="stack">
+          <ol className="dx-feed">
             {data.recentActivity.map((a) => (
-              <div key={a.id} className="row" style={{ alignItems: 'flex-start' }}>
-                <div className="muscle-ic" style={{ width: 32, height: 32, borderRadius: 10, ['--c' as string]: a.success ? '#00d95b' : '#ff6b61' }}>
-                  <Icon name={a.success ? 'check' : 'x'} size={15} />
-                </div>
+              <li key={a.id} className={a.success ? 'is-ok' : 'is-bad'}>
+                <span className="dx-feed-dot"><Icon name={a.success ? 'check' : 'x'} size={12} /></span>
                 <div className="grow">
                   <div className="small"><b>{actionLabel[a.action] ?? a.action}</b>{a.detail && <span className="muted"> · {a.detail}</span>}</div>
                   <div className="tiny faint">{a.actorEmail ?? t('hệ thống')} · {relativeTime(a.createdAt)}</div>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </Card>
       </div>
-      <p className="tiny faint mt-16">{t('Doanh thu tháng này: {a} · tháng trước: {b}', { a: fmtMoney(data.revenueThisMonth), b: fmtMoney(data.revenuePrevMonth) })}</p>
     </div>
   );
 }
