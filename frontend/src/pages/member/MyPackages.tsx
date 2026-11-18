@@ -491,9 +491,9 @@ export default function MyPackages() {
   );
 }
 
-export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onDone }: {
+export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onDone, onBack }: {
   plan: MembershipPlan; subs: Subscription[]; payment: PaymentSettings | null; currentTrainerId: number | null;
-  onClose: () => void; onDone: (created: PackageRequest) => void;
+  onClose: () => void; onDone: (created: PackageRequest) => void; onBack?: () => void;
 }) {
   const toast = useToast();
   const today = todayIso();
@@ -592,7 +592,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
   };
 
   return (
-    <Modal title={t('Đăng ký {plan}', { plan: localizeText(plan.nameEn, plan.name) })} onClose={onClose} footer={<>
+    <Modal title={t('Đăng ký {plan}', { plan: localizeText(plan.nameEn, plan.name) })} onClose={onClose} onBack={onBack} footer={<>
       <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
       <Button variant="primary" icon="check" loading={busy} disabled={!agree || isLegacyPt} onClick={submit}>{t('Gửi đơn đăng ký')}</Button>
     </>}>

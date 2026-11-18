@@ -63,6 +63,7 @@ export default function PackagesCatalog({ embedded }: { embedded?: boolean } = {
   const [payingServiceReq, setPayingServiceReq] = useState<ServiceRequest | null>(null);
   const [compareIds, setCompareIds] = useState<number[]>([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
+  const [registerFrom, setRegisterFrom] = useState<'detail' | 'compare' | null>(null);
 
   const pending = reqs.data?.find((r) => r.status === 'PENDING') ?? null;
   const currentSub = subs.data?.find((s) => s.state === 'ACTIVE' || s.state === 'EXPIRING');
@@ -313,7 +314,7 @@ export default function PackagesCatalog({ embedded }: { embedded?: boolean } = {
                           icon={isMine ? 'repeat' : 'plus'}
                           disabled={!!pending}
                           title={pending ? t('Bạn đang có một đơn chờ xác nhận') : undefined}
-                          onClick={() => setRegisteringPlan(p)}
+                          onClick={() => { setRegisterFrom(null); setRegisteringPlan(p); }}
                         >
                           {isMine ? t('Gia hạn gói này') : t('Đăng ký')}
                         </Button>
@@ -337,6 +338,7 @@ export default function PackagesCatalog({ embedded }: { embedded?: boolean } = {
           onRegister={() => {
             const p = detailPlan;
             setDetailPlan(null);
+            setRegisterFrom('detail');
             setRegisteringPlan(p);
           }}
         />
@@ -350,6 +352,7 @@ export default function PackagesCatalog({ embedded }: { embedded?: boolean } = {
           onClose={() => setShowCompareModal(false)}
           onRegister={(p) => {
             setShowCompareModal(false);
+            setRegisterFrom('compare');
             setRegisteringPlan(p);
           }}
         />
@@ -363,6 +366,7 @@ export default function PackagesCatalog({ embedded }: { embedded?: boolean } = {
           payment={pay.data ?? null}
           currentTrainerId={me.data?.trainerId ?? null}
           onClose={() => setRegisteringPlan(null)}
+          onBack={registerFrom ? () => { const p = registeringPlan; setRegisteringPlan(null); if (registerFrom === 'detail') setDetailPlan(p); else setShowCompareModal(true); } : undefined}
           onDone={(created) => {
             setRegisteringPlan(null);
             reloadAll();

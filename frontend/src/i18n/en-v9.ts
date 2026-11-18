@@ -74,4 +74,45 @@ export const EN_V9: Record<string, string> = {
   'Đơn này vừa được đối soát': 'This order was just reconciled',
   'Đơn nâng cấp lên PT đã cắt ngắn gói cũ, không thu hồi tự động được. Vào Đăng ký gói để huỷ gói PT và sửa lại thời gian gói cũ.':
     'A PT upgrade order shortened the previous plan, so it cannot be revoked automatically. Go to Subscriptions to cancel the PT plan and restore the old dates.',
+  // ---- Check-in bằng mã động trên màn hình quầy ----
+  'GymFlow · Check-in tại phòng tập': 'GymFlow · Gym check-in',
+  'Mã mới sau {n} giây': 'New code in {n}s',
+  'Đang đổi mã…': 'Changing code…',
+  'Mở camera điện thoại, quét mã QR trên màn hình này': 'Open your phone camera and scan the QR code on this screen',
+  'Hoặc vào GymFlow › Check-in rồi nhập 6 số đang hiện': 'Or open GymFlow › Check-in and type the 6 digits shown',
+  'Mỗi mã chỉ một người dùng và đổi mỗi 30 giây – phải có mặt ở quầy mới check-in được.': 'Each code works for one person only and changes every 30 seconds – you have to be at the front desk to check in.',
+  'Tự quét mã': 'Self scan',
+  'Huỷ lượt check-in': 'Undo check-in',
+  'Mở màn hình mã cho hội viên': 'Open code screen for members',
+  'Quét thẻ hội viên hoặc gõ mã HV / số điện thoại. Hội viên tự check-in bằng mã động trên màn hình quầy – mã đổi mỗi 30 giây nên không gửi cho người ở nhà được.':
+    'Scan the member card or type the member code / phone number. Members can also check themselves in with the live code on the front-desk screen – it changes every 30 seconds, so it cannot be sent to someone at home.',
+  'Đặt một máy tính bảng / TV ở quầy, đăng nhập quản lý, bấm "Mở màn hình mã cho hội viên" (hoặc mở đường dẫn /admin/checkin?screen=1).':
+    'Put a tablet / TV at the front desk, sign in as manager and press "Open code screen for members" (or open /admin/checkin?screen=1).',
+  'Hội viên tới nơi quét QR hoặc nhập 6 số đang hiện. Mỗi mã chỉ một người dùng, dùng xong màn hình đổi mã mới ngay; để yên thì 30 giây đổi một lần.':
+    'Arriving members scan the QR or type the 6 digits shown. Each code works once: after it is used the screen shows a new one right away; otherwise it changes every 30 seconds.',
+  'Ảnh chụp mã gửi cho bạn ở nhà sẽ hết hạn hoặc đã bị dùng, nên check-in "từ nhà" không được tính.':
+    'A photo of the code sent to a friend at home will have expired or already been used, so "checking in from home" does not work.',
+  'Lượt tự quét mã được tô xanh trong danh sách: thấy tên người không có mặt thì bấm huỷ lượt.':
+    'Self check-ins are marked green in the list: if you see the name of someone who is not here, undo that check-in.',
+  'Mã động cho hội viên tự check-in': 'Live code for member self check-in',
+  'Tự quét mã hôm nay': 'Self check-ins today',
+  'Tự cập nhật': 'Auto-refresh',
+  'Lượt mới sẽ hiện ở đây ngay khi quét thẻ hoặc hội viên tự quét mã trên màn hình quầy.': 'New check-ins appear here as soon as a card is scanned or a member scans the code on the front-desk screen.',
+  'Màn hình mã check-in cho hội viên': 'Member check-in code screen',
+  'Lượt check-in lúc {time} của {name} sẽ bị xoá (bấm nhầm, hoặc người này không có mặt ở phòng tập).': 'The {time} check-in of {name} will be deleted (pressed by mistake, or this person is not at the gym).',
+  'Check-in tại phòng tập': 'Gym check-in',
+  'Quét mã QR đang hiện trên màn hình ở quầy (mã đổi mỗi 30 giây), nhập 6 số, hoặc đưa thẻ hội viên cho lễ tân quét.':
+    'Scan the QR code on the front-desk screen (it changes every 30 seconds), type the 6 digits, or show your member card to the receptionist.',
+  'Quay lại': 'Back',
+  'Quét lại mã mới': 'Scan the new code',
+  'Trên iPhone: mở app Camera, hướng vào mã QR trên màn hình quầy rồi bấm vào đường dẫn hiện ra. Hoặc nhập 6 số đang hiện:':
+    'On iPhone: open the Camera app, point it at the QR code on the front-desk screen and tap the link. Or type the 6 digits shown:',
+  'Mã 6 số trên màn hình quầy': '6-digit code on the front-desk screen',
+  'Check-in chỉ tính khi bạn có mặt ở phòng tập: mỗi mã chỉ một người dùng và đổi mỗi 30 giây, ảnh chụp mã gửi qua tin nhắn sẽ không dùng được. Cần có gói tập còn hiệu lực hôm nay.':
+    'Check-in only counts when you are at the gym: each code works for one person and changes every 30 seconds, so a photo of the code sent by message will not work. You need a plan that is valid today.',
+  'Mở màn hình mã cho hội viên tự check-in': 'Open the self check-in code screen',
+  'Mã này vừa có người dùng. Mỗi mã chỉ dùng một lần – quét mã mới đang hiện trên màn hình quầy':
+    'This code was just used. Each code works once – scan the new code on the front-desk screen',
+  'Mã không đúng hoặc đã hết hạn. Quét mã đang hiện trên màn hình ở quầy (đổi mỗi 30 giây), hoặc đưa thẻ hội viên cho lễ tân quét':
+    'Wrong or expired code. Scan the code currently on the front-desk screen (it changes every 30 seconds), or show your member card to the receptionist',
 };

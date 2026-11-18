@@ -1,13 +1,15 @@
 /**
  * Check-in quầy (quản lý / lễ tân):
- * - Quét thẻ hội viên hoặc gõ mã HV / số điện thoại – cách chính, nhanh nhất. Ô này cũng có trên thanh trên cùng ở mọi trang
- *   (nút "Check-in"), nên không cần giữ trang này mở.
- * - Mã tự check-in của hôm nay: mỗi ngày một mã, in hoặc viết lên bảng ở quầy từ đầu ngày; hội viên tự quét / nhập khi tới.
- * - Danh sách lượt đến hôm nay, huỷ lượt bấm nhầm, bản đồ giờ đông cả tuần.
+ * - Quét thẻ hội viên hoặc gõ mã HV / số điện thoại – cách chính, nhanh nhất. Ô này cũng có trên thanh trên cùng ở mọi trang.
+ * - V56 · Màn hình mã động: QR + 6 số đổi mỗi 30 giây, mỗi mã chỉ một hội viên dùng được. Muốn tự check-in phải đứng trước
+ *   màn hình ở quầy; ảnh chụp mã gửi cho người ở nhà sẽ hết hạn hoặc đã bị dùng. Mở ?screen=1 trên máy tính bảng / TV ở quầy.
+ * - Danh sách lượt đến hôm nay (lượt tự check-in nổi bật để lễ tân nhìn mặt đối chiếu), huỷ lượt sai, bản đồ giờ đông.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Checkin, CheckinResult, CheckinToday, Crowd, DailyCode } from '../../api/checkinTypes';
+import type { Checkin, CheckinResult, CheckinToday, Crowd } from '../../api/checkinTypes';
+import type { LiveCode } from '../../api/liveCheckin';
 import { CrowdFoot, CrowdHeatmap, CrowdChip, QrCode, fmtHour } from '../../components/checkin';
 import { DeskCheckinBox, fmtDaily } from '../../components/DeskCheckin';
 import { HelpTip } from '../../components/Help';
@@ -16,29 +18,72 @@ import { MemberSelect } from '../../components/MemberSelect';
 import { useToast } from '../../components/Toast';
 import { Badge, Button, Card, Confirm, Empty, ErrorState, LoadingBlock, PageHead } from '../../components/ui';
 import { t } from '../../i18n';
-import { fmtDate, fmtTime } from '../../lib/format';
+import { fmtTime } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
 import { errMsg, useAsync } from '../../lib/hooks';
+import '../../components/live-checkin.css';
 
-function DailyCodeBlock({ daily, big }: { daily: DailyCode; big?: boolean }) {
+/** Lấy mã động, tự hỏi lại mỗi 2 giây (mã đổi khi hết 30 giây hoặc ngay khi có người dùng). */
+function useLiveCode(onUsed: () => void) {
+  const [live, setLive] = useState<LiveCode | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [deadline, setDeadline] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+  const last = useRef<string | null>(null);
+  const lastDeadline = useRef(0);
+  const used = useRef(onUsed);
+  used.current = onUsed;
+
+  const load = useCallback(async () => {
+    try {
+      const l = await api.get<LiveCode>('/checkins/live-code', { origin: window.location.origin });
+      // Mã đổi trước hạn = vừa có hội viên dùng mã cũ → cập nhật danh sách ngay
+      if (last.current && last.current !== l.code && Date.now() < lastDeadline.current - 1500) used.current();
+      last.current = l.code;
+      lastDeadline.current = Date.now() + l.secondsLeft * 1000;
+      setLive(l);
+      setDeadline(lastDeadline.current);
+      setError(null);
+    } catch (e) {
+      setError(errMsg(e));
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+    const a = setInterval(() => { if (!document.hidden) void load(); }, 2000);
+    const b = setInterval(() => setNow(Date.now()), 250);
+    return () => { clearInterval(a); clearInterval(b); };
+  }, [load]);
+
+  const left = live ? Math.max(0, Math.ceil((deadline - now) / 1000)) : 0;
+  return { live, error, left, reload: load };
+}
+
+function LiveCodeBlock({ live, left, big }: { live: LiveCode; left: number; big?: boolean }) {
+  const pct = Math.max(0, Math.min(100, (left / live.ttlSeconds) * 100));
   return (
-    <div className="daily-code">
-      <div className="kicker">{t('GymFlow · Mã check-in hôm nay')}</div>
-      <div className="qr-frame"><QrCode rows={daily.qr} size={big ? 420 : 220} label={t('Mã check-in {code}', { code: daily.code })} /></div>
-      <div className="daily-code-num">{fmtDaily(daily.code)}</div>
-      <div className="tiny muted">{t('Dùng trong ngày {d}', { d: fmtDate(daily.date) })}</div>
+    <div className={`live-code${big ? ' big' : ''}`}>
+      <div className="kicker">{t('GymFlow · Check-in tại phòng tập')}</div>
+      <div className="qr-frame"><QrCode rows={live.qr} size={big ? 420 : 230} label={t('Mã check-in {code}', { code: live.code })} /></div>
+      <div className="live-code-num num">{fmtDaily(live.code)}</div>
+      <div className="live-code-timer" aria-live="polite">
+        <div className="live-code-bar"><span style={{ width: `${pct}%` }} /></div>
+        <span className="tiny muted">{left > 0 ? t('Mã mới sau {n} giây', { n: left }) : t('Đang đổi mã…')}</span>
+      </div>
       <ol className="kiosk-steps">
-        <li><b>1</b>{t('Mở camera điện thoại, quét mã QR')}</li>
-        <li><b>2</b>{t('Hoặc vào GymFlow › Hôm nay › Check-in rồi nhập 6 số')}</li>
+        <li><b>1</b>{t('Mở camera điện thoại, quét mã QR trên màn hình này')}</li>
+        <li><b>2</b>{t('Hoặc vào GymFlow › Check-in rồi nhập 6 số đang hiện')}</li>
         <li><b>3</b>{t('Quên điện thoại? Đọc mã hội viên hoặc số điện thoại cho lễ tân')}</li>
       </ol>
+      <p className="tiny faint live-code-note">{t('Mỗi mã chỉ một người dùng và đổi mỗi 30 giây – phải có mặt ở quầy mới check-in được.')}</p>
     </div>
   );
 }
 
 function CheckinRow({ c, flash, onUndo }: { c: Checkin; flash: boolean; onUndo: () => void }) {
   return (
-    <div className={`checkin-row${flash ? ' checkin-flash' : ''}`}>
+    <div className={`checkin-row${flash ? ' checkin-flash' : ''}${c.method === 'QR' ? ' is-self' : ''}`}>
       <span className="time">{fmtTime(c.checkedInAt)}</span>
       <div className="who">
         <div className="ellipsis" style={{ fontWeight: 700 }}>{displayPersonName(c.memberName)} <span className="muted small">· {c.memberCode}</span></div>
@@ -49,16 +94,16 @@ function CheckinRow({ c, flash, onUndo }: { c: Checkin; flash: boolean; onUndo: 
         </div>
       </div>
       {c.daysLeft != null && c.daysLeft <= 7 && <Badge tone={c.daysLeft === 0 ? 'red' : 'amber'}>{t('Còn {n} ngày', { n: c.daysLeft })}</Badge>}
-      <Badge tone={c.method === 'QR' ? 'green' : 'blue'}>{c.method === 'QR' ? t('Tự check-in') : t('Quầy')}</Badge>
-      <Button size="sm" variant="ghost" icon="undo" aria-label="Huỷ lượt check-in" title="Huỷ lượt check-in" onClick={onUndo} />
+      <Badge tone={c.method === 'QR' ? 'green' : 'blue'}>{c.method === 'QR' ? t('Tự quét mã') : t('Quầy')}</Badge>
+      <Button size="sm" variant="ghost" icon="undo" aria-label={t('Huỷ lượt check-in')} title={t('Huỷ lượt check-in')} onClick={onUndo} />
     </div>
   );
 }
 
 export default function CheckinKiosk() {
   const toast = useToast();
-  const daily = useAsync(() => api.get<DailyCode>('/checkins/daily-code', { origin: window.location.origin }), []);
-  const [full, setFull] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const [full, setFull] = useState(params.get('screen') === '1');
   const [memberId, setMemberId] = useState('');
   const [busy, setBusy] = useState(false);
   const [undo, setUndo] = useState<Checkin | null>(null);
@@ -68,15 +113,13 @@ export default function CheckinKiosk() {
   const crowd = useAsync(() => api.get<Crowd>('/checkins/crowd'), []);
   const reloadToday = today.reload;
   const reloadCrowd = crowd.reload;
-  const reloadDaily = daily.reload;
+  const live = useLiveCode(() => { void reloadToday(); });
 
   useEffect(() => {
     const a = setInterval(() => { if (!document.hidden) void reloadToday(); }, 15_000);
     const b = setInterval(() => { if (!document.hidden) void reloadCrowd(); }, 300_000);
-    // Mở trang qua đêm: lấy lại mã khi sang ngày mới
-    const c = setInterval(() => { if (!document.hidden && daily.data && daily.data.date !== new Date().toLocaleDateString('sv-SE')) void reloadDaily(); }, 60_000);
-    return () => { clearInterval(a); clearInterval(b); clearInterval(c); };
-  }, [reloadToday, reloadCrowd, reloadDaily, daily.data]);
+    return () => { clearInterval(a); clearInterval(b); };
+  }, [reloadToday, reloadCrowd]);
 
   // Lượt mới nhất vừa xuất hiện thì nháy sáng một lần
   useEffect(() => {
@@ -85,22 +128,27 @@ export default function CheckinKiosk() {
     lastTop.current = top;
   }, [today.data]);
 
+  // Mở từ nút "Mở màn hình mã…" trên thanh trên cùng khi đang ở sẵn trang này
+  useEffect(() => { if (params.get('screen') === '1') setFull(true); }, [params]);
+
+  const closeFull = useCallback(() => {
+    setFull(false);
+    if (params.get('screen')) setParams({}, { replace: true });
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
+  }, [params, setParams]);
+
   useEffect(() => {
-    const onChange = () => { if (!document.fullscreenElement) setFull(false); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFull(false); };
+    const onChange = () => { if (!document.fullscreenElement && !params.get('screen')) setFull(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeFull(); };
     document.addEventListener('fullscreenchange', onChange);
     document.addEventListener('keydown', onKey);
     return () => { document.removeEventListener('fullscreenchange', onChange); document.removeEventListener('keydown', onKey); };
-  }, []);
+  }, [closeFull, params]);
 
   const openFull = () => {
     setFull(true);
     const el = document.documentElement;
     if (el.requestFullscreen) el.requestFullscreen().catch(() => undefined);
-  };
-  const closeFull = () => {
-    setFull(false);
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
   };
 
   const onDesk = (r: CheckinResult) => { if (!r.already) void reloadToday(); };
@@ -134,20 +182,18 @@ export default function CheckinKiosk() {
   };
 
   const data = today.data;
+  const selfCount = data ? data.items.filter((c) => c.method === 'QR').length : 0;
   return (
     <div className="page">
       <PageHead title="Check-in quầy"
-        desc="Quét thẻ hội viên hoặc gõ mã HV / số điện thoại. Hội viên cũng tự check-in được bằng mã của hôm nay dán ở quầy."
-        actions={<>
-          <Button icon="download" onClick={() => window.print()} disabled={!daily.data}>{t('In mã hôm nay')}</Button>
-          <Button variant="primary" icon="monitor" onClick={openFull} disabled={!daily.data}>{t('Hiện mã toàn màn hình')}</Button>
-        </>} />
+        desc="Quét thẻ hội viên hoặc gõ mã HV / số điện thoại. Hội viên tự check-in bằng mã động trên màn hình quầy – mã đổi mỗi 30 giây nên không gửi cho người ở nhà được."
+        actions={<Button variant="primary" icon="monitor" onClick={openFull} disabled={!live.live}>{t('Mở màn hình mã cho hội viên')}</Button>} />
 
-      <HelpTip id="checkin-desk" steps={[
-        'Hội viên tới quầy đưa thẻ hội viên (mục Hôm nay › Thẻ hội viên): quét bằng máy quét hoặc gõ mã HV / số điện thoại rồi Enter.',
-        'Ô check-in có sẵn ở nút "Check-in" trên thanh trên cùng, đang ở trang nào cũng dùng được – không cần giữ trang này mở.',
-        'Muốn hội viên tự check-in: đầu ngày bấm "In mã hôm nay" rồi dán ở quầy (mỗi ngày một mã, qua nửa đêm đổi mã mới).',
-        'Bấm nhầm thì huỷ lượt ở danh sách bên phải. Quét lại trong 3 giờ không bị tính thêm lượt.',
+      <HelpTip id="checkin-live" steps={[
+        'Đặt một máy tính bảng / TV ở quầy, đăng nhập quản lý, bấm "Mở màn hình mã cho hội viên" (hoặc mở đường dẫn /admin/checkin?screen=1).',
+        'Hội viên tới nơi quét QR hoặc nhập 6 số đang hiện. Mỗi mã chỉ một người dùng, dùng xong màn hình đổi mã mới ngay; để yên thì 30 giây đổi một lần.',
+        'Ảnh chụp mã gửi cho bạn ở nhà sẽ hết hạn hoặc đã bị dùng, nên check-in "từ nhà" không được tính.',
+        'Lượt tự quét mã được tô xanh trong danh sách: thấy tên người không có mặt thì bấm huỷ lượt.',
       ]} />
 
       <div className="kiosk">
@@ -155,9 +201,9 @@ export default function CheckinKiosk() {
           <Card title="Quét thẻ / nhập mã hội viên" icon="checkCircle">
             <DeskCheckinBox autoFocus onDone={onDesk} />
           </Card>
-          <Card title="Mã tự check-in hôm nay" icon="ticket">
-            {daily.error ? <ErrorState message={daily.error} onRetry={reloadDaily} />
-              : daily.data ? <div className="daily-print"><DailyCodeBlock daily={daily.data} /></div> : <LoadingBlock rows={5} />}
+          <Card title="Mã động cho hội viên tự check-in" icon="ticket">
+            {live.error && !live.live ? <ErrorState message={live.error} onRetry={() => { void live.reload(); }} />
+              : live.live ? <LiveCodeBlock live={live.live} left={live.left} /> : <LoadingBlock rows={5} />}
           </Card>
           <Card title="Tìm theo tên" icon="user">
             <div className="stack-sm">
@@ -172,12 +218,13 @@ export default function CheckinKiosk() {
           <div className="kiosk-stats">
             <div className="kiosk-stat"><b>{data?.total ?? '—'}</b><span>{t('Lượt đến hôm nay')}</span></div>
             <div className="kiosk-stat"><b>{data?.inGymNow ?? '—'}</b><span>{t('Đang trong phòng (~90 phút)')}</span></div>
+            <div className="kiosk-stat"><b>{data ? selfCount : '—'}</b><span>{t('Tự quét mã hôm nay')}</span></div>
             <div className="kiosk-stat"><b>{crowd.data?.peakHour != null ? fmtHour(crowd.data.peakHour) : '—'}</b><span>{t('Giờ đông nhất hôm nay')}</span></div>
           </div>
 
-          <Card title="Lượt check-in hôm nay" icon="clock" actions={<span className="tiny faint">{t('Tự cập nhật mỗi 15 giây')}</span>}>
+          <Card title="Lượt check-in hôm nay" icon="clock" actions={<span className="tiny faint">{t('Tự cập nhật')}</span>}>
             {!data ? (today.error ? <ErrorState message={today.error} onRetry={reloadToday} /> : <LoadingBlock rows={4} />)
-              : data.items.length === 0 ? <Empty icon="users" title={t('Chưa có ai check-in hôm nay')} desc={t('Lượt mới sẽ hiện ở đây ngay khi quét thẻ hoặc hội viên tự check-in.')} />
+              : data.items.length === 0 ? <Empty icon="users" title={t('Chưa có ai check-in hôm nay')} desc={t('Lượt mới sẽ hiện ở đây ngay khi quét thẻ hoặc hội viên tự quét mã trên màn hình quầy.')} />
                 : (
                   <div style={{ maxHeight: 460, overflowY: 'auto' }}>
                     {data.items.map((c) => <CheckinRow key={c.id} c={c} flash={c.id === flash} onUndo={() => setUndo(c)} />)}
@@ -192,9 +239,9 @@ export default function CheckinKiosk() {
         </div>
       </div>
 
-      {full && daily.data && (
-        <div className="kiosk-full" role="dialog" aria-modal="true" aria-label={t('Mã check-in hôm nay toàn màn hình')}>
-          <DailyCodeBlock daily={daily.data} big />
+      {full && (
+        <div className="kiosk-full" role="dialog" aria-modal="true" aria-label={t('Màn hình mã check-in cho hội viên')}>
+          {live.live ? <LiveCodeBlock live={live.live} left={live.left} big /> : <LoadingBlock rows={6} />}
           <button type="button" className="btn btn-ghost" style={{ position: 'absolute', top: 16, right: 16 }} onClick={closeFull}>
             <Icon name="x" /><span>{t('Thoát (Esc)')}</span>
           </button>
@@ -203,7 +250,7 @@ export default function CheckinKiosk() {
 
       {undo && (
         <Confirm title={t('Huỷ lượt check-in?')} danger confirmText={t('Huỷ lượt')}
-          message={t('Lượt check-in lúc {time} của {name} sẽ bị xoá (dùng khi bấm nhầm).', { time: fmtTime(undo.checkedInAt), name: displayPersonName(undo.memberName) })}
+          message={t('Lượt check-in lúc {time} của {name} sẽ bị xoá (bấm nhầm, hoặc người này không có mặt ở phòng tập).', { time: fmtTime(undo.checkedInAt), name: displayPersonName(undo.memberName) })}
           onClose={() => setUndo(null)} onConfirm={doUndo} />
       )}
     </div>

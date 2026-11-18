@@ -16,6 +16,7 @@ import { MyAvatar } from './AvatarEditor';
 import { ChatWidget } from './ChatWidget';
 import { AiChatWidget } from './AiChatWidget';
 import { QuickCheckin } from './DeskCheckin';
+import { BackBar } from './BackBar';
 import { Badge, Button, Confirm } from './ui';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { locale, t } from '../i18n';
@@ -377,6 +378,7 @@ export function Layout() {
           <AccountMenu onLogout={() => setAskLogout(true)} />
         </header>
         <main className="content" id="main" data-tour="content">
+          <BackBar />
           <Outlet />
         </main>
       </div>

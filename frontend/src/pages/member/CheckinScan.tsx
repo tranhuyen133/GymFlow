@@ -1,9 +1,10 @@
 /**
- * Hội viên tự check-in bằng mã của hôm nay (mỗi ngày một mã, dán ở quầy): mở từ mã QR (đường dẫn có ?c=123456 nên tự gửi ngay),
- * quét bằng camera trong trang (trình duyệt hỗ trợ BarcodeDetector), nhập tay 6 số, hoặc hiện thẻ hội viên cho lễ tân quét.
+ * Hội viên tự check-in tại phòng tập bằng mã động đang hiện trên màn hình quầy (V56): mã đổi mỗi 30 giây và chỉ một người dùng
+ * được, nên phải đứng trước màn hình mới quét được – ảnh chụp mã gửi cho người ở nhà không dùng được.
+ * Mở từ mã QR (đường dẫn có ?c=123456 nên tự gửi ngay), quét bằng camera trong trang, nhập tay 6 số, hoặc hiện thẻ hội viên cho lễ tân.
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { CheckinResult } from '../../api/checkinTypes';
 import { Icon } from '../../components/Icon';
@@ -77,6 +78,7 @@ function CameraScan({ onCode }: { onCode: (code: string) => void }) {
 }
 
 export default function CheckinScan() {
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -86,6 +88,11 @@ export default function CheckinScan() {
   const [showCard, setShowCard] = useState(false);
   const started = useRef(false);
 
+  const back = () => {
+    if ((window.history.state as { idx?: number } | null)?.idx) navigate(-1);
+    else navigate('/today');
+  };
+
   const submit = async (c: string) => {
     setBusy(true);
     setError(null);
@@ -94,6 +101,7 @@ export default function CheckinScan() {
       setResult(await api.post<CheckinResult>('/checkins', { code: c }));
     } catch (e) {
       setError(errMsg(e));
+      setCode('');
     } finally {
       setBusy(false);
     }
@@ -143,7 +151,9 @@ export default function CheckinScan() {
 
   return (
     <div className="page scan-page">
-      <PageHead title="Check-in tại quầy" desc="Quét mã QR check-in hôm nay dán ở quầy, nhập 6 số, hoặc đưa thẻ hội viên cho lễ tân quét." />
+      <PageHead title="Check-in tại phòng tập"
+        desc="Quét mã QR đang hiện trên màn hình ở quầy (mã đổi mỗi 30 giây), nhập 6 số, hoặc đưa thẻ hội viên cho lễ tân quét."
+        actions={<Button variant="ghost" icon="arrowLeft" onClick={back}>{t('Quay lại')}</Button>} />
       <Card>
         <div className="stack">
           {busy && !scanning && <Alert kind="info">{t('Đang check-in…')}</Alert>}
@@ -154,19 +164,22 @@ export default function CheckinScan() {
               <Button variant="ghost" onClick={() => setScanning(false)}>{t('Tắt camera')}</Button>
             </>
           ) : canScan() ? (
-            <Button variant="primary" size="lg" icon="camera" block onClick={() => { setError(null); setScanning(true); }}>{t('Quét mã bằng camera')}</Button>
+            <Button variant="primary" size="lg" icon="camera" block onClick={() => { setError(null); setScanning(true); }}>{error ? t('Quét lại mã mới') : t('Quét mã bằng camera')}</Button>
           ) : (
             <p className="small muted" style={{ margin: 0 }}>
-              {t('Trên iPhone: mở app Camera, hướng vào mã QR ở quầy rồi bấm vào đường dẫn hiện ra. Hoặc nhập 6 số dưới mã:')}
+              {t('Trên iPhone: mở app Camera, hướng vào mã QR trên màn hình quầy rồi bấm vào đường dẫn hiện ra. Hoặc nhập 6 số đang hiện:')}
             </p>
           )}
           <form onSubmit={onSubmit} className="stack-sm" noValidate>
-            <label htmlFor="checkin-code" className="small muted">{t('Mã check-in hôm nay (6 số dán ở quầy)')}</label>
+            <label htmlFor="checkin-code" className="small muted">{t('Mã 6 số trên màn hình quầy')}</label>
             <input id="checkin-code" className="input code-input" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
               placeholder="000000" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
             <Button type="submit" variant={canScan() ? 'secondary' : 'primary'} block loading={busy} disabled={code.length !== 6}>{t('Check-in')}</Button>
           </form>
-          <p className="tiny faint" style={{ margin: 0 }}>{t('Mỗi ngày một mã. Cần có gói tập còn hiệu lực hôm nay.')}</p>
+          <div className="scan-rule">
+            <Icon name="info" size={15} />
+            <span>{t('Check-in chỉ tính khi bạn có mặt ở phòng tập: mỗi mã chỉ một người dùng và đổi mỗi 30 giây, ảnh chụp mã gửi qua tin nhắn sẽ không dùng được. Cần có gói tập còn hiệu lực hôm nay.')}</span>
+          </div>
           <Button variant="ghost" icon="card" block onClick={() => setShowCard(true)}>{t('Hiện thẻ hội viên cho lễ tân quét')}</Button>
         </div>
       </Card>

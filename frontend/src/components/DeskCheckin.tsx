@@ -4,11 +4,12 @@
  *   Máy quét mã vạch / QR cắm USB gõ mã rồi Enter như bàn phím, nên chỉ cần để con trỏ trong ô.
  * - DeskCheckinBox: ô quét thẻ dùng chung cho thanh trên cùng và trang Check-in quầy.
  * - MemberCardModal: thẻ hội viên (QR chứa mã HV) để hội viên đưa lễ tân quét.
+ * V56: không còn hiện mã theo ngày ở đây – hội viên tự check-in bằng mã động trên màn hình quầy (/admin/checkin?screen=1).
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { api } from '../api/client';
-import type { CheckinResult, DailyCode, MemberCard } from '../api/checkinTypes';
+import type { CheckinResult, MemberCard } from '../api/checkinTypes';
 import { QrCode } from './checkin';
 import { Icon } from './Icon';
 import { Alert, Badge, Button, LoadingBlock, Modal } from './ui';
@@ -71,25 +72,23 @@ export function DeskCheckinBox({ autoFocus, onDone }: { autoFocus?: boolean; onD
   );
 }
 
-/** Mã hôm nay, viết gọn "123 456". */
+/** Mã 6 số, viết gọn "123 456". */
 export const fmtDaily = (code: string) => `${code.slice(0, 3)} ${code.slice(3)}`;
 
 export function QuickCheckin() {
   const [open, setOpen] = useState(false);
-  const [daily, setDaily] = useState<DailyCode | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const { pathname } = useLocation();
 
   useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     if (!open) return;
-    if (!daily) api.get<DailyCode>('/checkins/daily-code', { origin: window.location.origin }).then(setDaily).catch(() => undefined);
     const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
-  }, [open, daily]);
+  }, [open]);
 
   return (
     <div className="bell quick-checkin" ref={ref}>
@@ -105,9 +104,8 @@ export function QuickCheckin() {
           </div>
           <DeskCheckinBox autoFocus />
           <div className="quick-checkin-code tiny muted">
-            {daily
-              ? <>{t('Mã tự check-in hôm nay')}: <b className="num">{fmtDaily(daily.code)}</b></>
-              : t('Đang lấy mã hôm nay…')}
+            <Icon name="monitor" size={13} />{' '}
+            <Link to="/admin/checkin?screen=1" className="link">{t('Mở màn hình mã cho hội viên tự check-in')}</Link>
           </div>
         </div>
       )}
