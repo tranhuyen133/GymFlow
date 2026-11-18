@@ -30,6 +30,13 @@ public class CheckinController {
         return checkinService.dailyCode(origin);
     }
 
+    /** V56 · Mã check-in động cho màn hình quầy: đổi mỗi 30 giây, mỗi mã chỉ một hội viên dùng được. */
+    @GetMapping("/checkins/live-code")
+    @PreAuthorize("hasRole('ADMIN')")
+    public CheckinService.LiveCode liveCode(@RequestParam(required = false) String origin) {
+        return checkinService.liveCode(origin);
+    }
+
     /** Lễ tân quét thẻ hội viên hoặc gõ mã hội viên / số điện thoại. */
     @PostMapping("/checkins/desk")
     @PreAuthorize("hasRole('ADMIN')")

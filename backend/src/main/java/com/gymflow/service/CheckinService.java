@@ -10,6 +10,7 @@ import com.gymflow.repository.UserRepository;
 import com.gymflow.repository.WorkoutScheduleRepository;
 import com.gymflow.security.AuthUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,10 +23,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Check-in tại quầy, hai cách:
- * - Lễ tân quét thẻ QR của hội viên (hoặc gõ mã hội viên / số điện thoại) ở ô check-in nhanh trên thanh trên cùng – không cần mở trang riêng.
- * - Hội viên tự quét / nhập mã check-in của hôm nay (mỗi ngày một mã, in dán ở quầy).
+ * Check-in tại phòng tập, hai cách – cả hai đều phải có mặt ở quầy:
+ * - Lễ tân quét thẻ QR của hội viên (hoặc gõ mã hội viên / số điện thoại) ở ô check-in nhanh trên thanh trên cùng.
+ * - V56 · Hội viên tự quét mã động đang hiện trên màn hình quầy: mã đổi mỗi 30 giây và chỉ một người dùng được,
+ *   nên chụp mã gửi cho người ở nhà không check-in hộ được (xem {@link CheckinCodes}).
  * Điều kiện: hội viên không bảo lưu / ngừng và có gói còn hiệu lực hôm nay. Quét lại trong 3 giờ không ghi thêm lượt.
+ * Mọi lượt hiện ngay trên màn hình quầy kèm tên – lễ tân thấy tên người không có mặt thì bấm huỷ lượt.
  */
 @Service
 @RequiredArgsConstructor
@@ -35,6 +38,10 @@ public class CheckinService {
     static final Duration DUPLICATE_WINDOW = Duration.ofHours(3);
     static final int MAX_WRONG_CODES = 5;
     static final Duration WRONG_CODE_WINDOW = Duration.ofMinutes(10);
+
+    /** Mã động cho màn hình quầy: mã, số giây còn lại, đường dẫn trong QR và ma trận QR. */
+    public record LiveCode(String code, int secondsLeft, int ttlSeconds, String url, List<String> qr) {
+    }
 
     private final GymCheckinRepository checkinRepository;
     private final MemberSubscriptionRepository subscriptionRepository;
@@ -46,6 +53,10 @@ public class CheckinService {
     private final Clock clock;
     private final MemberRepository memberRepository;
 
+    /** Mã theo ngày in dán ở quầy (cách cũ): dễ bị chụp gửi đi nên mặc định không nhận. */
+    @Value("${app.checkin.daily-code-enabled:false}")
+    private boolean dailyCodeEnabled;
+
     /** Số lần nhập sai mã theo hội viên (chống dò mã 6 số). Chỉ giữ trong bộ nhớ, khởi động lại là xoá. */
     private final Map<Long, Deque<LocalDateTime>> wrongCodes = new ConcurrentHashMap<>();
 
@@ -54,6 +65,15 @@ public class CheckinService {
         String code = codes.current();
         String url = codes.checkinUrl(origin, code);
         return new DailyCode(code, codes.today(), url, QrMatrix.encode(url));
+    }
+
+    /** Mã động hiện trên màn hình quầy (màn hình tự hỏi lại vài giây một lần). */
+    @Transactional(readOnly = true)
+    public LiveCode liveCode(String origin) {
+        CheckinCodes.Live l = codes.currentLive();
+        long left = Math.max(0, Duration.between(clock.instant(), l.expiresAt()).toSeconds());
+        String url = codes.checkinUrl(origin, l.code());
+        return new LiveCode(l.code(), (int) left, (int) CheckinCodes.LIVE_TTL.toSeconds(), url, QrMatrix.encode(url));
     }
 
     /** Thẻ hội viên: QR chỉ chứa mã hội viên (VD HV00012) để máy quét ở quầy gõ thẳng vào ô check-in. */
@@ -87,18 +107,24 @@ public class CheckinService {
         return p == null ? "" : p.replaceAll("\\D", "");
     }
 
+    /** Hội viên tự check-in bằng mã động trên màn hình quầy. */
     public CheckinResult checkin(AuthUser user, String code) {
         Member m = access.requireMemberOf(user);
         LocalDateTime now = LocalDateTime.now(clock);
+        String c = code == null ? null : code.trim();
         Deque<LocalDateTime> wrong = wrongCodes.computeIfAbsent(m.getId(), k -> new ArrayDeque<>());
         synchronized (wrong) {
             while (!wrong.isEmpty() && wrong.peekFirst().isBefore(now.minus(WRONG_CODE_WINDOW))) wrong.pollFirst();
             if (wrong.size() >= MAX_WRONG_CODES) {
                 throw ApiException.tooManyRequests("Nhập sai mã quá nhiều lần, thử lại sau ít phút hoặc nhờ quầy check-in giúp");
             }
-            if (!codes.verify(code == null ? null : code.trim())) {
+            CheckinCodes.LiveResult live = codes.consumeLive(c, m.getId());
+            if (live == CheckinCodes.LiveResult.USED) {
+                throw ApiException.badRequest("Mã này vừa có người dùng. Mỗi mã chỉ dùng một lần – quét mã mới đang hiện trên màn hình quầy");
+            }
+            if (live == CheckinCodes.LiveResult.INVALID && !(dailyCodeEnabled && codes.verify(c))) {
                 wrong.addLast(now);
-                throw ApiException.badRequest("Mã check-in hôm nay không đúng – xem mã dán ở quầy lễ tân hoặc đưa thẻ hội viên cho lễ tân quét");
+                throw ApiException.badRequest("Mã không đúng hoặc đã hết hạn. Quét mã đang hiện trên màn hình ở quầy (đổi mỗi 30 giây), hoặc đưa thẻ hội viên cho lễ tân quét");
             }
             wrong.clear();
         }

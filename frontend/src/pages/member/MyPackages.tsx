@@ -128,7 +128,7 @@ export default function MyPackages() {
         'Chọn gói ở mục Gói tập › Đăng ký, chọn ngày bắt đầu và cách thanh toán (tại quầy hoặc chuyển khoản QR).',
         'Ưu đãi không tự áp: chọn một ưu đãi trong danh sách hoặc nhập mã rồi bấm Áp dụng. Số tiền cuối cùng hiện ngay trên đơn.',
         'Đang tập gói tự tập muốn có HLV: bấm Nâng cấp lên PT, phần gói cũ chưa dùng được trừ vào giá gói mới.',
-        'Chuyển khoản: ghi đúng nội dung là mã đơn GF…, rồi bấm "Tôi đã chuyển khoản". Gói kích hoạt khi quản lý xác nhận.',
+        'Chuyển khoản: ghi đúng nội dung là mã đơn GF…, rồi bấm "Tôi đã chuyển khoản". Gói kích hoạt ngay, quản lý đối soát sau.',
       ]} />
 
       <div className="mb-20">
@@ -475,7 +475,7 @@ export default function MyPackages() {
           onDone={(created) => { setUpgradePlanId(undefined); reloadAll(); if (created.paymentMethod === 'BANK_TRANSFER') setPaying(created); }} />
       )}
       {changing && <SubscriptionChangeModal sub={changing} onClose={() => setChanging(null)}
-        onDone={() => { setChanging(null); void changes.reload(); }} />}
+        onDone={() => { setChanging(null); reloadAll(); }} />}
       {cancellingChange && (
         <Confirm title={t('Huỷ yêu cầu điều chỉnh?')} danger confirmText={t('Huỷ yêu cầu')}
           message={t('Yêu cầu {type} sẽ bị huỷ, gói giữ nguyên thời gian hiện tại.', { type: t(changeTypeLabel[cancellingChange.type]).toLowerCase() })}
@@ -491,9 +491,9 @@ export default function MyPackages() {
   );
 }
 
-export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onDone }: {
+export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClose, onDone, onBack }: {
   plan: MembershipPlan; subs: Subscription[]; payment: PaymentSettings | null; currentTrainerId: number | null;
-  onClose: () => void; onDone: (created: PackageRequest) => void;
+  onClose: () => void; onDone: (created: PackageRequest) => void; onBack?: () => void;
 }) {
   const toast = useToast();
   const today = todayIso();
@@ -592,7 +592,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
   };
 
   return (
-    <Modal title={t('Đăng ký {plan}', { plan: localizeText(plan.nameEn, plan.name) })} onClose={onClose} footer={<>
+    <Modal title={t('Đăng ký {plan}', { plan: localizeText(plan.nameEn, plan.name) })} onClose={onClose} onBack={onBack} footer={<>
       <Button variant="ghost" onClick={onClose}>{t('Huỷ')}</Button>
       <Button variant="primary" icon="check" loading={busy} disabled={!agree || isLegacyPt} onClick={submit}>{t('Gửi đơn đăng ký')}</Button>
     </>}>
@@ -739,7 +739,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
         <label className="check-row">
           <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
           <span className="small">{method === 'BANK_TRANSFER'
-            ? tn('Tôi hiểu gói chỉ có hiệu lực sau khi chuyển khoản {price} đúng nội dung và được quản lý xác nhận đã nhận tiền.', { price: <b>{fmtMoney(finalAmount)}</b> })
+            ? tn('Tôi sẽ chuyển khoản {price} đúng nội dung. Gói chạy ngay khi tôi bấm "Tôi đã chuyển khoản"; nếu phòng tập không nhận được tiền, gói sẽ bị thu hồi.', { price: <b>{fmtMoney(finalAmount)}</b> })
             : tn('Tôi hiểu gói chỉ có hiệu lực sau khi thanh toán {price} tại quầy lễ tân và được quản lý xác nhận.', { price: <b>{fmtMoney(finalAmount)}</b> })}</span>
         </label>
         {serverError && <Alert kind="error">{serverError}</Alert>}
@@ -755,8 +755,8 @@ export function PayModal({ req, settings, onClose, onPaid }: { req: PackageReque
   const markPaid = async () => {
     setBusy(true);
     try {
-      await api.put(`/package-requests/${req.id}/paid`);
-      toast.success(t('Đã báo quản lý. Gói được kích hoạt sau khi đối chiếu tài khoản.'));
+      const done = await api.put<PackageRequest>(`/package-requests/${req.id}/paid`);
+      toast.success(done.status === 'APPROVED' ? t('Gói đã được kích hoạt! Phòng tập sẽ đối soát giao dịch sau.') : t('Đã báo quản lý. Gói được kích hoạt sau khi đối chiếu tài khoản.'));
       onPaid();
     } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
   };

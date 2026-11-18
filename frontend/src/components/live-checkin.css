@@ -1,0 +1,28 @@
+/* V56 · Màn hình mã check-in động ở quầy + nhắc luật check-in cho hội viên */
+.live-code { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.live-code .kicker { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.live-code .qr-frame { background: #fff; padding: 14px; border-radius: 16px; box-shadow: 0 0 0 1px var(--hairline); }
+.live-code-num { font-size: 40px; font-weight: 800; letter-spacing: .12em; font-variant-numeric: tabular-nums; line-height: 1; }
+.live-code-timer { width: min(320px, 100%); display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.live-code-bar { width: 100%; height: 6px; border-radius: 99px; background: var(--surface); overflow: hidden; }
+.live-code-bar span { display: block; height: 100%; background: var(--primary); border-radius: inherit; transition: width .25s linear; }
+.live-code-note { margin: 0; max-width: 360px; }
+.live-code .kiosk-steps { text-align: left; }
+.live-code.big { gap: 18px; }
+.live-code.big .live-code-num { font-size: 88px; }
+.live-code.big .kicker { font-size: 16px; }
+.live-code.big .live-code-timer { width: min(520px, 90vw); }
+.live-code.big .live-code-bar { height: 10px; }
+.live-code.big .live-code-note { font-size: 15px; max-width: 560px; }
+
+.checkin-row.is-self { box-shadow: inset 3px 0 0 var(--primary); }
+
+.scan-rule { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--hairline); font-size: 13px; line-height: 1.5; color: var(--muted); }
+.scan-rule svg { flex: none; margin-top: 2px; color: var(--primary); }
+
+.quick-checkin-code { display: flex; align-items: center; gap: 4px; }
+
+@media (max-width: 600px) {
+  .live-code-num { font-size: 32px; }
+  .live-code.big .live-code-num { font-size: 56px; }
+}

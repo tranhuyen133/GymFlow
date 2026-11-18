@@ -45,6 +45,7 @@ export default function AdminDashboard() {
         { to: '/reports', label: 'Báo cáo', icon: 'chart' },
         { to: '/coach-stats', label: 'Thống kê HLV', icon: 'trophy' },
         { to: '/admin/emails', label: 'Email tự động', icon: 'mail' },
+        { to: '/admin/reconcile', label: 'Đối soát chuyển khoản', icon: 'wallet' },
       ]} />
 
       <div className="grid grid-4">

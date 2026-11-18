@@ -1,0 +1,70 @@
+/*
+ * V56 · Làm gọn giao diện trong khu ứng dụng (nạp sau styles.css):
+ * - Bảng: cột nhiều chữ rộng ra, cột số tiền / ngày giờ / trạng thái co vừa nội dung (class do Table tự gắn).
+ * - Chữ phụ dễ đọc hơn, tiêu đề trang / thẻ / số liệu có thứ bậc rõ.
+ * - Tắt các hiệu ứng lặp gây rối mắt trong khu làm việc (hàng bảng trượt vào, chấm nhấp nháy, thông báo rung).
+ * - Nút Quay lại trong hộp thoại và thanh Quay lại.
+ */
+
+/* ---------- Màu chữ phụ: tăng tương phản ---------- */
+:root { --faint: #80858f; }
+:root[data-theme='light'] { --faint: #6b7080; }
+
+/* ---------- Bảng ---------- */
+.content .table th {
+  font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--muted); white-space: nowrap;
+}
+.content .table td { font-size: 14px; line-height: 1.45; vertical-align: middle; }
+.content .table td .tiny, .content .table td .small { line-height: 1.45; }
+.content .table td.num, .content .table td .num { font-variant-numeric: tabular-nums; }
+@media (min-width: 901px) {
+  .table th.col-fit, .table td.col-fit { width: 1%; white-space: nowrap; }
+  .table th.col-wide, .table td.col-wide { min-width: 260px; }
+  .table td.col-wide { white-space: normal; overflow-wrap: anywhere; }
+  .table td.col-wide .ellipsis { white-space: normal; overflow: visible; text-overflow: clip; }
+  .content .table tbody tr:hover td { background: color-mix(in srgb, var(--primary) 5%, transparent); }
+}
+.content .table tbody tr { animation: none; }
+
+/* ---------- Tiêu đề trang ---------- */
+.content .page-head { align-items: flex-end; gap: 16px; margin-bottom: 20px; }
+.content .page-head h1 { font-size: clamp(22px, 2.4vw, 28px); line-height: 1.2; letter-spacing: -.01em; }
+.content .page-head p { max-width: 72ch; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+.content .page-head .eyebrow { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--primary-bright); font-weight: 700; }
+
+/* ---------- Thẻ ---------- */
+.content .card-title h3 { display: flex; align-items: center; gap: 10px; font-size: 15.5px; font-weight: 700; }
+.content .card-title h3 > svg {
+  flex: none; width: 28px; height: 28px; padding: 6px; border-radius: 9px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary-bright);
+}
+:root[data-theme='light'] .content .card-title h3 > svg { color: var(--primary); }
+
+/* ---------- Số liệu ---------- */
+.content .stat .label { font-size: 12.5px; font-weight: 600; color: var(--muted); letter-spacing: .01em; }
+.content .stat .value { font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.content .stat .foot { font-size: 12.5px; line-height: 1.45; }
+
+/* ---------- Bớt hiệu ứng lặp trong khu làm việc ---------- */
+.content .badge::before, .content .badge::after { animation: none !important; }
+.content .alert { animation: none; }
+.content .empty svg { animation: none; }
+.content .item-row { animation: none; }
+
+/* ---------- Thông báo & nhãn ---------- */
+.content .alert { line-height: 1.5; font-size: 14px; }
+.content .badge { font-weight: 650; letter-spacing: .01em; }
+
+/* ---------- Hộp thoại: nút Quay lại ---------- */
+.modal-head .modal-back { margin-right: 2px; margin-left: -6px; }
+.modal-head:has(.modal-back) h2 { flex: 1; }
+
+/* ---------- Thanh Quay lại ---------- */
+.backbar { margin: -4px 0 12px; }
+.backbar .btn { padding-left: 8px; gap: 6px; color: var(--muted); }
+.backbar .btn:hover { color: var(--ink, inherit); }
+
+/* ---------- Trang tổng quan: lưới thẻ thoáng hơn ---------- */
+.content .grid { gap: 16px; }
+@media (min-width: 1200px) { .content .grid { gap: 20px; } }

@@ -112,6 +112,24 @@ export function Table({ caption, children, className = '', 'aria-label': ariaLab
   TableHTMLAttributes<HTMLTableElement> & { caption?: string }) {
   const ref = useRef<HTMLTableElement>(null);
 
+  // V56 · Cột ngắn (số tiền, ngày giờ, trạng thái, nút) co vừa nội dung; cột nhiều chữ (nội dung, ghi chú, mô tả) được rộng ra.
+  // Chỉ thêm class col-fit / col-wide, CSS chỉ áp dụng trên màn hình rộng (≥ 901px) nên dạng thẻ trên điện thoại không đổi.
+  useLayoutEffect(() => {
+    const table = ref.current;
+    if (!table) return;
+    const heads = Array.from(table.querySelectorAll<HTMLElement>('thead th'));
+    const rows = Array.from(table.querySelectorAll<HTMLTableRowElement>('tbody tr')).filter((r) => r.cells.length === heads.length).slice(0, 40);
+    if (!heads.length || !rows.length) return;
+    heads.forEach((th, i) => {
+      let max = 0;
+      let sum = 0;
+      rows.forEach((r) => { const n = (r.cells.item(i)?.textContent ?? '').trim().length; max = Math.max(max, n); sum += n; });
+      const fit = max <= 18 && (th.textContent ?? '').trim().length <= 22;
+      const wide = !fit && sum / rows.length >= 28;
+      [th, ...rows.map((r) => r.cells.item(i))].forEach((el) => { if (!el) return; el.classList.toggle('col-fit', fit); el.classList.toggle('col-wide', wide); });
+    });
+  });
+
   // Gắn nhãn cột vào từng ô để CSS chuyển bảng thành dạng card trên màn hình hẹp.
   useLayoutEffect(() => {
     const table = ref.current;
@@ -297,7 +315,7 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
 // ---------- Modal ----------
 const FOCUSABLE_SELECTOR = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
-export function Modal({ title, onClose, children, footer, size }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; size?: 'wide' | 'medium' | 'narrow' }) {
+export function Modal({ title, onClose, children, footer, size, onBack }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; size?: 'wide' | 'medium' | 'narrow'; onBack?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const closeRef = useRef(onClose);
@@ -357,6 +375,7 @@ export function Modal({ title, onClose, children, footer, size }: { title: React
     <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={`modal ${size ?? ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId} ref={ref}>
         <div className="modal-head">
+          {onBack && <Button variant="ghost" size="sm" icon="arrowLeft" className="modal-back" aria-label="Quay lại" title="Quay lại" onClick={onBack} />}
           <h2 id={titleId}>{tx(title)}</h2>
           <Button variant="ghost" size="sm" icon="x" aria-label="Đóng" onClick={onClose} />
         </div>

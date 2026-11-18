@@ -1,0 +1,7 @@
+/* V56 · Nút "Hiện / Ẩn mục nâng cao" cuối menu khu quản lý và HLV */
+.nav-adv-btn { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 6px; padding: 8px 12px; border: 1px dashed var(--hairline);
+  border-radius: 10px; background: transparent; color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer; text-align: left; }
+.nav-adv-btn:hover { color: var(--ink, inherit); border-color: var(--line-strong, var(--hairline)); }
+.nav-adv-btn[aria-pressed="true"] { border-style: solid; }
+.side-mini .nav-adv-btn { justify-content: center; padding: 8px; }
+.side-mini .nav-adv-btn span { display: none; }
