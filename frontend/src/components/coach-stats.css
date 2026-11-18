@@ -1,0 +1,14 @@
+/* V55 · Thống kê HLV */
+.coach-weeks { display: flex; align-items: flex-end; gap: 8px; height: 170px; padding-top: 6px; overflow-x: auto; }
+.coach-week { flex: 1 0 34px; display: grid; grid-template-rows: 1fr auto; gap: 6px; height: 100%; text-align: center; }
+.coach-week span { font-size: 11px; color: var(--faint); }
+.coach-bar { display: flex; flex-direction: column-reverse; justify-content: flex-start; height: 100%; border-radius: 8px; background: var(--surface); overflow: hidden; }
+.coach-bar i { display: block; width: 100%; transition: height .4s var(--ease-out, ease); }
+.coach-bar i.done, .coach-dot.done { background: var(--primary); }
+.coach-bar i.missed, .coach-dot.missed { background: var(--warning); }
+.coach-dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; vertical-align: middle; margin-right: 4px; }
+.coach-inactive { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--hairline-soft); color: inherit; text-decoration: none; }
+.coach-inactive:hover { border-color: var(--line-strong, var(--hairline)); }
+.coach-inactive .grow { display: grid; gap: 2px; min-width: 0; }
+tr.clickable { cursor: pointer; }
+tr.clickable.selected td { background: color-mix(in srgb, var(--primary) 8%, transparent); }

@@ -1,54 +1,39 @@
 package com.gymflow.service;
 
-import com.gymflow.common.ApiException;
+import com.gymflow.domain.EmailPreference;
+import com.gymflow.repository.UserRepository;
+import com.gymflow.service.mail.EmailPreferenceService;
+import com.gymflow.service.mail.EmailTemplates;
+import com.gymflow.service.mail.MailOutbox;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+/**
+ * Email bảo mật (mã xác thực email, mã đặt lại mật khẩu).
+ * V55 · Gửi bằng khung HTML chung của GymFlow (kèm bản chữ trơn), theo ngôn ngữ tài khoản đã chọn trên web.
+ * Giữ nguyên chữ ký hàm và cách báo lỗi như trước (503 khi chưa cấu hình / gửi lỗi) để AuthService không phải đổi.
+ */
 @Service
 @RequiredArgsConstructor
 public class EmailService {
-    private final ObjectProvider<JavaMailSender> mailSenderProvider;
-
-    @Value("${app.mail.from:no-reply@gymflow.local}")
-    private String from;
-
-    @Value("${app.app-base-url:http://localhost:5173}")
-    private String appBaseUrl;
+    private final MailOutbox outbox;
+    private final EmailTemplates templates;
+    private final EmailPreferenceService preferences;
+    private final UserRepository userRepository;
 
     public void sendVerificationCode(String email, String code, int validMinutes) {
-        send(email, "Mã xác thực email GymFlow",
-                "Mã xác thực email GymFlow của bạn là: " + code + "\n"
-                        + "Mã có hiệu lực trong " + validMinutes + " phút. Nếu bạn không yêu cầu, hãy bỏ qua email này.\n"
-                        + appBaseUrl);
+        outbox.sendNow(email, templates.verificationCode(english(email), code, validMinutes));
     }
 
     public void sendPasswordResetCode(String email, String code, int validMinutes) {
-        send(email, "Mã đặt lại mật khẩu GymFlow",
-                "Mã đặt lại mật khẩu GymFlow của bạn là: " + code + "\n"
-                        + "Mã có hiệu lực trong " + validMinutes + " phút và chỉ dùng một lần. Nếu bạn không yêu cầu, hãy bỏ qua email này.\n"
-                        + appBaseUrl);
+        outbox.sendNow(email, templates.passwordResetCode(english(email), code, validMinutes));
     }
 
-    private void send(String to, String subject, String text) {
-        JavaMailSender sender = mailSenderProvider.getIfAvailable();
-        if (sender == null) {
-            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Dịch vụ email chưa được cấu hình");
-        }
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(from);
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(text);
-        try {
-            sender.send(message);
-        } catch (MailException e) {
-            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Không gửi được email lúc này, vui lòng thử lại sau");
-        }
+    /** Ngôn ngữ đã lưu của tài khoản; chưa có thì tiếng Việt. Không tạo dòng tuỳ chọn mới ở đây. */
+    private boolean english(String email) {
+        return userRepository.findByEmailIgnoreCase(email)
+                .flatMap(u -> preferences.find(u.getId()))
+                .map(EmailPreference::english)
+                .orElse(false);
     }
 }

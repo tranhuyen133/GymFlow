@@ -16,6 +16,7 @@ import { ProgressPanel } from '../../components/ProgressPanel';
 import MyJourney from '../member/MyJourney';
 import { useToast } from '../../components/Toast';
 import { WeekSlots } from '../../components/WeekSlots';
+import { EmailPrefsCard } from '../../components/EmailPrefsCard';
 import { Alert, Badge, Button, Card, Confirm, ErrorState, Field, Input, LoadingBlock, PasswordInput, Select, StatusBadge, Textarea } from '../../components/ui';
 import { t } from '../../i18n';
 import { DAY_NAMES, fmtDate, fmtDateTime, genderLabel, memberStatus, roleLabel, subState, todayIso } from '../../lib/format';
@@ -124,6 +125,7 @@ export default function Profile() {
         {section === 'security' && (
           <div className="grid grid-main" style={{ alignItems: 'start' }}>
             <PasswordCard />
+            <EmailPrefsCard />
             <Card title={t('Phiên đăng nhập')} icon="shield">
               <dl className="kv small">
                 <dt>{t('Vai trò')}</dt><dd><Badge tone="green">{roleLabel[me.role]}</Badge></dd>

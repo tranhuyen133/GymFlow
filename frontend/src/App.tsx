@@ -49,6 +49,9 @@ import Messages from './pages/shared/Messages';
 import Today from './pages/member/Today';
 import CheckinScan from './pages/member/CheckinScan';
 import CheckinKiosk from './pages/admin/CheckinKiosk';
+import EmailUnsubscribe from './pages/EmailUnsubscribe';
+import EmailCenter from './pages/admin/EmailCenter';
+import CoachStats from './pages/shared/CoachStats';
 
 function Splash() {
   return (
@@ -128,6 +131,7 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/policies" element={<Policies />} />
+      <Route path="/email/unsubscribe" element={<EmailUnsubscribe />} />
       <Route element={<ForumPublicOnly />}>
         <Route path="/forum" element={<ForumList />} />
         <Route path="/forum/:id" element={<ForumTopicPage />} />
@@ -141,6 +145,8 @@ export default function App() {
         <Route path="/today" element={<Only roles={MEMBER}><Today /></Only>} />
         <Route path="/checkin" element={<Only roles={MEMBER}><CheckinScan /></Only>} />
         <Route path="/admin/checkin" element={<Only roles={ADMIN}><CheckinKiosk /></Only>} />
+        <Route path="/admin/emails" element={<Only roles={ADMIN}><EmailCenter /></Only>} />
+        <Route path="/coach-stats" element={<Only roles={STAFF}><CoachStats /></Only>} />
         <Route path="/me/plan" element={<Only roles={MEMBER}><MyPlan /></Only>} />
         <Route path="/me/plan/new" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
         <Route path="/me/plan/:id" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
