@@ -26,6 +26,7 @@ public class PackageRequestController {
     private final PackageRequestService service;
     private final PackageApprovalService approvalService;
     private final SubscriptionUpgradeService upgradeService;
+    private final com.gymflow.service.InstantActivationService instantActivation;
 
     // ---------- Hội viên ----------
     @GetMapping("/me")
@@ -78,7 +79,7 @@ public class PackageRequestController {
     @PutMapping("/{id}/paid")
     @PreAuthorize("hasRole('MEMBER')")
     public PackageRequestResponse paid(@PathVariable Long id) {
-        return service.markPaid(CurrentUser.get(), id);
+        return instantActivation.paid(CurrentUser.get(), id);
     }
 
     // ---------- Quản lý ----------

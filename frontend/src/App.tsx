@@ -52,6 +52,7 @@ import CheckinKiosk from './pages/admin/CheckinKiosk';
 import EmailUnsubscribe from './pages/EmailUnsubscribe';
 import EmailCenter from './pages/admin/EmailCenter';
 import CoachStats from './pages/shared/CoachStats';
+import PaymentReconcile from './pages/admin/PaymentReconcile';
 
 function Splash() {
   return (
@@ -147,6 +148,7 @@ export default function App() {
         <Route path="/admin/checkin" element={<Only roles={ADMIN}><CheckinKiosk /></Only>} />
         <Route path="/admin/emails" element={<Only roles={ADMIN}><EmailCenter /></Only>} />
         <Route path="/coach-stats" element={<Only roles={STAFF}><CoachStats /></Only>} />
+        <Route path="/admin/reconcile" element={<Only roles={ADMIN}><PaymentReconcile /></Only>} />
         <Route path="/me/plan" element={<Only roles={MEMBER}><MyPlan /></Only>} />
         <Route path="/me/plan/new" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
         <Route path="/me/plan/:id" element={<Only roles={MEMBER}><PlanEditor /></Only>} />
