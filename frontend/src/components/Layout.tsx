@@ -21,8 +21,9 @@ import { ThemeToggle } from '../theme/ThemeToggle';
 import { locale, t } from '../i18n';
 import { Tour } from './Tour';
 import './nav.css';
+import './nav-simple.css';
 
-interface NavItem { to: string; label: string; icon: IconName; roles: Role[]; group?: string; tab?: boolean }
+interface NavItem { to: string; label: string; icon: IconName; roles: Role[]; group?: string; tab?: boolean; advanced?: boolean }
 
 /**
  * Mục không có group luôn hiện; mục cùng group (đứng liền nhau) gom thành nhóm gập/mở được.
@@ -39,48 +40,50 @@ export const NAV: NavItem[] = [
   { to: '/messages', label: 'Tin nhắn', icon: 'message', roles: ['MEMBER'] },
   { to: '/profile', label: 'Tài khoản', icon: 'user', roles: ['MEMBER'], tab: true },
 
-  // --- Huấn luyện viên (PT) ---
+  // --- Huấn luyện viên (PT): 6 việc hằng ngày luôn hiện; tài liệu tham khảo nằm trong "mục nâng cao" ---
   { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard', roles: ['TRAINER'], tab: true },
-  { to: '/messages', label: 'Tin nhắn', icon: 'message', roles: ['TRAINER'], group: 'Huấn luyện', tab: true },
   { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['TRAINER'], tab: true },
-  { to: '/members', label: 'Hội viên', icon: 'users', roles: ['TRAINER'], group: 'Huấn luyện', tab: true },
-  { to: '/coach-stats', label: 'Thống kê của tôi', icon: 'chart', roles: ['TRAINER'], group: 'Huấn luyện' },
-  { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['TRAINER'], group: 'Huấn luyện' },
-  { to: '/knowledge', label: 'Kho kiến thức', icon: 'dumbbell', roles: ['TRAINER'], group: 'Kiến thức' },
-  { to: '/programs', label: 'Lịch tập mẫu', icon: 'layers', roles: ['TRAINER'], group: 'Kiến thức' },
-  { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['TRAINER'], group: 'Kiến thức' },
+  { to: '/members', label: 'Hội viên', icon: 'users', roles: ['TRAINER'], tab: true },
+  { to: '/messages', label: 'Tin nhắn', icon: 'message', roles: ['TRAINER'], tab: true },
+  { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['TRAINER'] },
+  { to: '/coach-stats', label: 'Thống kê của tôi', icon: 'chart', roles: ['TRAINER'] },
+  { to: '/knowledge', label: 'Kho kiến thức', icon: 'dumbbell', roles: ['TRAINER'], group: 'Kiến thức', advanced: true },
+  { to: '/programs', label: 'Lịch tập mẫu', icon: 'layers', roles: ['TRAINER'], group: 'Kiến thức', advanced: true },
+  { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['TRAINER'], group: 'Kiến thức', advanced: true },
   { to: '/profile', label: 'Hồ sơ cá nhân', icon: 'user', roles: ['TRAINER'], group: 'Tài khoản' },
   { to: '/help', label: 'Trợ giúp', icon: 'info', roles: ['TRAINER'], group: 'Tài khoản' },
 
-  // --- Quản trị viên (Admin) ---
+  // --- Quản trị viên (Admin): gom theo việc; cấu hình ít dùng nằm trong "mục nâng cao" ---
   { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard', roles: ['ADMIN'], tab: true },
-  { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['ADMIN'], tab: true },
   { to: '/admin/checkin', label: 'Check-in quầy', icon: 'checkCircle', roles: ['ADMIN'] },
-  { to: '/members', label: 'Hội viên', icon: 'users', roles: ['ADMIN'], group: 'Huấn luyện', tab: true },
+  { to: '/schedules', label: 'Lịch tập', icon: 'calendar', roles: ['ADMIN'], tab: true },
+  { to: '/members', label: 'Hội viên', icon: 'users', roles: ['ADMIN'], group: 'Hội viên & thu tiền', tab: true },
+  { to: '/package-requests', label: 'Duyệt đăng ký gói', icon: 'checkCircle', roles: ['ADMIN'], group: 'Hội viên & thu tiền' },
+  { to: '/admin/reconcile', label: 'Đối soát chuyển khoản', icon: 'wallet', roles: ['ADMIN'], group: 'Hội viên & thu tiền' },
+  { to: '/subscriptions', label: 'Đăng ký gói', icon: 'card', roles: ['ADMIN'], group: 'Hội viên & thu tiền' },
+  { to: '/admin/conversations', label: 'Tin nhắn', icon: 'message', roles: ['ADMIN'], group: 'Hội viên & thu tiền' },
+  { to: '/plans', label: 'Gói tập', icon: 'ticket', roles: ['ADMIN'], group: 'Bán hàng' },
+  { to: '/promotions', label: 'Ưu đãi & Giảm giá', icon: 'trophy', roles: ['ADMIN'], group: 'Bán hàng' },
+  { to: '/payment-settings', label: 'Thanh toán', icon: 'wallet', roles: ['ADMIN'], group: 'Bán hàng' },
+  { to: '/services', label: 'Dịch vụ', icon: 'sparkle', roles: ['ADMIN'], group: 'Bán hàng', advanced: true },
+  { to: '/trainers', label: 'Huấn luyện viên', icon: 'badge', roles: ['ADMIN'], group: 'Huấn luyện' },
+  { to: '/coach-stats', label: 'Thống kê HLV', icon: 'chart', roles: ['ADMIN'], group: 'Huấn luyện' },
   { to: '/workout-plans', label: 'Giáo án', icon: 'clipboard', roles: ['ADMIN'], group: 'Huấn luyện' },
-  { to: '/admin/conversations', label: 'Tin nhắn', icon: 'message', roles: ['ADMIN'], group: 'Huấn luyện' },
-  { to: '/knowledge', label: 'Kho kiến thức', icon: 'dumbbell', roles: ['ADMIN'], group: 'Kiến thức' },
-  { to: '/programs', label: 'Lịch tập mẫu', icon: 'layers', roles: ['ADMIN'], group: 'Kiến thức' },
-  { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['ADMIN'], group: 'Kiến thức' },
-  { to: '/trainers', label: 'Huấn luyện viên', icon: 'badge', roles: ['ADMIN'], group: 'Kinh doanh' },
-  { to: '/plans', label: 'Gói tập', icon: 'ticket', roles: ['ADMIN'], group: 'Kinh doanh' },
-  { to: '/services', label: 'Dịch vụ', icon: 'sparkle', roles: ['ADMIN'], group: 'Kinh doanh' },
-  { to: '/promotions', label: 'Ưu đãi & Giảm giá', icon: 'trophy', roles: ['ADMIN'], group: 'Kinh doanh' },
-  { to: '/subscriptions', label: 'Đăng ký gói', icon: 'card', roles: ['ADMIN'], group: 'Kinh doanh' },
-  { to: '/package-requests', label: 'Duyệt đăng ký gói', icon: 'checkCircle', roles: ['ADMIN'], group: 'Kinh doanh' },
-  { to: '/payment-settings', label: 'Thanh toán', icon: 'wallet', roles: ['ADMIN'], group: 'Kinh doanh' },
-  { to: '/reports', label: 'Báo cáo', icon: 'chart', roles: ['ADMIN'], group: 'Kinh doanh' },
-  { to: '/coach-stats', label: 'Thống kê HLV', icon: 'chart', roles: ['ADMIN'], group: 'Kinh doanh' },
-  { to: '/users', label: 'Tài khoản & quyền', icon: 'userCog', roles: ['ADMIN'], group: 'Hệ thống' },
-  { to: '/audit-logs', label: 'Nhật ký hệ thống', icon: 'scroll', roles: ['ADMIN'], group: 'Hệ thống' },
-  { to: '/admin/emails', label: 'Email tự động', icon: 'mail', roles: ['ADMIN'], group: 'Hệ thống' },
+  { to: '/programs', label: 'Lịch tập mẫu', icon: 'layers', roles: ['ADMIN'], group: 'Huấn luyện', advanced: true },
+  { to: '/knowledge', label: 'Kho kiến thức', icon: 'dumbbell', roles: ['ADMIN'], group: 'Huấn luyện', advanced: true },
+  { to: '/community', label: 'Diễn đàn', icon: 'message', roles: ['ADMIN'], group: 'Huấn luyện', advanced: true },
+  { to: '/reports', label: 'Báo cáo', icon: 'chart', roles: ['ADMIN'] },
+  { to: '/users', label: 'Tài khoản & quyền', icon: 'userCog', roles: ['ADMIN'], group: 'Hệ thống', advanced: true },
+  { to: '/admin/emails', label: 'Email tự động', icon: 'mail', roles: ['ADMIN'], group: 'Hệ thống', advanced: true },
+  { to: '/audit-logs', label: 'Nhật ký hệ thống', icon: 'scroll', roles: ['ADMIN'], group: 'Hệ thống', advanced: true },
   { to: '/profile', label: 'Hồ sơ cá nhân', icon: 'user', roles: ['ADMIN'], group: 'Tài khoản' },
   { to: '/help', label: 'Trợ giúp', icon: 'info', roles: ['ADMIN'], group: 'Tài khoản' },
-  { to: '/', label: 'Trang giới thiệu', icon: 'home', roles: ['ADMIN', 'TRAINER'], group: 'Tài khoản' },
+  { to: '/', label: 'Trang giới thiệu', icon: 'home', roles: ['ADMIN', 'TRAINER'], group: 'Tài khoản', advanced: true },
 ];
 
 const GROUPS_KEY = 'gf.nav.groups';
 const MINI_KEY = 'gf.side.mini';
+const ADV_KEY = 'gf.nav.advanced';
 const readJson = <T,>(k: string, fallback: T): T => { try { return (JSON.parse(localStorage.getItem(k) ?? 'null') as T) ?? fallback; } catch { return fallback; } };
 const writeLocal = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* chế độ riêng tư: chỉ nhớ trong phiên */ } };
 
@@ -219,6 +222,8 @@ export function Layout() {
   const [groups, setGroups] = useState<Record<string, boolean>>(() => readJson<Record<string, boolean>>(GROUPS_KEY, {}));
   /** Nhóm đang được hướng dẫn mở tạm (không ghi đè lựa chọn gập/mở của người dùng) */
   const [reveal, setReveal] = useState<string | null>(null);
+  const [showAdv, setShowAdv] = useState(() => readJson<boolean>(ADV_KEY, false) === true);
+  /** Mục nâng cao đang được hướng dẫn chỉ tới: hiện tạm dù đang ẩn */ const [tourTo, setTourTo] = useState<string | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [readyToTrain, setReadyToTrain] = useState<boolean | null>(null);
   const tourDrawer = useRef(false);
@@ -267,7 +272,7 @@ export function Layout() {
     return () => { document.body.style.overflow = prev; document.removeEventListener('keydown', onKey); };
   }, [open]);
 
-  const items = NAV.filter((n) => n.roles.includes(user.role));
+  const items = NAV.filter((n) => n.roles.includes(user.role) && (showAdv || !n.advanced || n.to === tourTo || (n.to !== '/' && (pathname === n.to || pathname.startsWith(n.to + '/')))));
   const current = items.find((n) => pathname === n.to || pathname.startsWith(n.to + '/'));
   const tabs = user.role === 'MEMBER' ? items : items.filter((n) => n.tab).slice(0, 4);
   const doLogout = () => { logout(); navigate('/login'); };
@@ -290,6 +295,7 @@ export function Layout() {
 
   // Hướng dẫn cần chỉ vào menu: mở nhóm chứa mục đó; trên điện thoại mở drawer
   const onTourNav = useCallback((to: string | true | null) => {
+    setTourTo(typeof to === 'string' ? to : null);
     setReveal(typeof to === 'string' ? NAV.find((n) => n.to === to)?.group ?? null : null);
     const narrow = window.matchMedia('(max-width: 900px)').matches;
     if (to && narrow) { tourDrawer.current = true; setOpen(true); }
@@ -333,6 +339,7 @@ export function Layout() {
             );
           })}
         </nav>
+        {NAV.some((n) => n.advanced && n.roles.includes(user.role)) && <button type="button" className="nav-adv-btn" aria-pressed={showAdv} title={mini ? (showAdv ? t('Ẩn mục nâng cao') : t('Hiện mục nâng cao')) : undefined} onClick={() => setShowAdv((v) => { writeLocal(ADV_KEY, JSON.stringify(!v)); return !v; })}><Icon name={showAdv ? 'chevronDown' : 'more'} size={15} /><span>{showAdv ? t('Ẩn mục nâng cao') : t('Hiện mục nâng cao')}</span></button>}
         <div className="side-prefs"><ThemeToggle /></div>
         <div className="side-user">
           <Link to="/profile" className="side-user-link" aria-label={t('Hồ sơ cá nhân')} title={mini ? displayPersonName(user.fullName) : undefined}>

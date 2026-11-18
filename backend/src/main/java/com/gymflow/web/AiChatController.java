@@ -37,6 +37,7 @@ public class AiChatController {
 
     private final AiChatService aiChatService;
     private final Clock clock;
+    private final com.gymflow.ai.RuleBasedProvider ruleBasedProvider;
 
     /** Bộ đếm theo userId; mỗi user một object tự đồng bộ nên không cần khoá toàn map. */
     private final Map<Long, DailyQuota> quotas = new ConcurrentHashMap<>();
@@ -54,7 +55,14 @@ public class AiChatController {
     public AiChatResponse chat(@Valid @RequestBody AiChatRequest request) {
         AuthUser user = CurrentUser.get();
         consumeQuota(user.id());
-        String reply = aiChatService.chat(user.id(), request.message());
+        String reply;
+        try {
+            reply = aiChatService.chat(user.id(), request.message());
+        } catch (ApiException ex) {
+            // V56 · Thiếu GEMINI_API_KEY, Gemini quá tải hoặc mất mạng: trả lời từ dữ liệu GymFlow thay vì báo "đang bận".
+            if (ex.getStatus() == null || !ex.getStatus().is5xxServerError()) throw ex;
+            reply = ruleBasedProvider.answerText(user, request.message(), null);
+        }
         return new AiChatResponse(reply);
     }
 
