@@ -11,6 +11,7 @@ import { ThemeProvider } from './theme/ThemeContext';
 import './styles.css';
 import './components/polish.css';
 import './components/refine.css';
+import './components/dashx.css';
 
 installDomTranslate();
 installLangSync();

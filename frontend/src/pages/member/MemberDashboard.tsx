@@ -4,6 +4,7 @@ import { api } from '../../api/client';
 import type { MemberDashboard as Data, Progress, Schedule } from '../../api/types';
 import { useMe } from '../../auth/AuthContext';
 import { CalorieWeekCard } from '../../components/CalorieWeekCard';
+import { DxRing, DxWeek, dxCountdown } from '../../components/DashX';
 import { Icon } from '../../components/Icon';
 import { achievements, ActivityRings, BadgeShelf, weekRings } from '../../components/motivation';
 import { Alert, Badge, Button, Card, CountUp, Empty, ErrorState, LoadingBlock, Meter, PageHead, Stat, StatusBadge } from '../../components/ui';
@@ -49,6 +50,11 @@ export default function MemberDashboard() {
   const now = new Date();
   const todayKey = now.toDateString();
   const toComplete = data.weekSessions.find((s) => s.status === 'SCHEDULED' && parseDateTime(s.startTime) <= now);
+  const next = data.nextSession;
+  const nextIsToday = !!next && parseDateTime(next.startTime).toDateString() === todayKey;
+  // v11: vòng tuần = buổi đã hoàn thành / buổi có lịch (không tính buổi huỷ)
+  const weekPlanned = data.weekSessions.filter((s) => s.status !== 'CANCELLED').length;
+  const weekDone = data.weekSessions.filter((s) => s.status === 'COMPLETED').length;
 
   // Điều kiện người mới: chưa có gói hoặc chưa có giáo án hoặc chưa có lịch tập
   const isBeginner = !sub || !data.currentPlan || data.weekSessions.length === 0;
@@ -94,28 +100,48 @@ export default function MemberDashboard() {
         </Card>
       )}
 
-      {/* Hero */}
-      <div className="hero">
-        <div className="row between row-wrap" style={{ position: 'relative', gap: 20 }}>
-          <div>
-            <div className="chip on"><Icon name="flame" size={14} /> {t('Chuỗi {n} tuần', { n: data.streakWeeks })}</div>
-            <h2 className="mt-8">{t('Chào {name}, sẵn sàng tập chưa?', { name: firstName })}</h2>
-            <p className="muted mt-8">
-              {data.nextSession
-                ? tn('Buổi tiếp theo: {time} · {title}', { time: <b style={{ color: 'var(--ink)' }}>{fmtWeekday(data.nextSession.startTime)} {t('lúc')} {fmtTime(data.nextSession.startTime)}</b>, title: t(data.nextSession.title) })
-                : t('Bạn chưa có buổi tập sắp tới. Hãy lên lịch tập để duy trì chuỗi tuần nhé.')}
-            </p>
-          </div>
-          <div className="row" style={{ gap: 10 }}>
-            {toComplete ? (
-              <Button variant="primary" icon="checkCircle" onClick={() => setOpen(toComplete)}>{t('Hoàn thành buổi tập')}</Button>
+      {/* Hero v11: trái = lời chào + thẻ buổi kế tiếp + nút; phải = vòng tuần + dải 7 ngày */}
+      <div className="hero dx-hero">
+        <div className="dx-hero-grid">
+          <div className="dx-hero-main">
+            <div className="row row-wrap" style={{ gap: 8 }}>
+              <span className="chip on"><Icon name="flame" size={14} /> {t('Chuỗi {n} tuần', { n: data.streakWeeks })}</span>
+              {sub && <span className="chip"><Icon name="ticket" size={14} /> {t('{n} ngày còn lại', { n: sub.daysLeft })}</span>}
+            </div>
+            <h2 className="dx-title">
+              {t('Chào {name},', { name: firstName })} <span className="grad-text">{t('sẵn sàng tập chưa?')}</span>
+            </h2>
+
+            {next ? (
+              <button type="button" className="dx-next" onClick={() => setOpen(next)}>
+                <span className="dx-next-time num">{fmtTime(next.startTime)}</span>
+                <span className="dx-next-body">
+                  <span className={`dx-pill${nextIsToday ? ' is-hot' : ''}`}>{nextIsToday ? dxCountdown(next.startTime, next.endTime) : fmtWeekday(next.startTime)}</span>
+                  <b className="ellipsis">{t(next.title)}</b>
+                  <span className="tiny muted ellipsis">{fmtTime(next.startTime)}–{fmtTime(next.endTime)} · {next.trainerName ? displayPersonName(next.trainerName) : t('Tự tập')}</span>
+                </span>
+                <span className="dx-next-go"><Icon name="chevronRight" /></span>
+              </button>
             ) : (
-              <Link to="/me/schedule" className="btn btn-primary">
-                <Icon name="calendar" />
-                <span>{data.nextSession ? t('Xem lịch tập') : t('+ Đặt lịch tập')}</span>
-              </Link>
+              <p className="muted">{t('Bạn chưa có buổi tập sắp tới. Hãy lên lịch tập để duy trì chuỗi tuần nhé.')}</p>
             )}
-            <Link to="/me/plan" className="btn btn-secondary"><Icon name="clipboard" /><span>{t('Giáo án')}</span></Link>
+
+            <div className="row row-wrap" style={{ gap: 10 }}>
+              {toComplete ? (
+                <Button variant="primary" icon="checkCircle" onClick={() => setOpen(toComplete)}>{t('Hoàn thành buổi tập')}</Button>
+              ) : (
+                <Link to="/me/schedule" className="btn btn-primary">
+                  <Icon name="calendar" />
+                  <span>{data.nextSession ? t('Xem lịch tập') : t('+ Đặt lịch tập')}</span>
+                </Link>
+              )}
+              <Link to="/me/plan" className="btn btn-secondary"><Icon name="clipboard" /><span>{t('Giáo án')}</span></Link>
+            </div>
+          </div>
+
+          <div className="dx-hero-side">
+            <DxRing value={weekDone} max={Math.max(1, weekPlanned)} label={`${weekDone}/${weekPlanned}`} sub={t('buổi tuần này')} />
+            <DxWeek sessions={data.weekSessions} />
           </div>
         </div>
       </div>
@@ -138,7 +164,7 @@ export default function MemberDashboard() {
         </div>
       )}
 
-      <div className="grid grid-4 mt-24">
+      <div className="grid grid-4 mt-24 dx-stats">
         <Stat icon="ticket" label="Gói hiện tại" value={sub ? <CountUp value={sub.daysLeft} /> : '—'} unit={sub ? t('ngày') : undefined}
           foot={sub ? <>{t(sub.planName)} · <StatusBadge map={subState} value={sub.state} /></> : t('Chưa đăng ký gói')} />
         <Stat icon="checkCircle" label="Buổi hoàn thành tháng này" value={<CountUp value={data.completedThisMonth} />} accent="#3d97ff" foot={t('{n} buổi trong tuần này', { n: data.weekSessions.length })} />
@@ -178,12 +204,20 @@ export default function MemberDashboard() {
 
         <Card title="Gói tập & Giáo án" icon="ticket" actions={<Link to="/me/packages" className="btn btn-sm btn-ghost">{t('Chi tiết gói')}</Link>}>
           {sub ? (
-            <div className="sub-box">
-              <div className="sub-box-head"><b>{t(sub.planName)}</b><StatusBadge map={subState} value={sub.state} /></div>
-              <div className="sub-days"><span className="num">{sub.daysLeft}</span><span className="small muted">{t('ngày còn lại')}</span></div>
-              <Meter value={Math.max(0, totalDays - sub.daysLeft)} max={totalDays} color={sub.state === 'EXPIRING' ? 'var(--warning)' : undefined} />
-              <div className="row between small muted"><span>{fmtDate(sub.startDate)}</span><span>{fmtDate(sub.endDate)}</span></div>
-              <div className="divider" />
+            <div className="stack">
+              {/* v11: gói hiển thị như thẻ hội viên */}
+              <Link to="/me/packages" className={`dx-pass${sub.state === 'EXPIRING' ? ' is-warn' : sub.state === 'EXPIRED' ? ' is-off' : ''}`}>
+                <div className="dx-pass-top">
+                  <span className="dx-pass-brand">GymFlow</span>
+                  <StatusBadge map={subState} value={sub.state} />
+                </div>
+                <div className="dx-pass-days"><span className="num">{sub.daysLeft}</span><span>{t('ngày còn lại')}</span></div>
+                <Meter value={Math.max(0, totalDays - sub.daysLeft)} max={totalDays} color={sub.state === 'EXPIRING' ? 'var(--warning)' : undefined} />
+                <div className="dx-pass-foot">
+                  <span className="ellipsis">{t(sub.planName)}</span>
+                  <span className="num">{fmtDate(sub.startDate)} – {fmtDate(sub.endDate)}</span>
+                </div>
+              </Link>
               {data.currentPlan ? (
                 <div className="stack-sm">
                   <div className="row between">

@@ -3,6 +3,7 @@ import { EN_V7, EN_V7_PATTERNS } from './en-v7';
 import { EN_V8 } from './en-v8';
 import { EN_V9 } from './en-v9';
 import { EN_V10 } from './en-v10';
+import { EN_V11 } from './en-v11';
 import { EN } from './en';
 import { EN_EXTRA } from './en-extra';
 import { EN_PT } from './en-pt';
@@ -31,7 +32,7 @@ let current: Lang = readLang();
 const missing = new Set<string>();
 // EN_PT (V24) đặt trước để không ghi đè bản dịch đã có trong EN / EN_EXTRA.
 // EN_KB (V30 kho kiến thức) gộp sau cùng: chỉ chứa chuỗi mới của giao diện kho kiến thức.
-const DICT: Record<string, string> = { ...EN_V10, ...EN_V9, ...EN_V8, ...EN_V7, ...EN_V6, ...EN_PT, ...EN, ...EN_EXTRA, ...EN_KB, ...EN_UX, ...EN_V2, ...EN_CHAT, ...EN_V3, ...EN_V4, ...EN_V5 };
+const DICT: Record<string, string> = { ...EN_V11, ...EN_V10, ...EN_V9, ...EN_V8, ...EN_V7, ...EN_V6, ...EN_PT, ...EN, ...EN_EXTRA, ...EN_KB, ...EN_UX, ...EN_V2, ...EN_CHAT, ...EN_V3, ...EN_V4, ...EN_V5 };
 
 type Vars = Record<string, string | number | null | undefined>;
 
