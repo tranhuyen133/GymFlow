@@ -12,10 +12,15 @@ import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
 import { focusFormError } from './publicForm';
 import { EMAIL_RE } from '../lib/format';
+import './auth-v12.css';
 
 const ROLE_ICON: Record<Role, IconName> = { ADMIN: 'shield', TRAINER: 'badge', MEMBER: 'user' };
 const ROLE_HINT: Record<Role, string> = { ADMIN: 'Toàn quyền quản trị', TRAINER: 'Hội viên được phân công', MEMBER: 'Lịch tập & tiến độ' };
 
+const AUTH_TAGS = ['Thể hình', 'Giảm mỡ', 'Sức mạnh', 'Yoga', 'Cardio', 'PT 1 kèm 1'];
+
+/** v12: bảng trái kiểu poster thể thao – tiêu đề cực lớn, lợi ích đánh số, dải môn tập chạy ngang.
+ *  Giữ nguyên props (title, lines) để Đăng ký / Quên mật khẩu dùng chung như cũ. */
 export function AuthArt({ title, lines }: { title?: [string, string]; lines?: { icon: IconName; text: string }[] }) {
   const [a, b] = title ?? ['Tập có kế hoạch.', 'Tiến bộ đo được.'];
   const list = lines ?? [
@@ -24,19 +29,31 @@ export function AuthArt({ title, lines }: { title?: [string, string]; lines?: { 
     { icon: 'ticket', text: 'Gói tập minh bạch, nhắc gia hạn trước 7 ngày' },
   ];
   return (
-    <div className="auth-art">
+    <div className="auth-art aa">
+      <div className="aa-mesh" aria-hidden><i /><i /><i /></div>
       <div className="slashes"><i /><i /><i /></div>
       <div className="auth-art-word" aria-hidden>MOVE</div>
-      <Link to="/" className="row" style={{ gap: 10, position: 'relative', width: 'fit-content' }}>
+      <Link to="/" className="row aa-brand" style={{ gap: 10, width: 'fit-content' }}>
         <BrandMark /><span className="brand-name">Gym<b>Flow</b></span>
       </Link>
-      <div style={{ position: 'relative' }}>
+      <div className="aa-body">
+        <div className="kicker">{t('Phòng tập · Huấn luyện viên · Tiến độ')}</div>
         <h1 className="display">{t(a)}<br /><span className="grad-text">{t(b)}</span></h1>
-        <div className="feature-list mt-24">
-          {list.map((l) => <div key={l.text}><Icon name={l.icon} />{t(l.text)}</div>)}
-        </div>
+        <ol className="aa-list">
+          {list.map((l, i) => (
+            <li key={l.text} style={{ ['--i' as string]: i }}>
+              <span className="aa-ic"><Icon name={l.icon} /></span>
+              <span>{t(l.text)}</span>
+            </li>
+          ))}
+        </ol>
       </div>
-      <div className="faint small" style={{ position: 'relative' }}>{t(SITE.openingHours)}</div>
+      <div className="aa-foot">
+        <div className="aa-tags" aria-hidden>
+          <div>{[0, 1].map((k) => <span key={k}>{AUTH_TAGS.map((x) => <em key={x}>{t(x)}</em>)}</span>)}</div>
+        </div>
+        <div className="faint small">{t(SITE.openingHours)}</div>
+      </div>
     </div>
   );
 }
