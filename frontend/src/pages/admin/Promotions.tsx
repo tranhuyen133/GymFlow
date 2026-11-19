@@ -3,7 +3,7 @@ import { api } from '../../api/client';
 import type { DiscountType, MembershipPlan, Promotion, PromotionAudience, PromotionGrant, ServiceItem } from '../../api/types';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Segmented, Table, Textarea } from '../../components/ui';
+import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Segmented, Textarea } from '../../components/ui';
 import { HelpTip } from '../../components/Help';
 import { t } from '../../i18n';
 import { fmtDateTime, fmtMoney } from '../../lib/format';
@@ -73,140 +73,84 @@ export default function Promotions() {
           />
         </Card>
       ) : (
-        <Card flush>
-          <div className="table-wrap">
-            <Table caption={t('Danh sách chương trình ưu đãi')}>
-              <thead>
-                <tr>
-                  <th>{t('Mã')}</th>
-                  <th>{t('Tên chương trình')}</th>
-                  <th>{t('Mức ưu đãi')}</th>
-                  <th>{t('Thời gian hiệu lực')}</th>
-                  <th>{t('Lượt sử dụng')}</th>
-                  <th>{t('Áp dụng')}</th>
-                  <th>{t('Quà tặng kèm')}</th>
-                  <th>{t('Trạng thái')}</th>
-                  <th style={{ width: 100 }} />
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((p) => {
-                  const now = new Date().toISOString();
-                  const isUpcoming = p.startsAt > now;
-                  const isExpired = p.endsAt < now;
+        /* v13: ưu đãi dạng vé – cuống vé có mức giảm & mã, thanh lượt dùng, quà tặng kèm; viền đổi màu theo trạng thái */
+        <div className="ad-poster-grid">
+          {data.map((p, i) => {
+            const now = new Date().toISOString();
+            const isUpcoming = p.startsAt > now;
+            const isExpired = p.endsAt < now;
+            const state = !p.active ? 'off' : isUpcoming ? 'soon' : isExpired ? 'end' : 'live';
+            const usedPct = p.maxUses ? Math.min(100, (p.usedCount / p.maxUses) * 100) : null;
 
-                  return (
-                    <tr key={p.id}>
-                      <td className="nowrap">
-                        {p.code ? (
-                          <span className="chip on" style={{ fontWeight: 700 }}>{p.code}</span>
-                        ) : (
-                          <span className="chip">{t('Không cần mã')}</span>
-                        )}
-                      </td>
-                      <td style={{ minWidth: 220, maxWidth: 320 }}>
-                        <b className="ellipsis" style={{ display: 'block' }} title={localizeText(p.nameEn, p.name)}>
-                          {localizeText(p.nameEn, p.name)}
-                        </b>
-                        {p.description && (
-                          <div className="tiny faint ellipsis" style={{ maxWidth: 280, marginTop: 4 }}>
-                            {localizeText(p.descriptionEn, p.description)}
-                          </div>
-                        )}
-                      </td>
-                      <td>
-                        {p.discountType === 'PERCENT' && (
-                          <span className="ok" style={{ fontWeight: 700 }}>
-                            {t('Giảm {n}%', { n: p.discountValue })}
-                          </span>
-                        )}
-                        {p.discountType === 'AMOUNT' && (
-                          <span className="ok" style={{ fontWeight: 700 }}>
-                            {t('Giảm {amount}', { amount: fmtMoney(p.discountValue) })}
-                          </span>
-                        )}
-                        {p.discountType === 'NONE' && (
-                          <span className="muted">{t('Chỉ tặng quà')}</span>
-                        )}
-                      </td>
-                      <td className="small nowrap">
-                        {fmtDateTime(p.startsAt)}
-                        <br />
-                        <span className="faint">→ {fmtDateTime(p.endsAt)}</span>
-                      </td>
-                      <td>
-                        <b>{p.usedCount}</b>
-                        <span className="muted"> / {p.maxUses != null ? p.maxUses : '∞'}</span>
-                      </td>
-                      <td className="small">
-                        {p.newMembersOnly && <Badge tone="blue">{t('Hội viên mới')}</Badge>}
-                        {p.renewalOnly && <Badge tone="amber">{t('Gia hạn')}</Badge>}
-                        {p.audience === 'BIRTHDAY' && <Badge tone="violet">{t('Sinh nhật')}</Badge>}
-                        {p.audience === 'UPGRADE' && <Badge tone="green">{t('Nâng cấp PT')}</Badge>}
-                        {p.planIds && p.planIds.length > 0 ? (
-                          <div className="tiny faint mt-4">
-                            {p.planIds.map((id) => planNameMap.get(id) || `#${id}`).join(', ')}
-                          </div>
-                        ) : (
-                          <div className="tiny faint mt-4">{t('Mọi gói tập')}</div>
-                        )}
-                      </td>
-                      <td className="small">
-                        {p.grants && p.grants.length > 0 ? (
-                          <ul style={{ margin: 0, paddingLeft: 14 }}>
-                            {p.grants.map((g, idx) => (
-                              <li key={idx}>
-                                {t('{q} lượt {name} ({d} ngày)', {
-                                  q: g.quantity,
-                                  name: localizeText(g.serviceNameEn, g.serviceName) || `#${g.serviceId}`,
-                                  d: g.validDays,
-                                })}
-                                {localizeText(g.conditionsEn, g.conditions) && (
-                                  <div className="tiny faint">{localizeText(g.conditionsEn, g.conditions)}</div>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <span className="faint">—</span>
-                        )}
-                      </td>
-                      <td>
-                        {!p.active ? (
-                          <Badge tone="muted">{t('Tạm dừng')}</Badge>
-                        ) : isUpcoming ? (
-                          <Badge tone="blue">{t('Sắp diễn ra')}</Badge>
-                        ) : isExpired ? (
-                          <Badge tone="red">{t('Đã kết thúc')}</Badge>
-                        ) : (
-                          <Badge tone="green">{t('Đang chạy')}</Badge>
-                        )}
-                      </td>
-                      <td className="actions">
-                        <div className="row" style={{ gap: 4, justifyContent: 'flex-end' }}>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            icon="edit"
-                            title={t('Sửa')}
-                            onClick={() => setEditing(p)}
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            icon={p.active ? 'ban' : 'play'}
-                            title={p.active ? t('Tạm dừng') : t('Kích hoạt')}
-                            onClick={() => void toggleActive(p)}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </Table>
-          </div>
-        </Card>
+            return (
+              <article key={p.id} className={`ad-poster ad-ticket is-${state}`} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
+                <div className="ad-ticket-stub">
+                  <div className="ad-ticket-value">
+                    {p.discountType === 'PERCENT' && t('Giảm {n}%', { n: p.discountValue })}
+                    {p.discountType === 'AMOUNT' && t('Giảm {amount}', { amount: fmtMoney(p.discountValue) })}
+                    {p.discountType === 'NONE' && t('Chỉ tặng quà')}
+                  </div>
+                  {p.code ? <span className="ad-ticket-code num">{p.code}</span> : <span className="ad-ticket-code is-auto">{t('Không cần mã')}</span>}
+                </div>
+                <div className="ad-poster-top">
+                  {!p.active ? (
+                    <Badge tone="muted">{t('Tạm dừng')}</Badge>
+                  ) : isUpcoming ? (
+                    <Badge tone="blue">{t('Sắp diễn ra')}</Badge>
+                  ) : isExpired ? (
+                    <Badge tone="red">{t('Đã kết thúc')}</Badge>
+                  ) : (
+                    <Badge tone="green">{t('Đang chạy')}</Badge>
+                  )}
+                  {p.newMembersOnly && <Badge tone="blue">{t('Hội viên mới')}</Badge>}
+                  {p.renewalOnly && <Badge tone="amber">{t('Gia hạn')}</Badge>}
+                  {p.audience === 'BIRTHDAY' && <Badge tone="violet">{t('Sinh nhật')}</Badge>}
+                  {p.audience === 'UPGRADE' && <Badge tone="green">{t('Nâng cấp PT')}</Badge>}
+                </div>
+                <h3 className="ad-poster-title">{localizeText(p.nameEn, p.name)}</h3>
+                {p.description && <p className="ad-poster-desc">{localizeText(p.descriptionEn, p.description)}</p>}
+                <dl className="ad-poster-meta">
+                  <div>
+                    <dt>{t('Thời gian hiệu lực')}</dt>
+                    <dd className="num">{fmtDateTime(p.startsAt)}<br /><span className="faint">→ {fmtDateTime(p.endsAt)}</span></dd>
+                  </div>
+                  <div>
+                    <dt>{t('Áp dụng')}</dt>
+                    <dd>{p.planIds && p.planIds.length > 0 ? p.planIds.map((id) => planNameMap.get(id) || `#${id}`).join(', ') : t('Mọi gói tập')}</dd>
+                  </div>
+                </dl>
+                <div className="ad-ticket-usage">
+                  <div className="row between small">
+                    <span className="muted">{t('Lượt sử dụng')}</span>
+                    <span className="num"><b>{p.usedCount}</b><span className="muted"> / {p.maxUses != null ? p.maxUses : '∞'}</span></span>
+                  </div>
+                  {usedPct != null && <div className="meter"><i style={{ width: `${usedPct}%` }} /></div>}
+                </div>
+                {p.grants && p.grants.length > 0 && (
+                  <div className="ad-ticket-gifts">
+                    <div className="row" style={{ gap: 6 }}><Icon name="sparkle" size={14} /><b className="small">{t('Quà tặng kèm')}</b></div>
+                    <ul>
+                      {p.grants.map((g, idx) => (
+                        <li key={idx}>
+                          {t('{q} lượt {name} ({d} ngày)', {
+                            q: g.quantity,
+                            name: localizeText(g.serviceNameEn, g.serviceName) || `#${g.serviceId}`,
+                            d: g.validDays,
+                          })}
+                          {localizeText(g.conditionsEn, g.conditions) && <div className="tiny faint">{localizeText(g.conditionsEn, g.conditions)}</div>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="ad-poster-foot">
+                  <Button size="sm" icon="edit" onClick={() => setEditing(p)}>{t('Sửa')}</Button>
+                  <Button size="sm" variant="ghost" icon={p.active ? 'ban' : 'play'} onClick={() => void toggleActive(p)}>{p.active ? t('Tạm dừng') : t('Kích hoạt')}</Button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       )}
 
       {editing && (

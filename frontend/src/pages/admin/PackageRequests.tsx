@@ -13,11 +13,13 @@ import { initials, PickCard } from '../../components/PaymentQr';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, Person, SearchInput, Segmented, Stat, StatusBadge, Table, Textarea } from '../../components/ui';
 import { HelpTip } from '../../components/Help';
-import { addDays, durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus, parseDate, toIsoDate } from '../../lib/format';
+import { addDays, durationLabel, fmtDate, fmtDateTime, fmtMoney, packageRequestStatus, parseDate, relativeTime, toIsoDate } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
 import { localizeText } from '../../lib/planText';
 import { errMsg, useAsync, usePaged } from '../../lib/hooks';
 import { t, tn } from '../../i18n';
+import { Icon } from '../../components/Icon';
+import { ResultCount, waitTone } from '../../components/AdminBits';
 
 type Filter = 'ALL' | PackageRequestStatus;
 
@@ -76,6 +78,7 @@ export default function PackageRequests() {
 
       <div className="toolbar">
         <SearchInput value={q} onChange={setQ} placeholder={t('Tìm hội viên, SĐT, gói, mã đơn GF…')} />
+        <ResultCount n={data ? list.length : null} />
         <div className="spacer" />
         <Segmented<Filter> value={filter} onChange={setFilter} options={[
           { value: 'PENDING', label: t('Chờ xác nhận {n}', { n: count('PENDING') }) },
@@ -87,7 +90,51 @@ export default function PackageRequests() {
       <Card flush>
         {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div>
           : loading && !data ? <div style={{ padding: 20 }}><LoadingBlock /></div>
-          : list.length === 0 ? <Empty icon="clipboard" title={filter === 'PENDING' ? t('Không có đơn nào chờ xác nhận') : t('Không có đơn phù hợp')} /> : (
+          : list.length === 0 ? <Empty icon="clipboard" title={filter === 'PENDING' ? t('Không có đơn nào chờ xác nhận') : t('Không có đơn phù hợp')} />
+          /* v13: đơn chờ hiện dạng hàng chờ (cũ nhất trước) – viền đổi màu theo thời gian chờ; nút Duyệt / Từ chối ngay trên thẻ */
+          : filter === 'PENDING' ? (
+            <ol className="pq-list" aria-label={t('Đơn đăng ký gói')}>
+              {paged.items.map((r, i) => (
+                <li key={r.id} className={`pq-card is-${waitTone(r.createdAt)}`} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
+                  <div className="pq-who">
+                    <Link to={`/members/${r.memberId}`}><Person name={r.memberName} sub={[r.memberCode, r.memberPhone].filter(Boolean).join(' · ')} size="sm" /></Link>
+                    <span className="pq-wait" title={fmtDateTime(r.createdAt)}><Icon name="clock" size={13} />{relativeTime(r.createdAt)}</span>
+                  </div>
+                  <div className="pq-plan">
+                    <div className="pq-plan-name">
+                      <b>{localizeText(r.planNameEn, r.planName)}</b>
+                      {r.requestType === 'UPGRADE' && <Badge tone="violet">{t('Nâng cấp PT')}</Badge>}
+                    </div>
+                    <div className="tiny faint">{durationLabel(r.durationDays)}{r.requestType === 'UPGRADE' && <> · {t('Từ {plan}', { plan: t(r.upgradeFromPlanName ?? '—') })}</>}</div>
+                    <div className="pq-tags">
+                      {!r.planStillOnSale && <Badge tone="red">{t('Gói đã ngừng bán')}</Badge>}
+                      {r.trainerName ? <span className="chip"><Icon name="dumbbell" size={12} />{t('HLV {name}', { name: displayPersonName(r.trainerName) })}</span>
+                        : r.includesTrainer && <Badge tone="amber">{t('Chưa chọn HLV')}</Badge>}
+                      <span className="chip"><Icon name="calendar" size={12} />{t('Bắt đầu')} {r.desiredStartDate ? fmtDate(r.desiredStartDate) : t('Sớm nhất')}</span>
+                    </div>
+                    {r.note && <div className="tiny faint">{t('Ghi chú: {note}', { note: r.note })}</div>}
+                  </div>
+                  <div className="pq-money">
+                    <div className="pq-amount num">{fmtMoney(r.price)}</div>
+                    {(r.upgradeCredit ?? 0) > 0 && <div className="tiny faint">{t('đã trừ {m} gói cũ', { m: fmtMoney(r.upgradeCredit) })}</div>}
+                    {(r.discountAmount ?? 0) > 0 && <div className="tiny faint">{t('ưu đãi −{m}', { m: fmtMoney(r.discountAmount) })}{r.promotionCode ? ` · ${r.promotionCode}` : ''}</div>}
+                    <div className="pq-pay">
+                      {r.paymentMethod === 'BANK_TRANSFER' ? <Badge tone="blue">{t('Chuyển khoản')}</Badge> : <Badge tone="muted">{t('Tại quầy')}</Badge>}
+                      {r.paymentCode && <span className="pq-code num">{r.paymentCode}</span>}
+                    </div>
+                    {r.paymentMethod === 'BANK_TRANSFER' && (r.memberPaidAt
+                      ? <div className="tiny ok">{t('HV báo đã CK {at}', { at: fmtDateTime(r.memberPaidAt) })}</div>
+                      : <div className="tiny faint">{t('HV chưa báo chuyển')}</div>)}
+                  </div>
+                  <div className="pq-act">
+                    <Button size="sm" variant="primary" icon="check" disabled={!r.planStillOnSale}
+                      title={r.planStillOnSale ? undefined : t('Gói đã ngừng bán, hãy từ chối đơn')} onClick={() => setApproving(r)}>{t('Duyệt')}</Button>
+                    <Button size="sm" variant="ghost" icon="x" onClick={() => setRejecting(r)}>{t('Từ chối')}</Button>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
             <Table caption={t('Đơn đăng ký gói')}>
               <thead><tr>
                 <th>{t('Hội viên')}</th><th>{t('Gói')}</th><th>{t('Số tiền')}</th><th>{t('Bắt đầu')}</th>
