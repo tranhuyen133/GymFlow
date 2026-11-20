@@ -7,8 +7,9 @@
 import { Link } from 'react-router-dom';
 import type { Member, WorkoutPlanSummary } from '../api/types';
 import type { WeekPoint } from '../api/engagementTypes';
-import { Person, StatusBadge } from './ui';
+import { Badge, Person, StatusBadge } from './ui';
 import { fmtDate, fmtDateShort, memberStatus, parseDate, planStatus, relativeTime, subState } from '../lib/format';
+import { displayPersonName } from '../lib/names';
 import { localizePlanName } from '../lib/planText';
 import { t } from '../i18n';
 
@@ -28,7 +29,7 @@ export function TrainerMemberGrid({ items }: { items: Member[] }) {
             <Link to={`/members/${m.id}`} className={`tm-card ${tone}`}>
               <span className="tm-top">
                 <Person name={m.fullName} sub={m.code} />
-                <StatusBadge map={memberStatus} value={m.status} />
+                <span className="tm-badges"><StatusBadge map={memberStatus} value={m.status} />{m.accountStatus === 'LOCKED' && <Badge tone="red">{t('TK khoá')}</Badge>}</span>
               </span>
               {m.goal && <span className="tm-goal">{m.goal}</span>}
               <span className="tm-plan">
@@ -75,7 +76,7 @@ export function TrainerPlanGrid({ items }: { items: WorkoutPlanSummary[] }) {
                 </span>
                 <StatusBadge map={planStatus} value={p.status} />
               </span>
-              <Person name={p.memberName} size="sm" />
+              <Person name={p.memberName} sub={p.trainerName ? t('HLV {name}', { name: displayPersonName(p.trainerName) }) : undefined} size="sm" />
               <span className="tp-time">
                 <span className="tp-track"><i style={{ width: `${time.pct}%` }} /></span>
                 <span className="tp-time-row"><span>{fmtDate(p.startDate)} → {fmtDate(p.endDate)}</span><span>{time.label}</span></span>
