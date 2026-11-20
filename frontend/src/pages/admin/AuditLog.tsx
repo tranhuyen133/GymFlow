@@ -7,11 +7,13 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { AuditEntry, Page } from '../../api/types';
-import { Badge, Button, Card, Empty, ErrorState, Input, LoadingBlock, PageHead, Pager, SearchInput, Select, Table } from '../../components/ui';
+import { Badge, Button, Card, Empty, ErrorState, Input, LoadingBlock, PageHead, Pager, SearchInput, Select } from '../../components/ui';
 import { downloadCsv } from '../../lib/csv';
-import { actionLabel, fmtDateTime } from '../../lib/format';
+import { actionLabel, fmtDateTime, fmtTime } from '../../lib/format';
 import { useAsync, useDebounced } from '../../lib/hooks';
 import { t } from '../../i18n';
+import { Icon } from '../../components/Icon';
+import { auditIcon, dayLabel, groupByDay, ResultCount } from '../../components/AdminBits';
 
 export default function AuditLog() {
   const [params, setParams] = useSearchParams();
@@ -54,6 +56,7 @@ export default function AuditLog() {
         }} style={{ width: 160 }} aria-label="Từ ngày" />
         <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} style={{ width: 160 }} aria-label="Đến ngày" />
         <Button disabled={!hasFilters} onClick={clearFilters}>Xóa bộ lọc</Button>
+        <ResultCount n={data?.totalElements} />
       </div>
       {actions.error && <div role="alert"><ErrorState message={actions.error} onRetry={actions.reload} /></div>}
       {loading && data && <p className="tiny muted" role="status">{t('Đang cập nhật nhật ký…')}</p>}
@@ -61,21 +64,34 @@ export default function AuditLog() {
         {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div> : loading && !data ? <div style={{ padding: 20 }}><LoadingBlock /></div>
           : data && data.content.length === 0 ? <Empty icon="scroll" title="Không có bản ghi" /> : data && (
             <>
-              <Table caption="Nhật ký hệ thống">
-                <thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Hành động</th><th>Chi tiết</th><th>Kết quả</th><th>IP</th></tr></thead>
-                <tbody>
-                  {data.content.map((a) => (
-                    <tr key={a.id}>
-                      <td className="tiny nowrap muted">{fmtDateTime(a.createdAt)}</td>
-                      <td className="small">{a.actorEmail ?? <span className="faint">hệ thống</span>}</td>
-                      <td><b className="small">{actionLabel[a.action] ?? a.action}</b>{a.targetType && <div className="tiny faint">{a.targetType} #{a.targetId}</div>}</td>
-                      <td className="small muted" style={{ maxWidth: 360 }}>{a.detail ?? ''}</td>
-                      <td>{a.success ? <Badge tone="green">OK</Badge> : <Badge tone="red">Thất bại</Badge>}</td>
-                      <td className="tiny faint">{a.ip ?? ''}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
+              {/* v13: nhật ký dạng dòng thời gian – gom theo ngày, biểu tượng theo loại thao tác, dòng thất bại tô đỏ */}
+              <div className="al-feed">
+                {groupByDay(data.content).map((g) => (
+                  <section key={g.day} className="al-day" aria-label={dayLabel(g.day)}>
+                    <h3 className="al-day-head"><span>{dayLabel(g.day)}</span><i>{t('{n} thao tác', { n: g.items.length })}</i></h3>
+                    <ol className="al-list">
+                      {g.items.map((a) => (
+                        <li key={a.id} className={`al-item${a.success ? '' : ' is-fail'}`}>
+                          <time className="al-time num" dateTime={a.createdAt} title={fmtDateTime(a.createdAt)}>{fmtTime(a.createdAt)}</time>
+                          <span className="al-dot" aria-hidden><Icon name={auditIcon(a.action)} size={14} /></span>
+                          <div className="al-body">
+                            <div className="al-line">
+                              <b>{actionLabel[a.action] ?? a.action}</b>
+                              {a.targetType && <span className="al-target">{a.targetType} #{a.targetId}</span>}
+                              {!a.success && <Badge tone="red">Thất bại</Badge>}
+                            </div>
+                            {a.detail && <p className="al-detail">{a.detail}</p>}
+                            <div className="al-meta">
+                              <span>{a.actorEmail ?? <span className="faint">hệ thống</span>}</span>
+                              {a.ip && <span className="num">IP {a.ip}</span>}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                ))}
+              </div>
               <Pager page={data.page} totalPages={data.totalPages} total={data.totalElements} onPage={setPage} />
             </>
           )}

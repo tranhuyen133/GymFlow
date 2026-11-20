@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { api } from '../../api/client';
 import type { ServiceCategory, ServiceItem } from '../../api/types';
 import { useToast } from '../../components/Toast';
-import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Table, Textarea } from '../../components/ui';
+import { Icon, type IconName } from '../../components/Icon';
+import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Textarea } from '../../components/ui';
 import { t } from '../../i18n';
 import { fmtMoney } from '../../lib/format';
 import { errMsg, useAsync } from '../../lib/hooks';
@@ -16,6 +17,7 @@ export const CATEGORY_LABELS: Record<ServiceCategory, string> = {
   OTHER: 'Khác',
 };
 
+const SERVICE_ICON: Record<ServiceCategory, IconName> = { RELAX: 'heart', RECOVERY: 'activity', AMENITY: 'key', NUTRITION: 'flame', OTHER: 'sparkle' };
 export default function Services() {
   const toast = useToast();
   const { data, error, loading, reload } = useAsync(() => api.get<ServiceItem[]>('/admin/services'), []);
@@ -62,72 +64,31 @@ export default function Services() {
           />
         </Card>
       ) : (
-        <Card flush>
-          <div className="table-wrap">
-            <Table caption={t('Danh sách dịch vụ bổ sung')}>
-              <thead>
-                <tr>
-                  <th>{t('Tên dịch vụ')}</th>
-                  <th>{t('Danh mục')}</th>
-                  <th>{t('Giá bán lẻ')}</th>
-                  <th>{t('Đặt trước')}</th>
-                  <th>{t('Khung giờ phục vụ')}</th>
-                  <th>{t('Trạng thái')}</th>
-                  <th style={{ width: 100 }} />
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((s) => (
-                  <tr key={s.id}>
-                    <td>
-                      <b>{localizeText(s.nameEn, s.name)}</b>
-                      {s.description && <div className="tiny faint ellipsis" style={{ maxWidth: 280 }}>{localizeText(s.descriptionEn, s.description)}</div>}
-                    </td>
-                    <td>
-                      <span className="chip">{t(CATEGORY_LABELS[s.category] ?? s.category)}</span>
-                    </td>
-                    <td className="num">
-                      {s.unitPrice != null ? fmtMoney(s.unitPrice) : <span className="muted">{t('Chỉ tặng kèm')}</span>}
-                    </td>
-                    <td>
-                      {s.requiresBooking ? (
-                        <Badge tone="blue">{t('Cần đặt lịch')}</Badge>
-                      ) : (
-                        <span className="muted small">{t('Không cần')}</span>
-                      )}
-                    </td>
-                    <td className="small">{localizeText(s.openingNoteEn, s.openingNote) || '—'}</td>
-                    <td>
-                      {s.active ? (
-                        <Badge tone="green">{t('Đang hoạt động')}</Badge>
-                      ) : (
-                        <Badge tone="muted">{t('Tạm ngừng')}</Badge>
-                      )}
-                    </td>
-                    <td className="actions">
-                      <div className="row" style={{ gap: 4, justifyContent: 'flex-end' }}>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          icon="edit"
-                          title={t('Sửa')}
-                          onClick={() => setEditing(s)}
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          icon={s.active ? 'ban' : 'play'}
-                          title={s.active ? t('Tạm ngừng') : t('Kích hoạt')}
-                          onClick={() => void toggleActive(s)}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </div>
-        </Card>
+        /* v13: dịch vụ dạng thẻ poster – màu & biểu tượng theo danh mục, giá nổi bật, nút có chữ */
+        <div className="ad-poster-grid">
+          {data.map((s, i) => (
+            <article key={s.id} className={`ad-poster cat-${s.category.toLowerCase()}${s.active ? '' : ' is-off'}`} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
+              <div className="ad-poster-top">
+                <span className="ad-poster-icon"><Icon name={SERVICE_ICON[s.category] ?? 'sparkle'} size={18} /></span>
+                <span className="ad-poster-kicker">{t(CATEGORY_LABELS[s.category] ?? s.category)}</span>
+                {s.active ? <Badge tone="green">{t('Đang hoạt động')}</Badge> : <Badge tone="muted">{t('Tạm ngừng')}</Badge>}
+              </div>
+              <h3 className="ad-poster-title">{localizeText(s.nameEn, s.name)}</h3>
+              {s.description && <p className="ad-poster-desc">{localizeText(s.descriptionEn, s.description)}</p>}
+              <div className="ad-poster-price">
+                {s.unitPrice != null ? <span className="num">{fmtMoney(s.unitPrice)}</span> : <span className="ad-poster-gift">{t('Chỉ tặng kèm')}</span>}
+              </div>
+              <dl className="ad-poster-meta">
+                <div><dt>{t('Đặt trước')}</dt><dd>{s.requiresBooking ? <Badge tone="blue">{t('Cần đặt lịch')}</Badge> : t('Không cần')}</dd></div>
+                <div><dt>{t('Khung giờ phục vụ')}</dt><dd>{localizeText(s.openingNoteEn, s.openingNote) || '—'}</dd></div>
+              </dl>
+              <div className="ad-poster-foot">
+                <Button size="sm" icon="edit" onClick={() => setEditing(s)}>{t('Sửa')}</Button>
+                <Button size="sm" variant="ghost" icon={s.active ? 'ban' : 'play'} onClick={() => void toggleActive(s)}>{s.active ? t('Tạm ngừng') : t('Kích hoạt')}</Button>
+              </div>
+            </article>
+          ))}
+        </div>
       )}
 
       {editing && (

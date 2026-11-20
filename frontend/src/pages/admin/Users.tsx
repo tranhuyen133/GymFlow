@@ -5,6 +5,7 @@ import { useMe } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Confirm, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge, Table } from '../../components/ui';
 import { t } from '../../i18n';
+import { ResultCount } from '../../components/AdminBits';
 import { EMAIL_RE, fmtDateTime, relativeTime, roleLabel, userStatus } from '../../lib/format';
 import { errMsg, fieldErrs, useAsync, useDebounced } from '../../lib/hooks';
 
@@ -37,6 +38,7 @@ export default function Users() {
         <Select value={status} onChange={(e) => setStatus(e.target.value as UserStatus | '')} aria-label="Trạng thái">
           <option value="">{t('Mọi trạng thái')}</option><option value="ACTIVE">{t('Đang mở')}</option><option value="LOCKED">{t('Đã khoá')}</option>
         </Select>
+        <ResultCount n={data?.totalElements} />
       </div>
       <Card flush>
         {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div> : loading && !data ? <div style={{ padding: 20 }}><LoadingBlock /></div>
