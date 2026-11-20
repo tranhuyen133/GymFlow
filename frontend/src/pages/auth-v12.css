@@ -1,0 +1,125 @@
+/* v12 · Đăng nhập / Đăng ký / Quên mật khẩu – nạp trong Login.tsx (Đăng ký và Quên mật khẩu dùng chung AuthArt nên cũng nhận).
+   Bám .auth để không ảnh hưởng nơi khác. Chỉ dùng biến màu theme. */
+
+/* ───────── Bảng trái kiểu poster ───────── */
+.auth .aa {
+  isolation: isolate;
+  padding: 48px 56px;
+  background: var(--rail);
+}
+.auth .aa-mesh { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.auth .aa-mesh i { position: absolute; border-radius: 50%; filter: blur(80px); animation: v12Drift 16s ease-in-out infinite alternate; }
+.auth .aa-mesh i:nth-child(1) { width: 560px; height: 560px; left: -180px; bottom: -220px; background: var(--primary); opacity: 0.38; }
+.auth .aa-mesh i:nth-child(2) { width: 420px; height: 420px; right: -160px; top: -140px; background: #00c2ff; opacity: 0.16; animation-duration: 21s; }
+.auth .aa-mesh i:nth-child(3) { width: 300px; height: 300px; left: 40%; top: 30%; background: var(--primary-bright); opacity: 0.12; animation-duration: 12s; }
+@keyframes v12Drift { to { transform: translate(60px, -40px) scale(1.15); } }
+.auth .aa::before {
+  /* lưới mờ */
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--ink) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--ink) 5%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(160deg, transparent 10%, #000 60%);
+  -webkit-mask-image: linear-gradient(160deg, transparent 10%, #000 60%);
+}
+.auth .aa .auth-art-word {
+  right: auto; left: -2%; bottom: auto; top: 50%;
+  font-size: clamp(160px, 20vw, 300px); font-weight: 900;
+  transform: translateY(-50%) rotate(-90deg) translateX(30%); transform-origin: left center;
+  opacity: 0.7;
+}
+.auth .aa-brand { position: relative; }
+.auth .aa-body { position: relative; display: flex; flex-direction: column; gap: 0; }
+.auth .aa h1.display { font-size: clamp(44px, 5vw, 76px); line-height: 1.02; letter-spacing: -0.04em; font-weight: 900; max-width: 11ch; margin: 0; }
+.auth .aa h1 .grad-text {
+  background-image: linear-gradient(100deg, var(--primary) 0%, var(--primary-bright) 35%, #eafff2 50%, var(--primary-bright) 65%, var(--primary) 100%);
+  background-size: 250% 100%;
+  animation: v12AuthShine 5.5s ease-in-out infinite;
+}
+@keyframes v12AuthShine { 0%, 30% { background-position: 100% 0; } 70%, 100% { background-position: 0% 0; } }
+
+/* Lợi ích đánh số */
+.auth .aa-list { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 10px; max-width: 440px; counter-reset: aa; }
+.auth .aa-list li {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px; border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--canvas) 40%, transparent);
+  border: 1px solid var(--hairline-soft);
+  backdrop-filter: blur(8px);
+  color: var(--ink); font-weight: 600; font-size: 14px;
+  animation: riseIn 0.7s var(--ease-spring) backwards;
+  animation-delay: calc(0.15s + var(--i, 0) * 0.08s);
+  transition: transform 0.3s var(--ease-spring), border-color 0.25s;
+}
+.auth .aa-list li:hover { transform: translateX(6px); border-color: color-mix(in srgb, var(--primary) 50%, var(--hairline)); }
+.auth .aa-ic { flex: none; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary-bright); }
+.auth .aa-ic svg { width: 18px; height: 18px; }
+
+/* Chân: dải môn tập chạy ngang */
+.auth .aa-foot { position: relative; display: grid; gap: 14px; }
+.auth .aa-tags { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+.auth .aa-tags > div { display: flex; width: max-content; animation: marquee 26s linear infinite; }
+.auth .aa-tags span { display: flex; }
+.auth .aa-tags em {
+  font-style: normal; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--muted); padding-right: 28px; white-space: nowrap; display: inline-flex; align-items: center; gap: 28px;
+}
+.auth .aa-tags em::after { content: ''; width: 10px; height: 10px; background: var(--primary-bright); transform: skewX(var(--slant)); }
+
+/* ───────── Bên phải: form ───────── */
+.auth .auth-form {
+  background:
+    radial-gradient(60% 50% at 100% 0%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 70%),
+    var(--canvas);
+}
+.auth .auth-form .box { width: min(440px, 100%); }
+.auth .auth-form form.box:not(.auth-card) {
+  padding: 32px; border-radius: var(--r-lg);
+  background: var(--surface-2); border: 1px solid var(--hairline); box-shadow: var(--shadow-float);
+}
+.auth .auth-card, .auth .auth-form form.box { animation: riseIn 0.7s var(--ease-spring) both; }
+.auth .auth-card { padding: 32px; }
+.auth .auth-form h2 { font-size: clamp(30px, 2.6vw, 38px); font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; }
+.auth .auth-form .input { min-height: 48px; font-size: 15px; transition: border-color 0.2s, box-shadow 0.2s; }
+.auth .auth-form .input:focus { box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent); }
+.auth .auth-form .btn-primary.btn-lg {
+  position: relative; overflow: hidden; min-height: 52px;
+  text-transform: uppercase; letter-spacing: 0.06em; font-weight: 900;
+  background: var(--grad-go); border-color: transparent;
+  box-shadow: 0 14px 30px -14px var(--primary);
+  transition: transform 0.3s var(--ease-spring), box-shadow 0.3s;
+}
+.auth .auth-form .btn-primary.btn-lg::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-20deg); transition: left 0.7s var(--ease-out);
+}
+.auth .auth-form .btn-primary.btn-lg:hover { transform: translateY(-2px); box-shadow: 0 20px 36px -14px var(--primary); }
+.auth .auth-form .btn-primary.btn-lg:hover::after { left: 130%; }
+
+/* Tài khoản demo: 3 thẻ vai trò */
+.auth .quick-login button { padding: 14px 8px; border-radius: var(--r-md); background: var(--canvas); }
+.auth .quick-login button svg { width: 24px; height: 24px; padding: 6px; box-sizing: content-box; border-radius: 10px; background: color-mix(in srgb, var(--primary) 14%, transparent); }
+.auth .quick-login button:hover { box-shadow: 0 10px 24px -14px var(--primary); }
+
+/* ───────── Màn hẹp: bảng trái gọn lại ───────── */
+@media (max-width: 1100px) {
+  .auth .aa { padding: 40px; }
+}
+@media (max-width: 900px) {
+  .auth .aa-list, .auth .aa-foot .aa-tags, .auth .aa .auth-art-word { display: none; }
+  .auth .aa h1.display { font-size: clamp(34px, 9vw, 52px); }
+}
+@media (max-width: 560px) {
+  .auth .auth-form form.box:not(.auth-card) { padding: 20px; box-shadow: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth .aa-mesh i, .auth .aa h1 .grad-text, .auth .aa-list li, .auth .aa-tags > div, .auth .auth-card, .auth .auth-form form.box { animation: none; }
+}
+
+/* ───────── Nền sáng ───────── */
+:root[data-theme='light'] .auth .aa-mesh i:nth-child(1) { opacity: 0.22; }
+:root[data-theme='light'] .auth .aa-mesh i:nth-child(2) { opacity: 0.1; }
+:root[data-theme='light'] .auth .aa-list li { background: color-mix(in srgb, #fff 65%, transparent); }

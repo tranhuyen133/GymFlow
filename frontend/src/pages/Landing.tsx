@@ -16,6 +16,7 @@ import { ThemeToggle } from '../theme/ThemeToggle';
 import { t } from '../i18n';
 import { publicPlanAction } from './publicForm';
 import './landing-sport.css';
+import './landing-v12.css';
 
 /** Số đếm lên khi cuộn tới (CountUp chỉ chạy sau khi phần tử hiện trên màn hình). */
 function CountOnView({ value, suffix }: { value: number; suffix?: string }) {
@@ -184,38 +185,57 @@ export default function Landing() {
               {primaryCta}
               <a className="btn btn-secondary btn-lg" href="#plans"><span>{t('Xem bảng giá')}</span></a>
             </div>
+            {/* v12: 3 cam kết ngắn ngay dưới nút – đều là quy tắc đang chạy thật (đăng ký miễn phí, QR kích hoạt ngay, giờ mở cửa) */}
+            <ul className="hx-proof">
+              <li><Icon name="checkCircle" size={16} />{t('Tạo tài khoản miễn phí')}</li>
+              <li><Icon name="wallet" size={16} />{t('Thanh toán QR, kích hoạt ngay')}</li>
+              <li><Icon name="clock" size={16} />{t('Mở cửa {open}–{close}', { open: GYM_OPEN, close: GYM_CLOSE })}</li>
+            </ul>
           </div>
-          <div className="hero-visual" aria-hidden>
-            {/* Ảnh minh hoạ giao diện ứng dụng (aria-hidden). Ba vòng ứng với dữ liệu GymFlow ghi thật:
-                số buổi tập trong tuần, phút vận động (mục tiêu 150 phút/tuần theo khuyến nghị cho người lớn) và calo ghi sau buổi tập. */}
-            <div className="hv-card hv-1 hv-rings">
-              <div className="row between" style={{ gap: 8 }}>
-                <span className="row tiny muted" style={{ gap: 6 }}><Icon name="heart" size={15} className="beat" />{t('Hoạt động tuần này')}</span>
-                <span className="hv-streak"><Icon name="flame" size={13} />6</span>
-              </div>
-              <div className="row" style={{ gap: 14, marginTop: 10 }}>
-                <svg viewBox="0 0 100 100" className="rings">
-                  <circle className="ring-bg" cx="50" cy="50" r="42" /><circle className="ring r1" cx="50" cy="50" r="42" pathLength={100} />
-                  <circle className="ring-bg" cx="50" cy="50" r="31" /><circle className="ring r2" cx="50" cy="50" r="31" pathLength={100} />
-                  <circle className="ring-bg" cx="50" cy="50" r="20" /><circle className="ring r3" cx="50" cy="50" r="20" pathLength={100} />
-                </svg>
+          {/* v12: điện thoại 3D mô phỏng màn hình hội viên (ảnh minh hoạ, aria-hidden) + 3 huy hiệu bay quanh */}
+          <div className="hero-visual hx-visual" aria-hidden>
+            <div className="hx-phone">
+              <span className="hx-island" />
+              <div className="hx-screen">
+                <div className="row between">
+                  <span className="tiny muted">{t('Hoạt động tuần này')}</span>
+                  <span className="hv-streak"><Icon name="flame" size={13} />6</span>
+                </div>
+                <div className="hx-ring">
+                  <svg viewBox="0 0 100 100" className="rings">
+                    <circle className="ring-bg" cx="50" cy="50" r="42" /><circle className="ring r1" cx="50" cy="50" r="42" pathLength={100} />
+                    <circle className="ring-bg" cx="50" cy="50" r="31" /><circle className="ring r2" cx="50" cy="50" r="31" pathLength={100} />
+                    <circle className="ring-bg" cx="50" cy="50" r="20" /><circle className="ring r3" cx="50" cy="50" r="20" pathLength={100} />
+                  </svg>
+                  <div className="hx-ring-center"><b>3/4</b><span>{t('Buổi tập')}</span></div>
+                </div>
                 <div className="ring-legend">
                   <div><i className="r1" />{t('Buổi tập')} <b>3/4</b></div>
                   <div><i className="r2" />{t('Phút vận động')} <b>120/150</b></div>
                   <div><i className="r3" />{t('Calo')} <b>1.450</b></div>
                 </div>
+                <div className="hx-next">
+                  <span className="hx-next-time">17:00</span>
+                  <div>
+                    <div className="tiny muted">{t('Buổi tiếp theo')}</div>
+                    <b>Leg day</b>
+                    <div className="tiny faint">Squat 4×8 · Lunge 3×12</div>
+                  </div>
+                </div>
+                <div className="hx-week">
+                  {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d, i) => (
+                    <span key={d} className={i < 3 ? 'on' : i === 3 ? 'today' : ''}><i />{d}</span>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="hv-card hv-2">
-              <div className="tiny muted">{t('Buổi tiếp theo')}</div>
-              <div className="hv-title">Leg day · 17:00</div>
-              <div className="tiny faint">Squat 4×8 · Lunge 3×12 · Plank 3×45s</div>
-            </div>
-            <div className="hv-card hv-3">
+            <div className="hv-card hx-chip hx-chip-1"><Icon name="checkCircle" size={16} className="ok" /><span>{t('Đã hoàn thành buổi tập')}</span><b>+1</b></div>
+            <div className="hv-card hx-chip hx-chip-2">
               <div className="tiny muted">{t('Cân nặng 8 tuần')}</div>
               <svg viewBox="0 0 160 48" className="hv-spark"><path d="M2 10 L24 14 L46 13 L68 20 L90 24 L112 27 L134 33 L158 38" /></svg>
               <div className="row between tiny"><span className="muted">72,4 kg</span><span className="ok">−3,1 kg</span></div>
             </div>
+            <div className="hv-card hx-chip hx-chip-3"><Icon name="trophy" size={16} /><span>{t('Huy hiệu mới')}</span></div>
           </div>
         </div>
       </header>

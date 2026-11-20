@@ -1,0 +1,21 @@
+// Bản dịch đợt v12 (giao diện trang chủ, đăng nhập, đăng ký). Đứng ĐẦU DICT nên chỉ bổ sung.
+export const EN_V12: Record<string, string> = {
+  'Tạo tài khoản miễn phí': 'Free account',
+  'Thanh toán QR, kích hoạt ngay': 'Pay by QR, active instantly',
+  'Mở cửa {open}–{close}': 'Open {open}–{close}',
+  'Hoạt động tuần này': 'This week',
+  'Buổi tập': 'Sessions',
+  'Phút vận động': 'Active minutes',
+  'Calo': 'Calories',
+  'Buổi tiếp theo': 'Next session',
+  'Cân nặng 8 tuần': 'Weight, 8 weeks',
+  'Đã hoàn thành buổi tập': 'Session completed',
+  'Huy hiệu mới': 'New badge',
+  'Phòng tập · Huấn luyện viên · Tiến độ': 'Gym · Coaches · Progress',
+  'Thể hình': 'Bodybuilding',
+  'Giảm mỡ': 'Fat loss',
+  'Sức mạnh': 'Strength',
+  'Yoga': 'Yoga',
+  'Cardio': 'Cardio',
+  'PT 1 kèm 1': '1-on-1 PT',
+};
