@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
+import { useMe } from '../../auth/AuthContext';
 import type { PlanStatus, WorkoutPlanSummary } from '../../api/types';
 import { Card, Empty, ErrorState, LoadingBlock, PageHead, Pager, Person, SearchInput, Segmented, StatusBadge, Table, Button } from '../../components/ui';
 import { HelpTip } from '../../components/Help';
+import { TrainerPlanGrid } from '../../components/TrainerBits';
 import { fmtDate, planStatus, relativeTime } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
 import { localizePlanName } from '../../lib/planText';
@@ -14,6 +16,7 @@ type Filter = 'ALL' | PlanStatus;
 
 export default function WorkoutPlans() {
   const navigate = useNavigate();
+  const coach = useMe().role === 'TRAINER';
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<Filter>('ACTIVE');
   const { data, error, loading, reload } = useAsync(() => api.get<WorkoutPlanSummary[]>('/workout-plans'), []);
@@ -41,6 +44,7 @@ export default function WorkoutPlans() {
       <Card flush>
         {error ? <div style={{ padding: 20 }}><ErrorState message={error} onRetry={reload} /></div> : loading ? <div style={{ padding: 20 }}><LoadingBlock /></div>
           : list.length === 0 ? <Empty icon="clipboard" title={t('Không có giáo án')} desc={t('Bấm “Soạn giáo án” để bắt đầu.')} /> : (
+            coach ? <TrainerPlanGrid items={paged.items} /> : (
             <Table caption={t('Giáo án')}>
               <thead><tr><th>{t('Giáo án')}</th><th>{t('Hội viên')}</th><th>{t('HLV')}</th><th>{t('Thời gian')}</th><th>{t('Nội dung')}</th><th>{t('Trạng thái')}</th></tr></thead>
               <tbody>
@@ -56,6 +60,7 @@ export default function WorkoutPlans() {
                 ))}
               </tbody>
             </Table>
+            )
           )}
         {list.length > 0 && <Pager page={paged.page} totalPages={paged.totalPages} total={paged.total} onPage={paged.setPage} size={paged.size} sizes={[10, 20, 50]} onSize={paged.setSize} />}
       </Card>
