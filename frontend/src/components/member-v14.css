@@ -1,0 +1,42 @@
+/* v14 · Làm đẹp phần 3/4: khu hội viên – chỉ Tin nhắn (bong bóng kiểu app chat) và thanh tab điện thoại nổi.
+   Lịch tập, Gói của tôi, Tiến độ & Cân nặng, Giáo án, Kho kiến thức giữ nguyên như develop.
+   PHẠM VI: mọi luật bắt đầu bằng .shell:has([data-tour="nav:/me/plan"]) – mục "Giáo án" /me/plan chỉ có trong menu hội viên
+   → quản trị / HLV không đổi, không phải sửa Layout.tsx. Thông báo gắn vào body nên dùng body:has(...). */
+
+.shell:has([data-tour="nav:/me/plan"]) { --m-mint: var(--primary-bright); }
+:root[data-theme='light'] .shell:has([data-tour="nav:/me/plan"]) { --m-mint: var(--primary); }
+
+/* ═════════ 1. Tin nhắn – kiểu app chat ═════════ */
+.shell:has([data-tour="nav:/me/plan"]) .conversation-item { border-radius: 16px; transition: background 0.15s; }
+.shell:has([data-tour="nav:/me/plan"]) .conversation-badge { background: var(--m-mint); color: var(--on-primary); }
+.shell:has([data-tour="nav:/me/plan"]) .chat-bubble { border-radius: 20px; padding: 10px 14px; line-height: 1.45; }
+.shell:has([data-tour="nav:/me/plan"]) .chat-bubble-row.mine .chat-bubble {
+  border-bottom-right-radius: 6px; color: var(--on-primary); background: var(--m-mint);
+}
+.shell:has([data-tour="nav:/me/plan"]) .chat-bubble-row.mine .chat-bubble-meta,
+.shell:has([data-tour="nav:/me/plan"]) .chat-bubble-row.mine .chat-read-tick { color: color-mix(in srgb, var(--on-primary) 70%, transparent); }
+.shell:has([data-tour="nav:/me/plan"]) .chat-bubble-row.theirs .chat-bubble { border-bottom-left-radius: 6px; background: var(--surface-2); border: 1px solid var(--hairline-soft); }
+.shell:has([data-tour="nav:/me/plan"]) .composer-form { border-radius: 999px; }
+.shell:has([data-tour="nav:/me/plan"]) .composer-form .input,
+.shell:has([data-tour="nav:/me/plan"]) .composer-form .textarea { border-radius: 22px; }
+.shell:has([data-tour="nav:/me/plan"]) .composer-form .btn-primary { border-radius: 50%; }
+.shell:has([data-tour="nav:/me/plan"]) .chat-suggestion-chip { border-radius: 999px; }
+
+/* ═════════ 2. Thanh tab điện thoại – nổi, bo tròn, mục đang chọn tô xanh nhạt ═════════ */
+@media (max-width: 900px) {
+  .shell:has([data-tour="nav:/me/plan"]) .content { padding-bottom: calc(var(--tabbar-h) + 40px + env(safe-area-inset-bottom)); }
+  .shell:has([data-tour="nav:/me/plan"]) .tabbar {
+    left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+    height: var(--tabbar-h); padding: 6px; padding-bottom: 6px;
+    border: 1px solid var(--hairline); border-radius: 24px;
+    background: var(--glass-solid, var(--glass)); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+    box-shadow: 0 12px 28px -18px rgba(0, 0, 0, 0.5);
+  }
+  .shell:has([data-tour="nav:/me/plan"]) .tabbar a { position: relative; border-radius: 18px; font-weight: 700; transition: color 0.2s, background 0.25s var(--ease-out); }
+  .shell:has([data-tour="nav:/me/plan"]) .tabbar a.active { color: var(--m-mint); background: color-mix(in srgb, var(--m-mint) 14%, transparent); }
+  .shell:has([data-tour="nav:/me/plan"]) .tabbar a.active::before {
+    content: ''; position: absolute; top: 3px; left: 50%; width: 16px; height: 3px; margin-left: -8px; border-radius: 3px; background: var(--m-mint);
+  }
+  :root[data-theme='light'] .shell:has([data-tour="nav:/me/plan"]) .tabbar { box-shadow: 0 12px 26px -18px rgba(16, 24, 40, 0.3); }
+  body:has([data-tour="nav:/me/plan"]) .toasts { bottom: calc(var(--tabbar-h) + 24px); }
+}
