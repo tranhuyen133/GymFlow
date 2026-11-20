@@ -13,6 +13,7 @@ import './components/polish.css';
 import './components/refine.css';
 import './components/dashx.css';
 import './components/admin-v13.css';
+import './components/member-v14.css';
 
 installDomTranslate();
 installLangSync();
