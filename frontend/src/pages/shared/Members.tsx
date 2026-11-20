@@ -10,6 +10,7 @@ import { useMe } from '../../auth/AuthContext';
 import { useToast } from '../../components/Toast';
 import { Alert, Badge, Button, Card, Empty, ErrorState, Field, Input, LoadingBlock, Modal, PageHead, Pager, PasswordInput, Person, SearchInput, Select, StatusBadge, Table, Textarea } from '../../components/ui';
 import { HelpTip } from '../../components/Help';
+import { TrainerMemberGrid } from '../../components/TrainerBits';
 import { downloadCsv } from '../../lib/csv';
 import { EMAIL_RE, fmtDate, genderLabel, memberStatus, subState } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
@@ -117,6 +118,7 @@ export default function Members() {
             : data && data.content.length === 0 ? <Empty icon="users" title="Không có hội viên phù hợp" desc="Thử đổi từ khoá hoặc bộ lọc." />
               : data && (
                 <>
+                  {!admin ? <TrainerMemberGrid items={data.content} /> : (
                   <Table caption="Danh sách hội viên">
                     <thead><tr><th>Hội viên</th><th>Liên hệ</th><th>HLV</th><th>Gói hiện tại</th><th>Trạng thái</th><th>Tham gia</th></tr></thead>
                     <tbody>
@@ -138,6 +140,7 @@ export default function Members() {
                       ))}
                     </tbody>
                   </Table>
+                  )}
                   <Pager page={data.page} totalPages={data.totalPages} total={data.totalElements} onPage={setPage} />
                 </>
               )}

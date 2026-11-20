@@ -14,6 +14,7 @@ import './components/refine.css';
 import './components/dashx.css';
 import './components/admin-v13.css';
 import './components/member-v14.css';
+import './components/trainer-v15.css';
 
 installDomTranslate();
 installLangSync();

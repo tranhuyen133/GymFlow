@@ -8,9 +8,10 @@ import { api } from '../../api/client';
 import type { TrainerStats } from '../../api/engagementTypes';
 import { useAuth } from '../../auth/AuthContext';
 import { HelpTip } from '../../components/Help';
+import { CoachWeekList } from '../../components/TrainerBits';
 import { Badge, Card, Empty, ErrorState, LoadingBlock, PageHead, Segmented, Stat, Table } from '../../components/ui';
 import { t } from '../../i18n';
-import { fmtDate, fmtDateShort } from '../../lib/format';
+import { fmtDate } from '../../lib/format';
 import { useAsync } from '../../lib/hooks';
 import '../../components/coach-stats.css';
 
@@ -24,7 +25,6 @@ function rateTone(rate: number | null) {
 }
 
 function StatsView({ s }: { s: TrainerStats }) {
-  const max = Math.max(1, ...s.weeks.map((w) => w.completed + w.missed));
   return (
     <div className="stack" style={{ gap: 18 }}>
       <div className="grid grid-4">
@@ -37,16 +37,7 @@ function StatsView({ s }: { s: TrainerStats }) {
       <div className="grid grid-main" style={{ alignItems: 'start' }}>
         <Card title={t('Theo tuần')} icon="chart">
           {s.weeks.length === 0 ? <Empty title={t('Chưa có dữ liệu')} /> : (
-            <div className="coach-weeks" role="img" aria-label={t('Biểu đồ buổi hoàn thành và vắng theo tuần')}>
-              {s.weeks.map((w) => (
-                <div key={w.weekStart} className="coach-week" title={t('Tuần {d}: {c} hoàn thành, {m} vắng', { d: fmtDateShort(w.weekStart), c: w.completed, m: w.missed })}>
-                  <div className="coach-bar">
-                    <i className="missed" style={{ height: `${(w.missed / max) * 100}%` }} />
-                    <i className="done" style={{ height: `${(w.completed / max) * 100}%` }} />
-                  </div>
-                  <span>{fmtDateShort(w.weekStart)}</span>
-                </div>
-              ))}
+            <div className="cw-wrap"><CoachWeekList weeks={s.weeks} />
             </div>
           )}
           <div className="row tiny muted mt-8" style={{ gap: 14 }}>

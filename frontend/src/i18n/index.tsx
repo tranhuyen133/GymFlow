@@ -17,6 +17,7 @@ import { EN_V5 } from './en-v5';
 import { EN_V6 } from './en-v6';
 import { EN_V12 } from './en-v12';
 import { EN_V13 } from './en-v13';
+import { EN_V15 } from './en-v15';
 
 /**
  * Đa ngôn ngữ tối giản: chuỗi tiếng Việt chính là khoá, bản tiếng Anh nằm trong en.ts.
@@ -34,7 +35,7 @@ let current: Lang = readLang();
 const missing = new Set<string>();
 // EN_PT (V24) đặt trước để không ghi đè bản dịch đã có trong EN / EN_EXTRA.
 // EN_KB (V30 kho kiến thức) gộp sau cùng: chỉ chứa chuỗi mới của giao diện kho kiến thức.
-const DICT: Record<string, string> = { ...EN_V13, ...EN_V12, ...EN_V11, ...EN_V10, ...EN_V9, ...EN_V8, ...EN_V7, ...EN_V6, ...EN_PT, ...EN, ...EN_EXTRA, ...EN_KB, ...EN_UX, ...EN_V2, ...EN_CHAT, ...EN_V3, ...EN_V4, ...EN_V5 };
+const DICT: Record<string, string> = { ...EN_V15, ...EN_V13, ...EN_V12, ...EN_V11, ...EN_V10, ...EN_V9, ...EN_V8, ...EN_V7, ...EN_V6, ...EN_PT, ...EN, ...EN_EXTRA, ...EN_KB, ...EN_UX, ...EN_V2, ...EN_CHAT, ...EN_V3, ...EN_V4, ...EN_V5 };
 
 type Vars = Record<string, string | number | null | undefined>;
 
