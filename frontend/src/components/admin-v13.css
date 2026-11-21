@@ -1,4 +1,4 @@
-/* v13 · Làm đẹp phần 2/4: khu quản trị – phong cách "phòng điều khiển": nền sâu, viền mảnh, số to, xanh chỉ để nhấn.
+/* v13 (+ v16 đồng bộ cỡ chữ và menu với phần gốc) · Làm đẹp phần 2/4: khu quản trị – phong cách "phòng điều khiển": nền sâu, viền mảnh, số to, xanh chỉ để nhấn.
    PHẠM VI: luật chung (đầu trang, thanh lọc, bảng, nhãn, phân trang, thẻ số liệu, menu) bắt đầu bằng
    .shell:has([data-tour="nav:/admin/checkin"]) – mục "Check-in" chỉ có trong menu quản trị → hội viên / HLV không đổi,
    không phải sửa Layout.tsx. Hộp thoại gắn thẳng vào body nên dùng body:has(...).
@@ -28,19 +28,8 @@
 .shell:has([data-tour="nav:/admin/checkin"]) .page > .page-head::after {
   content: ''; position: absolute; left: 24px; bottom: 0; width: 56px; height: 3px;
   border-radius: 3px 3px 0 0; background: var(--grad-go);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--primary-bright) 55%, transparent);
 }
-.shell:has([data-tour="nav:/admin/checkin"]) .page > .page-head h1 {
-  font-size: clamp(26px, 2.3vw, 34px); line-height: 1.08; letter-spacing: -0.03em;
-}
-.shell:has([data-tour="nav:/admin/checkin"]) .page > .page-head p { font-size: 14px; line-height: 1.55; }
-.shell:has([data-tour="nav:/admin/checkin"]) .page > .page-head .eyebrow {
-  height: 22px; padding: 0 9px 0 7px; margin-bottom: 10px; border-radius: 999px;
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
-  font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em;
-}
-.shell:has([data-tour="nav:/admin/checkin"]) .page > .page-head .eyebrow::before { width: 12px; height: 3px; }
+/* v16: tiêu đề, mô tả, nhãn nhỏ giữ đúng cỡ chữ gốc của dự án (như trang Tổng quan) – không ghi đè ở đây */
 .shell:has([data-tour="nav:/admin/checkin"]) .page > .page-head .actions { position: relative; z-index: 1; }
 
 /* ═════════ 2. Thanh lọc – khay dính khi cuộn ═════════ */
@@ -75,7 +64,7 @@
   border-radius: 999px; background: var(--rail); border: 1px solid var(--hairline-soft);
   font-size: 12px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-.ad-count::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--primary-bright); box-shadow: 0 0 8px var(--primary-bright); }
+.ad-count::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--primary-bright); }
 .toolbar .ad-count:has(+ .spacer), .toolbar .spacer + .ad-count { margin-left: 0; }
 
 /* ═════════ 3. Nút chuyển ═════════ */
@@ -83,7 +72,7 @@
 .shell:has([data-tour="nav:/admin/checkin"]) .segmented button { border-radius: 9px; }
 .shell:has([data-tour="nav:/admin/checkin"]) .segmented button.on {
   background: var(--surface-2); color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--hairline), inset 0 -2px 0 var(--primary-bright), 0 4px 12px -6px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 0 0 1px var(--hairline), inset 0 -2px 0 var(--primary-bright);
 }
 
 /* ═════════ 4. Thẻ & bảng ═════════ */
@@ -92,18 +81,12 @@
   border-color: var(--hairline);
   box-shadow: 0 18px 40px -32px rgba(0, 0, 0, 0.6);
 }
-.shell:has([data-tour="nav:/admin/checkin"]) .page .card-title h3 { letter-spacing: -0.01em; }
 .shell:has([data-tour="nav:/admin/checkin"]) .page .card-title h3 svg {
   width: 26px; height: 26px; padding: 5px; border-radius: 8px;
   background: color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 @media (min-width: 901px) {
-  .shell:has([data-tour="nav:/admin/checkin"]) .page .table th {
-    font-size: 10.5px; letter-spacing: 0.1em; color: var(--muted);
-    padding-top: 13px; padding-bottom: 13px; background: var(--rail);
-  }
-  .shell:has([data-tour="nav:/admin/checkin"]) .page .table td { padding-top: 13px; padding-bottom: 13px; }
   .shell:has([data-tour="nav:/admin/checkin"]) .page .table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--rail) 30%, transparent); }
   .shell:has([data-tour="nav:/admin/checkin"]) .page .table tbody tr:hover {
     background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 9%, transparent), transparent 70%);
@@ -122,9 +105,6 @@
 }
 .shell:has([data-tour="nav:/admin/checkin"]) .page .person .name { font-weight: 700; }
 
-/* Nhãn trạng thái: góc vuông nhẹ, đọc nhanh như đèn báo */
-.shell:has([data-tour="nav:/admin/checkin"]) .page .badge { height: 22px; padding: 0 8px; border-radius: 7px; font-size: 11.5px; }
-
 /* ═════════ 5. Phân trang ═════════ */
 .shell:has([data-tour="nav:/admin/checkin"]) .page .pager { padding: 12px 18px; background: color-mix(in srgb, var(--rail) 55%, transparent); font-variant-numeric: tabular-nums; }
 .shell:has([data-tour="nav:/admin/checkin"]) .page .pager-num { border-radius: 9px; transition: background 0.2s, color 0.2s, box-shadow 0.2s; }
@@ -139,7 +119,6 @@
   position: relative; overflow: hidden;
   border-radius: var(--r-lg);
   background:
-    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--accent, var(--primary)) 10%, transparent), transparent 60%),
     var(--surface-2);
   transition: transform 0.3s var(--ease-out), border-color 0.25s, box-shadow 0.3s;
 }
@@ -147,17 +126,14 @@
 .shell:has([data-tour="nav:/admin/checkin"]) .page .plan-stat::before {
   content: ''; position: absolute; left: 20px; top: 0; width: 32px; height: 3px; border-radius: 0 0 3px 3px;
   background: var(--accent, var(--primary-bright));
-  box-shadow: 0 0 10px var(--accent, var(--primary-bright));
 }
 .shell:has([data-tour="nav:/admin/checkin"]) .page .stat:hover,
 .shell:has([data-tour="nav:/admin/checkin"]) .page .plan-stat:hover {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--accent, var(--primary)) 40%, var(--hairline));
-  box-shadow: 0 18px 36px -26px color-mix(in srgb, var(--accent, var(--primary)) 70%, transparent);
 }
 .shell:has([data-tour="nav:/admin/checkin"]) .page .plan-stat { padding: 16px 18px 14px; }
-.shell:has([data-tour="nav:/admin/checkin"]) .page .plan-stat .tiny { text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; font-size: 10.5px; }
-.shell:has([data-tour="nav:/admin/checkin"]) .page .plan-stat b { margin-top: 6px; font-size: 28px; }
+.shell:has([data-tour="nav:/admin/checkin"]) .page .plan-stat b { margin-top: 6px; }
 
 /* ═════════ 7. Gói tập (thẻ dùng chung với trang chủ – chỉ đổi trong khu quản trị) ═════════ */
 .shell:has([data-tour="nav:/admin/checkin"]) .page .plan-grid .plan-card { border-radius: var(--r-lg); padding-top: 26px; }
@@ -167,7 +143,7 @@
 }
 .shell:has([data-tour="nav:/admin/checkin"]) .page .plan-grid .plan-card .pc-term {
   display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 7px;
-  background: color-mix(in srgb, var(--primary) 12%, transparent); font-size: 11px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent); font-size: 12px;
 }
 .shell:has([data-tour="nav:/admin/checkin"]) .page .plan-grid .plan-card .pc-amount { letter-spacing: -0.03em; }
 .shell:has([data-tour="nav:/admin/checkin"]) .page .plan-grid .plan-card.inactive { opacity: 1; filter: saturate(0.25); }
@@ -190,7 +166,7 @@
 }
 .pq-card::before {
   content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0;
-  background: var(--wait); box-shadow: 0 0 10px color-mix(in srgb, var(--wait) 60%, transparent);
+  background: var(--wait);
 }
 .pq-card.is-warn { --wait: var(--warning); }
 .pq-card.is-late { --wait: var(--bad); }
@@ -199,7 +175,7 @@
 .pq-who { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
 .pq-wait {
   display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 7px;
-  font-size: 11.5px; font-weight: 700; color: var(--wait);
+  font-size: 12px; font-weight: 700; color: var(--wait);
   background: color-mix(in srgb, var(--wait) 12%, transparent);
 }
 .pq-plan { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -228,7 +204,7 @@
 .al-day-head {
   position: relative;
   display: flex; align-items: center; gap: 10px; margin: 0; padding: 14px 20px 8px;
-  font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink);
+  font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink);
   background: var(--surface-2);
 }
 .al-day-head::after { content: ''; flex: 1; height: 1px; background: var(--hairline-soft); }
@@ -259,7 +235,7 @@
 .al-item.is-fail .al-dot { background: color-mix(in srgb, var(--bad) 12%, var(--surface-2)); }
 .al-body { min-width: 0; padding-top: 3px; }
 .al-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; font-size: 14px; }
-.al-target { font-size: 11.5px; font-weight: 700; color: var(--faint); padding: 1px 6px; border-radius: 6px; background: var(--rail); font-variant-numeric: tabular-nums; }
+.al-target { font-size: 12px; font-weight: 700; color: var(--faint); padding: 1px 6px; border-radius: 6px; background: var(--rail); font-variant-numeric: tabular-nums; }
 .al-detail { margin: 3px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; overflow-wrap: anywhere; }
 .al-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 4px; font-size: 12px; color: var(--faint); }
 @media (max-width: 640px) {
@@ -279,7 +255,6 @@
   padding: 18px 18px 14px;
   border: 1px solid var(--hairline-soft); border-radius: var(--r-lg);
   background:
-    radial-gradient(90% 70% at 100% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
     var(--surface-2);
   animation: pqIn 0.45s var(--ease-out) backwards;
   transition: transform 0.3s var(--ease-out), border-color 0.25s, box-shadow 0.3s;
@@ -291,7 +266,7 @@
 .ad-poster:hover {
   transform: translateY(-3px);
   border-color: color-mix(in srgb, var(--accent) 40%, var(--hairline));
-  box-shadow: 0 22px 40px -30px color-mix(in srgb, var(--accent) 80%, transparent);
+  box-shadow: var(--shadow-float);
 }
 .ad-poster.is-off { filter: saturate(0.2); }
 .ad-poster.is-off:hover { filter: none; }
@@ -306,19 +281,19 @@
   color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
 }
-.ad-poster-kicker { flex: 1; min-width: 0; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
-.ad-poster-title { margin: 2px 0 0; font-size: 19px; line-height: 1.2; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.ad-poster-kicker { flex: 1; min-width: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.ad-poster-title { margin: 2px 0 0; font-size: 16px; line-height: 1.3; overflow-wrap: anywhere; }
 .ad-poster-desc {
   margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.ad-poster-price { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.ad-poster-price { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .ad-poster-gift { font-size: 14px; font-weight: 700; color: var(--muted); padding: 3px 10px; border-radius: 8px; border: 1px dashed var(--line-strong); }
 .ad-poster-meta {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0;
   padding-top: 12px; border-top: 1px dashed var(--hairline);
 }
-.ad-poster-meta dt { font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.ad-poster-meta dt { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
 .ad-poster-meta dd { margin: 4px 0 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
 .ad-poster-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--hairline-soft); display: flex; gap: 6px; }
 .ad-poster-foot .btn { flex: 1; }
@@ -365,22 +340,13 @@
   width: 60px; height: 60px; padding: 15px; border-radius: 18px;
   color: var(--primary-bright);
   background: color-mix(in srgb, var(--primary) 10%, transparent);
-  box-shadow: 0 0 0 8px color-mix(in srgb, var(--primary) 4%, transparent);
 }
 
 /* ═════════ 12. Hộp thoại ═════════ */
 body:has([data-tour="nav:/admin/checkin"]) .modal { border-color: var(--line-strong); }
-body:has([data-tour="nav:/admin/checkin"]) .modal-head {
-  background:
-    radial-gradient(60% 160% at 0% 0%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 65%),
-    var(--surface-2);
-}
 body:has([data-tour="nav:/admin/checkin"]) .modal-foot { background: color-mix(in srgb, var(--rail) 80%, transparent); }
 
-/* ═════════ 13. Menu trái ═════════ */
-.shell:has([data-tour="nav:/admin/checkin"]) .nav-group,
-.shell:has([data-tour="nav:/admin/checkin"]) .nav-section { letter-spacing: 0.12em; }
-.shell:has([data-tour="nav:/admin/checkin"]) .nav a.active { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 20%, transparent); }
+/* ═════════ 13. Menu trái – v16: giữ nguyên menu gốc (cùng cỡ chữ, khoảng cách chữ và vạch chọn như mọi vai trò) ═════════ */
 
 /* ═════════ 14. Nền sáng ═════════ */
 :root[data-theme='light'] .shell:has([data-tour="nav:/admin/checkin"]) .page .card-flush { box-shadow: 0 12px 30px -24px rgba(16, 24, 40, 0.22); }
