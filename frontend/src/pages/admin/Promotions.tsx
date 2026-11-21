@@ -74,7 +74,7 @@ export default function Promotions() {
         </Card>
       ) : (
         /* v13: ưu đãi dạng vé – cuống vé có mức giảm & mã, thanh lượt dùng, quà tặng kèm; viền đổi màu theo trạng thái */
-        <div className="ad-poster-grid">
+        <div className="kd-poster-grid">
           {data.map((p, i) => {
             const now = new Date().toISOString();
             const isUpcoming = p.startsAt > now;
@@ -83,16 +83,16 @@ export default function Promotions() {
             const usedPct = p.maxUses ? Math.min(100, (p.usedCount / p.maxUses) * 100) : null;
 
             return (
-              <article key={p.id} className={`ad-poster ad-ticket is-${state}`} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
-                <div className="ad-ticket-stub">
-                  <div className="ad-ticket-value">
+              <article key={p.id} className={`kd-poster kd-ticket is-${state}`} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
+                <div className="kd-ticket-stub">
+                  <div className="kd-ticket-value">
                     {p.discountType === 'PERCENT' && t('Giảm {n}%', { n: p.discountValue })}
                     {p.discountType === 'AMOUNT' && t('Giảm {amount}', { amount: fmtMoney(p.discountValue) })}
                     {p.discountType === 'NONE' && t('Chỉ tặng quà')}
                   </div>
-                  {p.code ? <span className="ad-ticket-code num">{p.code}</span> : <span className="ad-ticket-code is-auto">{t('Không cần mã')}</span>}
+                  {p.code ? <span className="kd-ticket-code num">{p.code}</span> : <span className="kd-ticket-code is-auto">{t('Không cần mã')}</span>}
                 </div>
-                <div className="ad-poster-top">
+                <div className="kd-poster-top">
                   {!p.active ? (
                     <Badge tone="muted">{t('Tạm dừng')}</Badge>
                   ) : isUpcoming ? (
@@ -107,9 +107,9 @@ export default function Promotions() {
                   {p.audience === 'BIRTHDAY' && <Badge tone="violet">{t('Sinh nhật')}</Badge>}
                   {p.audience === 'UPGRADE' && <Badge tone="green">{t('Nâng cấp PT')}</Badge>}
                 </div>
-                <h3 className="ad-poster-title">{localizeText(p.nameEn, p.name)}</h3>
-                {p.description && <p className="ad-poster-desc">{localizeText(p.descriptionEn, p.description)}</p>}
-                <dl className="ad-poster-meta">
+                <h3 className="kd-poster-title">{localizeText(p.nameEn, p.name)}</h3>
+                {p.description && <p className="kd-poster-desc">{localizeText(p.descriptionEn, p.description)}</p>}
+                <dl className="kd-poster-meta">
                   <div>
                     <dt>{t('Thời gian hiệu lực')}</dt>
                     <dd className="num">{fmtDateTime(p.startsAt)}<br /><span className="faint">→ {fmtDateTime(p.endsAt)}</span></dd>
@@ -119,7 +119,7 @@ export default function Promotions() {
                     <dd>{p.planIds && p.planIds.length > 0 ? p.planIds.map((id) => planNameMap.get(id) || `#${id}`).join(', ') : t('Mọi gói tập')}</dd>
                   </div>
                 </dl>
-                <div className="ad-ticket-usage">
+                <div className="kd-ticket-usage">
                   <div className="row between small">
                     <span className="muted">{t('Lượt sử dụng')}</span>
                     <span className="num"><b>{p.usedCount}</b><span className="muted"> / {p.maxUses != null ? p.maxUses : '∞'}</span></span>
@@ -127,7 +127,7 @@ export default function Promotions() {
                   {usedPct != null && <div className="meter"><i style={{ width: `${usedPct}%` }} /></div>}
                 </div>
                 {p.grants && p.grants.length > 0 && (
-                  <div className="ad-ticket-gifts">
+                  <div className="kd-ticket-gifts">
                     <div className="row" style={{ gap: 6 }}><Icon name="sparkle" size={14} /><b className="small">{t('Quà tặng kèm')}</b></div>
                     <ul>
                       {p.grants.map((g, idx) => (
@@ -143,7 +143,7 @@ export default function Promotions() {
                     </ul>
                   </div>
                 )}
-                <div className="ad-poster-foot">
+                <div className="kd-poster-foot">
                   <Button size="sm" icon="edit" onClick={() => setEditing(p)}>{t('Sửa')}</Button>
                   <Button size="sm" variant="ghost" icon={p.active ? 'ban' : 'play'} onClick={() => void toggleActive(p)}>{p.active ? t('Tạm dừng') : t('Kích hoạt')}</Button>
                 </div>

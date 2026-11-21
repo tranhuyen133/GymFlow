@@ -59,13 +59,13 @@
 .shell:has([data-tour="nav:/admin/checkin"]) .page > .toolbar > .btn { height: 38px; }
 
 /* Đếm kết quả */
-.ad-count {
+.kd-count {
   display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; margin-left: auto;
   border-radius: 999px; background: var(--rail); border: 1px solid var(--hairline-soft);
   font-size: 12px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-.ad-count::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--primary-bright); }
-.toolbar .ad-count:has(+ .spacer), .toolbar .spacer + .ad-count { margin-left: 0; }
+.kd-count::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--primary-bright); }
+.toolbar .kd-count:has(+ .spacer), .toolbar .spacer + .kd-count { margin-left: 0; }
 
 /* ═════════ 3. Nút chuyển ═════════ */
 .shell:has([data-tour="nav:/admin/checkin"]) .segmented { border-radius: 12px; background: var(--rail); border-color: var(--hairline-soft); }
@@ -246,8 +246,8 @@
 }
 
 /* ═════════ 10. Thẻ poster (Dịch vụ) & vé (Ưu đãi) ═════════ */
-.ad-poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; align-items: stretch; }
-.ad-poster {
+.kd-poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; align-items: stretch; }
+.kd-poster {
   --accent: var(--primary-bright);
   position: relative; overflow: hidden;
   display: flex; flex-direction: column; gap: 10px; min-width: 0;
@@ -257,81 +257,81 @@
     var(--surface-2);
   transition: transform 0.3s var(--ease-out), border-color 0.25s, box-shadow 0.3s;
 }
-.ad-poster::after {
+.kd-poster::after {
   content: ''; position: absolute; right: -30px; top: -20px; width: 90px; height: 140px;
   background: var(--accent); opacity: 0.06; transform: skewX(var(--slant)); pointer-events: none;
 }
-.ad-poster:hover {
+.kd-poster:hover {
   transform: translateY(-3px);
   border-color: color-mix(in srgb, var(--accent) 40%, var(--hairline));
   box-shadow: var(--shadow-float);
 }
-.ad-poster.is-off { filter: saturate(0.2); }
-.ad-poster.is-off:hover { filter: none; }
-.ad-poster.cat-relax { --accent: var(--violet); }
-.ad-poster.cat-recovery { --accent: var(--info); }
-.ad-poster.cat-amenity { --accent: var(--primary-bright); }
-.ad-poster.cat-nutrition { --accent: var(--warning); }
-.ad-poster.cat-other { --accent: var(--muted); }
-.ad-poster-top { position: relative; z-index: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-.ad-poster-icon {
+.kd-poster.is-off { filter: saturate(0.2); }
+.kd-poster.is-off:hover { filter: none; }
+.kd-poster.cat-relax { --accent: var(--violet); }
+.kd-poster.cat-recovery { --accent: var(--info); }
+.kd-poster.cat-amenity { --accent: var(--primary-bright); }
+.kd-poster.cat-nutrition { --accent: var(--warning); }
+.kd-poster.cat-other { --accent: var(--muted); }
+.kd-poster-top { position: relative; z-index: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.kd-poster-icon {
   width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none;
   color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
 }
-.ad-poster-kicker { flex: 1; min-width: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-.ad-poster-title { margin: 2px 0 0; font-size: 16px; line-height: 1.3; overflow-wrap: anywhere; }
-.ad-poster-desc {
+.kd-poster-kicker { flex: 1; min-width: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.kd-poster-title { margin: 2px 0 0; font-size: 16px; line-height: 1.3; overflow-wrap: anywhere; }
+.kd-poster-desc {
   margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.ad-poster-price { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-.ad-poster-gift { font-size: 14px; font-weight: 700; color: var(--muted); padding: 3px 10px; border-radius: 8px; border: 1px dashed var(--line-strong); }
-.ad-poster-meta {
+.kd-poster-price { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.kd-poster-gift { font-size: 14px; font-weight: 700; color: var(--muted); padding: 3px 10px; border-radius: 8px; border: 1px dashed var(--line-strong); }
+.kd-poster-meta {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0;
   padding-top: 12px; border-top: 1px dashed var(--hairline);
 }
-.ad-poster-meta dt { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
-.ad-poster-meta dd { margin: 4px 0 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
-.ad-poster-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--hairline-soft); display: flex; gap: 6px; }
-.ad-poster-foot .btn { flex: 1; }
+.kd-poster-meta dt { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.kd-poster-meta dd { margin: 4px 0 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.kd-poster-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--hairline-soft); display: flex; gap: 6px; }
+.kd-poster-foot .btn { flex: 1; }
 
 /* Vé ưu đãi: cuống vé + răng cưa */
-.ad-ticket { padding-top: 0; }
-.ad-ticket.is-live { --accent: var(--primary-bright); }
-.ad-ticket.is-soon { --accent: var(--info); }
-.ad-ticket.is-end { --accent: var(--bad); }
-.ad-ticket.is-off { --accent: var(--muted); }
-.ad-ticket-stub {
+.kd-ticket { padding-top: 0; }
+.kd-ticket.is-live { --accent: var(--primary-bright); }
+.kd-ticket.is-soon { --accent: var(--info); }
+.kd-ticket.is-end { --accent: var(--bad); }
+.kd-ticket.is-off { --accent: var(--muted); }
+.kd-ticket-stub {
   position: relative;
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   margin: 0 -18px 4px; padding: 16px 18px 18px;
   background: linear-gradient(110deg, color-mix(in srgb, var(--accent) 20%, transparent), color-mix(in srgb, var(--accent) 6%, transparent));
   border-bottom: 2px dashed color-mix(in srgb, var(--accent) 40%, var(--hairline));
 }
-.ad-ticket-stub::before, .ad-ticket-stub::after {
+.kd-ticket-stub::before, .kd-ticket-stub::after {
   content: ''; position: absolute; bottom: -9px; width: 16px; height: 16px; border-radius: 50%;
   background: var(--canvas); border: 1px solid var(--hairline-soft);
 }
-.ad-ticket-stub::before { left: -9px; }
-.ad-ticket-stub::after { right: -9px; }
-.ad-ticket-value { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; color: var(--accent); line-height: 1.1; }
-.ad-ticket-code {
+.kd-ticket-stub::before { left: -9px; }
+.kd-ticket-stub::after { right: -9px; }
+.kd-ticket-value { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; color: var(--accent); line-height: 1.1; }
+.kd-ticket-code {
   flex: none; font-size: 13px; font-weight: 800; letter-spacing: 0.08em;
   padding: 5px 10px; border-radius: 8px; color: var(--ink);
   background: var(--surface-2); border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--hairline));
 }
-.ad-ticket-code.is-auto { letter-spacing: 0.02em; color: var(--muted); font-weight: 700; }
-.ad-ticket-usage { display: flex; flex-direction: column; gap: 6px; }
-.ad-ticket-usage .meter { height: 6px; }
-.ad-ticket-usage .meter > i { background: var(--accent); }
-.ad-ticket-gifts {
+.kd-ticket-code.is-auto { letter-spacing: 0.02em; color: var(--muted); font-weight: 700; }
+.kd-ticket-usage { display: flex; flex-direction: column; gap: 6px; }
+.kd-ticket-usage .meter { height: 6px; }
+.kd-ticket-usage .meter > i { background: var(--accent); }
+.kd-ticket-gifts {
   padding: 10px 12px; border-radius: 12px; font-size: 13px;
   background: color-mix(in srgb, var(--primary) 6%, var(--rail));
   border: 1px dashed color-mix(in srgb, var(--primary) 30%, var(--hairline));
 }
-.ad-ticket-gifts svg { color: var(--primary-bright); }
-.ad-ticket-gifts ul { margin: 6px 0 0; padding-left: 18px; line-height: 1.6; color: var(--muted); }
+.kd-ticket-gifts svg { color: var(--primary-bright); }
+.kd-ticket-gifts ul { margin: 6px 0 0; padding-left: 18px; line-height: 1.6; color: var(--muted); }
 
 /* ═════════ 11. Ô trống ═════════ */
 .shell:has([data-tour="nav:/admin/checkin"]) .page .empty svg {
@@ -350,18 +350,18 @@ body:has([data-tour="nav:/admin/checkin"]) .modal-foot { background: color-mix(i
 :root[data-theme='light'] .shell:has([data-tour="nav:/admin/checkin"]) .page .card-flush { box-shadow: 0 12px 30px -24px rgba(16, 24, 40, 0.22); }
 :root[data-theme='light'] .shell:has([data-tour="nav:/admin/checkin"]) .page > .toolbar { box-shadow: 0 10px 24px -20px rgba(16, 24, 40, 0.25); }
 :root[data-theme='light'] .pq-card { background: var(--surface-2); }
-:root[data-theme='light'] .pq-card:hover, :root[data-theme='light'] .ad-poster:hover { box-shadow: 0 16px 30px -24px rgba(16, 24, 40, 0.3); }
+:root[data-theme='light'] .pq-card:hover, :root[data-theme='light'] .kd-poster:hover { box-shadow: 0 16px 30px -24px rgba(16, 24, 40, 0.3); }
 
 /* ═════════ 15. Màn hẹp & giảm chuyển động ═════════ */
 @media (max-width: 900px) {
   .shell:has([data-tour="nav:/admin/checkin"]) .page > .page-head { padding: 16px; }
   .shell:has([data-tour="nav:/admin/checkin"]) .page > .page-head::before { display: none; }
   .shell:has([data-tour="nav:/admin/checkin"]) .page > .page-head::after { left: 16px; }
-  .ad-count { margin-left: 0; }
+  .kd-count { margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pq-card, .ad-poster { transition: none; }
-  .pq-card:hover, .ad-poster:hover,
+  .pq-card, .kd-poster { transition: none; }
+  .pq-card:hover, .kd-poster:hover,
   .shell:has([data-tour="nav:/admin/checkin"]) .page .stat:hover,
   .shell:has([data-tour="nav:/admin/checkin"]) .page .plan-stat:hover { transform: none; }
   .shell:has([data-tour="nav:/admin/checkin"]) .page .stat,
