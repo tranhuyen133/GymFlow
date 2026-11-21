@@ -10,7 +10,7 @@ import { addDays, fmtWeekday, isSameDay, parseDate, parseDateTime } from '../lib
 
 export function ResultCount({ n }: { n: number | null | undefined }) {
   if (n == null) return null;
-  return <span className="ad-count" role="status" aria-live="polite">{t('{n} kết quả', { n })}</span>;
+  return <span className="kd-count" role="status" aria-live="polite">{t('{n} kết quả', { n })}</span>;
 }
 
 export type WaitTone = 'fresh' | 'warn' | 'late';

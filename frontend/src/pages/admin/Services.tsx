@@ -65,24 +65,24 @@ export default function Services() {
         </Card>
       ) : (
         /* v13: dịch vụ dạng thẻ poster – màu & biểu tượng theo danh mục, giá nổi bật, nút có chữ */
-        <div className="ad-poster-grid">
+        <div className="kd-poster-grid">
           {data.map((s, i) => (
-            <article key={s.id} className={`ad-poster cat-${s.category.toLowerCase()}${s.active ? '' : ' is-off'}`} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
-              <div className="ad-poster-top">
-                <span className="ad-poster-icon"><Icon name={SERVICE_ICON[s.category] ?? 'sparkle'} size={18} /></span>
-                <span className="ad-poster-kicker">{t(CATEGORY_LABELS[s.category] ?? s.category)}</span>
+            <article key={s.id} className={`kd-poster cat-${s.category.toLowerCase()}${s.active ? '' : ' is-off'}`} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
+              <div className="kd-poster-top">
+                <span className="kd-poster-icon"><Icon name={SERVICE_ICON[s.category] ?? 'sparkle'} size={18} /></span>
+                <span className="kd-poster-kicker">{t(CATEGORY_LABELS[s.category] ?? s.category)}</span>
                 {s.active ? <Badge tone="green">{t('Đang hoạt động')}</Badge> : <Badge tone="muted">{t('Tạm ngừng')}</Badge>}
               </div>
-              <h3 className="ad-poster-title">{localizeText(s.nameEn, s.name)}</h3>
-              {s.description && <p className="ad-poster-desc">{localizeText(s.descriptionEn, s.description)}</p>}
-              <div className="ad-poster-price">
-                {s.unitPrice != null ? <span className="num">{fmtMoney(s.unitPrice)}</span> : <span className="ad-poster-gift">{t('Chỉ tặng kèm')}</span>}
+              <h3 className="kd-poster-title">{localizeText(s.nameEn, s.name)}</h3>
+              {s.description && <p className="kd-poster-desc">{localizeText(s.descriptionEn, s.description)}</p>}
+              <div className="kd-poster-price">
+                {s.unitPrice != null ? <span className="num">{fmtMoney(s.unitPrice)}</span> : <span className="kd-poster-gift">{t('Chỉ tặng kèm')}</span>}
               </div>
-              <dl className="ad-poster-meta">
+              <dl className="kd-poster-meta">
                 <div><dt>{t('Đặt trước')}</dt><dd>{s.requiresBooking ? <Badge tone="blue">{t('Cần đặt lịch')}</Badge> : t('Không cần')}</dd></div>
                 <div><dt>{t('Khung giờ phục vụ')}</dt><dd>{localizeText(s.openingNoteEn, s.openingNote) || '—'}</dd></div>
               </dl>
-              <div className="ad-poster-foot">
+              <div className="kd-poster-foot">
                 <Button size="sm" icon="edit" onClick={() => setEditing(s)}>{t('Sửa')}</Button>
                 <Button size="sm" variant="ghost" icon={s.active ? 'ban' : 'play'} onClick={() => void toggleActive(s)}>{s.active ? t('Tạm ngừng') : t('Kích hoạt')}</Button>
               </div>
