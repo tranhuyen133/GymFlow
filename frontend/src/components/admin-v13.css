@@ -161,7 +161,6 @@
   padding: 14px 16px 14px 20px;
   border: 1px solid var(--hairline-soft); border-radius: var(--r-md);
   background: var(--rail);
-  animation: pqIn 0.45s var(--ease-out) backwards;
   transition: border-color 0.2s, transform 0.25s var(--ease-out), box-shadow 0.25s;
 }
 .pq-card::before {
@@ -171,7 +170,7 @@
 .pq-card.is-warn { --wait: var(--warning); }
 .pq-card.is-late { --wait: var(--bad); }
 .pq-card:hover { border-color: color-mix(in srgb, var(--wait) 40%, var(--hairline)); transform: translateX(2px); box-shadow: 0 12px 28px -22px rgba(0, 0, 0, 0.7); }
-@keyframes pqIn { from { opacity: 0; transform: translateY(8px); } }
+/* v17: bỏ hiệu ứng hiện dần – thẻ từng đứng yên ở trạng thái trong suốt, làm trang Dịch vụ / Ưu đãi trông như trống */
 .pq-who { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
 .pq-wait {
   display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 7px;
@@ -256,7 +255,6 @@
   border: 1px solid var(--hairline-soft); border-radius: var(--r-lg);
   background:
     var(--surface-2);
-  animation: pqIn 0.45s var(--ease-out) backwards;
   transition: transform 0.3s var(--ease-out), border-color 0.25s, box-shadow 0.3s;
 }
 .ad-poster::after {
@@ -362,7 +360,7 @@ body:has([data-tour="nav:/admin/checkin"]) .modal-foot { background: color-mix(i
   .ad-count { margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pq-card, .ad-poster { animation: none; transition: none; }
+  .pq-card, .ad-poster { transition: none; }
   .pq-card:hover, .ad-poster:hover,
   .shell:has([data-tour="nav:/admin/checkin"]) .page .stat:hover,
   .shell:has([data-tour="nav:/admin/checkin"]) .page .plan-stat:hover { transform: none; }
