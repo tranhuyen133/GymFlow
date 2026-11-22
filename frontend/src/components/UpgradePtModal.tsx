@@ -12,6 +12,7 @@ import { codeNotApplied, PromoPicker, type PromoChoice } from './PromoPicker';
 import { useToast } from './Toast';
 import { Alert, Button, Field, Input, LoadingBlock, Modal, Textarea } from './ui';
 import { t, tn } from '../i18n';
+import { displayPersonName } from '../lib/names';
 import { localizeText } from '../lib/planText';
 import { addDays, durationLabel, fmtDate, fmtMoney, parseDate, toIsoDate } from '../lib/format';
 import { errMsg, useAsync } from '../lib/hooks';
@@ -189,8 +190,8 @@ export default function UpgradePtModal({ initialPlanId, payment, onClose, onDone
                   <div className="pick-grid" role="radiogroup" aria-label={t('Huấn luyện viên')}>
                     {activeTrainers.map((tr) => (
                       <PickCard key={tr.id} on={trainerId === String(tr.id)} onClick={() => setTrainerId(String(tr.id))} avatar={initials(tr.fullName)}
-                        title={<>{tr.fullName}{tr.id === quote?.currentTrainerId && <span className="tiny faint" style={{ fontWeight: 600 }}> · {t('HLV hiện tại')}</span>}</>}
-                        sub={[tr.specialty, tr.experienceYears > 0 ? t('{n} năm kinh nghiệm', { n: tr.experienceYears }) : null].filter(Boolean).join(' · ') || undefined} />
+                        title={<>{displayPersonName(tr.fullName)}{tr.id === quote?.currentTrainerId && <span className="tiny faint" style={{ fontWeight: 600 }}> · {t('HLV hiện tại')}</span>}</>}
+                        sub={[tr.specialty ? t(tr.specialty) : null, tr.experienceYears > 0 ? t('{n} năm kinh nghiệm', { n: tr.experienceYears }) : null].filter(Boolean).join(' · ') || undefined} />
                     ))}
                   </div>
                 )}

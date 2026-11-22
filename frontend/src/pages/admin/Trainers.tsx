@@ -15,6 +15,7 @@ import { DAYS, EMAIL_RE } from '../../lib/format';
 import { displayPersonName } from '../../lib/names';
 import { errMsg, fieldErrs, useAsync } from '../../lib/hooks';
 import { ShiftEditor } from '../shared/Profile';
+import { splitSpecialties, certificateList } from '../member/coachRules';
 import { t, tn } from '../../i18n';
 
 export default function Trainers() {
@@ -44,8 +45,8 @@ export default function Trainers() {
                   {!top && (tr.active ? <Badge tone="green">{t('Đang nhận HV')}</Badge> : <Badge tone="muted">{t('Tạm ngừng')}</Badge>)}
                 </div>
                 <div className="stack-sm mt-16 small">
-                  <div className="row"><Icon name="target" size={15} className="ok" />{tr.specialty ?? t('Chưa cập nhật chuyên môn')}</div>
-                  <div className="row"><Icon name="trophy" size={15} className="ok" />{t('{n} năm kinh nghiệm', { n: tr.experienceYears })}{tr.certificates ? ` · ${tr.certificates}` : ''}</div>
+                  <div className="row"><Icon name="target" size={15} className="ok" />{tr.specialty ? (t(tr.specialty) !== tr.specialty ? t(tr.specialty) : splitSpecialties(tr.specialty).map((s) => t(s)).join(', ')) : t('Chưa cập nhật chuyên môn')}</div>
+                  <div className="row"><Icon name="trophy" size={15} className="ok" />{t('{n} năm kinh nghiệm', { n: tr.experienceYears })}{tr.certificates ? ` · ${t(tr.certificates) !== tr.certificates ? t(tr.certificates) : certificateList(tr.certificates).map((c) => t(c)).join(', ')}` : ''}</div>
                   <div className="row"><Icon name="phone" size={15} className="ok" />{tr.phone ?? '—'}</div>
                 </div>
                 <div className="row mt-16" style={{ gap: 4 }}>

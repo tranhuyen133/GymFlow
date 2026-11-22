@@ -12,6 +12,7 @@ import { initials, PickCard } from './PaymentQr';
 import { useToast } from './Toast';
 import { Alert, Button, Field, Input, LoadingBlock, Modal, Textarea } from './ui';
 import { t } from '../i18n';
+import { displayPersonName } from '../lib/names';
 import { addDays, fmtDate, parseDate, toIsoDate, todayIso } from '../lib/format';
 import { errMsg, useAsync } from '../lib/hooks';
 import './upgrade.css';
@@ -148,14 +149,14 @@ export default function SubscriptionChangeModal({ sub, onClose, onDone }: { sub:
         )}
         {switching && (
           <Field label={t('Đổi sang HLV')} required error={tried && !trainerId ? typeError : undefined}
-            hint={sub.trainerName ? t('HLV hiện tại: {name}', { name: sub.trainerName }) : undefined}>
+            hint={sub.trainerName ? t('HLV hiện tại: {name}', { name: displayPersonName(sub.trainerName) }) : undefined}>
             {trainers.loading && !trainers.data ? <LoadingBlock rows={2} />
               : activeTrainers.length === 0 ? <div className="pick-empty">{t('Hiện chưa có HLV khác nhận hội viên mới.')}</div>
               : (
                 <div className="pick-grid" role="radiogroup" aria-label={t('Đổi sang HLV')}>
                   {activeTrainers.map((tr) => (
                     <PickCard key={tr.id} on={trainerId === String(tr.id)} onClick={() => setTrainerId(String(tr.id))} avatar={initials(tr.fullName)}
-                      title={tr.fullName} sub={tr.specialty || undefined} />
+                      title={displayPersonName(tr.fullName)} sub={tr.specialty ? t(tr.specialty) : undefined} />
                   ))}
                 </div>
               )}

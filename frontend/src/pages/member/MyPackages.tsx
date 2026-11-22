@@ -696,7 +696,7 @@ export function RegisterPlanModal({ plan, subs, payment, currentTrainerId, onClo
                   {activeTrainers.map((tr) => (
                     <PickCard key={tr.id} on={trainerId === String(tr.id)} onClick={() => setTrainerId(String(tr.id))} avatar={initials(tr.fullName)}
                       title={<>{displayPersonName(tr.fullName)}{tr.id === currentTrainerId && <span className="tiny faint" style={{ fontWeight: 600 }}> · {t('HLV hiện tại')}</span>}</>}
-                      sub={[tr.specialty, tr.experienceYears > 0 ? t('{n} năm kinh nghiệm', { n: tr.experienceYears }) : null].filter(Boolean).join(' · ') || undefined} />
+                      sub={[tr.specialty ? t(tr.specialty) : null, tr.experienceYears > 0 ? t('{n} năm kinh nghiệm', { n: tr.experienceYears }) : null].filter(Boolean).join(' · ') || undefined} />
                   ))}
                 </div>
               )}
