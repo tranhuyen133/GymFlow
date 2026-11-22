@@ -8,8 +8,6 @@ import { getLang, lookup } from './index';
 
 const ATTRS = ['placeholder', 'title', 'aria-label', 'alt'] as const;
 const SKIP = '[lang="vi"], [data-i18n-skip], pre, code, textarea, script, style, [contenteditable="true"]';
-/** Có chữ tiếng Việt có dấu – chuỗi không dấu không cần tra từ điển. */
-const VI = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
 interface Swap { orig: string; en: string }
 const texts = new Map<Text, Swap>();
@@ -18,7 +16,7 @@ let observer: MutationObserver | null = null;
 
 function translated(raw: string): string | null {
   const key = raw.trim();
-  if (!key || !VI.test(key)) return null;
+  if (!key) return null;
   const en = lookup(key);
   if (!en || en === key) return null;
   const start = raw.indexOf(key);

@@ -120,8 +120,8 @@ export default function PaymentSettings() {
 
   return (
     <div className="page">
-      <PageHead eyebrow="Kinh doanh" title="Thanh toán"
-        desc="Hội viên chọn trả tại quầy hoặc chuyển khoản theo mã QR khi gửi đơn. Chuyển khoản không tự kích hoạt gói: đối chiếu sao kê theo mã đơn rồi duyệt ở Duyệt đăng ký gói."
+      <PageHead eyebrow={t('Kinh doanh')} title={t('Thanh toán')}
+        desc={t('Hội viên chọn trả tại quầy hoặc chuyển khoản theo mã QR khi gửi đơn. Chuyển khoản không tự kích hoạt gói: đối chiếu sao kê theo mã đơn rồi duyệt ở Duyệt đăng ký gói.')}
         actions={<Link to="/package-requests" className="btn btn-secondary"><span>{t('Duyệt đăng ký gói')}</span></Link>} />
 
       <HelpTip title="Cách nhận chuyển khoản" steps={[

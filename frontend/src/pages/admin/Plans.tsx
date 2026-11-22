@@ -39,8 +39,8 @@ export default function Plans() {
 
   return (
     <div className="page">
-      <PageHead eyebrow="Kinh doanh" title="Gói tập" desc="Đổi giá không ảnh hưởng gói đã bán (số tiền thực thu lưu riêng). Gói đã có người mua chỉ ngừng bán, không xoá."
-        actions={<Button variant="primary" icon="plus" onClick={() => setEditing('new')}>Thêm gói</Button>} />
+      <PageHead eyebrow={t('Kinh doanh')} title={t('Gói tập')} desc={t('Đổi giá không ảnh hưởng gói đã bán (số tiền thực thu lưu riêng). Gói đã có người mua chỉ ngừng bán, không xoá.')}
+        actions={<Button variant="primary" icon="plus" onClick={() => setEditing('new')}>{t('Thêm gói')}</Button>} />
       <HelpTip id="plans" steps={[
         'Gói Gym: hội viên tự tập. Gói Gym + PT: khai báo số buổi PT, hạn dùng buổi và thời lượng mỗi buổi.',
         'Đổi giá chỉ áp cho đơn mới; gói đã bán giữ nguyên số tiền đã thu.',

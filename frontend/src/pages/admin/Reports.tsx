@@ -46,8 +46,8 @@ export default function Reports() {
 
   return (
     <div className="page">
-      <PageHead eyebrow="Kinh doanh" title="Báo cáo" desc="Doanh thu tính theo ngày thu tiền (không gồm gói đã huỷ). Chuyên cần = hoàn thành / (hoàn thành + vắng)."
-        actions={<Button icon="download" disabled={!data} onClick={exportCsv}>Xuất CSV</Button>} />
+      <PageHead eyebrow={t('Kinh doanh')} title={t('Báo cáo')} desc={t('Doanh thu tính theo ngày thu tiền (không gồm gói đã huỷ). Chuyên cần = hoàn thành / (hoàn thành + vắng).')}
+        actions={<Button icon="download" disabled={!data} onClick={exportCsv}>{t('Xuất CSV')}</Button>} />
       <div className="toolbar">
         <Segmented<Range> value={range} onChange={pick} options={[
           { value: '30', label: '30 ngày' }, { value: '90', label: '3 tháng' }, { value: '180', label: '6 tháng' }, { value: '365', label: '12 tháng' }, { value: 'custom', label: 'Tuỳ chọn' },

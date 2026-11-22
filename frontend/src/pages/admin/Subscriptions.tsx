@@ -44,7 +44,7 @@ export default function Subscriptions() {
 
   return (
     <div className="page">
-      <PageHead eyebrow="Kinh doanh" title="Đăng ký gói" desc="Đăng ký mới, gia hạn nối tiếp và huỷ gói. CSDL chặn mọi trường hợp hai gói chồng thời gian."
+      <PageHead eyebrow={t('Kinh doanh')} title={t('Đăng ký gói')} desc={t('Đăng ký mới, gia hạn nối tiếp và huỷ gói. CSDL chặn mọi trường hợp hai gói chồng thời gian.')}
         actions={<>
           <Button icon="download" onClick={() => downloadCsv('dang-ky-goi', list, [
             { header: t('Mã HV'), value: (s) => s.memberCode }, { header: t('Hội viên'), value: (s) => displayPersonName(s.memberName) }, { header: t('Gói'), value: (s) => localizeText(s.planNameEn, s.planName) },
